@@ -175,6 +175,7 @@ observable behavior and design this scheme.
 | P9  | `two-columns.pdf` (two-column layout)                                       | New test resource PDF                | Multi-column layout is a classic case where `sortByPosition` changes reading order    | `testExtract()` runs sort on/off, but does not isolate ordering differences in a minimal way |
 | P10 | Runtime-generated PDF with invalid page range (start > end / out of bounds) | Generated at runtime                 | Boundary/invalid input: verifies failure mode or defined behavior for invalid ranges  | Existing tests only cover one valid single-page range                                        |
 | P11 | Encrypted PDF with wrong password                                           | Generated at runtime                 | Different from “no password”: verifies error handling on wrong credentials            | Not explicitly covered in `TestTextStripper`                                                 |
+
 The input space of text extraction is divided into a set of partitions
 based on document structure, content type, configuration, and error
 conditions. Some of these partitions are already covered by existing
