@@ -232,12 +232,151 @@ Run `mvn -pl pdfbox -Dtest=TestTextExtractionPartitions test
 ### 3.7 Results and Observations
 
 All newly added JUnit tests passed successfully on the current version of Apache PDFBox.
-The results confirm that PDFTextStripper behaves consistently across the selected input partitions.
+The results confirm that PDFTextStripper behaves consistently across the selected
+input partitions.
 
-For rotated-page PDFs (P4), text extraction succeeds and returns the expected content, indicating that page rotation does not prevent correct text extraction.
-For image-only PDFs (P7), the extractor returns empty or near-empty output, which matches the expected behavior when no text objects exist.
-Encrypted PDFs without a password or with a wrong password (P8, P11) consistently fail during loading or extraction, demonstrating stable error handling for protected documents.
-For two-column layouts (P9), enabling sortByPosition changes the reading order, and the sorted output follows the expected left-to-right column order.
+For rotated-page PDFs (P4), text extraction succeeds and returns the expected content,
+indicating that page rotation does not prevent correct text extraction.
+
+For image-only PDFs (P7), the extractor returns empty or near-empty output,
+which matches the expected behavior when no text objects exist.
+
+Encrypted PDFs without a password or with a wrong password (P8, P11) consistently
+fail during loading or extraction, demonstrating stable error handling for
+protected documents.
+
+For two-column layouts (P9), enabling sortByPosition changes the reading order,
+and the sorted output follows the expected left-to-right column order.
+
 Invalid page range inputs (P10) result in empty output, which defines the current behavior of PDFTextStripper for such boundary conditions.
 
 Overall, the observed behaviors match the expected outcomes defined for each partition.
+
+## 4 Finite Functional Model in SW-Testing
+
+### 4.1 Why Finite Model
+
+A finite model is an abstract way to describe system behavior
+using a limited number of states and transitions. In this course, 
+the most common form is a Finite State Machine (FSM), which represents
+states as nodes and transitions as directed edges. Even though a real
+program may have many internal configurations, an FSM captures only 
+the important behavioral states needed for analysis.
+
+Finite models are useful for testing because they make the specification
+clearer and more structured. Instead of relying only on natural-language
+descriptions, the model explicitly shows:
+
+- What states are allowed
+- What transitions are valid
+- How the system should react to events
+
+This helps reduce ambiguity and makes expected behavior easier to verify. And
+most important one, it helps us organize test cases.
+
+Another advantage is that finite models guide test design.
+Each state and each transition can become a test target. By checking whether
+all states and transitions have been exercised, we obtain a clear
+testing criterion rather than guessing when testing is “enough.”
+
+In our PDFBox project, many components are relatively simple and do
+not involve complex state changes. However, some features involve 
+multiple stages of processing and different behavioral modes. For example,
+certain operations depend on whether a document is loaded, modified,
+saved, or closed. These situations naturally form distinct states with different
+allowed operations. Modeling such features using an FSM makes it easier
+to clearly define valid transitions and identify invalid sequences.
+This structure helps us systematically derive test cases that cover
+meaningful state changes rather than only individual method calls.
+
+### 4.2 Document Lifecycle as an FSM
+
+Many components in PDFBox are implemented as individual API operations
+that perform specific tasks without forming complex state-driven behavior.
+As a result, not all features naturally lend themselves to finite state modeling.
+
+However, the lifecycle of a PDF document session exhibits clear state-dependent
+constraints. Operations such as loading a document, modifying its content,
+saving it (including saving to a different output destination), and closing
+it must follow a meaningful order. The validity and effect of each operation
+depend on the current stage of the document. For example, a document must be
+loaded before it can be modified or saved, and once it is closed, further
+operations should no longer be valid.
+
+Because the behavior of this feature depends on operation sequences and
+implicit usage rules, the document lifecycle is well suited to be abstracted
+as a finite state machine. This abstraction captures the allowed transitions
+between stages and provides a structured representation of the feature’s behavior.
+
+### 4.3 
+
+We model the PDF document session lifecycle in PDFBox as a finite state machine (FSM), 
+where each node represents an abstract document state and each directed edge represents
+an API operation that causes a state transition. This model is an abstraction of
+many concrete program configurations into a small set of meaningful lifecycle stages.
+
+```mermaid
+stateDiagram-v2
+    state "S0 NotLoaded" as S0
+    state "S1 LoadedClean" as S1
+    state "S2 LoadedDirty" as S2
+    state "S3 SavedAsClean" as S3
+    state "S4 Closed" as S4
+
+    S0 --> S1: load (Loader.loadPDF)
+    S1 --> S2: modify (addPage)
+    S2 --> S2: modify (addPage)
+
+    S2 --> S1: save
+    S2 --> S3: saveAs (different output)
+    S1 --> S3: saveAs (different output)
+
+    S3 --> S2: modify (addPage)
+
+    S1 --> S4: close
+    S2 --> S4: close
+    S3 --> S4: close
+```
+
+The FSM contains five states: NotLoaded, LoadedClean, LoadedDirty, SavedAsClean, 
+and Closed. A successful `Loader.loadPDF(...)` transition moves the system
+from NotLoaded to LoadedClean. Calling `addPage(new PDPage())` represents a
+modification and transitions the document to LoadedDirty, where additional
+modifications keep it in the same state.
+
+From LoadedDirty, saving returns the document to a clean state (LoadedClean).
+Saving to a different output destination (abstracted as “saveAs”) transitions
+the document to SavedAsClean. From SavedAsClean, another modification
+returns the document to the dirty state. The `close()` operation transitions
+the document from any active state to Closed, after which further
+operations are treated as invalid usage.
+
+This FSM makes the allowed operation sequences explicit and highlights
+invalid sequences (such as performing save or modify after close).
+It provides a compact behavioral specification of the lifecycle and
+a clear structure for systematic testing based on states and transitions.
+
+### 4.4 Testing
+run```mvn -pl pdfbox -Dtest=TestPDDocumentLifecycleFSM test```
+
+Test cases:
+
+| Test ID                       | FSM Coverage (States/Transitions)                              | Steps                                                                        | Expected Result                                              |
+|-------------------------------|----------------------------------------------------------------|------------------------------------------------------------------------------|--------------------------------------------------------------|
+| T1 Load→Close                 | NotLoaded→LoadedClean, LoadedClean→Closed                      | `loadPDF(fixture)` then `close()`                                            | Load succeeds; page count = 1; close succeeds (no exception) |
+| T2 Load→Modify→Save→Close     | LoadedClean→LoadedDirty, LoadedDirty→LoadedClean, →Closed      | load → `addPage` → `save(out)` → close → reload(out)                         | Reload succeeds; page count becomes 2                        |
+| T3 Dirty self-loop            | LoadedDirty→LoadedDirty (modify), then LoadedDirty→LoadedClean | load → `addPage` → `addPage` → `save(out)` → reload(out)                     | Reload succeeds; page count becomes 3                        |
+| T4 Clean save self-loop       | LoadedClean→LoadedClean (save)                                 | load → `save(out)` (no modify) → reload(out)                                 | Reload succeeds; page count remains 1                        |
+| T5 saveAs from clean          | LoadedClean→SavedAsClean (abstract)                            | load → `save(outA)` → `save(outB)` → reload(outB)                            | Reload succeeds; page count remains 1                        |
+| T6 saveAs from dirty          | LoadedDirty→SavedAsClean (abstract)                            | load → `save(outA)` → `addPage` → `save(outB)` → reload(outB)                | Reload succeeds; page count becomes 2                        |
+| T7 After saveAs modify/save   | SavedAsClean→LoadedDirty, LoadedDirty→LoadedClean              | load → `save(outA)` → `save(outB)` → `addPage` → `save(outC)` → reload(outC) | Reload succeeds; page count becomes 2                        |
+| T8 Invalid save after close   | Closed + `save` (invalid transition)                           | load → close → `save(out)`                                                   | Save should not succeed (exception)                          |
+| T9 Invalid modify after close | Closed + `modify` (invalid transition)                         | load → close → `addPage`                                                     | not successfully produce a valid saved PDF(exception)        |
+
+We ran 9 FSM-derived JUnit 5 tests on `two-columns.pdf` (1 page).
+All tests passed. The suite covers the main lifecycle operations
+load → modify (addPage) → save / saveAs → close, using
+reload-and-page-count checks as the oracle. For invalid
+usage after `close()`, we verified that post-close operations
+cannot successfully produce a valid saved PDF. Outputs
+are written to `target/test-output/fsm-test`.
