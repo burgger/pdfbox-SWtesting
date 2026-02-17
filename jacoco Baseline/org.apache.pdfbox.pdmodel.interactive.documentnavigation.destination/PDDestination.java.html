@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDDestination.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination</a> &gt; <span class="el_source">PDDestination.java</span></div><h1>PDDestination.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination;
+
+import java.io.IOException;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSString;
+
+import org.apache.pdfbox.pdmodel.common.PDDestinationOrAction;
+
+/**
+ * This represents a destination in a PDF document.
+ *
+ * @author Ben Litchfield
+ */
+<span class="nc" id="L33">public abstract class PDDestination implements PDDestinationOrAction</span>
+{
+
+    /**
+     * This will create a new destination depending on the type of COSBase
+     * that is passed in.
+     *
+     * @param base The base level object.
+     *
+     * @return A new destination.
+     *
+     * @throws IOException If the base cannot be converted to a Destination.
+     */
+    public static PDDestination create( COSBase base ) throws IOException
+    {
+<span class="nc" id="L48">        PDDestination retval = null;</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        if( base == null )</span>
+        {
+            //this is ok, just return null.
+        }
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        else if (base instanceof COSArray </span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">                &amp;&amp; ((COSArray) base).size() &gt; 1 </span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">                &amp;&amp; ((COSArray) base).getObject(1) instanceof COSName)</span>
+        {
+<span class="nc" id="L57">            COSArray array = (COSArray) base;</span>
+<span class="nc" id="L58">            COSName type = (COSName) array.getObject(1);</span>
+<span class="nc" id="L59">            String typeString = type.getName();</span>
+<span class="nc bnc" id="L60" title="All 6 branches missed.">            switch (typeString)</span>
+            {
+                case PDPageFitDestination.TYPE:
+                case PDPageFitDestination.TYPE_BOUNDED:
+<span class="nc" id="L64">                    retval = new PDPageFitDestination(array);</span>
+<span class="nc" id="L65">                    break;</span>
+                case PDPageFitHeightDestination.TYPE:
+                case PDPageFitHeightDestination.TYPE_BOUNDED:
+<span class="nc" id="L68">                    retval = new PDPageFitHeightDestination(array);</span>
+<span class="nc" id="L69">                    break;</span>
+                case PDPageFitRectangleDestination.TYPE:
+<span class="nc" id="L71">                    retval = new PDPageFitRectangleDestination(array);</span>
+<span class="nc" id="L72">                    break;</span>
+                case PDPageFitWidthDestination.TYPE:
+                case PDPageFitWidthDestination.TYPE_BOUNDED:
+<span class="nc" id="L75">                    retval = new PDPageFitWidthDestination(array);</span>
+<span class="nc" id="L76">                    break;</span>
+                case PDPageXYZDestination.TYPE:
+<span class="nc" id="L78">                    retval = new PDPageXYZDestination(array);</span>
+<span class="nc" id="L79">                    break;</span>
+                default:
+<span class="nc" id="L81">                    throw new IOException(&quot;Unknown destination type: &quot; + type.getName());</span>
+            }
+<span class="nc" id="L83">        }</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        else if( base instanceof COSString )</span>
+        {
+<span class="nc" id="L86">            retval = new PDNamedDestination( (COSString)base );</span>
+        }
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        else if( base instanceof COSName )</span>
+        {
+<span class="nc" id="L90">            retval = new PDNamedDestination( (COSName)base );</span>
+        }
+        else
+        {
+<span class="nc" id="L94">            throw new IOException( &quot;Error: can't convert to Destination &quot; + base );</span>
+        }
+<span class="nc" id="L96">        return retval;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

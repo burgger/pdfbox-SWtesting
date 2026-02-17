@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFGraphicsStreamEngine.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.contentstream</a> &gt; <span class="el_source">PDFGraphicsStreamEngine.java</span></div><h1>PDFGraphicsStreamEngine.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.contentstream;
+
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImage;
+
+import java.awt.geom.Point2D;
+import java.io.IOException;
+import org.apache.pdfbox.contentstream.operator.color.SetNonStrokingColor;
+import org.apache.pdfbox.contentstream.operator.color.SetNonStrokingColorN;
+import org.apache.pdfbox.contentstream.operator.color.SetNonStrokingColorSpace;
+import org.apache.pdfbox.contentstream.operator.color.SetNonStrokingDeviceCMYKColor;
+import org.apache.pdfbox.contentstream.operator.color.SetNonStrokingDeviceGrayColor;
+import org.apache.pdfbox.contentstream.operator.color.SetNonStrokingDeviceRGBColor;
+import org.apache.pdfbox.contentstream.operator.color.SetStrokingColor;
+import org.apache.pdfbox.contentstream.operator.color.SetStrokingColorN;
+import org.apache.pdfbox.contentstream.operator.color.SetStrokingColorSpace;
+import org.apache.pdfbox.contentstream.operator.color.SetStrokingDeviceCMYKColor;
+import org.apache.pdfbox.contentstream.operator.color.SetStrokingDeviceGrayColor;
+import org.apache.pdfbox.contentstream.operator.color.SetStrokingDeviceRGBColor;
+import org.apache.pdfbox.contentstream.operator.graphics.AppendRectangleToPath;
+import org.apache.pdfbox.contentstream.operator.graphics.BeginInlineImage;
+import org.apache.pdfbox.contentstream.operator.graphics.ClipEvenOddRule;
+import org.apache.pdfbox.contentstream.operator.graphics.ClipNonZeroRule;
+import org.apache.pdfbox.contentstream.operator.graphics.CloseAndStrokePath;
+import org.apache.pdfbox.contentstream.operator.graphics.CloseFillEvenOddAndStrokePath;
+import org.apache.pdfbox.contentstream.operator.graphics.CloseFillNonZeroAndStrokePath;
+import org.apache.pdfbox.contentstream.operator.graphics.ClosePath;
+import org.apache.pdfbox.contentstream.operator.graphics.CurveTo;
+import org.apache.pdfbox.contentstream.operator.graphics.CurveToReplicateFinalPoint;
+import org.apache.pdfbox.contentstream.operator.graphics.CurveToReplicateInitialPoint;
+import org.apache.pdfbox.contentstream.operator.graphics.DrawObject;
+import org.apache.pdfbox.contentstream.operator.graphics.EndPath;
+import org.apache.pdfbox.contentstream.operator.graphics.FillEvenOddAndStrokePath;
+import org.apache.pdfbox.contentstream.operator.graphics.FillEvenOddRule;
+import org.apache.pdfbox.contentstream.operator.graphics.FillNonZeroAndStrokePath;
+import org.apache.pdfbox.contentstream.operator.graphics.FillNonZeroRule;
+import org.apache.pdfbox.contentstream.operator.graphics.LegacyFillNonZeroRule;
+import org.apache.pdfbox.contentstream.operator.graphics.LineTo;
+import org.apache.pdfbox.contentstream.operator.graphics.MoveTo;
+import org.apache.pdfbox.contentstream.operator.graphics.ShadingFill;
+import org.apache.pdfbox.contentstream.operator.graphics.StrokePath;
+import org.apache.pdfbox.contentstream.operator.markedcontent.BeginMarkedContentSequence;
+import org.apache.pdfbox.contentstream.operator.markedcontent.BeginMarkedContentSequenceWithProperties;
+import org.apache.pdfbox.contentstream.operator.markedcontent.EndMarkedContentSequence;
+import org.apache.pdfbox.contentstream.operator.state.Concatenate;
+import org.apache.pdfbox.contentstream.operator.state.Restore;
+import org.apache.pdfbox.contentstream.operator.state.Save;
+import org.apache.pdfbox.contentstream.operator.state.SetFlatness;
+import org.apache.pdfbox.contentstream.operator.state.SetGraphicsStateParameters;
+import org.apache.pdfbox.contentstream.operator.state.SetLineCapStyle;
+import org.apache.pdfbox.contentstream.operator.state.SetLineDashPattern;
+import org.apache.pdfbox.contentstream.operator.state.SetLineJoinStyle;
+import org.apache.pdfbox.contentstream.operator.state.SetLineMiterLimit;
+import org.apache.pdfbox.contentstream.operator.state.SetLineWidth;
+import org.apache.pdfbox.contentstream.operator.state.SetMatrix;
+import org.apache.pdfbox.contentstream.operator.state.SetRenderingIntent;
+import org.apache.pdfbox.contentstream.operator.text.BeginText;
+import org.apache.pdfbox.contentstream.operator.text.EndText;
+import org.apache.pdfbox.contentstream.operator.text.SetFontAndSize;
+import org.apache.pdfbox.contentstream.operator.text.SetTextHorizontalScaling;
+import org.apache.pdfbox.contentstream.operator.text.ShowTextAdjusted;
+import org.apache.pdfbox.contentstream.operator.text.ShowTextLine;
+import org.apache.pdfbox.contentstream.operator.text.ShowTextLineAndSpace;
+import org.apache.pdfbox.contentstream.operator.text.MoveText;
+import org.apache.pdfbox.contentstream.operator.text.MoveTextSetLeading;
+import org.apache.pdfbox.contentstream.operator.text.NextLine;
+import org.apache.pdfbox.contentstream.operator.text.SetCharSpacing;
+import org.apache.pdfbox.contentstream.operator.text.SetTextLeading;
+import org.apache.pdfbox.contentstream.operator.text.SetTextRenderingMode;
+import org.apache.pdfbox.contentstream.operator.text.SetTextRise;
+import org.apache.pdfbox.contentstream.operator.text.SetWordSpacing;
+import org.apache.pdfbox.contentstream.operator.text.ShowText;
+
+/**
+ * PDFStreamEngine subclass for advanced processing of graphics.
+ * This class should be subclassed by end users looking to hook into graphics operations.
+ *
+ * @author John Hewson
+ */
+public abstract class PDFGraphicsStreamEngine extends PDFStreamEngine
+{
+    // may be null, for example if the stream is a tiling pattern
+    private final PDPage page;
+
+    /**
+     * Constructor.
+     * 
+     * @param page the page the content stream belongs to
+     */
+    protected PDFGraphicsStreamEngine(PDPage page)
+<span class="nc" id="L108">    {</span>
+<span class="nc" id="L109">        this.page = page;</span>
+
+<span class="nc" id="L111">        addOperator(new CloseFillNonZeroAndStrokePath(this));</span>
+<span class="nc" id="L112">        addOperator(new FillNonZeroAndStrokePath(this));</span>
+<span class="nc" id="L113">        addOperator(new CloseFillEvenOddAndStrokePath(this));</span>
+<span class="nc" id="L114">        addOperator(new FillEvenOddAndStrokePath(this));</span>
+<span class="nc" id="L115">        addOperator(new BeginInlineImage(this));</span>
+<span class="nc" id="L116">        addOperator(new BeginText(this));</span>
+<span class="nc" id="L117">        addOperator(new CurveTo(this));</span>
+<span class="nc" id="L118">        addOperator(new Concatenate(this));</span>
+<span class="nc" id="L119">        addOperator(new SetStrokingColorSpace(this));</span>
+<span class="nc" id="L120">        addOperator(new SetNonStrokingColorSpace(this));</span>
+<span class="nc" id="L121">        addOperator(new SetLineDashPattern(this));</span>
+<span class="nc" id="L122">        addOperator(new DrawObject(this)); // special graphics version</span>
+<span class="nc" id="L123">        addOperator(new EndText(this));</span>
+<span class="nc" id="L124">        addOperator(new FillNonZeroRule(this));</span>
+<span class="nc" id="L125">        addOperator(new LegacyFillNonZeroRule(this));</span>
+<span class="nc" id="L126">        addOperator(new FillEvenOddRule(this));</span>
+<span class="nc" id="L127">        addOperator(new SetStrokingDeviceGrayColor(this));</span>
+<span class="nc" id="L128">        addOperator(new SetNonStrokingDeviceGrayColor(this));</span>
+<span class="nc" id="L129">        addOperator(new SetGraphicsStateParameters(this));</span>
+<span class="nc" id="L130">        addOperator(new ClosePath(this));</span>
+<span class="nc" id="L131">        addOperator(new SetFlatness(this));</span>
+<span class="nc" id="L132">        addOperator(new SetLineJoinStyle(this));</span>
+<span class="nc" id="L133">        addOperator(new SetLineCapStyle(this));</span>
+<span class="nc" id="L134">        addOperator(new SetStrokingDeviceCMYKColor(this));</span>
+<span class="nc" id="L135">        addOperator(new SetNonStrokingDeviceCMYKColor(this));</span>
+<span class="nc" id="L136">        addOperator(new LineTo(this));</span>
+<span class="nc" id="L137">        addOperator(new MoveTo(this));</span>
+<span class="nc" id="L138">        addOperator(new SetLineMiterLimit(this));</span>
+<span class="nc" id="L139">        addOperator(new EndPath(this));</span>
+<span class="nc" id="L140">        addOperator(new Save(this));</span>
+<span class="nc" id="L141">        addOperator(new Restore(this));</span>
+<span class="nc" id="L142">        addOperator(new AppendRectangleToPath(this));</span>
+<span class="nc" id="L143">        addOperator(new SetStrokingDeviceRGBColor(this));</span>
+<span class="nc" id="L144">        addOperator(new SetNonStrokingDeviceRGBColor(this));</span>
+<span class="nc" id="L145">        addOperator(new SetRenderingIntent(this));</span>
+<span class="nc" id="L146">        addOperator(new CloseAndStrokePath(this));</span>
+<span class="nc" id="L147">        addOperator(new StrokePath(this));</span>
+<span class="nc" id="L148">        addOperator(new SetStrokingColor(this));</span>
+<span class="nc" id="L149">        addOperator(new SetNonStrokingColor(this));</span>
+<span class="nc" id="L150">        addOperator(new SetStrokingColorN(this));</span>
+<span class="nc" id="L151">        addOperator(new SetNonStrokingColorN(this));</span>
+<span class="nc" id="L152">        addOperator(new ShadingFill(this));</span>
+<span class="nc" id="L153">        addOperator(new NextLine(this));</span>
+<span class="nc" id="L154">        addOperator(new SetCharSpacing(this));</span>
+<span class="nc" id="L155">        addOperator(new MoveText(this));</span>
+<span class="nc" id="L156">        addOperator(new MoveTextSetLeading(this));</span>
+<span class="nc" id="L157">        addOperator(new SetFontAndSize(this));</span>
+<span class="nc" id="L158">        addOperator(new ShowText(this));</span>
+<span class="nc" id="L159">        addOperator(new ShowTextAdjusted(this));</span>
+<span class="nc" id="L160">        addOperator(new SetTextLeading(this));</span>
+<span class="nc" id="L161">        addOperator(new SetMatrix(this));</span>
+<span class="nc" id="L162">        addOperator(new SetTextRenderingMode(this));</span>
+<span class="nc" id="L163">        addOperator(new SetTextRise(this));</span>
+<span class="nc" id="L164">        addOperator(new SetWordSpacing(this));</span>
+<span class="nc" id="L165">        addOperator(new SetTextHorizontalScaling(this));</span>
+<span class="nc" id="L166">        addOperator(new CurveToReplicateInitialPoint(this));</span>
+<span class="nc" id="L167">        addOperator(new SetLineWidth(this));</span>
+<span class="nc" id="L168">        addOperator(new ClipNonZeroRule(this));</span>
+<span class="nc" id="L169">        addOperator(new ClipEvenOddRule(this));</span>
+<span class="nc" id="L170">        addOperator(new CurveToReplicateFinalPoint(this));</span>
+<span class="nc" id="L171">        addOperator(new ShowTextLine(this));</span>
+<span class="nc" id="L172">        addOperator(new ShowTextLineAndSpace(this));</span>
+<span class="nc" id="L173">        addOperator(new BeginMarkedContentSequence(this));</span>
+<span class="nc" id="L174">        addOperator(new BeginMarkedContentSequenceWithProperties(this));</span>
+<span class="nc" id="L175">        addOperator(new EndMarkedContentSequence(this));</span>
+<span class="nc" id="L176">    }</span>
+
+    /**
+     * Returns the page.
+     * 
+     * @return the current page
+     */
+    protected final PDPage getPage()
+    {
+<span class="nc" id="L185">        return page;</span>
+    }
+
+    /**
+     * Append a rectangle to the current path.
+     * 
+     * @param p0 starting coordinate of the rectangle
+     * @param p1 second coordinate of the rectangle
+     * @param p2 third coordinate of the rectangle
+     * @param p3 last coordinate of the rectangle
+     * 
+     * @throws IOException if the rectangle could not be appended
+     */
+    public abstract void appendRectangle(Point2D p0, Point2D p1,
+                                         Point2D p2, Point2D p3) throws IOException;
+
+    /**
+     * Draw the image.
+     *
+     * @param pdImage The image to draw.
+     * 
+     * @throws IOException if the image could not be drawn
+     */
+    public abstract void drawImage(PDImage pdImage) throws IOException;
+
+    /**
+     * Modify the current clipping path by intersecting it with the current path. The clipping path will not be updated
+     * until the succeeding painting operator is called.
+     *
+     * @param windingRule The winding rule which will be used for clipping.
+     * 
+     * @throws IOException if the clipping path could not be modified
+     */
+    public abstract void clip(int windingRule) throws IOException;
+
+    /**
+     * Starts a new path at (x,y).
+     * 
+     * @param x the x-coordinate to move to
+     * @param y the y-coordinate to move to
+     * 
+     * @throws IOException if the something went wrong when moving to the given coordinate
+     */
+    public abstract void moveTo(float x, float y) throws IOException;
+
+    /**
+     * Draws a line from the current point to (x,y).
+     * 
+     * @param x the X-coordinate of the ending-point of the line to be drawn
+     * @param y the Y-coordinate of the ending-point of the line to be drawn
+     * 
+     * @throws IOException if the line could not be drawn
+     */
+    public abstract void lineTo(float x, float y) throws IOException;
+
+    /**
+     * Draws a curve from the current point to (x3,y3) using (x1,y1) and (x2,y2) as control points.
+     * 
+     * @param x1 the X coordinate of the first B&amp;eacute;zier control point
+     * @param y1 the Y coordinate of the first B&amp;eacute;zier control point
+     * @param x2 the X coordinate of the second B&amp;eacute;zier control point
+     * @param y2 the Y coordinate of the second B&amp;eacute;zier control point
+     * @param x3 the X coordinate of the final end point
+     * @param y3 the Y coordinate of the final end point
+     * 
+     * @throws IOException if the curve could not be drawn
+     */
+    public abstract void curveTo(float x1, float y1,
+                                 float x2, float y2,
+                                 float x3, float y3) throws IOException;
+
+    /**
+     * Returns the current point of the current path.
+     * 
+     * @return the current point or null
+     * 
+     * @throws IOException if the something went wrong when providing the current point
+     */
+    public abstract Point2D getCurrentPoint() throws IOException;
+
+    /**
+     * Closes the current path.
+     * 
+     * @throws IOException if the current path could not be closed
+     */
+    public abstract void closePath() throws IOException;
+
+    /**
+     * Ends the current path without filling or stroking it. The clipping path is updated here.
+     * 
+     * @throws IOException if the current path could not be ended
+     */
+    public abstract void endPath() throws IOException;
+
+    /**
+     * Stroke the path.
+     *
+     * @throws IOException If there is an IO error while stroking the path.
+     */
+    public abstract void strokePath() throws IOException;
+
+    /**
+     * Fill the path.
+     *
+     * @param windingRule The winding rule this path will use.
+     * 
+     * @throws IOException if the path could not be filled
+     */
+    public abstract void fillPath(int windingRule) throws IOException;
+
+    /**
+     * Fills and then strokes the path.
+     *
+     * @param windingRule The winding rule this path will use.
+     * 
+     * @throws IOException if the path could not be filled and stroke
+     */
+    public abstract void fillAndStrokePath(int windingRule) throws IOException;
+
+    /**
+     * Fill with Shading.
+     *
+     * @param shadingName The name of the Shading Dictionary to use for this fill instruction.
+     * 
+     * @throws IOException if the path could not be filled using the given shading
+     */
+    public abstract void shadingFill(COSName shadingName) throws IOException;
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

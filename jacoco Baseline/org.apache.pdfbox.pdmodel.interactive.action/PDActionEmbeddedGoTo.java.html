@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDActionEmbeddedGoTo.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.action</a> &gt; <span class="el_source">PDActionEmbeddedGoTo.java</span></div><h1>PDActionEmbeddedGoTo.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.action;
+
+import java.io.IOException;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSBoolean;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.filespecification.PDFileSpecification;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDDestination;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination;
+
+/**
+ * This represents a embedded go-to action that can be executed in a PDF document.
+ *
+ * @author Ben Litchfield
+ * @author Panagiotis Toumasis
+ * @author Tilman Hausherr
+ */
+public class PDActionEmbeddedGoTo extends PDAction
+{
+    /**
+     * This type of action this object represents.
+     */
+    public static final String SUB_TYPE = &quot;GoToE&quot;;
+
+    /**
+     * Default constructor.
+     */
+    public PDActionEmbeddedGoTo()
+<span class="nc" id="L49">    {</span>
+<span class="nc" id="L50">        setSubType(SUB_TYPE);</span>
+<span class="nc" id="L51">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param a The action dictionary.
+     */
+    public PDActionEmbeddedGoTo(COSDictionary a)
+    {
+<span class="nc" id="L60">        super(a);</span>
+<span class="nc" id="L61">    }</span>
+
+    /**
+     * This will get the destination to jump to.
+     *
+     * @return The D entry of the specific go-to action dictionary.
+     *
+     * @throws IOException If there is an error creating the destination.
+     */
+    public PDDestination getDestination() throws IOException
+    {
+<span class="nc" id="L72">        return PDDestination.create(getCOSObject().getDictionaryObject(COSName.D));</span>
+    }
+
+    /**
+     * This will set the destination to jump to.
+     *
+     * @param d The destination.
+     *
+     * @throws IllegalArgumentException if the destination is not a page dictionary object.
+     */
+    public void setDestination(PDDestination d)
+    {
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (d instanceof PDPageDestination)</span>
+        {
+<span class="nc" id="L86">            PDPageDestination pageDest = (PDPageDestination) d;</span>
+<span class="nc" id="L87">            COSArray destArray = pageDest.getCOSObject();</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            if (!destArray.isEmpty())</span>
+            {
+<span class="nc" id="L90">                COSBase page = destArray.getObject(0);</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">                if (!(page instanceof COSInteger))</span>
+                {
+<span class="nc" id="L93">                    throw new IllegalArgumentException(</span>
+                            &quot;Destination of a GoToE action must be an integer&quot;);
+                }
+            }
+        }
+<span class="nc" id="L98">        getCOSObject().setItem(COSName.D, d);</span>
+<span class="nc" id="L99">    }</span>
+
+    /**
+     * This will get the file in which the destination is located.
+     *
+     * @return The F entry of the specific embedded go-to action dictionary.
+     *
+     * @throws IOException If there is an error creating the file spec.
+     */
+    public PDFileSpecification getFile() throws IOException
+    {
+<span class="nc" id="L110">        return PDFileSpecification.createFS(getCOSObject().getDictionaryObject(COSName.F));</span>
+    }
+
+    /**
+     * This will set the file in which the destination is located.
+     *
+     * @param fs The file specification.
+     */
+    public void setFile(PDFileSpecification fs)
+    {
+<span class="nc" id="L120">        getCOSObject().setItem(COSName.F, fs);</span>
+<span class="nc" id="L121">    }</span>
+
+    /**
+     * This will specify whether to open the destination document in a new window, in the same
+     * window, or behave in accordance with the current user preference.
+     *
+     * @return A flag specifying how to open the destination document, never null.
+     */
+    public OpenMode getOpenInNewWindow()
+    {
+<span class="nc" id="L131">        COSBase dictionaryObject = getCOSObject().getDictionaryObject(COSName.NEW_WINDOW);</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        if (dictionaryObject instanceof COSBoolean)</span>
+        {
+<span class="nc" id="L134">            COSBoolean b = (COSBoolean) dictionaryObject;</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">            return b.getValue() ? OpenMode.NEW_WINDOW : OpenMode.SAME_WINDOW;</span>
+        }
+<span class="nc" id="L137">        return OpenMode.USER_PREFERENCE;</span>
+    }
+
+    /**
+     * This will specify whether to open the destination document in a new window.
+     *
+     * @param value The flag value.
+     */
+    public void setOpenInNewWindow(OpenMode value)
+    {
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        if (null == value)</span>
+        {
+<span class="nc" id="L149">            getCOSObject().removeItem(COSName.NEW_WINDOW);</span>
+<span class="nc" id="L150">            return;</span>
+        }
+<span class="nc bnc" id="L152" title="All 4 branches missed.">        switch (value)</span>
+        {
+            case USER_PREFERENCE:
+<span class="nc" id="L155">                getCOSObject().removeItem(COSName.NEW_WINDOW);</span>
+<span class="nc" id="L156">                break;</span>
+            case SAME_WINDOW:
+<span class="nc" id="L158">                getCOSObject().setBoolean(COSName.NEW_WINDOW, false);</span>
+<span class="nc" id="L159">                break;</span>
+            case NEW_WINDOW:
+<span class="nc" id="L161">                getCOSObject().setBoolean(COSName.NEW_WINDOW, true);</span>
+<span class="nc" id="L162">                break;</span>
+            default:
+                // shouldn't happen unless the enum type is changed
+                break;
+        }
+<span class="nc" id="L167">    }</span>
+
+    /**
+     * Get the target directory.
+     *
+     * @return the target directory or null if there is none.
+     */
+    public PDTargetDirectory getTargetDirectory()
+    {
+<span class="nc" id="L176">        COSDictionary targetDict = getCOSObject().getCOSDictionary(COSName.T);</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        return targetDict != null ? new PDTargetDirectory(targetDict) : null;</span>
+    }
+
+    /**
+     * Sets the target directory.
+     * 
+     * @param targetDirectory the target directory
+     */
+    public void setTargetDirectory(PDTargetDirectory targetDirectory)
+    {
+<span class="nc" id="L187">        getCOSObject().setItem(COSName.T, targetDirectory);</span>
+<span class="nc" id="L188">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

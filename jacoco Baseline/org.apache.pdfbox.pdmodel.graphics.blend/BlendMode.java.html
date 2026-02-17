@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BlendMode.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.blend</a> &gt; <span class="el_source">BlendMode.java</span></div><h1>BlendMode.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.blend;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSName;
+
+/**
+ * Blend mode.
+ *
+ * @author Kühn &amp;amp; Weyh Software GmbH
+ */
+public class BlendMode
+{
+    @FunctionalInterface
+    public interface BlendChannelFunction
+    {
+        /**
+         * BlendChannel function for separable blend modes.
+         *
+         * @param src the source value
+         * @param dest the destination value
+         * @return the function result
+         */
+        float blendChannel(float src, float dest);
+    }
+
+    @FunctionalInterface
+    public interface BlendFunction
+    {
+        /**
+         * Blend function for non separable blend modes.
+         *
+         * @param src the source values
+         * @param dest the destination values
+         * @param result the function result values
+         */
+        void blend(float[] src, float[] dest, float[] result);
+    }
+
+    /**
+     * Functions for the blend operation of separable blend modes
+     */
+<span class="nc" id="L62">    private static final BlendChannelFunction fNormal = (src, dest) -&gt; src;</span>
+
+<span class="nc" id="L64">    private static final BlendChannelFunction fMultiply = (src, dest) -&gt; src * dest;</span>
+
+<span class="nc" id="L66">    private static final BlendChannelFunction fScreen = (src, dest) -&gt; src + dest - src * dest;</span>
+
+<span class="nc bnc" id="L68" title="All 2 branches missed.">    private static final BlendChannelFunction fOverlay = (src, dest) -&gt; (dest &lt;= 0.5) ? 2 * dest * src</span>
+<span class="nc" id="L69">            : 2 * (src + dest - src * dest) - 1;</span>
+
+<span class="nc" id="L71">    private static final BlendChannelFunction fDarken = Math::min;</span>
+
+<span class="nc" id="L73">    private static final BlendChannelFunction fLighten = Math::max;</span>
+
+<span class="nc" id="L75">    private static final BlendChannelFunction fColorDodge = (src, dest) -&gt; {</span>
+        // See PDF 2.0 specification
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        if (Float.compare(dest, 0) == 0)</span>
+        {
+<span class="nc" id="L79">            return 0f;</span>
+        }
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        if (dest &gt;= 1 - src)</span>
+        {
+<span class="nc" id="L83">            return 1f;</span>
+        }
+<span class="nc" id="L85">        return dest / (1 - src);</span>
+    };
+
+<span class="nc" id="L88">    private static final BlendChannelFunction fColorBurn = (src, dest) -&gt; {</span>
+        // See PDF 2.0 specification
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        if (Float.compare(dest, 1) == 0)</span>
+        {
+<span class="nc" id="L92">            return 1f;</span>
+        }
+<span class="nc bnc" id="L94" title="All 2 branches missed.">        if (1 - dest &gt;= src)</span>
+        {
+<span class="nc" id="L96">            return 0f;</span>
+        }
+<span class="nc" id="L98">        return 1 - (1 - dest) / src;</span>
+    };
+
+<span class="nc bnc" id="L101" title="All 2 branches missed.">    private static final BlendChannelFunction fHardLight = (src, dest) -&gt; (src &lt;= 0.5) ? 2 * dest * src</span>
+<span class="nc" id="L102">            : 2 * (src + dest - src * dest) - 1;</span>
+
+<span class="nc" id="L104">    private static final BlendChannelFunction fSoftLight = (src, dest) -&gt; {</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        if (src &lt;= 0.5)</span>
+        {
+<span class="nc" id="L107">            return dest - (1 - 2 * src) * dest * (1 - dest);</span>
+        }
+        else
+        {
+<span class="nc bnc" id="L111" title="All 2 branches missed.">            float d = (dest &lt;= 0.25) ? ((16 * dest - 12) * dest + 4) * dest</span>
+<span class="nc" id="L112">                    : (float) Math.sqrt(dest);</span>
+<span class="nc" id="L113">            return dest + (2 * src - 1) * (d - dest);</span>
+        }
+    };
+
+<span class="nc" id="L117">    private static final BlendChannelFunction fDifference = (src, dest) -&gt; Math.abs(dest - src);</span>
+
+<span class="nc" id="L119">    private static final BlendChannelFunction fExclusion = (src, dest) -&gt; dest + src - 2 * dest * src;</span>
+
+    /**
+     * Functions for the blend operation of non-separable blend modes
+     */
+<span class="nc" id="L124">    private static final BlendFunction fHue = (src, dest, result) -&gt; {</span>
+<span class="nc" id="L125">        float[] temp = new float[3];</span>
+<span class="nc" id="L126">        getSaturationRGB(dest, src, temp);</span>
+<span class="nc" id="L127">        getLuminosityRGB(dest, temp, result);</span>
+<span class="nc" id="L128">    };</span>
+
+<span class="nc" id="L130">    private static final BlendFunction fSaturation = BlendMode::getSaturationRGB;</span>
+
+<span class="nc" id="L132">    private static final BlendFunction fColor = (src, dest, result) -&gt; getLuminosityRGB(dest, src,</span>
+            result);
+
+<span class="nc" id="L135">    private static final BlendFunction fLuminosity = BlendMode::getLuminosityRGB;</span>
+
+    /**
+     * Separable blend modes as defined in the PDF specification
+     */
+<span class="nc" id="L140">    public static final BlendMode NORMAL = new BlendMode(COSName.NORMAL, fNormal, null);</span>
+<span class="nc" id="L141">    public static final BlendMode COMPATIBLE = BlendMode.NORMAL;</span>
+<span class="nc" id="L142">    public static final BlendMode MULTIPLY = new BlendMode(COSName.MULTIPLY, fMultiply, null);</span>
+<span class="nc" id="L143">    public static final BlendMode SCREEN = new BlendMode(COSName.SCREEN, fScreen, null);</span>
+<span class="nc" id="L144">    public static final BlendMode OVERLAY = new BlendMode(COSName.OVERLAY, fOverlay, null);</span>
+<span class="nc" id="L145">    public static final BlendMode DARKEN = new BlendMode(COSName.DARKEN, fDarken, null);</span>
+<span class="nc" id="L146">    public static final BlendMode LIGHTEN = new BlendMode(COSName.LIGHTEN, fLighten, null);</span>
+<span class="nc" id="L147">    public static final BlendMode COLOR_DODGE = new BlendMode(COSName.COLOR_DODGE, fColorDodge,</span>
+            null);
+<span class="nc" id="L149">    public static final BlendMode COLOR_BURN = new BlendMode(COSName.COLOR_BURN, fColorBurn, null);</span>
+<span class="nc" id="L150">    public static final BlendMode HARD_LIGHT = new BlendMode(COSName.HARD_LIGHT, fHardLight, null);</span>
+<span class="nc" id="L151">    public static final BlendMode SOFT_LIGHT = new BlendMode(COSName.SOFT_LIGHT, fSoftLight, null);</span>
+<span class="nc" id="L152">    public static final BlendMode DIFFERENCE = new BlendMode(COSName.DIFFERENCE, fDifference, null);</span>
+<span class="nc" id="L153">    public static final BlendMode EXCLUSION = new BlendMode(COSName.EXCLUSION, fExclusion, null);</span>
+
+    /**
+     * Non-separable blend modes as defined in the PDF specification
+     */
+<span class="nc" id="L158">    public static final BlendMode HUE = new BlendMode(COSName.HUE, null, fHue);</span>
+<span class="nc" id="L159">    public static final BlendMode SATURATION = new BlendMode(COSName.SATURATION, null, fSaturation);</span>
+<span class="nc" id="L160">    public static final BlendMode COLOR = new BlendMode(COSName.COLOR, null, fColor);</span>
+<span class="nc" id="L161">    public static final BlendMode LUMINOSITY = new BlendMode(COSName.LUMINOSITY, null, fLuminosity);</span>
+
+<span class="nc" id="L163">    private static final Map&lt;COSName, BlendMode&gt; BLEND_MODES = createBlendModeMap();</span>
+
+    private static Map&lt;COSName, BlendMode&gt; createBlendModeMap()
+    {
+<span class="nc" id="L167">        Map&lt;COSName, BlendMode&gt; map = new HashMap&lt;&gt;(13);</span>
+<span class="nc" id="L168">        map.put(COSName.NORMAL, NORMAL);</span>
+        // BlendMode.COMPATIBLE should not be used
+<span class="nc" id="L170">        map.put(COSName.COMPATIBLE, NORMAL);</span>
+<span class="nc" id="L171">        map.put(COSName.MULTIPLY, MULTIPLY);</span>
+<span class="nc" id="L172">        map.put(COSName.SCREEN, SCREEN);</span>
+<span class="nc" id="L173">        map.put(COSName.OVERLAY, OVERLAY);</span>
+<span class="nc" id="L174">        map.put(COSName.DARKEN, DARKEN);</span>
+<span class="nc" id="L175">        map.put(COSName.LIGHTEN, LIGHTEN);</span>
+<span class="nc" id="L176">        map.put(COSName.COLOR_DODGE, COLOR_DODGE);</span>
+<span class="nc" id="L177">        map.put(COSName.COLOR_BURN, COLOR_BURN);</span>
+<span class="nc" id="L178">        map.put(COSName.HARD_LIGHT, HARD_LIGHT);</span>
+<span class="nc" id="L179">        map.put(COSName.SOFT_LIGHT, SOFT_LIGHT);</span>
+<span class="nc" id="L180">        map.put(COSName.DIFFERENCE, DIFFERENCE);</span>
+<span class="nc" id="L181">        map.put(COSName.EXCLUSION, EXCLUSION);</span>
+<span class="nc" id="L182">        map.put(COSName.HUE, HUE);</span>
+<span class="nc" id="L183">        map.put(COSName.SATURATION, SATURATION);</span>
+<span class="nc" id="L184">        map.put(COSName.LUMINOSITY, LUMINOSITY);</span>
+<span class="nc" id="L185">        map.put(COSName.COLOR, COLOR);</span>
+<span class="nc" id="L186">        return map;</span>
+    }
+
+    private final COSName name;
+    private final BlendChannelFunction blendChannel;
+    private final BlendFunction blend;
+    private final boolean isSeparable;
+
+    /**
+     * Private constructor due to the limited set of possible blend modes.
+     * 
+     * @param name the corresponding COSName of the blend mode
+     * @param blendChannel the blend function for separable blend modes
+     * @param blend the blend function for non-separable blend modes
+     */
+    private BlendMode(COSName name, BlendChannelFunction blendChannel, BlendFunction blend)
+<span class="nc" id="L202">    {</span>
+<span class="nc" id="L203">        this.name = name;</span>
+<span class="nc" id="L204">        this.blendChannel = blendChannel;</span>
+<span class="nc" id="L205">        this.blend = blend;</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">        isSeparable = blendChannel != null;</span>
+<span class="nc" id="L207">    }</span>
+
+    /**
+     * The blend mode name from the BM object.
+     *
+     * @return name of blend mode.
+     */
+    public COSName getCOSName()
+    {
+<span class="nc" id="L216">        return name;</span>
+    }
+
+    /**
+     * Determines if the blend mode is a separable blend mode.
+     * 
+     * @return true for separable blend modes
+     */
+    public boolean isSeparableBlendMode()
+    {
+<span class="nc" id="L226">        return isSeparable;</span>
+    }
+    
+    /**
+     * Returns the blend channel function, only available for separable blend modes.
+     * 
+     * @return the blend channel function
+     */
+    public BlendChannelFunction getBlendChannelFunction()
+    {
+<span class="nc" id="L236">        return blendChannel;</span>
+    }
+
+    /**
+     * Returns the blend function, only available for non separable blend modes.
+     * 
+     * @return the blend function
+     */
+    public BlendFunction getBlendFunction()
+    {
+<span class="nc" id="L246">        return blend;</span>
+    }
+
+    /**
+     * Determines the blend mode from the BM entry in the COS ExtGState.
+     *
+     * @param cosBlendMode name or array
+     * @return blending mode
+     */
+    public static BlendMode getInstance(COSBase cosBlendMode)
+    {
+<span class="nc" id="L257">        BlendMode result = null;</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">        if (cosBlendMode instanceof COSName)</span>
+        {
+<span class="nc" id="L260">            result = BLEND_MODES.get(cosBlendMode);</span>
+        }
+<span class="nc bnc" id="L262" title="All 2 branches missed.">        else if (cosBlendMode instanceof COSArray)</span>
+        {
+<span class="nc" id="L264">            COSArray cosBlendModeArray = (COSArray) cosBlendMode;</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">            for (int i = 0; i &lt; cosBlendModeArray.size(); i++)</span>
+            {
+<span class="nc" id="L267">                COSBase cosBase = cosBlendModeArray.getObject(i);</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">                if (cosBase instanceof COSName)</span>
+                {
+<span class="nc" id="L270">                    result = BLEND_MODES.get(cosBase);</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">                    if (result != null)</span>
+                    {
+<span class="nc" id="L273">                        break;</span>
+                    }
+                }
+            }
+        }
+<span class="nc bnc" id="L278" title="All 2 branches missed.">        return result != null ? result : BlendMode.NORMAL;</span>
+    }
+
+    private static int get255Value(float val)
+    {
+<span class="nc bnc" id="L283" title="All 2 branches missed.">        return (int) Math.floor(val &gt;= 1.0 ? 255 : val * 255.0);</span>
+    }
+
+    private static void getSaturationRGB(float[] srcValues, float[] dstValues, float[] result)
+    {
+<span class="nc" id="L288">        int rd = get255Value(dstValues[0]);</span>
+<span class="nc" id="L289">        int gd = get255Value(dstValues[1]);</span>
+<span class="nc" id="L290">        int bd = get255Value(dstValues[2]);</span>
+
+<span class="nc" id="L292">        int minb = Math.min(rd, Math.min(gd, bd));</span>
+<span class="nc" id="L293">        int maxb = Math.max(rd, Math.max(gd, bd));</span>
+<span class="nc bnc" id="L294" title="All 2 branches missed.">        if (minb == maxb)</span>
+        {
+            /* backdrop has zero saturation, avoid divide by 0 */
+<span class="nc" id="L297">            result[0] = gd / 255.0f;</span>
+<span class="nc" id="L298">            result[1] = gd / 255.0f;</span>
+<span class="nc" id="L299">            result[2] = gd / 255.0f;</span>
+<span class="nc" id="L300">            return;</span>
+        }
+
+<span class="nc" id="L303">        int rs = get255Value(srcValues[0]);</span>
+<span class="nc" id="L304">        int gs = get255Value(srcValues[1]);</span>
+<span class="nc" id="L305">        int bs = get255Value(srcValues[2]);</span>
+
+<span class="nc" id="L307">        int mins = Math.min(rs, Math.min(gs, bs));</span>
+<span class="nc" id="L308">        int maxs = Math.max(rs, Math.max(gs, bs));</span>
+
+<span class="nc" id="L310">        int scale = ((maxs - mins) &lt;&lt; 16) / (maxb - minb);</span>
+<span class="nc" id="L311">        int y = (rd * 77 + gd * 151 + bd * 28 + 0x80) &gt;&gt; 8;</span>
+<span class="nc" id="L312">        int r = y + ((((rd - y) * scale) + 0x8000) &gt;&gt; 16);</span>
+<span class="nc" id="L313">        int g = y + ((((gd - y) * scale) + 0x8000) &gt;&gt; 16);</span>
+<span class="nc" id="L314">        int b = y + ((((bd - y) * scale) + 0x8000) &gt;&gt; 16);</span>
+
+<span class="nc bnc" id="L316" title="All 2 branches missed.">        if (((r | g | b) &amp; 0x100) == 0x100)</span>
+        {
+            int scalemin;
+            int scalemax;
+
+<span class="nc" id="L321">            int min = Math.min(r, Math.min(g, b));</span>
+<span class="nc" id="L322">            int max = Math.max(r, Math.max(g, b));</span>
+
+<span class="nc bnc" id="L324" title="All 2 branches missed.">            if (min &lt; 0)</span>
+            {
+<span class="nc" id="L326">                scalemin = (y &lt;&lt; 16) / (y - min);</span>
+            }
+            else
+            {
+<span class="nc" id="L330">                scalemin = 0x10000;</span>
+            }
+
+<span class="nc bnc" id="L333" title="All 2 branches missed.">            if (max &gt; 255)</span>
+            {
+<span class="nc" id="L335">                scalemax = ((255 - y) &lt;&lt; 16) / (max - y);</span>
+            }
+            else
+            {
+<span class="nc" id="L339">                scalemax = 0x10000;</span>
+            }
+
+<span class="nc" id="L342">            scale = Math.min(scalemin, scalemax);</span>
+<span class="nc" id="L343">            r = y + (((r - y) * scale + 0x8000) &gt;&gt; 16);</span>
+<span class="nc" id="L344">            g = y + (((g - y) * scale + 0x8000) &gt;&gt; 16);</span>
+<span class="nc" id="L345">            b = y + (((b - y) * scale + 0x8000) &gt;&gt; 16);</span>
+        }
+<span class="nc" id="L347">        result[0] = r / 255.0f;</span>
+<span class="nc" id="L348">        result[1] = g / 255.0f;</span>
+<span class="nc" id="L349">        result[2] = b / 255.0f;</span>
+<span class="nc" id="L350">    }</span>
+
+    private static void getLuminosityRGB(float[] srcValues, float[] dstValues, float[] result)
+    {
+<span class="nc" id="L354">        int rd = get255Value(dstValues[0]);</span>
+<span class="nc" id="L355">        int gd = get255Value(dstValues[1]);</span>
+<span class="nc" id="L356">        int bd = get255Value(dstValues[2]);</span>
+<span class="nc" id="L357">        int rs = get255Value(srcValues[0]);</span>
+<span class="nc" id="L358">        int gs = get255Value(srcValues[1]);</span>
+<span class="nc" id="L359">        int bs = get255Value(srcValues[2]);</span>
+<span class="nc" id="L360">        int delta = ((rs - rd) * 77 + (gs - gd) * 151 + (bs - bd) * 28 + 0x80) &gt;&gt; 8;</span>
+<span class="nc" id="L361">        int r = rd + delta;</span>
+<span class="nc" id="L362">        int g = gd + delta;</span>
+<span class="nc" id="L363">        int b = bd + delta;</span>
+
+<span class="nc bnc" id="L365" title="All 2 branches missed.">        if (((r | g | b) &amp; 0x100) == 0x100)</span>
+        {
+            int scale;
+<span class="nc" id="L368">            int y = (rs * 77 + gs * 151 + bs * 28 + 0x80) &gt;&gt; 8;</span>
+<span class="nc bnc" id="L369" title="All 2 branches missed.">            if (delta &gt; 0)</span>
+            {
+                int max;
+<span class="nc" id="L372">                max = Math.max(r, Math.max(g, b));</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">                scale = max == y ? 0 : ((255 - y) &lt;&lt; 16) / (max - y);</span>
+<span class="nc" id="L374">            }</span>
+            else
+            {
+                int min;
+<span class="nc" id="L378">                min = Math.min(r, Math.min(g, b));</span>
+<span class="nc bnc" id="L379" title="All 2 branches missed.">                scale = y == min ? 0 : (y &lt;&lt; 16) / (y - min);</span>
+            }
+<span class="nc" id="L381">            r = y + (((r - y) * scale + 0x8000) &gt;&gt; 16);</span>
+<span class="nc" id="L382">            g = y + (((g - y) * scale + 0x8000) &gt;&gt; 16);</span>
+<span class="nc" id="L383">            b = y + (((b - y) * scale + 0x8000) &gt;&gt; 16);</span>
+        }
+<span class="nc" id="L385">        result[0] = r / 255.0f;</span>
+<span class="nc" id="L386">        result[1] = g / 255.0f;</span>
+<span class="nc" id="L387">        result[2] = b / 255.0f;</span>
+<span class="nc" id="L388">    }</span>
+
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L393">        return &quot;BlendMode{name=&quot; + name.getName() + &quot;, isSeparable=&quot; + isSeparable + '}';</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

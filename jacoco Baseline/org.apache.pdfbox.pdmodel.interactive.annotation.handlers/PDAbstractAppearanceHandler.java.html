@@ -1,0 +1,551 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDAbstractAppearanceHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation.handlers</a> &gt; <span class="el_source">PDAbstractAppearanceHandler.java</span></div><h1>PDAbstractAppearanceHandler.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.interactive.annotation.handlers;
+
+import java.awt.geom.AffineTransform;
+import java.io.IOException;
+import java.util.Set;
+
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.PDAppearanceContentStream;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationLine;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationSquareCircle;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceDictionary;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceEntry;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceStream;
+
+/**
+ * Generic handler to generate the fields appearance.
+ * 
+ * Individual handler will provide specific implementations for different field
+ * types.
+ * 
+ */
+public abstract class PDAbstractAppearanceHandler implements PDAppearanceHandler
+{
+    private final PDAnnotation annotation;
+    private PDFont defaultFont;
+    protected final PDDocument document;
+
+    /**
+     * Line ending styles where the line has to be drawn shorter (minus line width).
+     */
+<span class="nc" id="L57">    protected static final Set&lt;String&gt; SHORT_STYLES = createShortStyles();</span>
+
+<span class="nc" id="L59">    static final double ARROW_ANGLE = Math.toRadians(30);</span>
+
+    /**
+     * Line ending styles where there is an interior color.
+     */
+<span class="nc" id="L64">    protected static final Set&lt;String&gt; INTERIOR_COLOR_STYLES = createInteriorColorStyles();</span>
+    
+    /**
+     * Line ending styles where the shape changes its angle, e.g. arrows.
+     */
+<span class="nc" id="L69">    protected static final Set&lt;String&gt; ANGLED_STYLES = createAngledStyles();</span>
+
+    protected PDAbstractAppearanceHandler(PDAnnotation annotation)
+    {
+<span class="nc" id="L73">        this(annotation, null);</span>
+<span class="nc" id="L74">    }</span>
+
+    protected PDAbstractAppearanceHandler(PDAnnotation annotation, PDDocument document)
+<span class="nc" id="L77">    {</span>
+<span class="nc" id="L78">        this.annotation = annotation;</span>
+<span class="nc" id="L79">        this.document = document;</span>
+<span class="nc" id="L80">    }</span>
+
+    protected PDFont getDefaultFont()
+    {
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (defaultFont == null)</span>
+        {
+<span class="nc" id="L86">            defaultFont = new PDType1Font(FontName.HELVETICA);</span>
+        }
+<span class="nc" id="L88">        return defaultFont;</span>
+    }
+    
+    PDAnnotation getAnnotation()
+    {
+<span class="nc" id="L93">        return annotation;</span>
+    }
+
+    PDColor getColor()
+    {
+<span class="nc" id="L98">        return annotation.getColor();</span>
+    }
+
+    PDRectangle getRectangle()
+    {
+<span class="nc" id="L103">        return annotation.getRectangle();</span>
+    }
+    
+    protected COSStream createCOSStream()
+    {
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        return document == null ? new COSStream() : document.getDocument().createCOSStream();</span>
+    }
+
+    /**
+     * Get the annotations appearance dictionary.
+     * 
+     * &lt;p&gt;
+     * This will get the annotations appearance dictionary. If this is not
+     * existent an empty appearance dictionary will be created.
+     * 
+     * @return the annotations appearance dictionary
+     */
+    PDAppearanceDictionary getAppearance()
+    {
+<span class="nc" id="L122">        PDAppearanceDictionary appearanceDictionary = annotation.getAppearance();</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (appearanceDictionary == null)</span>
+        {
+<span class="nc" id="L125">            appearanceDictionary = new PDAppearanceDictionary();</span>
+<span class="nc" id="L126">            annotation.setAppearance(appearanceDictionary);</span>
+        }
+<span class="nc" id="L128">        return appearanceDictionary;</span>
+    }
+
+    /**
+     * Get the annotations normal appearance content stream.
+     * 
+     * &lt;p&gt;
+     * This will get the annotations normal appearance content stream, to 'draw' to. It will be
+     * uncompressed.
+     *
+     * @return the appearance entry representing the normal appearance.
+     * @throws IOException 
+     */
+    PDAppearanceContentStream getNormalAppearanceAsContentStream() throws IOException
+    {
+<span class="nc" id="L143">        return getNormalAppearanceAsContentStream(false);</span>
+    }
+    
+    /**
+     * Get the annotations normal appearance content stream.
+     * 
+     * &lt;p&gt;
+     * This will get the annotations normal appearance content stream, to 'draw' to.
+     * 
+     * @param compress whether the content stream is to be compressed. Set this to true when
+     * creating long content streams.
+     * @return the appearance entry representing the normal appearance.
+     * @throws IOException
+     */
+    PDAppearanceContentStream getNormalAppearanceAsContentStream(boolean compress) throws IOException
+    {
+<span class="nc" id="L159">        PDAppearanceEntry appearanceEntry = getNormalAppearance();</span>
+<span class="nc" id="L160">        return getAppearanceEntryAsContentStream(appearanceEntry, compress);</span>
+    }
+    
+    /**
+     * Get the annotations down appearance.
+     * 
+     * &lt;p&gt;
+     * This will get the annotations down appearance. If this is not existent an
+     * empty appearance entry will be created.
+     * 
+     * @return the appearance entry representing the down appearance.
+     */
+    PDAppearanceEntry getDownAppearance()
+    {
+<span class="nc" id="L174">        PDAppearanceDictionary appearanceDictionary = getAppearance();</span>
+<span class="nc" id="L175">        PDAppearanceEntry downAppearanceEntry = appearanceDictionary.getDownAppearance();</span>
+
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        if (downAppearanceEntry.isSubDictionary())</span>
+        {
+<span class="nc" id="L179">            downAppearanceEntry = new PDAppearanceEntry(createCOSStream());</span>
+<span class="nc" id="L180">            appearanceDictionary.setDownAppearance(downAppearanceEntry);</span>
+        }
+
+<span class="nc" id="L183">        return downAppearanceEntry;</span>
+    }
+
+    /**
+     * Get the annotations rollover appearance.
+     * 
+     * &lt;p&gt;
+     * This will get the annotations rollover appearance. If this is not
+     * existent an empty appearance entry will be created.
+     * 
+     * @return the appearance entry representing the rollover appearance.
+     */
+    PDAppearanceEntry getRolloverAppearance()
+    {
+<span class="nc" id="L197">        PDAppearanceDictionary appearanceDictionary = getAppearance();</span>
+<span class="nc" id="L198">        PDAppearanceEntry rolloverAppearanceEntry = appearanceDictionary.getRolloverAppearance();</span>
+
+<span class="nc bnc" id="L200" title="All 2 branches missed.">        if (rolloverAppearanceEntry.isSubDictionary())</span>
+        {
+<span class="nc" id="L202">            rolloverAppearanceEntry = new PDAppearanceEntry(createCOSStream());</span>
+<span class="nc" id="L203">            appearanceDictionary.setRolloverAppearance(rolloverAppearanceEntry);</span>
+        }
+
+<span class="nc" id="L206">        return rolloverAppearanceEntry;</span>
+    }
+
+    /**
+     * Get a padded rectangle.
+     * 
+     * &lt;p&gt;Creates a new rectangle with padding applied to each side.
+     * .
+     * @param rectangle the rectangle.
+     * @param padding the padding to apply.
+     * @return the padded rectangle.
+     */
+    PDRectangle getPaddedRectangle(PDRectangle rectangle, float padding)
+    {
+<span class="nc" id="L220">        return new PDRectangle(rectangle.getLowerLeftX() + padding, rectangle.getLowerLeftY() + padding,</span>
+<span class="nc" id="L221">                rectangle.getWidth() - 2 * padding, rectangle.getHeight() - 2 * padding);</span>
+    }
+    
+    /**
+     * Get a rectangle enlarged by the differences.
+     *
+     * &lt;p&gt;
+     * Creates a new rectangle with differences added to each side. If there are no valid
+     * differences, then the original rectangle is returned.
+     *
+     * @param rectangle the rectangle.
+     * @param differences the differences to apply.
+     * @return the padded rectangle.
+     */
+    PDRectangle addRectDifferences(PDRectangle rectangle, float[] differences)
+    {
+<span class="nc bnc" id="L237" title="All 4 branches missed.">        if (differences == null || differences.length != 4)</span>
+        {
+<span class="nc" id="L239">            return rectangle;</span>
+        }
+        
+<span class="nc" id="L242">        return new PDRectangle(rectangle.getLowerLeftX() - differences[0],</span>
+<span class="nc" id="L243">                rectangle.getLowerLeftY() - differences[1],</span>
+<span class="nc" id="L244">                rectangle.getWidth() + differences[0] + differences[2],</span>
+<span class="nc" id="L245">                rectangle.getHeight() + differences[1] + differences[3]);</span>
+    }
+    
+    /**
+     * Get a rectangle with the differences applied to each side.
+     *
+     * &lt;p&gt;
+     * Creates a new rectangle with differences added to each side. If there are no valid
+     * differences, then the original rectangle is returned.
+     *
+     * @param rectangle the rectangle.
+     * @param differences the differences to apply.
+     * @return the padded rectangle.
+     */
+    PDRectangle applyRectDifferences(PDRectangle rectangle, float[] differences)
+    {
+<span class="nc bnc" id="L261" title="All 4 branches missed.">        if (differences == null || differences.length != 4)</span>
+        {
+<span class="nc" id="L263">            return rectangle;</span>
+        }
+<span class="nc" id="L265">        return new PDRectangle(rectangle.getLowerLeftX() + differences[0],</span>
+<span class="nc" id="L266">                rectangle.getLowerLeftY() + differences[1],</span>
+<span class="nc" id="L267">                rectangle.getWidth() - differences[0] - differences[2],</span>
+<span class="nc" id="L268">                rectangle.getHeight() - differences[1] - differences[3]);</span>
+    }
+
+    void setOpacity(PDAppearanceContentStream contentStream, float opacity) throws IOException
+    {
+<span class="nc bnc" id="L273" title="All 2 branches missed.">        if (opacity &lt; 1)</span>
+        {
+<span class="nc" id="L275">            PDExtendedGraphicsState gs = new PDExtendedGraphicsState();</span>
+<span class="nc" id="L276">            gs.setStrokingAlphaConstant(opacity);</span>
+<span class="nc" id="L277">            gs.setNonStrokingAlphaConstant(opacity);</span>
+
+<span class="nc" id="L279">            contentStream.setGraphicsStateParameters(gs);</span>
+        }
+<span class="nc" id="L281">    }</span>
+
+    /**
+     * Draw a line ending style.
+     * 
+     * @param style
+     * @param cs
+     * @param x
+     * @param y
+     * @param width
+     * @param hasStroke
+     * @param hasBackground
+     * @param ending false if left, true if right of an imagined horizontal line (important for
+     * arrows).
+     *
+     * @throws IOException
+     */
+    void drawStyle(String style, final PDAppearanceContentStream cs, float x, float y,
+                   float width, boolean hasStroke, boolean hasBackground, boolean ending) throws IOException
+    {
+<span class="nc bnc" id="L301" title="All 2 branches missed.">        int sign = ending ? -1 : 1;</span>
+<span class="nc bnc" id="L302" title="All 8 branches missed.">        switch (style)</span>
+        {
+            case PDAnnotationLine.LE_OPEN_ARROW:
+            case PDAnnotationLine.LE_CLOSED_ARROW:
+<span class="nc" id="L306">                drawArrow(cs, x + sign * width, y, sign * width * 9);</span>
+<span class="nc" id="L307">                break;</span>
+            case PDAnnotationLine.LE_BUTT:
+<span class="nc" id="L309">                cs.moveTo(x, y - width * 3);</span>
+<span class="nc" id="L310">                cs.lineTo(x, y + width * 3);</span>
+<span class="nc" id="L311">                break;</span>
+            case PDAnnotationLine.LE_DIAMOND:
+<span class="nc" id="L313">                drawDiamond(cs, x, y, width * 3);</span>
+<span class="nc" id="L314">                break;</span>
+            case PDAnnotationLine.LE_SQUARE:
+<span class="nc" id="L316">                cs.addRect(x - width * 3, y - width * 3, width * 6, width * 6);</span>
+<span class="nc" id="L317">                break;</span>
+            case PDAnnotationLine.LE_CIRCLE:
+<span class="nc" id="L319">                drawCircle(cs, x, y, width * 3);</span>
+<span class="nc" id="L320">                break;</span>
+            case PDAnnotationLine.LE_R_OPEN_ARROW:
+            case PDAnnotationLine.LE_R_CLOSED_ARROW:
+<span class="nc" id="L323">                drawArrow(cs, x + (-sign) * width, y, (-sign) * width * 9);</span>
+<span class="nc" id="L324">                break;</span>
+            case PDAnnotationLine.LE_SLASH:
+<span class="nc" id="L326">                float width9 = width * 9;</span>
+                // the line is 18 x linewidth at an angle of 60°
+<span class="nc" id="L328">                cs.moveTo(x + (float) (Math.cos(Math.toRadians(60)) * width9),</span>
+<span class="nc" id="L329">                          y + (float) (Math.sin(Math.toRadians(60)) * width9));</span>
+<span class="nc" id="L330">                cs.lineTo(x + (float) (Math.cos(Math.toRadians(240)) * width9),</span>
+<span class="nc" id="L331">                          y + (float) (Math.sin(Math.toRadians(240)) * width9));</span>
+<span class="nc" id="L332">                break;</span>
+            default:
+<span class="nc" id="L334">                return;</span>
+        }
+<span class="nc bnc" id="L336" title="All 2 branches missed.">        if (PDAnnotationLine.LE_R_CLOSED_ARROW.equals(style) || </span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">            PDAnnotationLine.LE_CLOSED_ARROW.equals(style))</span>
+        {
+<span class="nc" id="L339">            cs.closePath();</span>
+        }
+<span class="nc" id="L341">        cs.drawShape(width, hasStroke, </span>
+                     // make sure to only paint a background color (/IC value) 
+                     // for interior color styles, even if an /IC value is set.
+<span class="nc bnc" id="L344" title="All 4 branches missed.">                     INTERIOR_COLOR_STYLES.contains(style) &amp;&amp; hasBackground);</span>
+<span class="nc" id="L345">    }</span>
+
+    /**
+     * Add the two arms of a horizontal arrow.
+     * 
+     * @param cs Content stream
+     * @param x
+     * @param y
+     * @param len The arm length. Positive goes to the right, negative goes to the left.
+     * 
+     * @throws IOException If the content stream could not be written
+     */
+    void drawArrow(PDAppearanceContentStream cs, float x, float y, float len) throws IOException
+    {
+        // strategy for arrows: angle 30°, arrow arm length = 9 * line width
+        // cos(angle) = x position
+        // sin(angle) = y position
+        // this comes very close to what Adobe is doing
+<span class="nc" id="L363">        float armX = x + (float) (Math.cos(ARROW_ANGLE) * len);</span>
+<span class="nc" id="L364">        float armYdelta = (float) (Math.sin(ARROW_ANGLE) * len);</span>
+<span class="nc" id="L365">        cs.moveTo(armX, y + armYdelta);</span>
+<span class="nc" id="L366">        cs.lineTo(x, y);</span>
+<span class="nc" id="L367">        cs.lineTo(armX, y - armYdelta);</span>
+<span class="nc" id="L368">    }</span>
+
+    /**
+     * Add a square diamond shape (corner on top) to the path.
+     *
+     * @param cs Content stream
+     * @param x
+     * @param y
+     * @param r Radius (to a corner)
+     * 
+     * @throws IOException If the content stream could not be written
+     */
+    void drawDiamond(PDAppearanceContentStream cs, float x, float y, float r) throws IOException
+    {
+<span class="nc" id="L382">        cs.moveTo(x - r, y);</span>
+<span class="nc" id="L383">        cs.lineTo(x, y + r);</span>
+<span class="nc" id="L384">        cs.lineTo(x + r, y);</span>
+<span class="nc" id="L385">        cs.lineTo(x, y - r);</span>
+<span class="nc" id="L386">        cs.closePath();</span>
+<span class="nc" id="L387">    }</span>
+
+    /**
+     * Add a circle shape to the path in clockwise direction.
+     *
+     * @param cs Content stream
+     * @param x
+     * @param y
+     * @param r Radius
+     * 
+     * @throws IOException If the content stream could not be written.
+     */
+    void drawCircle(PDAppearanceContentStream cs, float x, float y, float r) throws IOException
+    {
+        // http://stackoverflow.com/a/2007782/535646
+<span class="nc" id="L402">        float magic = r * 0.551784f;</span>
+<span class="nc" id="L403">        cs.moveTo(x, y + r);</span>
+<span class="nc" id="L404">        cs.curveTo(x + magic, y + r, x + r, y + magic, x + r, y);</span>
+<span class="nc" id="L405">        cs.curveTo(x + r, y - magic, x + magic, y - r, x, y - r);</span>
+<span class="nc" id="L406">        cs.curveTo(x - magic, y - r, x - r, y - magic, x - r, y);</span>
+<span class="nc" id="L407">        cs.curveTo(x - r, y + magic, x - magic, y + r, x, y + r);</span>
+<span class="nc" id="L408">        cs.closePath();</span>
+<span class="nc" id="L409">    }</span>
+
+    /**
+     * Add a circle shape to the path in counterclockwise direction. You'll need this e.g. when
+     * drawing a doughnut shape. See &quot;Nonzero Winding Number Rule&quot; for more information.
+     *
+     * @param cs Content stream
+     * @param x
+     * @param y
+     * @param r Radius
+     *
+     * @throws IOException If the content stream could not be written.
+     */
+    void drawCircle2(PDAppearanceContentStream cs, float x, float y, float r) throws IOException
+    {
+        // http://stackoverflow.com/a/2007782/535646
+<span class="nc" id="L425">        float magic = r * 0.551784f;</span>
+<span class="nc" id="L426">        cs.moveTo(x, y + r);</span>
+<span class="nc" id="L427">        cs.curveTo(x - magic, y + r, x - r, y + magic, x - r, y);</span>
+<span class="nc" id="L428">        cs.curveTo(x - r, y - magic, x - magic, y - r, x, y - r);</span>
+<span class="nc" id="L429">        cs.curveTo(x + magic, y - r, x + r, y - magic, x + r, y);</span>
+<span class="nc" id="L430">        cs.curveTo(x + r, y + magic, x + magic, y + r, x, y + r);</span>
+<span class="nc" id="L431">        cs.closePath();</span>
+<span class="nc" id="L432">    }</span>
+
+    private static Set&lt;String&gt; createShortStyles()
+    {
+<span class="nc" id="L436">        return Set.of(</span>
+            PDAnnotationLine.LE_OPEN_ARROW,
+            PDAnnotationLine.LE_CLOSED_ARROW,
+            PDAnnotationLine.LE_SQUARE,
+            PDAnnotationLine.LE_CIRCLE,
+            PDAnnotationLine.LE_DIAMOND
+        );
+    }
+
+    private static Set&lt;String&gt; createInteriorColorStyles()
+    {
+<span class="nc" id="L447">        return Set.of(</span>
+            PDAnnotationLine.LE_CLOSED_ARROW,
+            PDAnnotationLine.LE_CIRCLE,
+            PDAnnotationLine.LE_DIAMOND,
+            PDAnnotationLine.LE_R_CLOSED_ARROW,
+            PDAnnotationLine.LE_SQUARE
+        );
+    }
+
+    private static Set&lt;String&gt; createAngledStyles()
+    {
+<span class="nc" id="L458">        return Set.of(</span>
+            PDAnnotationLine.LE_CLOSED_ARROW,
+            PDAnnotationLine.LE_OPEN_ARROW,
+            PDAnnotationLine.LE_R_CLOSED_ARROW,
+            PDAnnotationLine.LE_R_OPEN_ARROW,
+            PDAnnotationLine.LE_BUTT,
+            PDAnnotationLine.LE_SLASH
+        );
+    }
+
+    /**
+     * Get the annotations normal appearance.
+     * 
+     * &lt;p&gt;
+     * This will get the annotations normal appearance. If this is not existent
+     * an empty appearance entry will be created.
+     * 
+     * @return the appearance entry representing the normal appearance.
+     */
+    private PDAppearanceEntry getNormalAppearance()
+    {
+<span class="nc" id="L479">        PDAppearanceDictionary appearanceDictionary = getAppearance();</span>
+<span class="nc" id="L480">        PDAppearanceEntry normalAppearanceEntry = appearanceDictionary.getNormalAppearance();</span>
+
+<span class="nc bnc" id="L482" title="All 4 branches missed.">        if (normalAppearanceEntry == null || normalAppearanceEntry.isSubDictionary())</span>
+        {
+<span class="nc" id="L484">            normalAppearanceEntry = new PDAppearanceEntry(createCOSStream());</span>
+<span class="nc" id="L485">            appearanceDictionary.setNormalAppearance(normalAppearanceEntry);</span>
+        }
+
+<span class="nc" id="L488">        return normalAppearanceEntry;</span>
+    }
+    
+    
+    private PDAppearanceContentStream getAppearanceEntryAsContentStream(
+              PDAppearanceEntry appearanceEntry, boolean compress) throws IOException
+    {
+<span class="nc" id="L495">        PDAppearanceStream appearanceStream = appearanceEntry.getAppearanceStream();</span>
+<span class="nc" id="L496">        setTransformationMatrix(appearanceStream);</span>
+
+        // ensure there are resources
+<span class="nc" id="L499">        PDResources resources = appearanceStream.getResources();</span>
+<span class="nc bnc" id="L500" title="All 2 branches missed.">        if (resources == null)</span>
+        {
+<span class="nc" id="L502">            resources = new PDResources();</span>
+<span class="nc" id="L503">            appearanceStream.setResources(resources);</span>
+        }
+
+<span class="nc" id="L506">        return new PDAppearanceContentStream(appearanceStream, compress);</span>
+    }
+    
+    private void setTransformationMatrix(PDAppearanceStream appearanceStream)
+    {
+<span class="nc" id="L511">        PDRectangle bbox = getRectangle();</span>
+<span class="nc" id="L512">        appearanceStream.setBBox(bbox);</span>
+<span class="nc" id="L513">        AffineTransform transform = AffineTransform.getTranslateInstance(-bbox.getLowerLeftX(),</span>
+<span class="nc" id="L514">                -bbox.getLowerLeftY());</span>
+<span class="nc" id="L515">        appearanceStream.setMatrix(transform);</span>
+<span class="nc" id="L516">    }</span>
+
+    PDRectangle handleBorderBox(PDAnnotationSquareCircle annotation, float lineWidth)
+    {
+        // There are two options. The handling is not part of the PDF specification but
+        // implementation specific to Adobe Reader
+        // - if /RD is set the border box is the /Rect entry inset by the respective
+        //   border difference.
+        // - if /RD is not set the border box is defined by the /Rect entry. The /RD entry will
+        //   be set to be the line width and the /Rect is enlarged by the /RD amount
+        PDRectangle borderBox;
+<span class="nc" id="L527">        float[] rectDifferences = annotation.getRectDifferences();</span>
+<span class="nc bnc" id="L528" title="All 2 branches missed.">        if (rectDifferences.length == 0)</span>
+        {
+<span class="nc" id="L530">            borderBox = getPaddedRectangle(getRectangle(), lineWidth / 2);</span>
+            // the differences rectangle
+<span class="nc" id="L532">            annotation.setRectDifferences(lineWidth / 2);</span>
+<span class="nc" id="L533">            annotation.setRectangle(addRectDifferences(getRectangle(), annotation.getRectDifferences()));</span>
+            // when the normal appearance stream was generated BBox and Matrix have been set to the
+            // values of the original /Rect. As the /Rect was changed that needs to be adjusted too.
+<span class="nc" id="L536">            PDRectangle rect = getRectangle();</span>
+<span class="nc" id="L537">            PDAppearanceStream appearanceStream = annotation.getNormalAppearanceStream();</span>
+<span class="nc" id="L538">            AffineTransform transform =</span>
+<span class="nc" id="L539">                    AffineTransform.getTranslateInstance(-rect.getLowerLeftX(), -rect.getLowerLeftY());</span>
+<span class="nc" id="L540">            appearanceStream.setBBox(rect);</span>
+<span class="nc" id="L541">            appearanceStream.setMatrix(transform);</span>
+<span class="nc" id="L542">        }</span>
+        else
+        {
+<span class="nc" id="L545">            borderBox = applyRectDifferences(getRectangle(), rectDifferences);</span>
+<span class="nc" id="L546">            borderBox = getPaddedRectangle(borderBox, lineWidth / 2);</span>
+        }
+<span class="nc" id="L548">        return borderBox;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

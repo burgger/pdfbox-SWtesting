@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TextPositionComparator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.text</a> &gt; <span class="el_source">TextPositionComparator.java</span></div><h1>TextPositionComparator.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.text;
+
+import java.util.Comparator;
+
+/**
+ * This class is a comparator for TextPosition operators.  It handles
+ * pages with text in different directions by grouping the text based
+ * on direction and sorting in that direction. This allows continuous text
+ * in a given direction to be more easily grouped together.  
+ *
+ * @author Ben Litchfield
+ */
+<span class="nc" id="L29">public class TextPositionComparator implements Comparator&lt;TextPosition&gt;</span>
+{
+    @Override
+    public int compare(TextPosition pos1, TextPosition pos2)
+    {
+        // only compare text that is in the same direction
+<span class="nc" id="L35">        int cmp1 = Float.compare(pos1.getDir(), pos2.getDir());</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">        if (cmp1 != 0)</span>
+        {
+<span class="nc" id="L38">            return cmp1;</span>
+        }
+        
+        // get the text direction adjusted coordinates
+<span class="nc" id="L42">        float x1 = pos1.getXDirAdj();</span>
+<span class="nc" id="L43">        float x2 = pos2.getXDirAdj();</span>
+        
+<span class="nc" id="L45">        float pos1YBottom = pos1.getYDirAdj();</span>
+<span class="nc" id="L46">        float pos2YBottom = pos2.getYDirAdj();</span>
+
+        // note that the coordinates have been adjusted so 0,0 is in upper left
+<span class="nc" id="L49">        float pos1YTop = pos1YBottom - pos1.getHeightDir();</span>
+<span class="nc" id="L50">        float pos2YTop = pos2YBottom - pos2.getHeightDir();</span>
+
+<span class="nc" id="L52">        float yDifference = Math.abs(pos1YBottom - pos2YBottom);</span>
+
+        // we will do a simple tolerance comparison
+<span class="nc bnc" id="L55" title="All 10 branches missed.">        if (yDifference &lt; .1 ||</span>
+            pos2YBottom &gt;= pos1YTop &amp;&amp; pos2YBottom &lt;= pos1YBottom ||
+            pos1YBottom &gt;= pos2YTop &amp;&amp; pos1YBottom &lt;= pos2YBottom)
+        {
+<span class="nc" id="L59">            return Float.compare(x1, x2);</span>
+        }
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        else if (pos1YBottom &lt; pos2YBottom)</span>
+        {
+<span class="nc" id="L63">            return -1;</span>
+        }
+        else
+        {
+<span class="nc" id="L67">            return 1;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

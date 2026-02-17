@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TrueTypeEmbedder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font</a> &gt; <span class="el_source">TrueTypeEmbedder.java</span></div><h1>TrueTypeEmbedder.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.font;
+
+import java.awt.geom.GeneralPath;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.fontbox.ttf.CmapLookup;
+import org.apache.fontbox.ttf.HeaderTable;
+import org.apache.fontbox.ttf.HorizontalHeaderTable;
+import org.apache.fontbox.ttf.OS2WindowsMetricsTable;
+import org.apache.fontbox.ttf.PostScriptTable;
+import org.apache.fontbox.ttf.TTFParser;
+import org.apache.fontbox.ttf.TTFSubsetter;
+import org.apache.fontbox.ttf.TrueTypeFont;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+
+/**
+ * Common functionality for embedding TrueType fonts.
+ *
+ * @author Ben Litchfield
+ * @author John Hewson
+ */
+abstract class TrueTypeEmbedder implements Subsetter
+{
+    private static final int ITALIC = 1;
+    private static final int OBLIQUE = 512;
+    private static final String BASE25 = &quot;BCDEFGHIJKLMNOPQRSTUVWXYZ&quot;;
+
+    // PDF spec required tables (if present), all others will be removed
+<span class="nc" id="L58">    private static final List&lt;String&gt; TABLES =</span>
+<span class="nc" id="L59">            Arrays.asList(&quot;head&quot;, &quot;hhea&quot;, &quot;loca&quot;, &quot;maxp&quot;, &quot;cvt &quot;, &quot;prep&quot;, &quot;glyf&quot;, &quot;hmtx&quot;, &quot;fpgm&quot;,</span>
+                    // Windows ClearType
+                    &quot;gasp&quot;);
+
+    private final PDDocument document;
+    protected TrueTypeFont ttf;
+    protected PDFontDescriptor fontDescriptor;
+
+    protected final CmapLookup cmapLookup;
+<span class="nc" id="L68">    private final Set&lt;Integer&gt; subsetCodePoints = new HashSet&lt;&gt;();</span>
+    private final boolean embedSubset;
+
+<span class="nc" id="L71">    private final Set&lt;Integer&gt; allGlyphIds = new HashSet&lt;&gt;();</span>
+
+    /**
+     * Creates a new TrueType font for embedding.
+     */
+    TrueTypeEmbedder(PDDocument document, COSDictionary dict, TrueTypeFont ttf,
+                     boolean embedSubset) throws IOException
+<span class="nc" id="L78">    {</span>
+<span class="nc" id="L79">        this.document = document;</span>
+<span class="nc" id="L80">        this.embedSubset = embedSubset;</span>
+<span class="nc" id="L81">        this.ttf = ttf;</span>
+<span class="nc" id="L82">        fontDescriptor = createFontDescriptor(ttf);</span>
+
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (!isEmbeddingPermitted(ttf))</span>
+        {
+<span class="nc" id="L86">            throw new IOException(&quot;This font does not permit embedding&quot;);</span>
+        }
+
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (!embedSubset)</span>
+        {
+            // full embedding
+            
+            // TrueType collections are not supported
+<span class="nc" id="L94">            InputStream is = ttf.getOriginalData();</span>
+<span class="nc" id="L95">            byte[] b = new byte[4];</span>
+<span class="nc" id="L96">            is.mark(b.length);</span>
+<span class="nc bnc" id="L97" title="All 4 branches missed.">            if (is.read(b) == b.length &amp;&amp; new String(b, StandardCharsets.US_ASCII).equals(&quot;ttcf&quot;))</span>
+            {
+<span class="nc" id="L99">                is.close();</span>
+<span class="nc" id="L100">                throw new IOException(&quot;Full embedding of TrueType font collections not supported&quot;);</span>
+            }
+<span class="nc bnc" id="L102" title="All 2 branches missed.">            if (is.markSupported())</span>
+            {
+<span class="nc" id="L104">                is.reset();</span>
+            }
+            else
+            {
+<span class="nc" id="L108">                is.close();</span>
+<span class="nc" id="L109">                is = ttf.getOriginalData();</span>
+            }
+<span class="nc" id="L111">            PDStream stream = new PDStream(document, is, COSName.FLATE_DECODE);</span>
+<span class="nc" id="L112">            stream.getCOSObject().setLong(COSName.LENGTH1, ttf.getOriginalDataSize());</span>
+<span class="nc" id="L113">            fontDescriptor.setFontFile2(stream);</span>
+        }
+
+<span class="nc" id="L116">        dict.setName(COSName.BASE_FONT, ttf.getName());</span>
+
+        // choose a Unicode &quot;cmap&quot;
+<span class="nc" id="L119">        cmapLookup = ttf.getUnicodeCmapLookup();</span>
+<span class="nc" id="L120">    }</span>
+
+    public final void buildFontFile2(InputStream ttfStream) throws IOException
+    {
+<span class="nc" id="L124">        PDStream stream = new PDStream(document, ttfStream, COSName.FLATE_DECODE);</span>
+
+        // as the stream was closed within the PDStream constructor, we have to recreate it
+<span class="nc" id="L127">        try (InputStream input = stream.createInputStream())</span>
+        {
+<span class="nc" id="L129">            ttf = new TTFParser().parseEmbedded(input);</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">            if (!isEmbeddingPermitted(ttf))</span>
+            {
+<span class="nc" id="L132">                throw new IOException(&quot;This font does not permit embedding&quot;);</span>
+            }
+<span class="nc bnc" id="L134" title="All 2 branches missed.">            if (fontDescriptor == null)</span>
+            {
+<span class="nc" id="L136">                fontDescriptor = createFontDescriptor(ttf);</span>
+            }
+        }
+<span class="nc" id="L139">        stream.getCOSObject().setLong(COSName.LENGTH1, ttf.getOriginalDataSize());</span>
+<span class="nc" id="L140">        fontDescriptor.setFontFile2(stream);</span>
+<span class="nc" id="L141">    }</span>
+
+    /**
+     * Returns true if the fsType in the OS/2 table permits embedding.
+     */
+    final boolean isEmbeddingPermitted(TrueTypeFont ttf) throws IOException
+    {
+<span class="nc" id="L148">        OS2WindowsMetricsTable os2 = ttf.getOS2Windows();</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">        if (os2 != null)</span>
+        {
+<span class="nc" id="L151">            int fsType = os2.getFsType();</span>
+<span class="nc" id="L152">            int maskedFsType = fsType &amp; 0x000F;</span>
+            // PDFBOX-5191: don't check the bit because permissions are exclusive
+<span class="nc bnc" id="L154" title="All 2 branches missed.">            if (maskedFsType == OS2WindowsMetricsTable.FSTYPE_RESTRICTED)</span>
+            {
+                // restricted License embedding
+<span class="nc" id="L157">                return false;</span>
+            }
+<span class="nc bnc" id="L159" title="All 2 branches missed.">            else if ((fsType &amp; OS2WindowsMetricsTable.FSTYPE_BITMAP_ONLY) ==</span>
+                                 OS2WindowsMetricsTable.FSTYPE_BITMAP_ONLY)
+            {
+                // bitmap embedding only
+<span class="nc" id="L163">                return false;</span>
+            }
+        }
+<span class="nc" id="L166">        return true;</span>
+    }
+
+    /**
+     * Returns true if the fsType in the OS/2 table permits subsetting.
+     */
+    private boolean isSubsettingPermitted(TrueTypeFont ttf) throws IOException
+    {
+<span class="nc" id="L174">        OS2WindowsMetricsTable os2 = ttf.getOS2Windows();</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">        if (os2 != null)</span>
+        {
+<span class="nc" id="L177">            int fsType = os2.getFsType();</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">            if ((fsType &amp; OS2WindowsMetricsTable.FSTYPE_NO_SUBSETTING) ==</span>
+                          OS2WindowsMetricsTable.FSTYPE_NO_SUBSETTING)
+            {
+<span class="nc" id="L181">                return false;</span>
+            }
+        }
+<span class="nc" id="L184">        return true;</span>
+    }
+
+    /**
+     * Creates a new font descriptor dictionary for the given TTF.
+     */
+    private PDFontDescriptor createFontDescriptor(TrueTypeFont ttf) throws IOException
+    {
+<span class="nc" id="L192">        String ttfName = ttf.getName();</span>
+<span class="nc" id="L193">        OS2WindowsMetricsTable os2 = ttf.getOS2Windows();</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">        if (os2 == null)</span>
+        {
+<span class="nc" id="L196">            throw new IOException(&quot;os2 table is missing in font &quot; + ttfName);</span>
+        }
+<span class="nc" id="L198">        PostScriptTable post = ttf.getPostScript();</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">        if (post == null)</span>
+        {
+<span class="nc" id="L201">            throw new IOException(&quot;post table is missing in font &quot; + ttfName);            </span>
+        }
+
+<span class="nc" id="L204">        PDFontDescriptor fd = new PDFontDescriptor();</span>
+<span class="nc" id="L205">        fd.setFontName(ttfName);</span>
+
+<span class="nc" id="L207">        HorizontalHeaderTable hhea = ttf.getHorizontalHeader();</span>
+
+        // Flags
+<span class="nc bnc" id="L210" title="All 4 branches missed.">        fd.setFixedPitch(post.getIsFixedPitch() &gt; 0 || hhea.getNumberOfHMetrics() == 1);</span>
+
+<span class="nc" id="L212">        int fsSelection = os2.getFsSelection();</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        fd.setItalic(((fsSelection &amp; (ITALIC | OBLIQUE)) != 0));</span>
+
+<span class="nc bnc" id="L215" title="All 3 branches missed.">        switch (os2.getFamilyClass())</span>
+        {
+            case OS2WindowsMetricsTable.FAMILY_CLASS_CLAREDON_SERIFS:
+            case OS2WindowsMetricsTable.FAMILY_CLASS_FREEFORM_SERIFS:
+            case OS2WindowsMetricsTable.FAMILY_CLASS_MODERN_SERIFS:
+            case OS2WindowsMetricsTable.FAMILY_CLASS_OLDSTYLE_SERIFS:
+            case OS2WindowsMetricsTable.FAMILY_CLASS_SLAB_SERIFS:
+<span class="nc" id="L222">                fd.setSerif(true);</span>
+<span class="nc" id="L223">                break;</span>
+            case OS2WindowsMetricsTable.FAMILY_CLASS_SCRIPTS:
+<span class="nc" id="L225">                fd.setScript(true);</span>
+<span class="nc" id="L226">                break;</span>
+            default:
+                break;
+        }
+
+<span class="nc" id="L231">        fd.setFontWeight(os2.getWeightClass());</span>
+
+<span class="nc" id="L233">        fd.setSymbolic(true);</span>
+<span class="nc" id="L234">        fd.setNonSymbolic(false);</span>
+
+        // ItalicAngle
+<span class="nc" id="L237">        fd.setItalicAngle(post.getItalicAngle());</span>
+
+        // FontBBox
+<span class="nc" id="L240">        HeaderTable header = ttf.getHeader();</span>
+<span class="nc" id="L241">        PDRectangle rect = new PDRectangle();</span>
+<span class="nc" id="L242">        float scaling = 1000f / header.getUnitsPerEm();</span>
+<span class="nc" id="L243">        rect.setLowerLeftX(header.getXMin() * scaling);</span>
+<span class="nc" id="L244">        rect.setLowerLeftY(header.getYMin() * scaling);</span>
+<span class="nc" id="L245">        rect.setUpperRightX(header.getXMax() * scaling);</span>
+<span class="nc" id="L246">        rect.setUpperRightY(header.getYMax() * scaling);</span>
+<span class="nc" id="L247">        fd.setFontBoundingBox(rect);</span>
+
+        // Ascent, Descent
+<span class="nc" id="L250">        fd.setAscent(hhea.getAscender() * scaling);</span>
+<span class="nc" id="L251">        fd.setDescent(hhea.getDescender() * scaling);</span>
+
+        // CapHeight, XHeight
+<span class="nc bnc" id="L254" title="All 2 branches missed.">        if (os2.getVersion() &gt;= 1.2)</span>
+        {
+<span class="nc" id="L256">            fd.setCapHeight(os2.getCapHeight() * scaling);</span>
+<span class="nc" id="L257">            fd.setXHeight(os2.getHeight() * scaling);</span>
+        }
+        else
+        {
+<span class="nc" id="L261">            GeneralPath capHPath = ttf.getPath(&quot;H&quot;);</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">            if (capHPath != null)</span>
+            {
+<span class="nc" id="L264">                fd.setCapHeight(Math.round(capHPath.getBounds2D().getMaxY()) * scaling);</span>
+            }
+            else
+            {
+                // estimate by summing the typographical +ve ascender and -ve descender
+<span class="nc" id="L269">                fd.setCapHeight((os2.getTypoAscender() + os2.getTypoDescender()) * scaling);</span>
+            }
+<span class="nc" id="L271">            GeneralPath xPath = ttf.getPath(&quot;x&quot;);</span>
+<span class="nc bnc" id="L272" title="All 2 branches missed.">            if (xPath != null)</span>
+            {
+<span class="nc" id="L274">                fd.setXHeight(Math.round(xPath.getBounds2D().getMaxY()) * scaling);</span>
+            }
+            else
+            {
+                // estimate by halving the typographical ascender
+<span class="nc" id="L279">                fd.setXHeight(os2.getTypoAscender() / 2.0f * scaling);</span>
+            }
+        }
+
+        // StemV - there's no true TTF equivalent of this, so we estimate it
+<span class="nc" id="L284">        fd.setStemV(fd.getFontBoundingBox().getWidth() * .13f);</span>
+
+<span class="nc" id="L286">        return fd;</span>
+    }
+
+    /**
+     * Returns the font descriptor.
+     */
+    public PDFontDescriptor getFontDescriptor()
+    {
+<span class="nc" id="L294">        return fontDescriptor;</span>
+    }
+    
+    @Override
+    public void addToSubset(int codePoint)
+    {
+<span class="nc" id="L300">        subsetCodePoints.add(codePoint);</span>
+<span class="nc" id="L301">    }</span>
+    
+    public void addGlyphIds(Set&lt;Integer&gt; glyphIds)
+    {
+<span class="nc" id="L305">        allGlyphIds.addAll(glyphIds);</span>
+<span class="nc" id="L306">    }</span>
+
+    @Override
+    public void subset() throws IOException
+    {
+<span class="nc bnc" id="L311" title="All 2 branches missed.">        if (!isSubsettingPermitted(ttf))</span>
+        {
+<span class="nc" id="L313">            throw new IOException(&quot;This font does not permit subsetting&quot;);</span>
+        }
+        
+<span class="nc bnc" id="L316" title="All 2 branches missed.">        if (!embedSubset)</span>
+        {
+<span class="nc" id="L318">            throw new IllegalStateException(&quot;Subsetting is disabled&quot;);</span>
+        }
+
+        // set the GIDs to subset
+<span class="nc" id="L322">        TTFSubsetter subsetter = new TTFSubsetter(ttf, TABLES);</span>
+<span class="nc" id="L323">        subsetter.addAll(subsetCodePoints);</span>
+<span class="nc" id="L324">        subsetter.forceInvisible('\u200B'); // ZWSP</span>
+<span class="nc" id="L325">        subsetter.forceInvisible('\u200C'); // ZWNJ</span>
+<span class="nc" id="L326">        subsetter.forceInvisible('\u2060'); // WJ</span>
+<span class="nc" id="L327">        subsetter.forceInvisible('\uFEFF'); // ZWNBSP</span>
+
+<span class="nc bnc" id="L329" title="All 2 branches missed.">        if (!allGlyphIds.isEmpty())</span>
+        {
+<span class="nc" id="L331">            subsetter.addGlyphIds(allGlyphIds);</span>
+        }
+
+        // calculate deterministic tag based on the chosen subset
+<span class="nc" id="L335">        Map&lt;Integer, Integer&gt; gidToCid = subsetter.getGIDMap();</span>
+<span class="nc" id="L336">        String tag = getTag(gidToCid);</span>
+<span class="nc" id="L337">        subsetter.setPrefix(tag);</span>
+
+        // save the subset font
+<span class="nc" id="L340">        ByteArrayOutputStream out = new ByteArrayOutputStream();</span>
+<span class="nc" id="L341">        subsetter.writeToStream(out);</span>
+
+        // re-build the embedded font
+<span class="nc" id="L344">        buildSubset(new ByteArrayInputStream(out.toByteArray()), tag, gidToCid);</span>
+<span class="nc" id="L345">        ttf.close();</span>
+<span class="nc" id="L346">    }</span>
+
+    /**
+     * Returns true if the font needs to be subset.
+     */
+    public boolean needsSubset()
+    {
+<span class="nc" id="L353">        return embedSubset;</span>
+    }
+    
+    /**
+     * Rebuild a font subset.
+     */
+    protected abstract void buildSubset(InputStream ttfSubset, String tag,
+                                     Map&lt;Integer, Integer&gt; gidToCid) throws IOException;
+
+    /**
+     * Returns an uppercase 6-character unique tag for the given subset.
+     */
+    public String getTag(Map&lt;Integer, Integer&gt; gidToCid)
+    {
+        // deterministic
+<span class="nc" id="L368">        long num = gidToCid.hashCode();</span>
+
+        // base25 encode
+<span class="nc" id="L371">        StringBuilder sb = new StringBuilder();</span>
+        do
+        {
+<span class="nc" id="L374">            long div = num / 25;</span>
+<span class="nc" id="L375">            int mod = (int)(num % 25);</span>
+<span class="nc" id="L376">            sb.append(BASE25.charAt(mod));</span>
+<span class="nc" id="L377">            num = div;</span>
+<span class="nc bnc" id="L378" title="All 4 branches missed.">        } while (num != 0 &amp;&amp; sb.length() &lt; 6);</span>
+
+        // pad
+<span class="nc bnc" id="L381" title="All 2 branches missed.">        while (sb.length() &lt; 6)</span>
+        {
+<span class="nc" id="L383">            sb.insert(0, 'A');</span>
+        }
+
+<span class="nc" id="L386">        sb.append('+');</span>
+<span class="nc" id="L387">        return sb.toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

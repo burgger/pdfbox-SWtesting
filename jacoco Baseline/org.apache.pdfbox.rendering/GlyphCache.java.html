@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GlyphCache.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.rendering</a> &gt; <span class="el_source">GlyphCache.java</span></div><h1>GlyphCache.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.rendering;
+
+import java.awt.geom.GeneralPath;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.pdmodel.font.PDFontLike;
+import org.apache.pdfbox.pdmodel.font.PDSimpleFont;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
+import org.apache.pdfbox.pdmodel.font.PDVectorFont;
+
+/**
+ * A simple glyph outline cache.
+ *
+ * @author John Hewson
+ */
+final class GlyphCache
+{
+<span class="nc" id="L37">    private static final Logger LOG = LogManager.getLogger(GlyphCache.class);</span>
+    
+    private final PDVectorFont font;
+<span class="nc" id="L40">    private final Map&lt;Integer, GeneralPath&gt; cache = new HashMap&lt;&gt;();</span>
+
+    GlyphCache(PDVectorFont font)
+<span class="nc" id="L43">    {</span>
+<span class="nc" id="L44">        this.font = font;</span>
+<span class="nc" id="L45">    }</span>
+    
+    public GeneralPath getPathForCharacterCode(int code)
+    {
+<span class="nc" id="L49">        GeneralPath path = cache.get(code);</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        if (path != null)</span>
+        {
+<span class="nc" id="L52">            return path;</span>
+        }
+
+        try
+        {
+<span class="nc bnc" id="L57" title="All 2 branches missed.">            if (!font.hasGlyph(code))</span>
+            {
+<span class="nc" id="L59">                String fontName = ((PDFontLike) font).getName();</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">                if (font instanceof PDType0Font)</span>
+                {
+<span class="nc" id="L62">                    int cid = ((PDType0Font) font).codeToCID(code);</span>
+<span class="nc" id="L63">                    String cidHex = String.format(&quot;%04x&quot;, cid);</span>
+<span class="nc" id="L64">                    LOG.warn(&quot;No glyph for code {} (CID {}) in font {}&quot;, code, cidHex, fontName);</span>
+<span class="nc" id="L65">                }</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">                else if (font instanceof PDSimpleFont)</span>
+                {
+<span class="nc" id="L68">                    PDSimpleFont simpleFont = (PDSimpleFont) font;</span>
+<span class="nc" id="L69">                    LOG.warn(&quot;No glyph for code {} in {} {} (embedded or system font used: {})&quot;,</span>
+<span class="nc" id="L70">                            code, font.getClass().getSimpleName(), fontName,</span>
+<span class="nc" id="L71">                            simpleFont.getFontBoxFont().getName());</span>
+<span class="nc bnc" id="L72" title="All 4 branches missed.">                    if (code == 10 &amp;&amp; simpleFont.isStandard14())</span>
+                    {
+                        // PDFBOX-4001 return empty path for line feed on std14
+<span class="nc" id="L75">                        path = new GeneralPath();</span>
+<span class="nc" id="L76">                        cache.put(code, path);</span>
+<span class="nc" id="L77">                        return path;</span>
+                    }
+<span class="nc" id="L79">                }</span>
+                else
+                {
+<span class="nc" id="L82">                    LOG.warn(&quot;No glyph for code {} in font {}&quot;, code, fontName);</span>
+                }
+            }
+
+<span class="nc" id="L86">            path = font.getNormalizedPath(code);</span>
+<span class="nc" id="L87">            cache.put(code, path);</span>
+<span class="nc" id="L88">            return path;</span>
+        }
+<span class="nc" id="L90">        catch (IOException e)</span>
+        {
+            // todo: escalate this error?
+<span class="nc" id="L93">            String fontName = ((PDFontLike) font).getName();</span>
+<span class="nc" id="L94">            LOG.error(() -&gt; &quot;Glyph rendering failed for code &quot; + code + &quot; in font &quot; + fontName, e);</span>
+<span class="nc" id="L95">            return new GeneralPath();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FDFJavaScript.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.fdf</a> &gt; <span class="el_source">FDFJavaScript.java</span></div><h1>FDFJavaScript.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.fdf;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.interactive.action.PDAction;
+import org.apache.pdfbox.pdmodel.interactive.action.PDActionFactory;
+import org.apache.pdfbox.pdmodel.interactive.action.PDActionJavaScript;
+
+/**
+ * This represents an FDF JavaScript dictionary that is part of the FDF document.
+ *
+ * @author Ben Litchfield
+ */
+public class FDFJavaScript implements COSObjectable
+{
+    private final COSDictionary dictionary;
+
+    /**
+     * Default constructor.
+     */
+    public FDFJavaScript()
+<span class="nc" id="L45">    {</span>
+<span class="nc" id="L46">        dictionary = new COSDictionary();</span>
+<span class="nc" id="L47">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param javaScript The FDF java script.
+     */
+    public FDFJavaScript(COSDictionary javaScript)
+<span class="nc" id="L55">    {</span>
+<span class="nc" id="L56">        dictionary = javaScript;</span>
+<span class="nc" id="L57">    }</span>
+
+    /**
+     * Convert this standard java object to a COS object.
+     *
+     * @return The cos object that matches this Java object.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L67">        return dictionary;</span>
+    }
+
+    /**
+     * This will get the javascript that is executed before the import.
+     *
+     * @return Some javascript code.
+     */
+    public String getBefore()
+    {
+<span class="nc" id="L77">        COSBase base = dictionary.getDictionaryObject(COSName.BEFORE);</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        if (base instanceof COSString)</span>
+        {
+<span class="nc" id="L80">            return ((COSString) base).getString();</span>
+        }
+<span class="nc bnc" id="L82" title="All 2 branches missed.">        else if (base instanceof COSStream)</span>
+        {
+<span class="nc" id="L84">            return ((COSStream) base).toTextString();</span>
+        }
+        else
+        {
+<span class="nc" id="L88">            return null;</span>
+        }
+    }
+
+    /**
+     * This will set the javascript code the will get execute before the import.
+     *
+     * @param before A reference to some javascript code.
+     */
+    public void setBefore(String before)
+    {
+<span class="nc" id="L99">        dictionary.setItem(COSName.BEFORE, new COSString(before));</span>
+<span class="nc" id="L100">    }</span>
+
+    /**
+     * This will get the javascript that is executed after the import.
+     *
+     * @return Some javascript code.
+     */
+    public String getAfter()
+    {
+<span class="nc" id="L109">        COSBase base = dictionary.getDictionaryObject(COSName.AFTER);</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        if (base instanceof COSString)</span>
+        {
+<span class="nc" id="L112">            return ((COSString) base).getString();</span>
+        }
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        else if (base instanceof COSStream)</span>
+        {
+<span class="nc" id="L116">            return ((COSStream) base).toTextString();</span>
+        }
+        else
+        {
+<span class="nc" id="L120">            return null;</span>
+        }
+    }
+
+    /**
+     * This will set the javascript code the will get execute after the import.
+     *
+     * @param after A reference to some javascript code.
+     */
+    public void setAfter(String after)
+    {
+<span class="nc" id="L131">        dictionary.setItem(COSName.AFTER, new COSString(after));</span>
+<span class="nc" id="L132">    }</span>
+
+    /**
+     * Returns the dictionary's &quot;Doc&quot; entry, that is, a map of key value pairs to be added to the document's JavaScript
+     * name tree.
+     * 
+     * @return Map of named &quot;JavaScript&quot; dictionaries.
+     */
+    public Map&lt;String, PDActionJavaScript&gt; getDoc()
+    {
+<span class="nc" id="L142">        COSArray array = dictionary.getCOSArray(COSName.DOC);</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        if (array == null)</span>
+        {
+<span class="nc" id="L145">            return null;</span>
+        }
+<span class="nc" id="L147">        Map&lt;String, PDActionJavaScript&gt; map = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">        for (int i = 0; i + 1 &lt; array.size(); i += 2)</span>
+        {
+<span class="nc" id="L150">            String name = array.getName(i);</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">            if (name != null)</span>
+            {
+<span class="nc" id="L153">                COSBase base = array.getObject(i + 1);</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">                if (base instanceof COSDictionary)</span>
+                {
+<span class="nc" id="L156">                    PDAction action = PDActionFactory.createAction((COSDictionary) base);</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">                    if (action instanceof PDActionJavaScript)</span>
+                    {
+<span class="nc" id="L159">                        map.put(name, (PDActionJavaScript) action);</span>
+                    }
+                }
+            }
+        }
+<span class="nc" id="L164">        return map;</span>
+    }
+
+    /**
+     * Sets the dictionary's &quot;Doc&quot; entry.
+     * 
+     * @param map Map of named &quot;JavaScript&quot; dictionaries.
+     */
+    public void setDoc(Map&lt;String, PDActionJavaScript&gt; map)
+    {
+<span class="nc" id="L174">        COSArray array = new COSArray();</span>
+<span class="nc" id="L175">        map.forEach((key, value) -&gt;</span>
+        {
+<span class="nc" id="L177">            array.add(new COSString(key));</span>
+<span class="nc" id="L178">            array.add(value);</span>
+<span class="nc" id="L179">        });</span>
+<span class="nc" id="L180">        dictionary.setItem(COSName.DOC, array);</span>
+<span class="nc" id="L181">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

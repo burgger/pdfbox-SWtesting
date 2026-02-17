@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFunctionType2.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.common.function</a> &gt; <span class="el_source">PDFunctionType2.java</span></div><h1>PDFunctionType2.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.common.function;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+import java.io.IOException;
+import java.util.Objects;
+import org.apache.pdfbox.cos.COSDictionary;
+
+/**
+ * This class represents a Type 2 (exponential interpolation) function in a PDF
+ * document.
+ *
+ * @author Ben Litchfield
+ */
+public class PDFunctionType2 extends PDFunction
+{
+
+    /**
+     * The C0 values of the exponential function.
+     */
+    private final COSArray c0;
+    /**
+     * The C1 values of the exponential function.
+     */
+    private final COSArray c1;
+    /**
+     * The exponent value of the exponential function.
+     */
+    private final float exponent;
+
+    /**
+     * Constructor.
+     *
+     * @param function The function.
+     */
+    public PDFunctionType2(COSBase function)
+    {
+<span class="nc" id="L57">        super(function);</span>
+
+<span class="nc" id="L59">        COSDictionary cosObject = getCOSObject();</span>
+<span class="nc" id="L60">        c0 = Objects.requireNonNullElseGet(cosObject.getCOSArray(COSName.C0), COSArray::new);</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (c0.isEmpty())</span>
+        {
+<span class="nc" id="L63">            c0.add(COSFloat.ZERO);</span>
+        }
+
+<span class="nc" id="L66">        c1 = Objects.requireNonNullElseGet(cosObject.getCOSArray(COSName.C1), COSArray::new);</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        if (c1.isEmpty())</span>
+        {
+<span class="nc" id="L69">            c1.add(COSFloat.ONE);</span>
+        }
+
+<span class="nc" id="L72">        exponent = getCOSObject().getFloat(COSName.N);</span>
+<span class="nc" id="L73">    }</span>
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getFunctionType()
+    {
+<span class="nc" id="L81">        return 2;</span>
+    }
+
+    /**
+     * Performs exponential interpolation
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    public float[] eval(float[] input) throws IOException
+    {
+        // exponential interpolation
+<span class="nc" id="L93">        float xToN = (float) Math.pow(input[0], exponent); // x^exponent</span>
+
+<span class="nc" id="L95">        float[] result = new float[Math.min(c0.size(), c1.size())];</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        for (int j = 0; j &lt; result.length; j++)</span>
+        {
+<span class="nc" id="L98">            float c0j = ((COSNumber) c0.get(j)).floatValue();</span>
+<span class="nc" id="L99">            float c1j = ((COSNumber) c1.get(j)).floatValue();</span>
+<span class="nc" id="L100">            result[j] = c0j + xToN * (c1j - c0j);</span>
+        }
+
+<span class="nc" id="L103">        return clipToRange(result);</span>
+    }
+
+    /**
+     * Returns the C0 values of the function, 0 if empty.
+     *
+     * @return a COSArray with the C0 values
+     */
+    public COSArray getC0()
+    {
+<span class="nc" id="L113">        return c0;</span>
+    }
+
+    /**
+     * Returns the C1 values of the function, 1 if empty.
+     *
+     * @return a COSArray with the C1 values
+     */
+    public COSArray getC1()
+    {
+<span class="nc" id="L123">        return c1;</span>
+    }
+
+    /**
+     * Returns the exponent of the function.
+     *
+     * @return the float value of the exponent
+     */
+    public float getN()
+    {
+<span class="nc" id="L133">        return exponent;</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L142">        return &quot;FunctionType2{&quot;</span>
+<span class="nc" id="L143">                + &quot;C0: &quot; + getC0() + &quot; &quot;</span>
+<span class="nc" id="L144">                + &quot;C1: &quot; + getC1() + &quot; &quot;</span>
+<span class="nc" id="L145">                + &quot;N: &quot; + getN() + &quot;}&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

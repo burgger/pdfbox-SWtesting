@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDPageDestination.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination</a> &gt; <span class="el_source">PDPageDestination.java</span></div><h1>PDPageDestination.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageTree;
+
+/**
+ * This represents a destination to a page, see subclasses for specific parameters.
+ *
+ * @author Ben Litchfield
+ */
+public abstract class PDPageDestination extends PDDestination
+{
+    /**
+     * Storage for the page destination.
+     */
+    protected final COSArray array;
+
+    /**
+     * Constructor to create empty page destination.
+     *
+     */
+    protected PDPageDestination()
+<span class="nc" id="L44">    {</span>
+<span class="nc" id="L45">        array = new COSArray();</span>
+<span class="nc" id="L46">    }</span>
+
+    /**
+     * Constructor to create empty page destination.
+     *
+     * @param arr A page destination array.
+     */
+    protected PDPageDestination( COSArray arr )
+<span class="nc" id="L54">    {</span>
+<span class="nc" id="L55">        array = arr;</span>
+<span class="nc" id="L56">    }</span>
+
+    /**
+     * This will get the page for this destination. A page destination can either reference a page
+     * (for a local destination) or a page number (when doing a remote destination to another PDF).
+     * If this object is referencing by page number then this method will return null and
+     * {@link #getPageNumber()} should be used.
+     *
+     * @return The page for this destination.
+     */
+    public PDPage getPage()
+    {
+<span class="nc" id="L68">        PDPage retval = null;</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        if (!array.isEmpty())</span>
+        {
+<span class="nc" id="L71">            COSBase page = array.getObject( 0 );</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">            if( page instanceof COSDictionary )</span>
+            {
+<span class="nc" id="L74">                retval = new PDPage( (COSDictionary)page );</span>
+            }
+        }
+<span class="nc" id="L77">        return retval;</span>
+    }
+
+    /**
+     * Set the page for a local destination. For an external destination, call {@link #setPageNumber(int) setPageNumber(int pageNumber)}.
+     *
+     * @param page The page for a local destination.
+     */
+    public void setPage( PDPage page )
+    {
+<span class="nc" id="L87">        array.set( 0, page );</span>
+<span class="nc" id="L88">    }</span>
+
+    /**
+     * This will get the page number for this destination. A page destination can either reference a
+     * page (for a local destination) or a page number (when doing a remote destination to another
+     * PDF). If this object is referencing by page number then this method will return that number,
+     * otherwise -1 will be returned.
+     *
+     * @return The zero-based page number for this destination.
+     */
+    public int getPageNumber()
+    {
+<span class="nc" id="L100">        int retval = -1;</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        if( !array.isEmpty() )</span>
+        {
+<span class="nc" id="L103">            COSBase page = array.getObject( 0 );</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">            if( page instanceof COSNumber )</span>
+            {
+<span class="nc" id="L106">                retval = ((COSNumber)page).intValue();</span>
+            }
+        }
+<span class="nc" id="L109">        return retval;</span>
+    }
+
+    /**
+     * Returns the page number for this destination, regardless of whether this is a page number or
+     * a reference to a page.
+     *
+     * @see org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem
+     * @return the 0-based page number, or -1 if the destination type is unknown.
+     */
+    public int retrievePageNumber()
+    {
+<span class="nc" id="L121">        int retval = -1;</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (!array.isEmpty())</span>
+        {
+<span class="nc" id="L124">            COSBase page = array.getObject(0);</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">            if (page instanceof COSNumber)</span>
+            {
+<span class="nc" id="L127">                retval = ((COSNumber) page).intValue();</span>
+            }
+<span class="nc bnc" id="L129" title="All 2 branches missed.">            else if (page instanceof COSDictionary)</span>
+            {
+<span class="nc" id="L131">                return indexOfPageTree((COSDictionary) page);</span>
+            }
+        }
+<span class="nc" id="L134">        return retval;</span>
+    }
+
+    // climb up the page tree up to the top to be able to call PageTree.indexOf for a page dictionary
+    private int indexOfPageTree(COSDictionary pageDict)
+    {
+<span class="nc" id="L140">        COSDictionary parent = pageDict;</span>
+        while (true)
+        {
+<span class="nc" id="L143">            COSDictionary prevParent = parent.getCOSDictionary(COSName.PARENT, COSName.P);</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            if (prevParent == null)</span>
+            {
+<span class="nc" id="L146">                break;</span>
+            }
+<span class="nc" id="L148">            parent = prevParent;</span>
+<span class="nc" id="L149">        }</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        if (parent.containsKey(COSName.KIDS)</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">                &amp;&amp; COSName.PAGES.equals(parent.getCOSName(COSName.TYPE)))</span>
+        {
+            // now parent is the highest pages node
+<span class="nc" id="L154">            PDPageTree pages = new PDPageTree(parent);</span>
+<span class="nc" id="L155">            return pages.indexOf(new PDPage(pageDict));</span>
+        }
+<span class="nc" id="L157">        return -1;</span>
+    }
+
+    /**
+     * Set the page number for a remote destination. For an internal destination, call 
+     * {@link #setPage(PDPage) setPage(PDPage page)}.
+     *
+     * @param pageNumber The page for a remote destination.
+     */
+    public void setPageNumber( int pageNumber )
+    {
+<span class="nc" id="L168">        array.set( 0, pageNumber );</span>
+<span class="nc" id="L169">    }</span>
+
+    /**
+     * Convert this standard java object to a COS object.
+     *
+     * @return The cos object that matches this Java object.
+     */
+    @Override
+    public COSArray getCOSObject()
+    {
+<span class="nc" id="L179">        return array;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

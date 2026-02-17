@@ -1,0 +1,1504 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>COSDictionary.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.cos</a> &gt; <span class="el_source">COSDictionary.java</span></div><h1>COSDictionary.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.cos;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.function.BiConsumer;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.util.DateConverter;
+
+/**
+ * This class represents a dictionary where name/value pairs reside.
+ *
+ * @author Ben Litchfield
+ * 
+ */
+public class COSDictionary extends COSBase implements COSUpdateInfo
+{
+
+    /**
+     * Log instance.
+     */
+<span class="fc" id="L51">    private static final Logger LOG = LogManager.getLogger(COSDictionary.class);</span>
+
+    private static final String PATH_SEPARATOR = &quot;/&quot;;
+
+    /**
+     * The name-value pairs of this dictionary. The pairs are kept in the order they were added to the dictionary.
+     */
+<span class="pc" id="L58">    protected Map&lt;COSName, COSBase&gt; items = new LinkedHashMap&lt;&gt;();</span>
+    private final COSUpdateState updateState;
+
+    /**
+     * Constructor.
+     */
+    public COSDictionary()
+<span class="fc" id="L65">    {</span>
+<span class="fc" id="L66">        updateState = new COSUpdateState(this);</span>
+<span class="fc" id="L67">    }</span>
+
+    /**
+     * Copy Constructor. This will make a shallow copy of this dictionary.
+     *
+     * @param dict The dictionary to copy.
+     */
+    public COSDictionary(COSDictionary dict)
+<span class="nc" id="L75">    {</span>
+<span class="nc" id="L76">        updateState = new COSUpdateState(this);</span>
+<span class="nc" id="L77">        addAll(dict);</span>
+<span class="nc" id="L78">    }</span>
+
+    /**
+     * @see java.util.Map#containsValue(java.lang.Object)
+     *
+     * @param value The value to find in the map.
+     *
+     * @return true if the map contains this value.
+     */
+    public boolean containsValue(Object value)
+    {
+<span class="nc" id="L89">        boolean contains = items.containsValue(value);</span>
+<span class="nc bnc" id="L90" title="All 4 branches missed.">        if (!contains &amp;&amp; value instanceof COSObject)</span>
+        {
+<span class="nc" id="L92">            contains = items.containsValue(((COSObject) value).getObject());</span>
+        }
+<span class="nc" id="L94">        return contains;</span>
+    }
+
+    /**
+     * Search in the map for the value that matches the parameter and return the first key that maps to that value.
+     *
+     * @param value The value to search for in the map.
+     * @return The key for the value in the map or null if it does not exist.
+     */
+    public COSName getKeyForValue(Object value)
+    {
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        for (Map.Entry&lt;COSName, COSBase&gt; entry : items.entrySet())</span>
+        {
+<span class="nc" id="L107">            Object nextValue = entry.getValue();</span>
+<span class="nc bnc" id="L108" title="All 4 branches missed.">            if (nextValue.equals(value)</span>
+                    || (nextValue instanceof COSObject &amp;&amp; 
+<span class="nc bnc" id="L110" title="All 2 branches missed.">                        !((COSObject) nextValue).isObjectNull() &amp;&amp; </span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">                        ((COSObject) nextValue).getObject().equals(value)))</span>
+            {
+<span class="nc" id="L113">                return entry.getKey();</span>
+            }
+<span class="nc" id="L115">        }</span>
+<span class="nc" id="L116">        return null;</span>
+    }
+
+    /**
+     * This will return the number of elements in this dictionary.
+     *
+     * @return The number of elements in the dictionary.
+     */
+    public int size()
+    {
+<span class="nc" id="L126">        return items.size();</span>
+    }
+
+    /**
+     * This will clear all items in the map.
+     */
+    public void clear()
+    {
+<span class="nc" id="L134">        items.clear();</span>
+<span class="nc" id="L135">        getUpdateState().update();</span>
+<span class="nc" id="L136">    }</span>
+
+    /**
+     * This will get an object from this dictionary. If the object is a reference then it will dereference it and get it
+     * from the document. If the object is COSNull then null will be returned.
+     *
+     * @param key The key to the object that we are getting.
+     *
+     * @return The object that matches the key.
+     */
+    public COSBase getDictionaryObject(String key)
+    {
+<span class="nc" id="L148">        return getDictionaryObject(COSName.getPDFName(key));</span>
+    }
+
+    /**
+     * This is a special case of getDictionaryObject that takes multiple keys, it will handle the situation where
+     * multiple keys could get the same value, ie if either CS or ColorSpace is used to get the colorspace. This will
+     * get an object from this dictionary. If the object is a reference then it will dereference it and get it from the
+     * document. If the object is COSNull then null will be returned.
+     *
+     * @param firstKey The first key to try.
+     * @param secondKey The second key to try.
+     *
+     * @return The object that matches the key.
+     */
+    public COSBase getDictionaryObject(COSName firstKey, COSName secondKey)
+    {
+<span class="fc" id="L164">        COSBase retval = getDictionaryObject(firstKey);</span>
+<span class="pc bpc" id="L165" title="1 of 4 branches missed.">        if (retval == null &amp;&amp; secondKey != null)</span>
+        {
+<span class="fc" id="L167">            retval = getDictionaryObject(secondKey);</span>
+        }
+<span class="fc" id="L169">        return retval;</span>
+    }
+
+    /**
+     * This will get an object from this dictionary. If the object is a reference then it will dereference it and get it
+     * from the document. If the object is COSNull then null will be returned.
+     *
+     * @param key The key to the object that we are getting.
+     *
+     * @return The object that matches the key.
+     */
+    public COSBase getDictionaryObject(COSName key)
+    {
+<span class="fc" id="L182">        COSBase retval = items.get(key);</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">        if (retval instanceof COSObject)</span>
+        {
+<span class="fc" id="L185">            retval = ((COSObject) retval).getObject();</span>
+        }
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        if (retval instanceof COSNull)</span>
+        {
+<span class="nc" id="L189">            retval = null;</span>
+        }
+<span class="fc" id="L191">        return retval;</span>
+    }
+
+    /**
+     * This will set an item in the dictionary. If value is null then the result will be the same as removeItem( key ).
+     *
+     * @param key The key to the dictionary object.
+     * @param value The value to the dictionary object.
+     */
+    public void setItem(COSName key, COSBase value)
+    {
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">        if (value == null)</span>
+        {
+<span class="nc" id="L204">            removeItem(key);</span>
+        }
+        else
+        {
+<span class="fc bfc" id="L208" title="All 6 branches covered.">            if ((value instanceof COSDictionary || value instanceof COSArray) &amp;&amp; !value.isDirect()</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">                    &amp;&amp; value.getKey() != null)</span>
+            {
+<span class="fc" id="L211">                COSObject cosObject = new COSObject(value, value.getKey());</span>
+<span class="fc" id="L212">                items.put(key, cosObject);</span>
+<span class="fc" id="L213">                getUpdateState().update(cosObject);</span>
+<span class="fc" id="L214">            }</span>
+            else
+            {
+<span class="fc" id="L217">                items.put(key, value);</span>
+<span class="fc" id="L218">                getUpdateState().update(value);</span>
+            }
+        }
+<span class="fc" id="L221">    }</span>
+
+    /**
+     * This will set an item in the dictionary. If value is null then the result will be the same as removeItem( key ).
+     *
+     * @param key The key to the dictionary object.
+     * @param value The value to the dictionary object.
+     */
+    public void setItem(COSName key, COSObjectable value)
+    {
+<span class="fc" id="L231">        COSBase base = null;</span>
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">        if (value != null)</span>
+        {
+<span class="fc" id="L234">            base = value.getCOSObject();</span>
+        }
+<span class="fc" id="L236">        setItem(key, base);</span>
+<span class="fc" id="L237">    }</span>
+
+    /**
+     * This will set an item in the dictionary. If value is null then the result will be the same as removeItem( key ).
+     *
+     * @param key The key to the dictionary object.
+     * @param value The value to the dictionary object.
+     */
+    public void setItem(String key, COSObjectable value)
+    {
+<span class="nc" id="L247">        setItem(COSName.getPDFName(key), value);</span>
+<span class="nc" id="L248">    }</span>
+
+    /**
+     * This will set an item in the dictionary.
+     *
+     * @param key The key to the dictionary object.
+     * @param value The value to the dictionary object.
+     */
+    public void setBoolean(String key, boolean value)
+    {
+<span class="nc" id="L258">        setItem(COSName.getPDFName(key), COSBoolean.getBoolean(value));</span>
+<span class="nc" id="L259">    }</span>
+
+    /**
+     * This will set an item in the dictionary.
+     *
+     * @param key The key to the dictionary object.
+     * @param value The value to the dictionary object.
+     */
+    public void setBoolean(COSName key, boolean value)
+    {
+<span class="nc" id="L269">        setItem(key, COSBoolean.getBoolean(value));</span>
+<span class="nc" id="L270">    }</span>
+
+    /**
+     * This will set an item in the dictionary. If value is null then the result will be the same as removeItem( key ).
+     *
+     * @param key The key to the dictionary object.
+     * @param value The value to the dictionary object.
+     */
+    public void setItem(String key, COSBase value)
+    {
+<span class="nc" id="L280">        setItem(COSName.getPDFName(key), value);</span>
+<span class="nc" id="L281">    }</span>
+
+    /**
+     * This is a convenience method that will convert the value to a COSName object. If it is null then the object will
+     * be removed.
+     *
+     * @param key The key to the object,
+     * @param value The string value for the name.
+     */
+    public void setName(String key, String value)
+    {
+<span class="nc" id="L292">        setName(COSName.getPDFName(key), value);</span>
+<span class="nc" id="L293">    }</span>
+
+    /**
+     * This is a convenience method that will convert the value to a COSName object. If it is null then the object will
+     * be removed.
+     *
+     * @param key The key to the object,
+     * @param value The string value for the name.
+     */
+    public void setName(COSName key, String value)
+    {
+<span class="nc" id="L304">        COSName name = null;</span>
+<span class="nc bnc" id="L305" title="All 2 branches missed.">        if (value != null)</span>
+        {
+<span class="nc" id="L307">            name = COSName.getPDFName(value);</span>
+        }
+<span class="nc" id="L309">        setItem(key, name);</span>
+<span class="nc" id="L310">    }</span>
+
+    /**
+     * Set the value of a date entry in the dictionary.
+     *
+     * @param key The key to the date value.
+     * @param date The date value.
+     */
+    public void setDate(String key, Calendar date)
+    {
+<span class="nc" id="L320">        setDate(COSName.getPDFName(key), date);</span>
+<span class="nc" id="L321">    }</span>
+
+    /**
+     * Set the date object.
+     *
+     * @param key The key to the date.
+     * @param date The date to set.
+     */
+    public void setDate(COSName key, Calendar date)
+    {
+<span class="nc" id="L331">        setString(key, DateConverter.toString(date));</span>
+<span class="nc" id="L332">    }</span>
+
+    /**
+     * Set the date object.
+     *
+     * @param embedded The embedded dictionary.
+     * @param key The key to the date.
+     * @param date The date to set.
+     */
+    public void setEmbeddedDate(COSName embedded, COSName key, Calendar date)
+    {
+<span class="nc" id="L343">        COSDictionary dic = getCOSDictionary(embedded);</span>
+<span class="nc bnc" id="L344" title="All 4 branches missed.">        if (dic == null &amp;&amp; date != null)</span>
+        {
+<span class="nc" id="L346">            dic = new COSDictionary();</span>
+<span class="nc" id="L347">            setItem(embedded, dic);</span>
+        }
+<span class="nc bnc" id="L349" title="All 2 branches missed.">        if (dic != null)</span>
+        {
+<span class="nc" id="L351">            dic.setDate(key, date);</span>
+        }
+<span class="nc" id="L353">    }</span>
+
+    /**
+     * This is a convenience method that will convert the value to a COSString object. If it is null then the object
+     * will be removed.
+     *
+     * @param key The key to the object,
+     * @param value The string value for the name.
+     */
+    public void setString(String key, String value)
+    {
+<span class="nc" id="L364">        setString(COSName.getPDFName(key), value);</span>
+<span class="nc" id="L365">    }</span>
+
+    /**
+     * This is a convenience method that will convert the value to a COSString object. If it is null then the object
+     * will be removed.
+     *
+     * @param key The key to the object,
+     * @param value The string value for the name.
+     */
+    public void setString(COSName key, String value)
+    {
+<span class="nc" id="L376">        COSString name = null;</span>
+<span class="nc bnc" id="L377" title="All 2 branches missed.">        if (value != null)</span>
+        {
+<span class="nc" id="L379">            name = new COSString(value);</span>
+        }
+<span class="nc" id="L381">        setItem(key, name);</span>
+<span class="nc" id="L382">    }</span>
+
+    /**
+     * This is a convenience method that will convert the value to a COSString object. If it is null then the object
+     * will be removed.
+     *
+     * @param embedded The embedded dictionary to set the item in.
+     * @param key The key to the object,
+     * @param value The string value for the name.
+     */
+    public void setEmbeddedString(COSName embedded, COSName key, String value)
+    {
+<span class="nc" id="L394">        COSDictionary dic = getCOSDictionary(embedded);</span>
+<span class="nc bnc" id="L395" title="All 4 branches missed.">        if (dic == null &amp;&amp; value != null)</span>
+        {
+<span class="nc" id="L397">            dic = new COSDictionary();</span>
+<span class="nc" id="L398">            setItem(embedded, dic);</span>
+        }
+<span class="nc bnc" id="L400" title="All 2 branches missed.">        if (dic != null)</span>
+        {
+<span class="nc" id="L402">            dic.setString(key, value);</span>
+        }
+<span class="nc" id="L404">    }</span>
+
+    /**
+     * This is a convenience method that will convert the value to a COSInteger object.
+     *
+     * @param key The key to the object,
+     * @param value The int value for the name.
+     */
+    public void setInt(String key, int value)
+    {
+<span class="nc" id="L414">        setInt(COSName.getPDFName(key), value);</span>
+<span class="nc" id="L415">    }</span>
+
+    /**
+     * This is a convenience method that will convert the value to a COSInteger object.
+     *
+     * @param key The key to the object,
+     * @param value The int value for the name.
+     */
+    public void setInt(COSName key, int value)
+    {
+<span class="fc" id="L425">        setItem(key, COSInteger.get(value));</span>
+<span class="fc" id="L426">    }</span>
+
+    /**
+     * This is a convenience method that will convert the value to a COSInteger object.
+     *
+     * @param key The key to the object,
+     * @param value The int value for the name.
+     */
+    public void setLong(String key, long value)
+    {
+<span class="nc" id="L436">        setLong(COSName.getPDFName(key), value);</span>
+<span class="nc" id="L437">    }</span>
+
+    /**
+     * This is a convenience method that will convert the value to a COSInteger object.
+     *
+     * @param key The key to the object,
+     * @param value The int value for the name.
+     */
+    public void setLong(COSName key, long value)
+    {
+<span class="fc" id="L447">        COSInteger intVal = COSInteger.get(value);</span>
+<span class="fc" id="L448">        setItem(key, intVal);</span>
+<span class="fc" id="L449">    }</span>
+
+    /**
+     * This is a convenience method that will convert the value to a COSInteger object.
+     *
+     * @param embeddedDictionary The embedded dictionary.
+     * @param key The key to the object,
+     * @param value The int value for the name.
+     */
+    public void setEmbeddedInt(COSName embeddedDictionary, COSName key, int value)
+    {
+<span class="nc" id="L460">        COSDictionary embedded = getCOSDictionary(embeddedDictionary);</span>
+<span class="nc bnc" id="L461" title="All 2 branches missed.">        if (embedded == null)</span>
+        {
+<span class="nc" id="L463">            embedded = new COSDictionary();</span>
+<span class="nc" id="L464">            setItem(embeddedDictionary, embedded);</span>
+        }
+<span class="nc" id="L466">        embedded.setInt(key, value);</span>
+<span class="nc" id="L467">    }</span>
+
+    /**
+     * This is a convenience method that will convert the value to a COSFloat object.
+     *
+     * @param key The key to the object,
+     * @param value The int value for the name.
+     */
+    public void setFloat(String key, float value)
+    {
+<span class="nc" id="L477">        setFloat(COSName.getPDFName(key), value);</span>
+<span class="nc" id="L478">    }</span>
+
+    /**
+     * This is a convenience method that will convert the value to a COSFloat object.
+     *
+     * @param key The key to the object,
+     * @param value The int value for the name.
+     */
+    public void setFloat(COSName key, float value)
+    {
+<span class="nc" id="L488">        COSFloat fltVal = new COSFloat(value);</span>
+<span class="nc" id="L489">        setItem(key, fltVal);</span>
+<span class="nc" id="L490">    }</span>
+
+    /**
+     * Sets the given boolean value at bitPos in the flags.
+     *
+     * @param field The COSName of the field to set the value into.
+     * @param bitFlag the bit position to set the value in.
+     * @param value the value the bit position should have.
+     */
+    public void setFlag(COSName field, int bitFlag, boolean value)
+    {
+<span class="nc" id="L501">        int currentFlags = getInt(field, 0);</span>
+<span class="nc bnc" id="L502" title="All 2 branches missed.">        if (value)</span>
+        {
+<span class="nc" id="L504">            currentFlags = currentFlags | bitFlag;</span>
+        }
+        else
+        {
+<span class="nc" id="L508">            currentFlags &amp;= ~bitFlag;</span>
+        }
+<span class="nc" id="L510">        setInt(field, currentFlags);</span>
+<span class="nc" id="L511">    }</span>
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a name. Null is returned
+     * if the entry does not exist in the dictionary.
+     *
+     * @param key The key to the item in the dictionary.
+     * @return The COS name.
+     */
+    public COSName getCOSName(COSName key)
+    {
+<span class="fc" id="L522">        COSBase name = getDictionaryObject(key);</span>
+<span class="fc bfc" id="L523" title="All 2 branches covered.">        if (name instanceof COSName)</span>
+        {
+<span class="fc" id="L525">            return (COSName) name;</span>
+        }
+<span class="fc" id="L527">        return null;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a COSObject. Null is
+     * returned if the entry does not exist in the dictionary.
+     *
+     * @param key The key to the item in the dictionary.
+     * @return The COSObject.
+     */
+    public COSObject getCOSObject(COSName key)
+    {
+<span class="nc" id="L539">        COSBase object = getItem(key);</span>
+<span class="nc bnc" id="L540" title="All 2 branches missed.">        if (object instanceof COSObject)</span>
+        {
+<span class="nc" id="L542">            return (COSObject) object;</span>
+        }
+<span class="nc" id="L544">        return null;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a COSDictionary. Null is
+     * returned if the entry does not exist in the dictionary.
+     *
+     * @param key The key to the item in the dictionary.
+     * @return The COSDictionary.
+     */
+    public COSDictionary getCOSDictionary(COSName key)
+    {
+<span class="fc" id="L556">        COSBase dictionary = getDictionaryObject(key);</span>
+<span class="fc bfc" id="L557" title="All 2 branches covered.">        if (dictionary instanceof COSDictionary)</span>
+        {
+<span class="fc" id="L559">            return (COSDictionary) dictionary;</span>
+        }
+<span class="fc" id="L561">        return null;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a COSDictionary. Null is
+     * returned if the entry does not exist in the dictionary.
+     *
+     * @param firstKey The first key to the item in the dictionary.
+     * @param secondKey The second key to the item in the dictionary.
+     * @return The COSDictionary.
+     */
+    public COSDictionary getCOSDictionary(COSName firstKey, COSName secondKey)
+    {
+<span class="fc" id="L574">        COSBase dictionary = getDictionaryObject(firstKey, secondKey);</span>
+<span class="fc bfc" id="L575" title="All 2 branches covered.">        if (dictionary instanceof COSDictionary)</span>
+        {
+<span class="fc" id="L577">            return (COSDictionary) dictionary;</span>
+        }
+<span class="fc" id="L579">        return null;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a COSStream. Null is
+     * returned if the entry does not exist in the dictionary.
+     *
+     * @param key The key to the item in the dictionary.
+     * @return The COSStream.
+     */
+    public COSStream getCOSStream(COSName key)
+    {
+<span class="nc" id="L591">        COSBase base = getDictionaryObject(key);</span>
+<span class="nc bnc" id="L592" title="All 2 branches missed.">        if (base instanceof COSStream)</span>
+        {
+<span class="nc" id="L594">            return (COSStream) base;</span>
+        }
+<span class="nc" id="L596">        return null;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a COSArray. Null is
+     * returned if the entry does not exist in the dictionary.
+     *
+     * @param key The key to the item in the dictionary.
+     * @return The COSArray.
+     */
+    public COSArray getCOSArray(COSName key)
+    {
+<span class="fc" id="L608">        COSBase array = getDictionaryObject(key);</span>
+<span class="pc bpc" id="L609" title="1 of 2 branches missed.">        if (array instanceof COSArray)</span>
+        {
+<span class="fc" id="L611">            return (COSArray) array;</span>
+        }
+<span class="nc" id="L613">        return null;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a name. Default is
+     * returned if the entry does not exist in the dictionary.
+     *
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The value to return if the dictionary item is null.
+     * @return The COS name.
+     */
+    public COSName getCOSName(COSName key, COSName defaultValue)
+    {
+<span class="nc" id="L626">        COSBase name = getDictionaryObject(key);</span>
+<span class="nc bnc" id="L627" title="All 2 branches missed.">        if (name instanceof COSName)</span>
+        {
+<span class="nc" id="L629">            return (COSName) name;</span>
+        }
+<span class="nc" id="L631">        return defaultValue;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a name and convert it to
+     * a string. Null is returned if the entry does not exist in the dictionary.
+     *
+     * @param key The key to the item in the dictionary.
+     * @return The name converted to a string.
+     */
+    public String getNameAsString(String key)
+    {
+<span class="nc" id="L643">        return getNameAsString(COSName.getPDFName(key));</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a name and convert it to
+     * a string. Null is returned if the entry does not exist in the dictionary.
+     *
+     * @param key The key to the item in the dictionary.
+     * @return The name converted to a string.
+     */
+    public String getNameAsString(COSName key)
+    {
+<span class="nc" id="L655">        String retval = null;</span>
+<span class="nc" id="L656">        COSBase name = getDictionaryObject(key);</span>
+<span class="nc bnc" id="L657" title="All 2 branches missed.">        if (name instanceof COSName)</span>
+        {
+<span class="nc" id="L659">            retval = ((COSName) name).getName();</span>
+        }
+<span class="nc bnc" id="L661" title="All 2 branches missed.">        else if (name instanceof COSString)</span>
+        {
+<span class="nc" id="L663">            retval = ((COSString) name).getString();</span>
+        }
+<span class="nc" id="L665">        return retval;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a name and convert it to
+     * a string.
+     *
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The value to return if the dictionary item is null.
+     * @return The name converted to a string.
+     */
+    public String getNameAsString(String key, String defaultValue)
+    {
+<span class="nc" id="L678">        return getNameAsString(COSName.getPDFName(key), defaultValue);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a name and convert it to
+     * a string.
+     *
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The value to return if the dictionary item is null.
+     * @return The name converted to a string.
+     */
+    public String getNameAsString(COSName key, String defaultValue)
+    {
+<span class="nc" id="L691">        String retval = getNameAsString(key);</span>
+<span class="nc bnc" id="L692" title="All 2 branches missed.">        if (retval == null)</span>
+        {
+<span class="nc" id="L694">            retval = defaultValue;</span>
+        }
+<span class="nc" id="L696">        return retval;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a
+     * string. Null is returned if the entry does not exist in the dictionary.
+     *
+     * @param key The key to the item in the dictionary.
+     * @return The name converted to a string.
+     */
+    public String getString(String key)
+    {
+<span class="nc" id="L708">        return getString(COSName.getPDFName(key));</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a
+     * string. Null is returned if the entry does not exist in the dictionary.
+     *
+     * @param key The key to the item in the dictionary.
+     * @return The name converted to a string.
+     */
+    public String getString(COSName key)
+    {
+<span class="nc" id="L720">        String retval = null;</span>
+<span class="nc" id="L721">        COSBase value = getDictionaryObject(key);</span>
+<span class="nc bnc" id="L722" title="All 2 branches missed.">        if (value instanceof COSString)</span>
+        {
+<span class="nc" id="L724">            retval = ((COSString) value).getString();</span>
+        }
+<span class="nc" id="L726">        return retval;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a
+     * string.
+     *
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The default value to return.
+     * @return The name converted to a string.
+     */
+    public String getString(String key, String defaultValue)
+    {
+<span class="nc" id="L739">        return getString(COSName.getPDFName(key), defaultValue);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a
+     * string.
+     *
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The default value to return.
+     * @return The name converted to a string.
+     */
+    public String getString(COSName key, String defaultValue)
+    {
+<span class="nc" id="L752">        String retval = getString(key);</span>
+<span class="nc bnc" id="L753" title="All 2 branches missed.">        if (retval == null)</span>
+        {
+<span class="nc" id="L755">            retval = defaultValue;</span>
+        }
+<span class="nc" id="L757">        return retval;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a name and convert it to
+     * a string. Null is returned if the entry does not exist in the dictionary.
+     *
+     * @param embedded The embedded dictionary.
+     * @param key The key to the item in the dictionary.
+     * @return The name converted to a string.
+     */
+    public String getEmbeddedString(COSName embedded, COSName key)
+    {
+<span class="nc" id="L770">        return getEmbeddedString(embedded, key, null);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a name and convert it to
+     * a string.
+     *
+     * @param embedded The embedded dictionary.
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The default value to return.
+     * @return The name converted to a string.
+     */
+    public String getEmbeddedString(COSName embedded, COSName key, String defaultValue)
+    {
+<span class="nc" id="L784">        COSDictionary eDic = getCOSDictionary(embedded);</span>
+<span class="nc bnc" id="L785" title="All 2 branches missed.">        return eDic != null ? eDic.getString(key, defaultValue) : defaultValue;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a name and convert it to
+     * a string. Null is returned if the entry does not exist in the dictionary or if the date was invalid.
+     *
+     * @param key The key to the item in the dictionary.
+     * @return The name converted to a date.
+     */
+    public Calendar getDate(String key)
+    {
+<span class="nc" id="L797">        return getDate(COSName.getPDFName(key));</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a name and convert it to
+     * a string. Null is returned if the entry does not exist in the dictionary or if the date was invalid.
+     *
+     * @param key The key to the item in the dictionary.
+     * @return The name converted to a date.
+     */
+    public Calendar getDate(COSName key)
+    {
+<span class="nc" id="L809">        COSBase base = getDictionaryObject(key);</span>
+<span class="nc bnc" id="L810" title="All 2 branches missed.">        if (base instanceof COSString)</span>
+        {
+<span class="nc" id="L812">            return DateConverter.toCalendar((COSString) base);</span>
+        }
+<span class="nc" id="L814">        return null;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a date.
+     *
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The default value to return if the entry does not exist in the dictionary or if the date was invalid.
+     * @return The name converted to a date.
+     */
+    public Calendar getDate(String key, Calendar defaultValue)
+    {
+<span class="nc" id="L826">        return getDate(COSName.getPDFName(key), defaultValue);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a date.
+     *
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The default value to return if the entry does not exist in the dictionary or if the date was invalid.
+     * @return The name converted to a date.
+     */
+    public Calendar getDate(COSName key, Calendar defaultValue)
+    {
+<span class="nc" id="L838">        Calendar retval = getDate(key);</span>
+<span class="nc bnc" id="L839" title="All 2 branches missed.">        if (retval == null)</span>
+        {
+<span class="nc" id="L841">            retval = defaultValue;</span>
+        }
+<span class="nc" id="L843">        return retval;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a name and convert it to
+     * a string. Null is returned if the entry does not exist in the dictionary.
+     *
+     * @param embedded The embedded dictionary to get.
+     * @param key The key to the item in the dictionary.
+     * @return The name converted to a string.
+     */
+    public Calendar getEmbeddedDate(COSName embedded, COSName key)
+    {
+<span class="nc" id="L856">        return getEmbeddedDate(embedded, key, null);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a date.
+     *
+     * @param embedded The embedded dictionary to get.
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The default value to return if the entry does not exist in the dictionary or if the date was
+     * invalid.
+     * @return The name converted to a string.
+     */
+    public Calendar getEmbeddedDate(COSName embedded, COSName key, Calendar defaultValue)
+    {
+<span class="nc" id="L870">        COSDictionary eDic = getCOSDictionary(embedded);</span>
+<span class="nc bnc" id="L871" title="All 2 branches missed.">        return eDic != null ? eDic.getDate(key, defaultValue) : defaultValue;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a cos boolean and convert
+     * it to a primitive boolean.
+     *
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The value returned if the entry is null.
+     *
+     * @return The value converted to a boolean.
+     */
+    public boolean getBoolean(String key, boolean defaultValue)
+    {
+<span class="nc" id="L885">        return getBoolean(COSName.getPDFName(key), defaultValue);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a COSBoolean and convert
+     * it to a primitive boolean.
+     *
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The value returned if the entry is null.
+     *
+     * @return The entry converted to a boolean.
+     */
+    public boolean getBoolean(COSName key, boolean defaultValue)
+    {
+<span class="nc" id="L899">        return getBoolean(key, null, defaultValue);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a COSBoolean and convert
+     * it to a primitive boolean.
+     *
+     * @param firstKey The first key to the item in the dictionary.
+     * @param secondKey The second key to the item in the dictionary.
+     * @param defaultValue The value returned if the entry is null.
+     *
+     * @return The entry converted to a boolean.
+     */
+    public boolean getBoolean(COSName firstKey, COSName secondKey, boolean defaultValue)
+    {
+<span class="nc" id="L914">        boolean retval = defaultValue;</span>
+<span class="nc" id="L915">        COSBase bool = getDictionaryObject(firstKey, secondKey);</span>
+<span class="nc bnc" id="L916" title="All 2 branches missed.">        if (bool instanceof COSBoolean)</span>
+        {
+<span class="nc bnc" id="L918" title="All 2 branches missed.">            retval = bool == COSBoolean.TRUE;</span>
+        }
+<span class="nc" id="L920">        return retval;</span>
+    }
+
+    /**
+     * Get an integer from an embedded dictionary. Useful for 1-1 mappings. default:-1
+     *
+     * @param embeddedDictionary The name of the embedded dictionary.
+     * @param key The key in the embedded dictionary.
+     *
+     * @return The value of the embedded integer.
+     */
+    public int getEmbeddedInt(COSName embeddedDictionary, COSName key)
+    {
+<span class="nc" id="L933">        return getEmbeddedInt(embeddedDictionary, key, -1);</span>
+    }
+
+    /**
+     * Get an integer from an embedded dictionary. Useful for 1-1 mappings.
+     *
+     * @param embeddedDictionary The name of the embedded dictionary.
+     * @param key The key in the embedded dictionary.
+     * @param defaultValue The value if there is no embedded dictionary or it does not contain the key.
+     *
+     * @return The value of the embedded integer.
+     */
+    public int getEmbeddedInt(COSName embeddedDictionary, COSName key, int defaultValue)
+    {
+<span class="nc" id="L947">        COSDictionary embedded = getCOSDictionary(embeddedDictionary);</span>
+<span class="nc bnc" id="L948" title="All 2 branches missed.">        return embedded != null ? embedded.getInt(key, defaultValue) : defaultValue;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be an int. -1 is returned if
+     * there is no value.
+     *
+     * @param key The key to the item in the dictionary.
+     * @return The integer value.
+     */
+    public int getInt(String key)
+    {
+<span class="nc" id="L960">        return getInt(COSName.getPDFName(key), -1);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be an int. -1 is returned if
+     * there is no value.
+     *
+     * @param key The key to the item in the dictionary.
+     * @return The integer value..
+     */
+    public int getInt(COSName key)
+    {
+<span class="fc" id="L972">        return getInt(key, -1);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be an integer. If the
+     * dictionary value is null then the default value will be returned.
+     *
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The value to return if the dictionary item is null.
+     * @return The integer value.
+     */
+    public int getInt(String key, int defaultValue)
+    {
+<span class="nc" id="L985">        return getInt(COSName.getPDFName(key), defaultValue);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be an integer. If the
+     * dictionary value is null then the defaultvalue will be returned.
+     *
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The value to return if the dictionary item is null.
+     * @return The integer value.
+     */
+    public int getInt(COSName key, int defaultValue)
+    {
+<span class="fc" id="L998">        return getInt(key, null, defaultValue);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be an integer. If the
+     * dictionary value is null then the default value -1 will be returned.
+     *
+     * @param firstKey The first key to the item in the dictionary.
+     * @param secondKey The second key to the item in the dictionary.
+     * @return The integer value.
+     */
+    public int getInt(COSName firstKey, COSName secondKey)
+    {
+<span class="nc" id="L1011">        return getInt(firstKey, secondKey, -1);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be an integer. If the
+     * dictionary value is null then the default value will be returned.
+     *
+     * @param firstKey The first key to the item in the dictionary.
+     * @param secondKey The second key to the item in the dictionary.
+     * @param defaultValue The value to return if the dictionary item is null.
+     * @return The integer value.
+     */
+    public int getInt(COSName firstKey, COSName secondKey, int defaultValue)
+    {
+<span class="fc" id="L1025">        int retval = defaultValue;</span>
+<span class="fc" id="L1026">        COSBase obj = getDictionaryObject(firstKey, secondKey);</span>
+<span class="pc bpc" id="L1027" title="1 of 2 branches missed.">        if (obj instanceof COSNumber)</span>
+        {
+<span class="fc" id="L1029">            retval = ((COSNumber) obj).intValue();</span>
+        }
+<span class="fc" id="L1031">        return retval;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be an long. -1 is returned
+     * if there is no value.
+     *
+     * @param key The key to the item in the dictionary.
+     *
+     * @return The long value.
+     */
+    public long getLong(String key)
+    {
+<span class="nc" id="L1044">        return getLong(COSName.getPDFName(key), -1L);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be an long. -1 is returned
+     * if there is no value.
+     *
+     * @param key The key to the item in the dictionary.
+     * @return The long value.
+     */
+    public long getLong(COSName key)
+    {
+<span class="fc" id="L1056">        return getLong(key, -1L);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be an integer. If the
+     * dictionary value is null then the default value will be returned.
+     *
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The value to return if the dictionary item is null.
+     * @return The integer value.
+     */
+    public long getLong(String key, long defaultValue)
+    {
+<span class="nc" id="L1069">        return getLong(COSName.getPDFName(key), defaultValue);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be an integer. If the
+     * dictionary value is null then the default value will be returned.
+     *
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The value to return if the dictionary item is null.
+     * @return The integer value.
+     */
+    public long getLong(COSName key, long defaultValue)
+    {
+<span class="fc" id="L1082">        long retval = defaultValue;</span>
+<span class="fc" id="L1083">        COSBase obj = getDictionaryObject(key);</span>
+<span class="pc bpc" id="L1084" title="1 of 2 branches missed.">        if (obj instanceof COSNumber)</span>
+        {
+<span class="nc" id="L1086">            retval = ((COSNumber) obj).longValue();</span>
+        }
+<span class="fc" id="L1088">        return retval;</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be an float. -1 is returned
+     * if there is no value.
+     *
+     * @param key The key to the item in the dictionary.
+     * @return The float value.
+     */
+    public float getFloat(String key)
+    {
+<span class="nc" id="L1100">        return getFloat(COSName.getPDFName(key), -1);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be an float. -1 is returned
+     * if there is no value.
+     *
+     * @param key The key to the item in the dictionary.
+     * @return The float value.
+     */
+    public float getFloat(COSName key)
+    {
+<span class="nc" id="L1112">        return getFloat(key, -1);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be a float. If the
+     * dictionary value is null then the default value will be returned.
+     *
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The value to return if the dictionary item is null.
+     * @return The float value.
+     */
+    public float getFloat(String key, float defaultValue)
+    {
+<span class="nc" id="L1125">        return getFloat(COSName.getPDFName(key), defaultValue);</span>
+    }
+
+    /**
+     * This is a convenience method that will get the dictionary object that is expected to be an float. If the
+     * dictionary value is null then the default value will be returned.
+     *
+     * @param key The key to the item in the dictionary.
+     * @param defaultValue The value to return if the dictionary item is null.
+     * @return The float value.
+     */
+    public float getFloat(COSName key, float defaultValue)
+    {
+<span class="nc" id="L1138">        float retval = defaultValue;</span>
+<span class="nc" id="L1139">        COSBase obj = getDictionaryObject(key);</span>
+<span class="nc bnc" id="L1140" title="All 2 branches missed.">        if (obj instanceof COSNumber)</span>
+        {
+<span class="nc" id="L1142">            retval = ((COSNumber) obj).floatValue();</span>
+        }
+<span class="nc" id="L1144">        return retval;</span>
+    }
+
+    /**
+     * Gets the boolean value from the flags at the given bit position.
+     *
+     * @param field The COSName of the field to get the flag from.
+     * @param bitFlag the bitPosition to get the value from.
+     *
+     * @return true if the number at bitPos is '1'
+     */
+    public boolean getFlag(COSName field, int bitFlag)
+    {
+<span class="nc" id="L1157">        int ff = getInt(field, 0);</span>
+<span class="nc bnc" id="L1158" title="All 2 branches missed.">        return (ff &amp; bitFlag) == bitFlag;</span>
+    }
+
+    /**
+     * This will remove an item for the dictionary. This will do nothing of the object does not exist.
+     *
+     * @param key The key to the item to remove from the dictionary.
+     */
+    public void removeItem(COSName key)
+    {
+<span class="fc" id="L1168">        items.remove(key);</span>
+<span class="fc" id="L1169">        getUpdateState().update();</span>
+<span class="fc" id="L1170">    }</span>
+
+    /**
+     * This will do a lookup into the dictionary.
+     *
+     * @param key The key to the object.
+     *
+     * @return The item that matches the key.
+     */
+    public COSBase getItem(COSName key)
+    {
+<span class="fc" id="L1181">        return items.get(key);</span>
+    }
+
+    /**
+     * This will do a lookup into the dictionary.
+     * 
+     * @param key The key to the object.
+     *
+     * @return The item that matches the key.
+     */
+    public COSBase getItem(String key)
+    {
+<span class="nc" id="L1193">        return getItem(COSName.getPDFName(key));</span>
+    }
+
+    /**
+     * This is a special case of getItem that takes multiple keys, it will handle the situation
+     * where multiple keys could get the same value, ie if either CS or ColorSpace is used to get
+     * the colorspace. This will get an object from this dictionary.
+     *
+     * @param firstKey The first key to try.
+     * @param secondKey The second key to try.
+     *
+     * @return The object that matches the key.
+     */
+    public COSBase getItem(COSName firstKey, COSName secondKey)
+    {
+<span class="nc" id="L1208">        COSBase retval = getItem(firstKey);</span>
+<span class="nc bnc" id="L1209" title="All 4 branches missed.">        if (retval == null &amp;&amp; secondKey != null)</span>
+        {
+<span class="nc" id="L1211">            retval = getItem(secondKey);</span>
+        }
+<span class="nc" id="L1213">        return retval;</span>
+    }
+    
+    /**
+     * Returns the names of the entries in this dictionary. The returned set is in the order the entries were added to
+     * the dictionary.
+     *
+     * @since Apache PDFBox 1.1.0
+     * @return names of the entries in this dictionary
+     */
+    public Set&lt;COSName&gt; keySet()
+    {
+<span class="nc" id="L1225">        return items.keySet();</span>
+    }
+
+    /**
+     * Returns the name-value entries in this dictionary. The returned set is in the order the entries were added to the
+     * dictionary.
+     *
+     * @since Apache PDFBox 1.1.0
+     * @return name-value entries in this dictionary
+     */
+    public Set&lt;Map.Entry&lt;COSName, COSBase&gt;&gt; entrySet()
+    {
+<span class="fc" id="L1237">        return items.entrySet();</span>
+    }
+
+    /**
+     * Convenience method that calls {@link Map#forEach(java.util.function.BiConsumer) Map.forEach(BiConsumer)}.
+     *
+     * @param action The action to be performed for each entry
+     * 
+     */
+    public void forEach(BiConsumer&lt;? super COSName, ? super COSBase&gt; action)
+    {
+<span class="fc" id="L1248">        items.forEach(action);</span>
+<span class="fc" id="L1249">    }</span>
+
+    /**
+     * This will get all of the values for the dictionary.
+     *
+     * @return All the values for the dictionary.
+     */
+    public Collection&lt;COSBase&gt; getValues()
+    {
+<span class="fc" id="L1258">        return items.values();</span>
+    }
+
+    /**
+     * visitor pattern double dispatch method.
+     *
+     * @param visitor The object to notify when visiting this object.
+     * @throws IOException If there is an error visiting this object.
+     */
+    @Override
+    public void accept(ICOSVisitor visitor) throws IOException
+    {
+<span class="fc" id="L1270">        visitor.visitFromDictionary(this);</span>
+<span class="fc" id="L1271">    }</span>
+
+    /**
+     * This will add all of the dictionaries keys/values to this dictionary. Existing key/value pairs will be
+     * overwritten.
+     *
+     * @param dict The dictionaries to get the key/value pairs from.
+     */
+    public void addAll(COSDictionary dict)
+    {
+<span class="fc" id="L1281">        items.putAll(dict.items);</span>
+<span class="fc" id="L1282">    }</span>
+
+    /**
+     * @see java.util.Map#containsKey(Object)
+     *
+     * @param name The key to find in the map.
+     * @return true if the map contains this key.
+     */
+    public boolean containsKey(COSName name)
+    {
+<span class="fc" id="L1292">        return this.items.containsKey(name);</span>
+    }
+
+    /**
+     * @see java.util.Map#containsKey(Object)
+     *
+     * @param name The key to find in the map.
+     * @return true if the map contains this key.
+     */
+    public boolean containsKey(String name)
+    {
+<span class="nc" id="L1303">        return containsKey(COSName.getPDFName(name));</span>
+    }
+
+    /**
+     * Nice method, gives you every object you want Arrays works properly too. Try &quot;P/Annots/[k]/Rect&quot; where k means the
+     * index of the Annots array.
+     *
+     * @param objPath the relative path to the object.
+     * @return the object
+     */
+    public COSBase getObjectFromPath(String objPath)
+    {
+<span class="nc" id="L1315">        String[] path = objPath.split(PATH_SEPARATOR);</span>
+<span class="nc" id="L1316">        COSBase retval = this;</span>
+<span class="nc bnc" id="L1317" title="All 2 branches missed.">        for (String pathString : path)</span>
+        {
+<span class="nc bnc" id="L1319" title="All 2 branches missed.">            if (retval instanceof COSArray)</span>
+            {
+<span class="nc" id="L1321">                int idx = Integer.parseInt(pathString.replace(&quot;\\[&quot;, &quot;&quot;).replace(&quot;\\]&quot;, &quot;&quot;));</span>
+<span class="nc" id="L1322">                retval = ((COSArray) retval).getObject(idx);</span>
+<span class="nc" id="L1323">            }</span>
+<span class="nc bnc" id="L1324" title="All 2 branches missed.">            else if (retval instanceof COSDictionary)</span>
+            {
+<span class="nc" id="L1326">                retval = ((COSDictionary) retval).getDictionaryObject(pathString);</span>
+            }
+        }
+<span class="nc" id="L1329">        return retval;</span>
+    }
+
+    /**
+     * Returns an unmodifiable view of this dictionary.
+     * 
+     * @return an unmodifiable view of this dictionary
+     */
+    public COSDictionary asUnmodifiableDictionary()
+    {
+<span class="nc" id="L1339">        return new UnmodifiableCOSDictionary(this);</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+        try
+        {
+<span class="nc" id="L1350">            return getDictionaryString(this, new ArrayList&lt;&gt;());</span>
+        }
+<span class="nc" id="L1352">        catch (IOException e)</span>
+        {
+<span class="nc" id="L1354">            LOG.debug(&quot;An exception occurred trying - returning error message instead&quot;, e);</span>
+<span class="nc" id="L1355">            return &quot;COSDictionary{&quot; + e.getMessage() + &quot;}&quot;;</span>
+        }
+    }
+
+    private static String getDictionaryString(COSBase base, List&lt;COSBase&gt; objs) throws IOException
+    {
+<span class="nc bnc" id="L1361" title="All 2 branches missed.">        if (base == null)</span>
+        {
+<span class="nc" id="L1363">            return &quot;null&quot;;</span>
+        }
+<span class="nc bnc" id="L1365" title="All 2 branches missed.">        if (objs.contains(base))</span>
+        {
+            // avoid endless recursion
+<span class="nc" id="L1368">            return &quot;hash:&quot; + base.hashCode();</span>
+        }
+<span class="nc bnc" id="L1370" title="All 2 branches missed.">        if (base instanceof COSDictionary)</span>
+        {
+<span class="nc" id="L1372">            objs.add(base);</span>
+<span class="nc" id="L1373">            StringBuilder sb = new StringBuilder(&quot;COSDictionary{&quot;);</span>
+<span class="nc bnc" id="L1374" title="All 2 branches missed.">            for (Map.Entry&lt;COSName, COSBase&gt; x : ((COSDictionary) base).entrySet())</span>
+            {
+<span class="nc" id="L1376">                sb.append(x.getKey());</span>
+<span class="nc" id="L1377">                sb.append(&quot;:&quot;);</span>
+<span class="nc" id="L1378">                sb.append(getDictionaryString(x.getValue(), objs));</span>
+<span class="nc" id="L1379">                sb.append(&quot;;&quot;);</span>
+<span class="nc" id="L1380">            }</span>
+<span class="nc" id="L1381">            sb.append(&quot;}&quot;);</span>
+<span class="nc bnc" id="L1382" title="All 2 branches missed.">            if (base instanceof COSStream)</span>
+            {
+<span class="nc" id="L1384">                try (InputStream stream = ((COSStream) base).createRawInputStream())</span>
+                {
+<span class="nc" id="L1386">                    byte[] b = stream.readAllBytes();</span>
+<span class="nc" id="L1387">                    sb.append(&quot;COSStream{&quot;).append(Arrays.hashCode(b)).append(&quot;}&quot;);</span>
+                }
+            }
+<span class="nc" id="L1390">            return sb.toString();</span>
+        }
+<span class="nc bnc" id="L1392" title="All 2 branches missed.">        if (base instanceof COSArray)</span>
+        {
+<span class="nc" id="L1394">            objs.add(base);</span>
+<span class="nc" id="L1395">            StringBuilder sb = new StringBuilder(&quot;COSArray{&quot;);</span>
+<span class="nc bnc" id="L1396" title="All 2 branches missed.">            for (COSBase x : (COSArray) base)</span>
+            {
+<span class="nc" id="L1398">                sb.append(getDictionaryString(x, objs));</span>
+<span class="nc" id="L1399">                sb.append(&quot;;&quot;);</span>
+<span class="nc" id="L1400">            }</span>
+<span class="nc" id="L1401">            sb.append(&quot;}&quot;);</span>
+<span class="nc" id="L1402">            return sb.toString();</span>
+        }
+<span class="nc bnc" id="L1404" title="All 2 branches missed.">        if (base instanceof COSObject)</span>
+        {
+<span class="nc" id="L1406">            objs.add(base);</span>
+<span class="nc" id="L1407">            COSObject obj = (COSObject) base;</span>
+<span class="nc" id="L1408">            return &quot;COSObject{&quot;</span>
+<span class="nc" id="L1409">                    + getDictionaryString(</span>
+<span class="nc bnc" id="L1410" title="All 2 branches missed.">                            obj.isObjectNull() ? COSNull.NULL : obj.getObject(), objs)</span>
+                    + &quot;}&quot;;
+        }
+<span class="nc" id="L1413">        return base.toString();</span>
+    }
+    
+    /**
+     * Returns the current {@link COSUpdateState} of this {@link COSDictionary}.
+     *
+     * @return The current {@link COSUpdateState} of this {@link COSDictionary}.
+     * @see COSUpdateState
+     */
+    @Override
+    public COSUpdateState getUpdateState()
+    {
+<span class="fc" id="L1425">        return updateState;</span>
+    }
+
+    /**
+     * Reset all object keys to avoid overlapping numbers when saving the new pdf.
+     */
+    public void resetImportedObjectKeys()
+    {
+<span class="nc" id="L1433">        resetObjectKeys(new HashSet&lt;&gt;()).clear();</span>
+<span class="nc" id="L1434">    }</span>
+
+    /**
+     * Collects all indirect objects numbers within this dictionary and all included dictionaries. It is used to avoid
+     * overlapping object numbers when importing an existing page to another pdf.
+     * 
+     * Expert use only. You might run into an endless recursion if choosing a wrong starting point.
+     * 
+     * @param indirectObjects a collection of already found indirect objects.
+     * 
+     */
+    protected Collection&lt;COSObjectKey&gt; resetObjectKeys(Collection&lt;COSObjectKey&gt; indirectObjects)
+    {
+<span class="nc bnc" id="L1447" title="All 2 branches missed.">        if (indirectObjects == null)</span>
+        {
+<span class="nc" id="L1449">            return indirectObjects;</span>
+        }
+<span class="nc" id="L1451">        COSObjectKey key = getKey();</span>
+<span class="nc bnc" id="L1452" title="All 2 branches missed.">        if (key != null)</span>
+        {
+            // avoid endless recursions
+<span class="nc bnc" id="L1455" title="All 2 branches missed.">            if (indirectObjects.contains(key))</span>
+            {
+<span class="nc" id="L1457">                return indirectObjects;</span>
+            }
+<span class="nc" id="L1459">            indirectObjects.add(key);</span>
+            // reset object key
+<span class="nc" id="L1461">            setKey(null);</span>
+        }
+<span class="nc bnc" id="L1463" title="All 2 branches missed.">        for (Entry&lt;COSName, COSBase&gt; entry : items.entrySet())</span>
+        {
+<span class="nc" id="L1465">            COSBase cosBase = entry.getValue();</span>
+<span class="nc bnc" id="L1466" title="All 2 branches missed.">            COSObjectKey indirectObjectKey = cosBase instanceof COSObject ? cosBase.getKey() : null;</span>
+<span class="nc bnc" id="L1467" title="All 2 branches missed.">            if (indirectObjectKey != null)</span>
+            {
+                // avoid endless recursions
+<span class="nc bnc" id="L1470" title="All 2 branches missed.">                if (indirectObjects.contains(indirectObjectKey))</span>
+                {
+<span class="nc" id="L1472">                    continue;</span>
+                }
+                // dereference object first
+<span class="nc" id="L1475">                cosBase = ((COSObject) cosBase).getObject();</span>
+                // reset object key
+<span class="nc" id="L1477">                entry.getValue().setKey(null);</span>
+            }
+<span class="nc bnc" id="L1479" title="All 2 branches missed.">            if (cosBase instanceof COSDictionary)</span>
+            {
+<span class="nc" id="L1481">                COSName entryKey = entry.getKey();</span>
+                // descend to included dictionary to reset all included indirect objects
+                // skip PARENT and P references to avoid recursions
+<span class="nc bnc" id="L1484" title="All 4 branches missed.">                if (!COSName.PARENT.equals(entryKey) &amp;&amp; !COSName.P.equals(entryKey))</span>
+                {
+<span class="nc" id="L1486">                    ((COSDictionary) cosBase).resetObjectKeys(indirectObjects);</span>
+                }
+<span class="nc" id="L1488">            }</span>
+<span class="nc bnc" id="L1489" title="All 2 branches missed.">            else if (cosBase instanceof COSArray)</span>
+            {
+                // descend to included array to reset all included indirect objects
+<span class="nc" id="L1492">                ((COSArray) cosBase).resetObjectKeys(indirectObjects);</span>
+            }
+<span class="nc bnc" id="L1494" title="All 2 branches missed.">            else if (indirectObjectKey != null)</span>
+            {
+                // add key for all indirect objects other than COSDictionary/COSArray
+<span class="nc" id="L1497">                indirectObjects.add(indirectObjectKey);</span>
+            }
+<span class="nc" id="L1499">        }</span>
+<span class="nc" id="L1500">        return indirectObjects;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

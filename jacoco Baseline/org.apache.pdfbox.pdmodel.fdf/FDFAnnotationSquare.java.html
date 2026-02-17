@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FDFAnnotationSquare.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.fdf</a> &gt; <span class="el_source">FDFAnnotationSquare.java</span></div><h1>FDFAnnotationSquare.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.fdf;
+
+import java.awt.Color;
+import java.io.IOException;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.w3c.dom.Element;
+
+/**
+ * This represents a Square FDF annotation.
+ *
+ * @author Ben Litchfield
+ * @author Johanneke Lamberink
+ */
+public class FDFAnnotationSquare extends FDFAnnotation
+{
+    /**
+     * COS Model value for SubType entry.
+     */
+    public static final String SUBTYPE = &quot;Square&quot;;
+
+    /**
+     * Default constructor.
+     */
+    public FDFAnnotationSquare()
+    {
+<span class="nc" id="L46">        super();</span>
+<span class="nc" id="L47">        annot.setName(COSName.SUBTYPE, SUBTYPE);</span>
+<span class="nc" id="L48">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param a An existing FDF Annotation.
+     */
+    public FDFAnnotationSquare(COSDictionary a)
+    {
+<span class="nc" id="L57">        super(a);</span>
+<span class="nc" id="L58">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param element An XFDF element.
+     *
+     * @throws IOException If there is an error extracting information from the element.
+     */
+    public FDFAnnotationSquare(Element element) throws IOException
+    {
+<span class="nc" id="L69">        super(element);</span>
+<span class="nc" id="L70">        annot.setName(COSName.SUBTYPE, SUBTYPE);</span>
+
+<span class="nc" id="L72">        String color = element.getAttribute(&quot;interior-color&quot;);</span>
+<span class="nc bnc" id="L73" title="All 6 branches missed.">        if (color != null &amp;&amp; color.length() == 7 &amp;&amp; color.charAt(0) == '#')</span>
+        {
+<span class="nc" id="L75">            int colorValue = Integer.parseInt(color.substring(1, 7), 16);</span>
+<span class="nc" id="L76">            setInteriorColor(new Color(colorValue));</span>
+        }
+
+<span class="nc" id="L79">        initFringe(element);</span>
+<span class="nc" id="L80">    }</span>
+
+    private void initFringe(Element element) throws IOException
+    {
+<span class="nc" id="L84">        String fringe = element.getAttribute(&quot;fringe&quot;);</span>
+<span class="nc bnc" id="L85" title="All 4 branches missed.">        if (fringe != null &amp;&amp; !fringe.isEmpty())</span>
+        {
+<span class="nc" id="L87">            PDRectangle rect = createRectangleFromAttributes(</span>
+                    fringe, &quot;Error: wrong amount of numbers in attribute 'fringe'&quot;);
+<span class="nc" id="L89">            setFringe(rect);</span>
+        }
+<span class="nc" id="L91">    }</span>
+
+    /**
+     * This will set interior color of the drawn area.
+     *
+     * @param color The interior color of the circle.
+     */
+    public final void setInteriorColor(Color color)
+    {
+<span class="nc" id="L100">        COSArray array = null;</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        if (color != null)</span>
+        {
+<span class="nc" id="L103">            array = COSArray.of(color.getRGBColorComponents(null));</span>
+        }
+<span class="nc" id="L105">        annot.setItem(COSName.IC, array);</span>
+<span class="nc" id="L106">    }</span>
+
+    /**
+     * This will retrieve the interior color of the drawn area.
+     *
+     * @return object representing the color.
+     */
+    public Color getInteriorColor()
+    {
+<span class="nc" id="L115">        return getColor(COSName.IC);</span>
+    }
+
+    /**
+     * This will set the fringe rectangle. Giving the difference between the annotations rectangle and where the drawing
+     * occurs. (To take account of any effects applied through the BE entry for example)
+     *
+     * @param fringe the fringe
+     */
+    public final void setFringe(PDRectangle fringe)
+    {
+<span class="nc" id="L126">        annot.setItem(COSName.RD, fringe);</span>
+<span class="nc" id="L127">    }</span>
+
+    /**
+     * This will get the fringe. Giving the difference between the annotations rectangle and where the drawing occurs.
+     * (To take account of any effects applied through the BE entry for example)
+     *
+     * @return the rectangle difference
+     */
+    public PDRectangle getFringe()
+    {
+<span class="nc" id="L137">        COSArray rd = annot.getCOSArray(COSName.RD);</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">        return rd != null ? new PDRectangle(rd) : null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

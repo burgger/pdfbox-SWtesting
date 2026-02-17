@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>COSInteger.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.cos</a> &gt; <span class="el_source">COSInteger.java</span></div><h1>COSInteger.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.cos;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+
+/**
+ * This class represents an integer number in a PDF document.
+ *
+ * @author Ben Litchfield
+ */
+public final class COSInteger extends COSNumber
+{
+
+    /**
+     * The lowest integer to be kept in the {@link #STATIC} array.
+     */
+    private static final int LOW = -100;
+
+    /**
+     * The highest integer to be kept in the {@link #STATIC} array.
+     */
+    private static final int HIGH = 256;
+
+    /**
+     * Static instances of all COSIntegers in the range from {@link #LOW}
+     * to {@link #HIGH}.
+     */
+<span class="fc" id="L45">    private static final COSInteger[] STATIC = new COSInteger[HIGH - LOW + 1];</span>
+
+    /**
+     * Constant for the number zero.
+     * @since Apache PDFBox 1.1.0
+     */
+<span class="fc" id="L51">    public static final COSInteger ZERO = get(0); </span>
+
+    /**
+     * Constant for the number one.
+     * @since Apache PDFBox 1.1.0
+     */
+<span class="fc" id="L57">    public static final COSInteger ONE = get(1); </span>
+
+    /**
+     * Constant for the number two.
+     * @since Apache PDFBox 1.1.0
+     */
+<span class="fc" id="L63">    public static final COSInteger TWO = get(2); </span>
+
+    /**
+     * Constant for the number three.
+     * @since Apache PDFBox 1.1.0
+     */
+<span class="fc" id="L69">    public static final COSInteger THREE = get(3); </span>
+
+    /**
+     * Constant for an out of range value which is bigger than Log.MAX_VALUE.
+     */
+<span class="fc" id="L74">    static final COSInteger OUT_OF_RANGE_MAX = getInvalid(true);</span>
+
+    /**
+     * Constant for an out of range value which is smaller than Log.MIN_VALUE.
+     */
+<span class="fc" id="L79">    static final COSInteger OUT_OF_RANGE_MIN = getInvalid(false);</span>
+
+    /**
+     * Returns a COSInteger instance with the given value.
+     *
+     * @param val integer value
+     * @return COSInteger instance
+     */
+    public static COSInteger get(long val)
+    {
+<span class="fc bfc" id="L89" title="All 4 branches covered.">        if (LOW &lt;= val &amp;&amp; val &lt;= HIGH)</span>
+        {
+<span class="fc" id="L91">            int index = (int) val - LOW;</span>
+            // no synchronization needed
+<span class="fc bfc" id="L93" title="All 2 branches covered.">            if (STATIC[index] == null)</span>
+            {
+<span class="fc" id="L95">                STATIC[index] = new COSInteger(val, true);</span>
+            }
+<span class="fc" id="L97">            return STATIC[index];</span>
+        }
+<span class="fc" id="L99">        return new COSInteger(val, true);</span>
+    }
+
+    private static COSInteger getInvalid(boolean maxValue)
+    {
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        return maxValue ? new COSInteger(Long.MAX_VALUE, false)</span>
+<span class="fc" id="L105">                : new COSInteger(Long.MIN_VALUE, false);</span>
+    }
+
+    private final long value;
+    private final boolean isValid;
+
+    /**
+     * constructor.
+     *
+     * @param val The integer value of this object.
+     * @param valid indicates if the value is valid.
+     */
+    private COSInteger(long val, boolean valid)
+<span class="fc" id="L118">    {</span>
+<span class="fc" id="L119">        value = val;</span>
+<span class="fc" id="L120">        isValid = valid;</span>
+<span class="fc" id="L121">    }</span>
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(Object o)
+    {
+<span class="nc bnc" id="L129" title="All 4 branches missed.">        return o instanceof COSInteger &amp;&amp; ((COSInteger)o).intValue() == intValue();</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode()
+    {
+        //taken from java.lang.Long
+<span class="nc" id="L139">        return (int)(value ^ (value &gt;&gt; 32));</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L148">        return &quot;COSInt{&quot; + value + &quot;}&quot;;</span>
+    }
+
+    /**
+     * polymorphic access to value as float.
+     *
+     * @return The float value of this object.
+     */
+    @Override
+    public float floatValue()
+    {
+<span class="nc" id="L159">        return value;</span>
+    }
+
+    /**
+     * Polymorphic access to value as int
+     * This will get the integer value of this object.
+     *
+     * @return The int value of this object,
+     */
+    @Override
+    public int intValue()
+    {
+<span class="fc" id="L171">        return (int)value;</span>
+    }
+
+    /**
+     * Polymorphic access to value as int
+     * This will get the integer value of this object.
+     *
+     * @return The int value of this object,
+     */
+    @Override
+    public long longValue()
+    {
+<span class="fc" id="L183">        return value;</span>
+    }
+
+    /**
+     * Indicates whether this instance represents a valid value.
+     * 
+     * @return true if the value is valid
+     */
+    public boolean isValid()
+    {
+<span class="fc" id="L193">        return isValid;</span>
+    }
+
+    /**
+     * visitor pattern double dispatch method.
+     *
+     * @param visitor The object to notify when visiting this object.
+     * @throws IOException If an error occurs while visiting this object.
+     */
+    @Override
+    public void accept(ICOSVisitor visitor) throws IOException
+    {
+<span class="fc" id="L205">        visitor.visitFromInt(this);</span>
+<span class="fc" id="L206">    }</span>
+
+    /**
+     * This will output this string as a PDF object.
+     *
+     * @param output The stream to write to.
+     * @throws IOException If there is an error writing to the stream.
+     */
+    public void writePDF( OutputStream output ) throws IOException
+    {
+<span class="fc" id="L216">        output.write(String.valueOf(value).getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L217">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

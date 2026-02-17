@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDAnnotationLink.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation</a> &gt; <span class="el_source">PDAnnotationLink.java</span></div><h1>PDAnnotationLink.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.annotation;
+
+import java.io.IOException;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.interactive.action.PDActionFactory;
+import org.apache.pdfbox.pdmodel.interactive.action.PDAction;
+import org.apache.pdfbox.pdmodel.interactive.action.PDActionURI;
+import org.apache.pdfbox.pdmodel.interactive.annotation.handlers.PDAppearanceHandler;
+import org.apache.pdfbox.pdmodel.interactive.annotation.handlers.PDLinkAppearanceHandler;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDDestination;
+
+/**
+ * This is the class that represents a link annotation.
+ *
+ * @author Ben Litchfield
+ * @author Paul King
+ */
+public class PDAnnotationLink extends PDAnnotation
+{
+
+    /**
+     * Constant values of the Text as defined in the PDF 1.6 reference Table 8.19.
+     */
+    public static final String HIGHLIGHT_MODE_NONE = &quot;N&quot;;
+    /**
+     * Constant values of the Text as defined in the PDF 1.6 reference Table 8.19.
+     */
+    public static final String HIGHLIGHT_MODE_INVERT = &quot;I&quot;;
+    /**
+     * Constant values of the Text as defined in the PDF 1.6 reference Table 8.19.
+     */
+    public static final String HIGHLIGHT_MODE_OUTLINE = &quot;O&quot;;
+    /**
+     * Constant values of the Text as defined in the PDF 1.6 reference Table 8.19.
+     */
+    public static final String HIGHLIGHT_MODE_PUSH = &quot;P&quot;;
+
+    /**
+     * The type of annotation.
+     */
+    public static final String SUB_TYPE = &quot;Link&quot;;
+    
+    /**
+     * Custom appearance handler to generate an appearance stream.
+     */
+    private PDAppearanceHandler customAppearanceHandler;
+
+    /**
+     * Constructor.
+     */
+    public PDAnnotationLink()
+<span class="nc" id="L72">    {</span>
+<span class="nc" id="L73">        getCOSObject().setName(COSName.SUBTYPE, SUB_TYPE);</span>
+<span class="nc" id="L74">    }</span>
+
+    /**
+     * Creates a Link annotation from a COSDictionary, expected to be a correct object definition.
+     *
+     * @param field the PDF object to represent as a field.
+     */
+    public PDAnnotationLink(COSDictionary field)
+    {
+<span class="nc" id="L83">        super(field);</span>
+<span class="nc" id="L84">    }</span>
+
+    /**
+     * Get the action to be performed when this annotation is to be activated. Either this or the
+     * destination entry should be set, but not both.
+     *
+     * @return The action to be performed when this annotation is activated.
+     */
+    public PDAction getAction()
+    {
+<span class="nc" id="L94">        COSDictionary action = getCOSObject().getCOSDictionary(COSName.A);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        return action != null ? PDActionFactory.createAction(action) : null;</span>
+    }
+
+    /**
+     * Set the annotation action. Either this or the destination entry should be set, but not both.
+     *
+     * @param action The annotation action.
+     *
+     */
+    public void setAction(PDAction action)
+    {
+<span class="nc" id="L106">        this.getCOSObject().setItem(COSName.A, action);</span>
+<span class="nc" id="L107">    }</span>
+
+    /**
+     * This will set the border style dictionary, specifying the width and dash pattern used in drawing the line.
+     *
+     * @param bs the border style dictionary to set. 
+     * 
+     */
+    public void setBorderStyle(PDBorderStyleDictionary bs)
+    {
+<span class="nc" id="L117">        this.getCOSObject().setItem(COSName.BS, bs);</span>
+<span class="nc" id="L118">    }</span>
+
+    /**
+     * This will retrieve the border style dictionary, specifying the width and dash pattern used in
+     * drawing the line.
+     *
+     * @return the border style dictionary.
+     */
+    public PDBorderStyleDictionary getBorderStyle()
+    {
+<span class="nc" id="L128">        COSDictionary bs = getCOSObject().getCOSDictionary(COSName.BS);</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">        return bs != null ? new PDBorderStyleDictionary(bs) : null;</span>
+    }
+
+    /**
+     * Get the destination to be displayed when the annotation is activated. Either this or the
+     * action entry should be set, but not both.
+     *
+     * @return The destination for this annotation.
+     *
+     * @throws IOException If there is an error creating the destination.
+     */
+    public PDDestination getDestination() throws IOException
+    {
+<span class="nc" id="L142">        return PDDestination.create(getCOSObject().getDictionaryObject(COSName.DEST));</span>
+    }
+
+    /**
+     * The new destination value. Either this or the action entry should be set, but not both.
+     *
+     * @param dest The updated destination.
+     */
+    public void setDestination(PDDestination dest)
+    {
+<span class="nc" id="L152">        getCOSObject().setItem(COSName.DEST, dest);</span>
+<span class="nc" id="L153">    }</span>
+
+    /**
+     * Set the highlight mode for when the mouse is depressed. See the HIGHLIGHT_MODE_XXX constants.
+     *
+     * @return The string representation of the highlight mode.
+     */
+    public String getHighlightMode()
+    {
+<span class="nc" id="L162">        return getCOSObject().getNameAsString(COSName.H, HIGHLIGHT_MODE_INVERT);</span>
+    }
+
+    /**
+     * Set the highlight mode. See the HIGHLIGHT_MODE_XXX constants.
+     *
+     * @param mode The new highlight mode.
+     */
+    public void setHighlightMode(String mode)
+    {
+<span class="nc" id="L172">        getCOSObject().setName(COSName.H, mode);</span>
+<span class="nc" id="L173">    }</span>
+
+    /**
+     * This will set the previous URI action, in case it needs to be retrieved at later date.
+     *
+     * @param pa The previous URI.
+     */
+    public void setPreviousURI(PDActionURI pa)
+    {
+<span class="nc" id="L182">        getCOSObject().setItem(COSName.PA, pa);</span>
+<span class="nc" id="L183">    }</span>
+
+    /**
+     * This will set the previous URI action, in case it's needed.
+     *
+     * @return The previous URI.
+     */
+    public PDActionURI getPreviousURI()
+    {
+<span class="nc" id="L192">        COSDictionary previousURI = getCOSObject().getCOSDictionary(COSName.PA);</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">        return previousURI != null ? new PDActionURI(previousURI) : null;</span>
+    }
+
+    /**
+     * This will set the set of quadpoints which encompass the areas of this annotation which will activate.
+     *
+     * @param quadPoints an array representing the set of area covered.
+     */
+    public void setQuadPoints(float[] quadPoints)
+    {
+<span class="nc" id="L203">        getCOSObject().setItem(COSName.QUADPOINTS, COSArray.of(quadPoints));</span>
+<span class="nc" id="L204">    }</span>
+
+    /**
+     * This will retrieve the set of quadpoints which encompass the areas of this annotation which will activate.
+     *
+     * @return An array of floats representing the quad points.
+     */
+    public float[] getQuadPoints()
+    {
+<span class="nc" id="L213">        COSArray array = getCOSObject().getCOSArray(COSName.QUADPOINTS);</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">        return array != null ? array.toFloatArray() : null;</span>
+    }
+    
+    /**
+     * Set a custom appearance handler for generating the annotations appearance streams.
+     * 
+     * @param appearanceHandler custom appearance handler
+     */
+    public void setCustomAppearanceHandler(PDAppearanceHandler appearanceHandler)
+    {
+<span class="nc" id="L224">        customAppearanceHandler = appearanceHandler;</span>
+<span class="nc" id="L225">    }</span>
+    
+    @Override
+    public void constructAppearances()
+    {
+<span class="nc" id="L230">        this.constructAppearances(null);</span>
+<span class="nc" id="L231">    }</span>
+
+    @Override
+    public void constructAppearances(PDDocument document)
+    {
+<span class="nc bnc" id="L236" title="All 2 branches missed.">        if (customAppearanceHandler == null)</span>
+        {
+<span class="nc" id="L238">            PDLinkAppearanceHandler appearanceHandler = new PDLinkAppearanceHandler(this, document);</span>
+<span class="nc" id="L239">            appearanceHandler.generateAppearanceStreams();</span>
+<span class="nc" id="L240">        }</span>
+        else
+        {
+<span class="nc" id="L243">            customAppearanceHandler.generateAppearanceStreams();</span>
+        }
+<span class="nc" id="L245">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

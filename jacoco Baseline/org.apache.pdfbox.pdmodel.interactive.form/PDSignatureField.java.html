@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDSignatureField.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.form</a> &gt; <span class="el_source">PDSignatureField.java</span></div><h1>PDSignatureField.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.form;
+
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSeedValue;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
+
+/**
+ * A signature field is a form field that contains a digital signature.
+ *
+ * @author Ben Litchfield
+ * @author Thomas Chojecki
+ */
+public class PDSignatureField extends PDTerminalField
+{
+<span class="nc" id="L40">    private static final Logger LOG = LogManager.getLogger(PDSignatureField.class);</span>
+    
+    /**
+     * @see PDTerminalField#PDTerminalField(PDAcroForm)
+     *
+     * @param acroForm The acroForm for this field.
+     */
+    public PDSignatureField(PDAcroForm acroForm)
+    {
+<span class="nc" id="L49">        super(acroForm);</span>
+<span class="nc" id="L50">        getCOSObject().setItem(COSName.FT, COSName.SIG);</span>
+<span class="nc" id="L51">        PDAnnotationWidget firstWidget = getWidgets().get(0);</span>
+<span class="nc" id="L52">        firstWidget.setLocked(true);</span>
+<span class="nc" id="L53">        firstWidget.setPrinted(true);</span>
+<span class="nc" id="L54">        setPartialName(generatePartialName());</span>
+<span class="nc" id="L55">    }</span>
+    
+    /**
+     * Constructor.
+     * 
+     * @param acroForm The form that this field is part of.
+     * @param field the PDF object to represent as a field.
+     * @param parent the parent node of the node to be created
+     */
+    PDSignatureField(PDAcroForm acroForm, COSDictionary field, PDNonTerminalField parent)
+    {
+<span class="nc" id="L66">        super(acroForm, field, parent);</span>
+<span class="nc" id="L67">    }</span>
+    
+    /**
+     * Generate a unique name for the signature.
+     * 
+     * @return the signature's unique name
+     */
+    private String generatePartialName()
+    {
+<span class="nc" id="L76">        String fieldName = &quot;Signature&quot;;</span>
+<span class="nc" id="L77">        Set&lt;String&gt; nameSet = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L78">        getAcroForm().getFieldTree().forEach(field -&gt; nameSet.add(field.getPartialName()));</span>
+<span class="nc" id="L79">        int i = 1;</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        while (nameSet.contains(fieldName + i))</span>
+        {
+<span class="nc" id="L82">            ++i;</span>
+        }
+<span class="nc" id="L84">        return fieldName+i;</span>
+    }
+    
+    /**
+     * Get the signature dictionary.
+     * 
+     * @return the signature dictionary
+     * 
+     */
+    public PDSignature getSignature()
+    {
+<span class="nc" id="L95">        return getValue();</span>
+    }
+
+    /**
+     * Sets the value of this field to be the given signature.
+     * 
+     * @param value is the PDSignatureField
+     * 
+     * @throws IOException if the new value could not be applied
+     */
+    public void setValue(PDSignature value) throws IOException
+    {
+<span class="nc" id="L107">        getCOSObject().setItem(COSName.V, value);</span>
+<span class="nc" id="L108">        applyChange();</span>
+<span class="nc" id="L109">    }</span>
+    
+    /**
+     * &lt;b&gt;This will throw an UnsupportedOperationException if used as the signature fields
+     * value can't be set using a String&lt;/b&gt;
+     * 
+     * @param value the plain text value.
+     * 
+     * @throws UnsupportedOperationException in all cases!
+     */
+    @Override
+    public void setValue(String value)
+    {
+<span class="nc" id="L122">        throw new UnsupportedOperationException(&quot;Signature fields don't support setting the value as String &quot;</span>
+                + &quot;- use setValue(PDSignature value) instead&quot;);
+    }
+    
+
+    /**
+     * Sets the default value of this field to be the given signature.
+     *
+     * @param value is the PDSignatureField
+     */
+    public void setDefaultValue(PDSignature value)
+    {
+<span class="nc" id="L134">        getCOSObject().setItem(COSName.DV, value);</span>
+<span class="nc" id="L135">    }</span>
+
+    /**
+     * Returns the signature contained in this field.
+     * 
+     * @return A signature dictionary.
+     */
+    public PDSignature getValue()
+    {
+<span class="nc" id="L144">        COSDictionary value = getCOSObject().getCOSDictionary(COSName.V);</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        return value != null ? new PDSignature(value) : null;</span>
+    }
+
+    /**
+     * Returns the default value, if any.
+     *
+     * @return A signature dictionary.
+     */
+    public PDSignature getDefaultValue()
+    {
+<span class="nc" id="L155">        COSDictionary value = getCOSObject().getCOSDictionary(COSName.DV);</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        return value != null ? new PDSignature(value) : null;</span>
+    }
+    
+    @Override
+    public String getValueAsString()
+    {
+<span class="nc" id="L162">        PDSignature signature = getValue();</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        return signature != null ? signature.toString() : &quot;&quot;;</span>
+    }
+
+    /**
+     * &lt;p&gt;(Optional; PDF 1.5) A seed value dictionary containing information
+     * that constrains the properties of a signature that is applied to the
+     * field.&lt;/p&gt;
+     *
+     * @return the seed value dictionary as PDSeedValue
+     */
+    public PDSeedValue getSeedValue()
+    {
+<span class="nc" id="L175">        COSDictionary dict = getCOSObject().getCOSDictionary(COSName.SV);</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">        return dict != null ? new PDSeedValue(dict) : null;</span>
+    }
+
+    /**
+     * &lt;p&gt;(Optional; PDF 1.) A seed value dictionary containing information
+     * that constrains the properties of a signature that is applied to the
+     * field.&lt;/p&gt;
+     *
+     * @param sv is the seed value dictionary as PDSeedValue
+     */
+    public void setSeedValue(PDSeedValue sv)
+    {
+<span class="nc bnc" id="L188" title="All 2 branches missed.">        if (sv != null)</span>
+        {
+<span class="nc" id="L190">            getCOSObject().setItem(COSName.SV, sv);</span>
+        }
+<span class="nc" id="L192">    }</span>
+
+    @Override
+    void constructAppearances() throws IOException
+    {
+<span class="nc" id="L197">        PDAnnotationWidget widget = this.getWidgets().get(0);</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">        if (widget != null)</span>
+        {
+<span class="nc" id="L200">            PDRectangle rectangle = widget.getRectangle();</span>
+            // check if the signature is visible
+<span class="nc bnc" id="L202" title="All 2 branches missed.">            if (rectangle == null ||</span>
+<span class="nc bnc" id="L203" title="All 4 branches missed.">                Float.compare(rectangle.getHeight(), 0) == 0 &amp;&amp; Float.compare(rectangle.getWidth(), 0) == 0 ||</span>
+<span class="nc bnc" id="L204" title="All 4 branches missed.">                widget.isNoView() || widget.isHidden())</span>
+            {
+<span class="nc" id="L206">                return;</span>
+            }
+
+            // TODO: implement appearance generation for signatures (PDFBOX-3524)
+<span class="nc" id="L210">            LOG.warn(&quot;Appearance generation for signature fields not implemented here. &quot;</span>
+                    + &quot;You need to generate/update that manually, see the &quot;
+                    + &quot;CreateVisibleSignature*.java files in the examples subproject &quot;
+                    + &quot;of the source code download&quot;);
+        }
+<span class="nc" id="L215">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

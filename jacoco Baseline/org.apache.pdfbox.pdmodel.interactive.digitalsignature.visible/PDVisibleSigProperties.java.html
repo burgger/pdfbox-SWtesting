@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDVisibleSigProperties.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible</a> &gt; <span class="el_source">PDVisibleSigProperties.java</span></div><h1>PDVisibleSigProperties.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+/**
+ * This builder class is in order to create visible signature properties.
+ * 
+ * @author Vakhtang Koroghlishvili
+ */
+<span class="nc" id="L27">public class PDVisibleSigProperties</span>
+{
+    private String signerName;
+    private String signerLocation;
+    private String signatureReason;
+    private boolean visualSignEnabled;
+    private int page;
+    private int preferredSize;
+
+    private InputStream visibleSignature;
+    private PDVisibleSignDesigner pdVisibleSignature;
+
+    /**
+     * start building of visible signature
+     *
+     * @throws IOException if the output could not be written
+     */
+    public void buildSignature() throws IOException
+    {
+<span class="nc" id="L46">        PDFTemplateBuilder builder = new PDVisibleSigBuilder();</span>
+<span class="nc" id="L47">        PDFTemplateCreator creator = new PDFTemplateCreator(builder);</span>
+<span class="nc" id="L48">        setVisibleSignature(creator.buildPDF(getPdVisibleSignature()));</span>
+<span class="nc" id="L49">    }</span>
+
+    /**
+     * 
+     * @return - signer name
+     */
+    public String getSignerName()
+    {
+<span class="nc" id="L57">        return signerName;</span>
+    }
+
+    /**
+     * Sets signer name
+     * 
+     * @param signerName the signer name
+     * @return the visible signature properties.
+     */
+    public PDVisibleSigProperties signerName(String signerName)
+    {
+<span class="nc" id="L68">        this.signerName = signerName;</span>
+<span class="nc" id="L69">        return this;</span>
+    }
+
+    /**
+     * Gets signer location
+     * 
+     * @return - location
+     */
+    public String getSignerLocation()
+    {
+<span class="nc" id="L79">        return signerLocation;</span>
+    }
+
+    /**
+     * Sets location
+     * 
+     * @param signerLocation the new signer location
+     * @return the visible signature properties.
+     */
+    public PDVisibleSigProperties signerLocation(String signerLocation)
+    {
+<span class="nc" id="L90">        this.signerLocation = signerLocation;</span>
+<span class="nc" id="L91">        return this;</span>
+    }
+
+    /**
+     * gets reason of signing
+     * @return  the signing reason. 
+     */
+    public String getSignatureReason()
+    {
+<span class="nc" id="L100">        return signatureReason;</span>
+    }
+
+    /**
+     * sets reason of signing
+     * 
+     * @param signatureReason the reason of signing
+     * @return the visible signature properties.
+     */
+    public PDVisibleSigProperties signatureReason(String signatureReason)
+    {
+<span class="nc" id="L111">        this.signatureReason = signatureReason;</span>
+<span class="nc" id="L112">        return this;</span>
+    }
+
+    /**
+     * returns your page
+     * @return  the page number (1-based).
+     */
+    public int getPage()
+    {
+<span class="nc" id="L121">        return page;</span>
+    }
+
+    /**
+     * sets page number
+     * @param page page the signature should be placed on (1-based)
+     * @return the visible signature properties.
+     */
+    public PDVisibleSigProperties page(int page)
+    {
+<span class="nc" id="L131">        this.page = page;</span>
+<span class="nc" id="L132">        return this;</span>
+    }
+
+    /**
+     * Gets the preferred signature size in bytes.
+     *
+     * @return the signature's preferred size. A return value of 0 means to use default.
+     */
+    public int getPreferredSize()
+    {
+<span class="nc" id="L142">        return preferredSize;</span>
+    }
+
+    /**
+     * Sets the preferred signature size in bytes.
+     *
+     * @param preferredSize The preferred signature size in bytes, or 0 to use default.
+     * @return the visible signature properties.
+     */
+    public PDVisibleSigProperties preferredSize(int preferredSize)
+    {
+<span class="nc" id="L153">        this.preferredSize = preferredSize;</span>
+<span class="nc" id="L154">        return this;</span>
+    }
+
+    /**
+     * checks if we need to add visible signature
+     * @return state if visible signature is needed.
+     */
+    public boolean isVisualSignEnabled()
+    {
+<span class="nc" id="L163">        return visualSignEnabled;</span>
+    }
+
+    /**
+     * sets visible signature to be added or not
+     * 
+     * @param visualSignEnabled if true the visible signature is added
+     * @return the visible signature properties.
+     */
+    public PDVisibleSigProperties visualSignEnabled(boolean visualSignEnabled)
+    {
+<span class="nc" id="L174">        this.visualSignEnabled = visualSignEnabled;</span>
+<span class="nc" id="L175">        return this;</span>
+    }
+
+    /**
+     * this method gets visible signature configuration object
+     * @return the visible signature configuration.
+     */
+    public PDVisibleSignDesigner getPdVisibleSignature()
+    {
+<span class="nc" id="L184">        return pdVisibleSignature;</span>
+    }
+
+    /**
+     * Sets visible signature configuration Object
+     * 
+     * @param pdVisibleSignature the new visible signature configuration
+     * @return the visible signature properties.
+     */
+    public PDVisibleSigProperties setPdVisibleSignature(PDVisibleSignDesigner pdVisibleSignature)
+    {
+<span class="nc" id="L195">        this.pdVisibleSignature = pdVisibleSignature;</span>
+<span class="nc" id="L196">        return this;</span>
+    }
+
+    /**
+     * returns visible signature configuration object
+     * @return the input stream representing the visible signature.
+     */
+    public InputStream getVisibleSignature()
+    {
+<span class="nc" id="L205">        return visibleSignature;</span>
+    }
+
+    /**
+     * sets configuration object of visible signature
+     * 
+     * @param visibleSignature the stream of the visible signature
+     */
+    public void setVisibleSignature(InputStream visibleSignature)
+    {
+<span class="nc" id="L215">        this.visibleSignature = visibleSignature;</span>
+<span class="nc" id="L216">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

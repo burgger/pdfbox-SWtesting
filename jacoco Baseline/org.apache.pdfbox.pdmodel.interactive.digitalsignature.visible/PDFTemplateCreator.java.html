@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFTemplateCreator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible</a> &gt; <span class="el_source">PDFTemplateCreator.java</span></div><h1>PDFTemplateCreator.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible;
+
+import java.awt.geom.AffineTransform;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSDocument;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdfwriter.COSWriter;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
+
+/**
+ * Class to build PDF template.
+ *
+ * @author Vakhtang Koroghlishvili
+ */
+public class PDFTemplateCreator
+{
+    private final PDFTemplateBuilder pdfBuilder;
+<span class="nc" id="L47">    private static final Logger LOG = LogManager.getLogger(PDFTemplateCreator.class);</span>
+
+    /**
+     * Constructor.
+     * 
+     * @param templateBuilder the template builder
+     */
+    public PDFTemplateCreator(PDFTemplateBuilder templateBuilder)
+<span class="nc" id="L55">    {</span>
+<span class="nc" id="L56">        pdfBuilder = templateBuilder;</span>
+<span class="nc" id="L57">    }</span>
+
+    /**
+     * Returns the PDFTemplateStructure object.
+     * 
+     * @return the template for the structure
+     */
+    public PDFTemplateStructure getPdfStructure()
+    {
+<span class="nc" id="L66">        return pdfBuilder.getStructure();</span>
+    }
+
+    /**
+     * Build a PDF with a visible signature step by step, and return it as a stream.
+     *
+     * @param properties properties to be used for the creation
+     * @return InputStream stream containing the pdf holding the visible signature
+     * @throws IOException if the PDF could not be created
+     */
+    public InputStream buildPDF(PDVisibleSignDesigner properties) throws IOException
+    {
+<span class="nc" id="L78">        LOG.info(&quot;pdf building has been started&quot;);</span>
+<span class="nc" id="L79">        PDFTemplateStructure pdfStructure = pdfBuilder.getStructure();</span>
+
+        // we create array of [Text, ImageB, ImageC, ImageI]
+<span class="nc" id="L82">        pdfBuilder.createProcSetArray();</span>
+        
+        //create page
+<span class="nc" id="L85">        pdfBuilder.createPage(properties);</span>
+<span class="nc" id="L86">        PDPage page = pdfStructure.getPage();</span>
+
+        //create template
+<span class="nc" id="L89">        pdfBuilder.createTemplate(page);</span>
+
+<span class="nc" id="L91">        try (PDDocument template = pdfStructure.getTemplate())</span>
+        {
+            //create /AcroForm
+<span class="nc" id="L94">            pdfBuilder.createAcroForm(template);</span>
+<span class="nc" id="L95">            PDAcroForm acroForm = pdfStructure.getAcroForm();</span>
+            // AcroForm contains signature fields
+<span class="nc" id="L97">            pdfBuilder.createSignatureField(acroForm);</span>
+<span class="nc" id="L98">            PDSignatureField pdSignatureField = pdfStructure.getSignatureField();</span>
+            // create signature
+            //TODO
+            // The line below has no effect with the CreateVisibleSignature example.
+            // The signature field is needed as a &quot;holder&quot; for the /AP tree,
+            // but the /P and /V PDSignatureField entries are ignored by PDDocument.addSignature
+<span class="nc" id="L104">            pdfBuilder.createSignature(pdSignatureField, page, &quot;&quot;);</span>
+            // that is /AcroForm/DR entry
+<span class="nc" id="L106">            pdfBuilder.createAcroFormDictionary(acroForm, pdSignatureField);</span>
+            // create AffineTransform
+<span class="nc" id="L108">            pdfBuilder.createAffineTransform(properties.getTransform());</span>
+<span class="nc" id="L109">            AffineTransform transform = pdfStructure.getAffineTransform();</span>
+            // rectangle, formatter, image. /AcroForm/DR/XObject contains that form
+<span class="nc" id="L111">            pdfBuilder.createSignatureRectangle(pdSignatureField, properties);</span>
+<span class="nc" id="L112">            pdfBuilder.createFormatterRectangle(properties.getFormatterRectangleParameters());</span>
+<span class="nc" id="L113">            PDRectangle bbox = pdfStructure.getFormatterRectangle();</span>
+<span class="nc" id="L114">            pdfBuilder.createSignatureImage(template, properties.getImage());</span>
+            // create form stream, form and  resource.
+<span class="nc" id="L116">            pdfBuilder.createHolderFormStream(template);</span>
+<span class="nc" id="L117">            PDStream holderFormStream = pdfStructure.getHolderFormStream();</span>
+<span class="nc" id="L118">            pdfBuilder.createHolderFormResources();</span>
+<span class="nc" id="L119">            PDResources holderFormResources = pdfStructure.getHolderFormResources();</span>
+<span class="nc" id="L120">            pdfBuilder.createHolderForm(holderFormResources, holderFormStream, bbox);</span>
+            // that is /AP entry the appearance dictionary.
+<span class="nc" id="L122">            pdfBuilder.createAppearanceDictionary(pdfStructure.getHolderForm(), pdSignatureField);</span>
+            // inner form stream, form and resource (holder form contains inner form)
+<span class="nc" id="L124">            pdfBuilder.createInnerFormStream(template);</span>
+<span class="nc" id="L125">            pdfBuilder.createInnerFormResource();</span>
+<span class="nc" id="L126">            PDResources innerFormResource = pdfStructure.getInnerFormResources();</span>
+<span class="nc" id="L127">            pdfBuilder.createInnerForm(innerFormResource, pdfStructure.getInnerFormStream(), bbox);</span>
+<span class="nc" id="L128">            PDFormXObject innerForm = pdfStructure.getInnerForm();</span>
+            // inner form must be in the holder form as we wrote
+<span class="nc" id="L130">            pdfBuilder.insertInnerFormToHolderResources(innerForm, holderFormResources);</span>
+            //  Image form is in this structure: /AcroForm/DR/FRM/Resources/XObject/n2
+<span class="nc" id="L132">            pdfBuilder.createImageFormStream(template);</span>
+<span class="nc" id="L133">            PDStream imageFormStream = pdfStructure.getImageFormStream();</span>
+<span class="nc" id="L134">            pdfBuilder.createImageFormResources();</span>
+<span class="nc" id="L135">            PDResources imageFormResources = pdfStructure.getImageFormResources();</span>
+<span class="nc" id="L136">            pdfBuilder.createImageForm(imageFormResources, innerFormResource, imageFormStream, bbox,</span>
+<span class="nc" id="L137">                    transform, pdfStructure.getImage());</span>
+<span class="nc" id="L138">            pdfBuilder.createBackgroundLayerForm(innerFormResource, bbox);</span>
+            // now inject procSetArray
+<span class="nc" id="L140">            pdfBuilder.injectProcSetArray(innerForm, page, innerFormResource, imageFormResources,</span>
+<span class="nc" id="L141">                    holderFormResources, pdfStructure.getProcSet());</span>
+<span class="nc" id="L142">            COSName imageFormName = pdfStructure.getImageFormName();</span>
+<span class="nc" id="L143">            COSName imageName = pdfStructure.getImageName();</span>
+<span class="nc" id="L144">            COSName innerFormName = pdfStructure.getInnerFormName();</span>
+            // now create Streams of AP
+<span class="nc" id="L146">            pdfBuilder.injectAppearanceStreams(holderFormStream, imageFormStream, imageFormStream,</span>
+                    imageFormName, imageName, innerFormName, properties);
+<span class="nc" id="L148">            pdfBuilder.createVisualSignature(template);</span>
+<span class="nc" id="L149">            pdfBuilder.createWidgetDictionary(pdSignatureField, holderFormResources);</span>
+<span class="nc" id="L150">            InputStream in = getVisualSignatureAsStream(pdfStructure.getVisualSignature());</span>
+<span class="nc" id="L151">            LOG.info(&quot;stream returning started, size= {}&quot;, in.available());</span>
+            // return result of the stream 
+<span class="nc" id="L153">            return in;</span>
+        }
+    }
+
+    private InputStream getVisualSignatureAsStream(COSDocument visualSignature) throws IOException
+    {
+<span class="nc" id="L159">        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())</span>
+        {
+<span class="nc" id="L161">            COSWriter writer = new COSWriter(baos);</span>
+<span class="nc" id="L162">            writer.write(visualSignature);</span>
+<span class="nc" id="L163">            return new ByteArrayInputStream(baos.toByteArray());</span>
+        }
+    }   
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

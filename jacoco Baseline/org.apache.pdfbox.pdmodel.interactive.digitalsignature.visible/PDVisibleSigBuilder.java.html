@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDVisibleSigBuilder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible</a> &gt; <span class="el_source">PDVisibleSigBuilder.java</span></div><h1>PDVisibleSigBuilder.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible;
+
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
+import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceDictionary;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceStream;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDField;
+import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
+
+/**
+ * Implementation of {@link PDFTemplateBuilder}. This builds the signature PDF but doesn't keep the
+ * elements, these are kept in its PDF template structure.
+ *
+ * @author Vakhtang Koroghlishvili
+ */
+public class PDVisibleSigBuilder implements PDFTemplateBuilder
+{
+    private final PDFTemplateStructure pdfStructure;
+<span class="nc" id="L56">    private static final Logger LOG = LogManager.getLogger(PDVisibleSigBuilder.class);</span>
+
+    /**
+     * Constructor, creates PDF template structure.
+     */
+    public PDVisibleSigBuilder()
+<span class="nc" id="L62">    {</span>
+<span class="nc" id="L63">        pdfStructure = new PDFTemplateStructure();</span>
+<span class="nc" id="L64">        LOG.info(&quot;PDF Structure has been created&quot;);</span>
+<span class="nc" id="L65">    }</span>
+
+    @Override
+    public void createPage(PDVisibleSignDesigner properties)
+    {
+<span class="nc" id="L70">        PDPage page = new PDPage(new PDRectangle(properties.getPageWidth(),</span>
+<span class="nc" id="L71">                                                 properties.getPageHeight()));</span>
+<span class="nc" id="L72">        pdfStructure.setPage(page);</span>
+<span class="nc" id="L73">        LOG.info(&quot;PDF page has been created&quot;);</span>
+<span class="nc" id="L74">    }</span>
+
+    /**
+     * Creates a PDDocument and adds the page parameter to it and keeps this as a template in the PDF template
+     * Structure.
+     *
+     * @param page the page to be added
+     * @throws IOException if the document could not be created
+     */
+    @Override
+    public void createTemplate(PDPage page) throws IOException
+    {
+<span class="nc" id="L86">        PDDocument template = new PDDocument();</span>
+<span class="nc" id="L87">        template.addPage(page);</span>
+<span class="nc" id="L88">        pdfStructure.setTemplate(template);</span>
+<span class="nc" id="L89">    }</span>
+
+    @Override
+    public void createAcroForm(PDDocument template)
+    {
+<span class="nc" id="L94">        PDAcroForm theAcroForm = new PDAcroForm(template);</span>
+<span class="nc" id="L95">        template.getDocumentCatalog().setAcroForm(theAcroForm);</span>
+<span class="nc" id="L96">        pdfStructure.setAcroForm(theAcroForm);</span>
+<span class="nc" id="L97">        LOG.info(&quot;AcroForm has been created&quot;);</span>
+<span class="nc" id="L98">    }</span>
+
+    @Override
+    public PDFTemplateStructure getStructure()
+    {
+<span class="nc" id="L103">        return pdfStructure;</span>
+    }
+
+    @Override
+    public void createSignatureField(PDAcroForm acroForm) throws IOException
+    {
+<span class="nc" id="L109">        PDSignatureField sf = new PDSignatureField(acroForm);</span>
+<span class="nc" id="L110">        pdfStructure.setSignatureField(sf);</span>
+<span class="nc" id="L111">        LOG.info(&quot;Signature field has been created&quot;);</span>
+<span class="nc" id="L112">    }</span>
+
+    @Override
+    public void createSignature(PDSignatureField pdSignatureField, PDPage page, String signerName)
+            throws IOException
+    {
+<span class="nc" id="L118">        PDSignature pdSignature = new PDSignature();</span>
+<span class="nc" id="L119">        PDAnnotationWidget widget = pdSignatureField.getWidgets().get(0);</span>
+<span class="nc" id="L120">        pdSignatureField.setValue(pdSignature);</span>
+<span class="nc" id="L121">        widget.setPage(page);</span>
+<span class="nc" id="L122">        page.getAnnotations().add(widget);</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (!signerName.isEmpty())</span>
+        {
+<span class="nc" id="L125">            pdSignature.setName(signerName);</span>
+        }
+<span class="nc" id="L127">        pdfStructure.setPdSignature(pdSignature);</span>
+<span class="nc" id="L128">        LOG.info(&quot;PDSignature has been created&quot;);</span>
+<span class="nc" id="L129">    }</span>
+
+    @Override
+    public void createAcroFormDictionary(PDAcroForm acroForm, PDSignatureField signatureField)
+            throws IOException
+    {
+        @SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L136">        List&lt;PDField&gt; acroFormFields = acroForm.getFields();</span>
+<span class="nc" id="L137">        COSDictionary acroFormDict = acroForm.getCOSObject();</span>
+<span class="nc" id="L138">        acroForm.setSignaturesExist(true);</span>
+<span class="nc" id="L139">        acroForm.setAppendOnly(true);</span>
+<span class="nc" id="L140">        acroFormDict.setDirect(true);</span>
+<span class="nc" id="L141">        acroFormFields.add(signatureField);</span>
+        // WTF sylfaen? 
+<span class="nc" id="L143">        acroForm.setDefaultAppearance(&quot;/sylfaen 0 Tf 0 g&quot;);</span>
+<span class="nc" id="L144">        pdfStructure.setAcroFormFields(acroFormFields);</span>
+<span class="nc" id="L145">        pdfStructure.setAcroFormDictionary(acroFormDict);</span>
+<span class="nc" id="L146">        LOG.info(&quot;AcroForm dictionary has been created&quot;);</span>
+<span class="nc" id="L147">    }</span>
+
+    @Override
+    public void createSignatureRectangle(PDSignatureField signatureField,
+                                         PDVisibleSignDesigner properties) throws IOException
+    {
+
+<span class="nc" id="L154">        PDRectangle rect = new PDRectangle();</span>
+<span class="nc" id="L155">        rect.setUpperRightX(properties.getxAxis() + properties.getWidth());</span>
+<span class="nc" id="L156">        rect.setUpperRightY(properties.getTemplateHeight() - properties.getyAxis());</span>
+<span class="nc" id="L157">        rect.setLowerLeftY(properties.getTemplateHeight() - properties.getyAxis() -</span>
+<span class="nc" id="L158">                           properties.getHeight());</span>
+<span class="nc" id="L159">        rect.setLowerLeftX(properties.getxAxis());</span>
+<span class="nc" id="L160">        signatureField.getWidgets().get(0).setRectangle(rect);</span>
+<span class="nc" id="L161">        pdfStructure.setSignatureRectangle(rect);</span>
+<span class="nc" id="L162">        LOG.info(&quot;Signature rectangle has been created&quot;);</span>
+<span class="nc" id="L163">    }</span>
+
+    @Override
+    public void createAffineTransform(AffineTransform affineTransform)
+    {
+<span class="nc" id="L168">        pdfStructure.setAffineTransform(affineTransform);</span>
+<span class="nc" id="L169">        LOG.info(&quot;Matrix has been added&quot;);</span>
+<span class="nc" id="L170">    }</span>
+
+    @Override
+    public void createProcSetArray()
+    {
+<span class="nc" id="L175">        COSArray procSetArr = new COSArray();</span>
+<span class="nc" id="L176">        procSetArr.add(COSName.getPDFName(&quot;PDF&quot;));</span>
+<span class="nc" id="L177">        procSetArr.add(COSName.getPDFName(&quot;Text&quot;));</span>
+<span class="nc" id="L178">        procSetArr.add(COSName.getPDFName(&quot;ImageB&quot;));</span>
+<span class="nc" id="L179">        procSetArr.add(COSName.getPDFName(&quot;ImageC&quot;));</span>
+<span class="nc" id="L180">        procSetArr.add(COSName.getPDFName(&quot;ImageI&quot;));</span>
+<span class="nc" id="L181">        pdfStructure.setProcSet(procSetArr);</span>
+<span class="nc" id="L182">        LOG.info(&quot;ProcSet array has been created&quot;);</span>
+<span class="nc" id="L183">    }</span>
+
+    @Override
+    public void createSignatureImage(PDDocument template, BufferedImage image) throws IOException
+    {
+<span class="nc" id="L188">        pdfStructure.setImage(LosslessFactory.createFromImage(template, image));</span>
+<span class="nc" id="L189">        LOG.info(&quot;Visible Signature Image has been created&quot;);</span>
+<span class="nc" id="L190">    }</span>
+
+    @Override
+    public void createFormatterRectangle(int[] params)
+    {
+<span class="nc" id="L195">        PDRectangle formatterRectangle = new PDRectangle();</span>
+<span class="nc" id="L196">        formatterRectangle.setLowerLeftX(Math.min(params[0],params[2]));</span>
+<span class="nc" id="L197">        formatterRectangle.setLowerLeftY(Math.min(params[1],params[3]));</span>
+<span class="nc" id="L198">        formatterRectangle.setUpperRightX(Math.max(params[0],params[2]));</span>
+<span class="nc" id="L199">        formatterRectangle.setUpperRightY(Math.max(params[1],params[3]));</span>
+
+<span class="nc" id="L201">        pdfStructure.setFormatterRectangle(formatterRectangle);</span>
+<span class="nc" id="L202">        LOG.info(&quot;Formatter rectangle has been created&quot;);</span>
+<span class="nc" id="L203">    }</span>
+
+    @Override
+    public void createHolderFormStream(PDDocument template)
+    {
+<span class="nc" id="L208">        PDStream holderForm = new PDStream(template);</span>
+<span class="nc" id="L209">        pdfStructure.setHolderFormStream(holderForm);</span>
+<span class="nc" id="L210">        LOG.info(&quot;Holder form stream has been created&quot;);</span>
+<span class="nc" id="L211">    }</span>
+
+    @Override
+    public void createHolderFormResources()
+    {
+<span class="nc" id="L216">        PDResources holderFormResources = new PDResources();</span>
+<span class="nc" id="L217">        pdfStructure.setHolderFormResources(holderFormResources);</span>
+<span class="nc" id="L218">        LOG.info(&quot;Holder form resources have been created&quot;);</span>
+
+<span class="nc" id="L220">    }</span>
+
+    @Override
+    public void createHolderForm(PDResources holderFormResources, PDStream holderFormStream,
+                                 PDRectangle bbox)
+    {
+<span class="nc" id="L226">        PDFormXObject holderForm = new PDFormXObject(holderFormStream);</span>
+<span class="nc" id="L227">        holderForm.setResources(holderFormResources);</span>
+<span class="nc" id="L228">        holderForm.setBBox(bbox);</span>
+<span class="nc" id="L229">        holderForm.setFormType(1);</span>
+<span class="nc" id="L230">        pdfStructure.setHolderForm(holderForm);</span>
+<span class="nc" id="L231">        LOG.info(&quot;Holder form has been created&quot;);</span>
+
+<span class="nc" id="L233">    }</span>
+
+    @Override
+    public void createAppearanceDictionary(PDFormXObject holderForm, PDSignatureField signatureField)
+            throws IOException
+    {
+<span class="nc" id="L239">        PDAppearanceDictionary appearance = new PDAppearanceDictionary();</span>
+<span class="nc" id="L240">        appearance.getCOSObject().setDirect(true);</span>
+
+<span class="nc" id="L242">        PDAppearanceStream appearanceStream = new PDAppearanceStream(holderForm.getCOSObject());</span>
+
+<span class="nc" id="L244">        appearance.setNormalAppearance(appearanceStream);</span>
+<span class="nc" id="L245">        signatureField.getWidgets().get(0).setAppearance(appearance);</span>
+
+<span class="nc" id="L247">        pdfStructure.setAppearanceDictionary(appearance);</span>
+<span class="nc" id="L248">        LOG.info(&quot;PDF appearance dictionary has been created&quot;);</span>
+<span class="nc" id="L249">    }</span>
+
+    @Override
+    public void createInnerFormStream(PDDocument template)
+    {
+<span class="nc" id="L254">        PDStream innerFormStream = new PDStream(template);</span>
+<span class="nc" id="L255">        pdfStructure.setInnterFormStream(innerFormStream);</span>
+<span class="nc" id="L256">        LOG.info(&quot;Stream of another form (inner form - it will be inside holder form) &quot; +</span>
+                 &quot;has been created&quot;);
+<span class="nc" id="L258">    }</span>
+
+    @Override
+    public void createInnerFormResource()
+    {
+<span class="nc" id="L263">        PDResources innerFormResources = new PDResources();</span>
+<span class="nc" id="L264">        pdfStructure.setInnerFormResources(innerFormResources);</span>
+<span class="nc" id="L265">        LOG.info(&quot;Resources of another form (inner form - it will be inside holder form)&quot; +</span>
+                 &quot;have been created&quot;);
+<span class="nc" id="L267">    }</span>
+
+    @Override
+    public void createInnerForm(PDResources innerFormResources, PDStream innerFormStream,
+                                PDRectangle bbox)
+    {
+<span class="nc" id="L273">        PDFormXObject innerForm = new PDFormXObject(innerFormStream);</span>
+<span class="nc" id="L274">        innerForm.setResources(innerFormResources);</span>
+<span class="nc" id="L275">        innerForm.setBBox(bbox);</span>
+<span class="nc" id="L276">        innerForm.setFormType(1);</span>
+<span class="nc" id="L277">        pdfStructure.setInnerForm(innerForm);</span>
+<span class="nc" id="L278">        LOG.info(&quot;Another form (inner form - it will be inside holder form) has been created&quot;);</span>
+<span class="nc" id="L279">    }</span>
+
+    @Override
+    public void insertInnerFormToHolderResources(PDFormXObject innerForm,
+                                                PDResources holderFormResources)
+    {
+<span class="nc" id="L285">        holderFormResources.put(COSName.FRM, innerForm);</span>
+<span class="nc" id="L286">        pdfStructure.setInnerFormName(COSName.FRM);</span>
+<span class="nc" id="L287">        LOG.info(&quot;Now inserted inner form inside holder form&quot;);</span>
+<span class="nc" id="L288">    }</span>
+
+    @Override
+    public void createImageFormStream(PDDocument template)
+    {
+<span class="nc" id="L293">        PDStream imageFormStream = new PDStream(template);</span>
+<span class="nc" id="L294">        pdfStructure.setImageFormStream(imageFormStream);</span>
+<span class="nc" id="L295">        LOG.info(&quot;Created image form stream&quot;);</span>
+<span class="nc" id="L296">    }</span>
+
+    @Override
+    public void createImageFormResources()
+    {
+<span class="nc" id="L301">        PDResources imageFormResources = new PDResources();</span>
+<span class="nc" id="L302">        pdfStructure.setImageFormResources(imageFormResources);</span>
+<span class="nc" id="L303">        LOG.info(&quot;Created image form resources&quot;);</span>
+<span class="nc" id="L304">    }</span>
+
+    @Override
+    public void createImageForm(PDResources imageFormResources, PDResources innerFormResource,
+                                PDStream imageFormStream, PDRectangle bbox, AffineTransform at,
+                                PDImageXObject img) throws IOException
+    {
+<span class="nc" id="L311">        PDFormXObject imageForm = new PDFormXObject(imageFormStream);</span>
+<span class="nc" id="L312">        imageForm.setBBox(bbox);</span>
+<span class="nc" id="L313">        imageForm.setMatrix(at);</span>
+<span class="nc" id="L314">        imageForm.setResources(imageFormResources);</span>
+<span class="nc" id="L315">        imageForm.setFormType(1);</span>
+
+<span class="nc" id="L317">        imageFormResources.getCOSObject().setDirect(true);</span>
+
+<span class="nc" id="L319">        COSName imageFormName = COSName.getPDFName(&quot;n2&quot;);</span>
+<span class="nc" id="L320">        innerFormResource.put(imageFormName, imageForm);</span>
+<span class="nc" id="L321">        COSName imageName = imageFormResources.add(img, &quot;img&quot;);</span>
+<span class="nc" id="L322">        pdfStructure.setImageForm(imageForm);</span>
+<span class="nc" id="L323">        pdfStructure.setImageFormName(imageFormName);</span>
+<span class="nc" id="L324">        pdfStructure.setImageName(imageName);</span>
+<span class="nc" id="L325">        LOG.info(&quot;Created image form&quot;);</span>
+<span class="nc" id="L326">    }</span>
+
+    @Override
+    public void createBackgroundLayerForm(PDResources innerFormResource, PDRectangle bbox)
+             throws IOException
+    {
+        // create blank n0 background layer form
+<span class="nc" id="L333">        PDFormXObject n0Form = new PDFormXObject(pdfStructure.getTemplate().getDocument().createCOSStream());</span>
+<span class="nc" id="L334">        n0Form.setBBox(bbox);</span>
+<span class="nc" id="L335">        n0Form.setResources(new PDResources());</span>
+<span class="nc" id="L336">        n0Form.setFormType(1);</span>
+<span class="nc" id="L337">        innerFormResource.put(COSName.getPDFName(&quot;n0&quot;), n0Form);</span>
+<span class="nc" id="L338">        LOG.info(&quot;Created background layer form&quot;);</span>
+<span class="nc" id="L339">    }</span>
+
+    @Override
+    public void injectProcSetArray(PDFormXObject innerForm, PDPage page,
+                                   PDResources innerFormResources,  PDResources imageFormResources,
+                                   PDResources holderFormResources, COSArray procSet)
+    {
+<span class="nc" id="L346">        innerForm.getResources().getCOSObject().setItem(COSName.PROC_SET, procSet);</span>
+<span class="nc" id="L347">        page.getCOSObject().setItem(COSName.PROC_SET, procSet);</span>
+<span class="nc" id="L348">        innerFormResources.getCOSObject().setItem(COSName.PROC_SET, procSet);</span>
+<span class="nc" id="L349">        imageFormResources.getCOSObject().setItem(COSName.PROC_SET, procSet);</span>
+<span class="nc" id="L350">        holderFormResources.getCOSObject().setItem(COSName.PROC_SET, procSet);</span>
+<span class="nc" id="L351">        LOG.info(&quot;Inserted ProcSet to PDF&quot;);</span>
+<span class="nc" id="L352">    }</span>
+
+    @Override
+    public void injectAppearanceStreams(PDStream holderFormStream, PDStream innerFormStream,
+                                        PDStream imageFormStream, COSName imageFormName,
+                                        COSName imageName, COSName innerFormName,
+                                        PDVisibleSignDesigner properties) throws IOException
+    {
+        // TODO remove unused parameter from interface??
+
+        // Use width and height of BBox as values for transformation matrix.
+<span class="nc" id="L363">        int width = (int) this.getStructure().getFormatterRectangle().getWidth();</span>
+<span class="nc" id="L364">        int height = (int) this.getStructure().getFormatterRectangle().getHeight();</span>
+
+<span class="nc" id="L366">        String imgFormContent    = &quot;q &quot; + width + &quot; 0 0 &quot; + height + &quot; 0 0 cm /&quot; + imageName.getName() + &quot; Do Q\n&quot;;</span>
+<span class="nc" id="L367">        String holderFormContent = &quot;q 1 0 0 1 0 0 cm /&quot; + innerFormName.getName() + &quot; Do Q\n&quot;;</span>
+<span class="nc" id="L368">        String innerFormContent  = &quot;q 1 0 0 1 0 0 cm /n0 Do Q q 1 0 0 1 0 0 cm /&quot; + imageFormName.getName() + &quot; Do Q\n&quot;;</span>
+
+<span class="nc" id="L370">        appendRawCommands(pdfStructure.getHolderFormStream().createOutputStream(), holderFormContent);</span>
+<span class="nc" id="L371">        appendRawCommands(pdfStructure.getInnerFormStream().createOutputStream(), innerFormContent);</span>
+<span class="nc" id="L372">        appendRawCommands(pdfStructure.getImageFormStream().createOutputStream(), imgFormContent);</span>
+<span class="nc" id="L373">        LOG.info(&quot;Injected appearance stream to pdf&quot;);</span>
+<span class="nc" id="L374">    }</span>
+
+    public void appendRawCommands(OutputStream os, String commands) throws IOException
+    {
+<span class="nc" id="L378">        os.write(commands.getBytes(StandardCharsets.UTF_8));</span>
+<span class="nc" id="L379">        os.close();</span>
+<span class="nc" id="L380">    }</span>
+
+    @Override
+    public void createVisualSignature(PDDocument template)
+    {
+<span class="nc" id="L385">        pdfStructure.setVisualSignature(template.getDocument());</span>
+<span class="nc" id="L386">        LOG.info(&quot;Visible signature has been created&quot;);</span>
+<span class="nc" id="L387">    }</span>
+
+    @Override
+    public void createWidgetDictionary(PDSignatureField signatureField,
+                                       PDResources holderFormResources) throws IOException
+    {
+<span class="nc" id="L393">        COSDictionary widgetDict = signatureField.getWidgets().get(0).getCOSObject();</span>
+<span class="nc" id="L394">        widgetDict.setNeedToBeUpdated(true);</span>
+<span class="nc" id="L395">        widgetDict.setItem(COSName.DR, holderFormResources.getCOSObject());</span>
+
+<span class="nc" id="L397">        pdfStructure.setWidgetDictionary(widgetDict);</span>
+<span class="nc" id="L398">        LOG.info(&quot;WidgetDictionary has been created&quot;);</span>
+<span class="nc" id="L399">    }</span>
+
+    @Override
+    public void closeTemplate(PDDocument template) throws IOException
+    {
+<span class="nc" id="L404">        template.close();</span>
+<span class="nc" id="L405">        pdfStructure.getTemplate().close();</span>
+<span class="nc" id="L406">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BlendComposite.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.blend</a> &gt; <span class="el_source">BlendComposite.java</span></div><h1>BlendComposite.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.blend;
+
+import java.awt.AlphaComposite;
+import java.awt.Composite;
+import java.awt.CompositeContext;
+import java.awt.RenderingHints;
+import java.awt.color.ColorSpace;
+import java.awt.image.ColorModel;
+import java.awt.image.Raster;
+import java.awt.image.WritableRaster;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+/**
+ * AWT composite for blend modes.
+ * 
+ * @author Kühn &amp;amp; Weyh Software GmbH
+ */
+public final class BlendComposite implements Composite
+{
+    /**
+     * Log instance.
+     */
+<span class="nc" id="L40">    private static final Logger LOG = LogManager.getLogger(BlendComposite.class);</span>
+
+    /**
+     * Creates a blend composite
+     *
+     * @param blendMode Desired blend mode
+     * @param constantAlpha Constant alpha, must be in the inclusive range
+     * [0.0...1.0] or it will be clipped.
+     * @return a blend composite.
+     * @throws IllegalArgumentException if blendMode is null.
+     */
+    public static Composite getInstance(BlendMode blendMode, float constantAlpha)
+    {
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        if (constantAlpha &lt; 0)</span>
+        {
+<span class="nc" id="L55">            LOG.warn(&quot;using 0 instead of incorrect Alpha {}&quot;, constantAlpha);</span>
+<span class="nc" id="L56">            constantAlpha = 0;</span>
+        }
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        else if (constantAlpha &gt; 1)</span>
+        {
+<span class="nc" id="L60">            LOG.warn(&quot;using 1 instead of incorrect Alpha {}&quot;, constantAlpha);</span>
+<span class="nc" id="L61">            constantAlpha = 1;</span>
+        }
+<span class="nc bnc" id="L63" title="All 2 branches missed.">        if (blendMode == null)</span>
+        {
+<span class="nc" id="L65">            throw new IllegalArgumentException(&quot;blendMode parameter cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        if (blendMode == BlendMode.NORMAL)</span>
+        {
+<span class="nc" id="L69">            return AlphaComposite.getInstance(AlphaComposite.SRC_OVER, constantAlpha);</span>
+        }
+        else
+        {
+<span class="nc" id="L73">            return new BlendComposite(blendMode, constantAlpha);</span>
+        }
+    }
+
+    private final BlendMode blendMode;
+    private final float constantAlpha;
+
+    private BlendComposite(BlendMode blendMode, float constantAlpha)
+<span class="nc" id="L81">    {</span>
+<span class="nc" id="L82">        this.blendMode = blendMode;</span>
+<span class="nc" id="L83">        this.constantAlpha = constantAlpha;</span>
+<span class="nc" id="L84">    }</span>
+
+    @Override
+    public CompositeContext createContext(ColorModel srcColorModel, ColorModel dstColorModel,
+            RenderingHints hints)
+    {
+<span class="nc" id="L90">        return new BlendCompositeContext(srcColorModel, dstColorModel);</span>
+    }
+
+    class BlendCompositeContext implements CompositeContext
+    {
+        private final ColorModel srcColorModel;
+        private final ColorModel dstColorModel;
+
+        BlendCompositeContext(ColorModel srcColorModel, ColorModel dstColorModel)
+<span class="nc" id="L99">        {</span>
+<span class="nc" id="L100">            this.srcColorModel = srcColorModel;</span>
+<span class="nc" id="L101">            this.dstColorModel = dstColorModel;</span>
+<span class="nc" id="L102">        }</span>
+
+        @Override
+        public void dispose()
+        {
+            // nothing needed
+<span class="nc" id="L108">        }</span>
+
+        @Override
+        public void compose(Raster src, Raster dstIn, WritableRaster dstOut)
+        {
+<span class="nc" id="L113">            int x0 = src.getMinX();</span>
+<span class="nc" id="L114">            int y0 = src.getMinY();</span>
+<span class="nc" id="L115">            int width = Math.min(Math.min(src.getWidth(), dstIn.getWidth()), dstOut.getWidth());</span>
+<span class="nc" id="L116">            int height = Math.min(Math.min(src.getHeight(), dstIn.getHeight()), dstOut.getHeight());</span>
+<span class="nc" id="L117">            int x1 = x0 + width;</span>
+<span class="nc" id="L118">            int y1 = y0 + height;</span>
+<span class="nc" id="L119">            int dstInXShift = dstIn.getMinX() - x0;</span>
+<span class="nc" id="L120">            int dstInYShift = dstIn.getMinY() - y0;</span>
+<span class="nc" id="L121">            int dstOutXShift = dstOut.getMinX() - x0;</span>
+<span class="nc" id="L122">            int dstOutYShift = dstOut.getMinY() - y0;</span>
+
+<span class="nc" id="L124">            ColorSpace srcColorSpace = srcColorModel.getColorSpace();</span>
+<span class="nc" id="L125">            int numSrcColorComponents = srcColorModel.getNumColorComponents();</span>
+<span class="nc" id="L126">            int numSrcComponents = src.getNumBands();</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">            boolean srcHasAlpha = (numSrcComponents &gt; numSrcColorComponents);</span>
+<span class="nc" id="L128">            ColorSpace dstColorSpace = dstColorModel.getColorSpace();</span>
+<span class="nc" id="L129">            int numDstColorComponents = dstColorModel.getNumColorComponents();</span>
+<span class="nc" id="L130">            int numDstComponents = dstIn.getNumBands();</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            boolean dstHasAlpha = (numDstComponents &gt; numDstColorComponents);</span>
+
+<span class="nc" id="L133">            int srcColorSpaceType = srcColorSpace.getType();</span>
+<span class="nc" id="L134">            int dstColorSpaceType = dstColorSpace.getType();</span>
+<span class="nc bnc" id="L135" title="All 4 branches missed.">            boolean subtractive = (dstColorSpaceType != ColorSpace.TYPE_RGB)</span>
+                    &amp;&amp; (dstColorSpaceType != ColorSpace.TYPE_GRAY);
+
+<span class="nc" id="L138">            boolean blendModeIsSeparable = blendMode.isSeparableBlendMode();</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">            boolean needsColorConversion = !srcColorSpace.equals(dstColorSpace);</span>
+
+<span class="nc" id="L141">            Object srcPixel = null;</span>
+<span class="nc" id="L142">            Object dstPixel = null;</span>
+<span class="nc" id="L143">            float[] srcComponents = new float[numSrcComponents];</span>
+            // PDFBOX-3501 let getNormalizedComponents allocate to avoid 
+            // ArrayIndexOutOfBoundsException for bitonal target
+<span class="nc" id="L146">            float[] dstComponents = null;</span>
+
+<span class="nc" id="L148">            float[] srcColor = new float[numSrcColorComponents];</span>
+            float[] srcConverted;
+            float[] dstConverted;
+<span class="nc bnc" id="L151" title="All 4 branches missed.">            float[] rgbResult = blendModeIsSeparable ? null : new float[dstHasAlpha ? 4 : 3];</span>
+
+<span class="nc bnc" id="L153" title="All 2 branches missed.">            for (int y = y0; y &lt; y1; y++)</span>
+            {
+<span class="nc bnc" id="L155" title="All 2 branches missed.">                for (int x = x0; x &lt; x1; x++)</span>
+                {
+<span class="nc" id="L157">                    srcPixel = src.getDataElements(x, y, srcPixel);</span>
+<span class="nc" id="L158">                    dstPixel = dstIn.getDataElements(dstInXShift + x, dstInYShift + y, dstPixel);</span>
+
+<span class="nc" id="L160">                    srcComponents = srcColorModel.getNormalizedComponents(srcPixel, srcComponents,</span>
+                            0);
+<span class="nc" id="L162">                    dstComponents = dstColorModel.getNormalizedComponents(dstPixel, dstComponents,</span>
+                            0);
+
+<span class="nc bnc" id="L165" title="All 2 branches missed.">                    float srcAlpha = srcHasAlpha ? srcComponents[numSrcColorComponents] : 1.0f;</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">                    float dstAlpha = dstHasAlpha ? dstComponents[numDstColorComponents] : 1.0f;</span>
+
+<span class="nc" id="L168">                    srcAlpha = srcAlpha * constantAlpha;</span>
+
+<span class="nc" id="L170">                    float resultAlpha = dstAlpha + srcAlpha - srcAlpha * dstAlpha;</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">                    float srcAlphaRatio = (resultAlpha &gt; 0) ? srcAlpha / resultAlpha : 0;</span>
+
+<span class="nc bnc" id="L173" title="All 2 branches missed.">                    if (blendModeIsSeparable)</span>
+                    {
+                        // convert color
+<span class="nc" id="L176">                        System.arraycopy(srcComponents, 0, srcColor, 0, numSrcColorComponents);</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">                        if (needsColorConversion)</span>
+                        {
+                            // TODO - very very slow - Hash results???
+<span class="nc" id="L180">                            float[] cieXYZ = srcColorSpace.toCIEXYZ(srcColor);</span>
+<span class="nc" id="L181">                            srcConverted = dstColorSpace.fromCIEXYZ(cieXYZ);</span>
+<span class="nc" id="L182">                        }</span>
+                        else
+                        {
+<span class="nc" id="L185">                            srcConverted = srcColor;</span>
+                        }
+                        
+<span class="nc bnc" id="L188" title="All 2 branches missed.">                        for (int k = 0; k &lt; numDstColorComponents; k++)</span>
+                        {
+<span class="nc" id="L190">                            float srcValue = srcConverted[k];</span>
+<span class="nc" id="L191">                            float dstValue = dstComponents[k];</span>
+
+<span class="nc bnc" id="L193" title="All 2 branches missed.">                            if (subtractive)</span>
+                            {
+<span class="nc" id="L195">                                srcValue = 1 - srcValue;</span>
+<span class="nc" id="L196">                                dstValue = 1 - dstValue;</span>
+                            }
+
+<span class="nc" id="L199">                            float value = blendMode.getBlendChannelFunction().blendChannel(srcValue,</span>
+                                    dstValue);
+<span class="nc" id="L201">                            value = srcValue + dstAlpha * (value - srcValue);</span>
+<span class="nc" id="L202">                            value = dstValue + srcAlphaRatio * (value - dstValue);</span>
+
+<span class="nc bnc" id="L204" title="All 2 branches missed.">                            if (subtractive)</span>
+                            {
+<span class="nc" id="L206">                                value = 1 - value;</span>
+                            }
+
+<span class="nc" id="L209">                            dstComponents[k] = value;</span>
+                        }
+                    }
+                    else
+                    {
+                        // Nonseparable blend modes are computed in RGB color space.
+                        // TODO - CMYK color spaces need special treatment.
+
+<span class="nc bnc" id="L217" title="All 2 branches missed.">                        if (srcColorSpaceType == ColorSpace.TYPE_RGB)</span>
+                        {
+<span class="nc" id="L219">                            srcConverted = srcComponents;</span>
+                        }
+                        else
+                        {
+<span class="nc" id="L223">                            srcConverted = srcColorSpace.toRGB(srcComponents);</span>
+                        }
+
+<span class="nc bnc" id="L226" title="All 2 branches missed.">                        if (dstColorSpaceType == ColorSpace.TYPE_RGB)</span>
+                        {
+<span class="nc" id="L228">                            dstConverted = dstComponents;</span>
+                        }
+                        else
+                        {
+<span class="nc" id="L232">                            dstConverted = dstColorSpace.toRGB(dstComponents);</span>
+                        }
+                        
+<span class="nc" id="L235">                        blendMode.getBlendFunction().blend(srcConverted, dstConverted, rgbResult);</span>
+
+<span class="nc bnc" id="L237" title="All 2 branches missed.">                        for (int k = 0; k &lt; 3; k++)</span>
+                        {
+<span class="nc" id="L239">                            float srcValue = srcConverted[k];</span>
+<span class="nc" id="L240">                            float dstValue = dstConverted[k];</span>
+<span class="nc" id="L241">                            float value = rgbResult[k];</span>
+<span class="nc" id="L242">                            value = Math.max(Math.min(value, 1.0f), 0.0f);</span>
+<span class="nc" id="L243">                            value = srcValue + dstAlpha * (value - srcValue);</span>
+<span class="nc" id="L244">                            value = dstValue + srcAlphaRatio * (value - dstValue);</span>
+<span class="nc" id="L245">                            rgbResult[k] = value;</span>
+                        }
+
+<span class="nc bnc" id="L248" title="All 2 branches missed.">                        if (dstColorSpaceType == ColorSpace.TYPE_RGB)</span>
+                        {
+<span class="nc" id="L250">                            System.arraycopy(rgbResult, 0, dstComponents, 0, dstComponents.length);</span>
+                        }
+                        else
+                        {
+<span class="nc" id="L254">                            float[] temp = dstColorSpace.fromRGB(rgbResult);</span>
+<span class="nc" id="L255">                            System.arraycopy(temp, 0, dstComponents, 0,</span>
+<span class="nc" id="L256">                                Math.min(dstComponents.length, temp.length));</span>
+                        }
+                    }
+
+<span class="nc bnc" id="L260" title="All 2 branches missed.">                    if (dstHasAlpha)</span>
+                    {
+<span class="nc" id="L262">                        dstComponents[numDstColorComponents] = resultAlpha;</span>
+                    }
+
+<span class="nc" id="L265">                    dstPixel = dstColorModel.getDataElements(dstComponents, 0, dstPixel);</span>
+<span class="nc" id="L266">                    dstOut.setDataElements(dstOutXShift + x, dstOutYShift + y, dstPixel);</span>
+                }
+            }
+<span class="nc" id="L269">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

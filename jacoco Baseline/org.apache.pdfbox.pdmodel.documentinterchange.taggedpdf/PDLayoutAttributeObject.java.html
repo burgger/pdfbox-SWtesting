@@ -1,0 +1,1687 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDLayoutAttributeObject.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.documentinterchange.taggedpdf</a> &gt; <span class="el_source">PDLayoutAttributeObject.java</span></div><h1>PDLayoutAttributeObject.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.documentinterchange.taggedpdf;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.color.PDGamma;
+
+/**
+ * A Layout attribute object.
+ * 
+ * @author Johannes Koch
+ */
+public class PDLayoutAttributeObject extends PDStandardAttributeObject
+{
+
+    /**
+     * standard attribute owner: Layout
+     */
+    public static final String OWNER_LAYOUT = &quot;Layout&quot;;
+
+    private static final String PLACEMENT                    = &quot;Placement&quot;;
+    private static final String WRITING_MODE                 = &quot;WritingMode&quot;;
+    private static final String BACKGROUND_COLOR             = &quot;BackgroundColor&quot;;
+    private static final String BORDER_COLOR                 = &quot;BorderColor&quot;;
+    private static final String BORDER_STYLE                 = &quot;BorderStyle&quot;;
+    private static final String BORDER_THICKNESS             = &quot;BorderThickness&quot;;
+    private static final String PADDING                      = &quot;Padding&quot;;
+    private static final String COLOR                        = &quot;Color&quot;;
+    private static final String SPACE_BEFORE                 = &quot;SpaceBefore&quot;;
+    private static final String SPACE_AFTER                  = &quot;SpaceAfter&quot;;
+    private static final String START_INDENT                 = &quot;StartIndent&quot;;
+    private static final String END_INDENT                   = &quot;EndIndent&quot;;
+    private static final String TEXT_INDENT                  = &quot;TextIndent&quot;;
+    private static final String TEXT_ALIGN                   = &quot;TextAlign&quot;;
+    private static final String BBOX                         = &quot;BBox&quot;;
+    private static final String WIDTH                        = &quot;Width&quot;;
+    private static final String HEIGHT                       = &quot;Height&quot;;
+    private static final String BLOCK_ALIGN                  = &quot;BlockAlign&quot;;
+    private static final String INLINE_ALIGN                 = &quot;InlineAlign&quot;;
+    private static final String T_BORDER_STYLE               = &quot;TBorderStyle&quot;;
+    private static final String T_PADDING                    = &quot;TPadding&quot;;
+    private static final String BASELINE_SHIFT               = &quot;BaselineShift&quot;;
+    private static final String LINE_HEIGHT                  = &quot;LineHeight&quot;;
+    private static final String TEXT_DECORATION_COLOR        = &quot;TextDecorationColor&quot;;
+    private static final String TEXT_DECORATION_THICKNESS    = &quot;TextDecorationThickness&quot;;
+    private static final String TEXT_DECORATION_TYPE         = &quot;TextDecorationType&quot;;
+    private static final String RUBY_ALIGN                   = &quot;RubyAlign&quot;;
+    private static final String RUBY_POSITION                = &quot;RubyPosition&quot;;
+    private static final String GLYPH_ORIENTATION_VERTICAL   = &quot;GlyphOrientationVertical&quot;;
+    private static final String COLUMN_COUNT                 = &quot;ColumnCount&quot;;
+    private static final String COLUMN_GAP                   = &quot;ColumnGap&quot;;
+    private static final String COLUMN_WIDTHS                = &quot;ColumnWidths&quot;;
+
+    /**
+     * Placement: Block: Stacked in the block-progression direction within an
+     * enclosing reference area or parent BLSE.
+     */
+    public static final String PLACEMENT_BLOCK                 = &quot;Block&quot;;
+    /**
+     * Placement: Inline: Packed in the inline-progression direction within an
+     * enclosing BLSE.
+     */
+    public static final String PLACEMENT_INLINE                = &quot;Inline&quot;;
+    /**
+     * Placement: Before: Placed so that the before edge of the element’s
+     * allocation rectangle coincides with that of the nearest enclosing
+     * reference area. The element may float, if necessary, to achieve the
+     * specified placement. The element shall be treated as a block occupying
+     * the full extent of the enclosing reference area in the inline direction.
+     * Other content shall be stacked so as to begin at the after edge of the
+     * element’s allocation rectangle.
+     */
+    public static final String PLACEMENT_BEFORE                = &quot;Before&quot;;
+    /**
+     * Placement: Start: Placed so that the start edge of the element’s
+     * allocation rectangle coincides with that of the nearest enclosing
+     * reference area. The element may float, if necessary, to achieve the
+     * specified placement. Other content that would intrude into the element’s
+     * allocation rectangle shall be laid out as a runaround.
+     */
+    public static final String PLACEMENT_START                 = &quot;Start&quot;;
+    /**
+     * Placement: End: Placed so that the end edge of the element’s allocation
+     * rectangle coincides with that of the nearest enclosing reference area.
+     * The element may float, if necessary, to achieve the specified placement.
+     * Other content that would intrude into the element’s allocation rectangle
+     * shall be laid out as a runaround.
+     */
+    public static final String PLACEMENT_END                   = &quot;End&quot;;
+    /**
+     * WritingMode: LrTb: Inline progression from left to right; block
+     * progression from top to bottom. This is the typical writing mode for
+     * Western writing systems.
+     */
+    public static final String WRITING_MODE_LRTB               = &quot;LrTb&quot;;
+    /**
+     * WritingMode: RlTb: Inline progression from right to left; block
+     * progression from top to bottom. This is the typical writing mode for
+     * Arabic and Hebrew writing systems.
+     */
+    public static final String WRITING_MODE_RLTB               = &quot;RlTb&quot;;
+    /**
+     * WritingMode: TbRl: Inline progression from top to bottom; block
+     * progression from right to left. This is the typical writing mode for
+     * Chinese and Japanese writing systems.
+     */
+    public static final String WRITING_MODE_TBRL               = &quot;TbRl&quot;;
+    /**
+     * BorderStyle: None: No border. Forces the computed value of
+     * BorderThickness to be 0.
+     */
+    public static final String BORDER_STYLE_NONE               = &quot;None&quot;;
+    /**
+     * BorderStyle: Hidden: Same as {@link #BORDER_STYLE_NONE}, except in terms
+     * of border conflict resolution for table elements.
+     */
+    public static final String BORDER_STYLE_HIDDEN             = &quot;Hidden&quot;;
+    /**
+     * BorderStyle: Dotted: The border is a series of dots.
+     */
+    public static final String BORDER_STYLE_DOTTED             = &quot;Dotted&quot;;
+    /**
+     * BorderStyle: Dashed: The border is a series of short line segments.
+     */
+    public static final String BORDER_STYLE_DASHED             = &quot;Dashed&quot;;
+    /**
+     * BorderStyle: Solid: The border is a single line segment.
+     */
+    public static final String BORDER_STYLE_SOLID              = &quot;Solid&quot;;
+    /**
+     * BorderStyle: Double: The border is two solid lines. The sum of the two
+     * lines and the space between them equals the value of BorderThickness.
+     */
+    public static final String BORDER_STYLE_DOUBLE             = &quot;Double&quot;;
+    /**
+     * BorderStyle: Groove: The border looks as though it were carved into the
+     * canvas.
+     */
+    public static final String BORDER_STYLE_GROOVE             = &quot;Groove&quot;;
+    /**
+     * BorderStyle: Ridge: The border looks as though it were coming out of the
+     * canvas (the opposite of {@link #BORDER_STYLE_GROOVE}).
+     */
+    public static final String BORDER_STYLE_RIDGE              = &quot;Ridge&quot;;
+    /**
+     * BorderStyle: Inset: The border makes the entire box look as though it
+     * were embedded in the canvas.
+     */
+    public static final String BORDER_STYLE_INSET              = &quot;Inset&quot;;
+    /**
+     * BorderStyle: Outset: The border makes the entire box look as though it
+     * were coming out of the canvas (the opposite of {@link #BORDER_STYLE_INSET}.
+     */
+    public static final String BORDER_STYLE_OUTSET             = &quot;Outset&quot;;
+    /**
+     * TextAlign: Start: Aligned with the start edge.
+     */
+    public static final String TEXT_ALIGN_START                = &quot;Start&quot;;
+    /**
+     * TextAlign: Center: Centered between the start and end edges.
+     */
+    public static final String TEXT_ALIGN_CENTER               = &quot;Center&quot;;
+    /**
+     * TextAlign: End: Aligned with the end edge.
+     */
+    public static final String TEXT_ALIGN_END                  = &quot;End&quot;;
+    /**
+     * TextAlign: Justify: Aligned with both the start and end edges, with
+     * internal spacing within each line expanded, if necessary, to achieve such
+     * alignment. The last (or only) line shall be aligned with the start edge
+     * only.
+     */
+    public static final String TEXT_ALIGN_JUSTIFY              = &quot;Justify&quot;;
+    /**
+     * Width: Auto
+     */
+    public static final String WIDTH_AUTO                      = &quot;Auto&quot;;
+    /**
+     * Height: Auto
+     */
+    public static final String HEIGHT_AUTO                     = &quot;Auto&quot;;
+    /**
+     * BlockAlign: Before: Before edge of the first child’s allocation rectangle
+     * aligned with that of the table cell’s content rectangle.
+     */
+    public static final String BLOCK_ALIGN_BEFORE              = &quot;Before&quot;;
+    /**
+     * BlockAlign: Middle: Children centered within the table cell. The distance
+     * between the before edge of the first child’s allocation rectangle and
+     * that of the table cell’s content rectangle shall be the same as the
+     * distance between the after edge of the last child’s allocation rectangle
+     * and that of the table cell’s content rectangle.
+     */
+    public static final String BLOCK_ALIGN_MIDDLE              = &quot;Middle&quot;;
+    /**
+     * BlockAlign: After: After edge of the last child’s allocation rectangle
+     * aligned with that of the table cell’s content rectangle.
+     */
+    public static final String BLOCK_ALIGN_AFTER               = &quot;After&quot;;
+    /**
+     * BlockAlign: Justify: Children aligned with both the before and after
+     * edges of the table cell’s content rectangle. The first child shall be
+     * placed as described for {@link #BLOCK_ALIGN_BEFORE} and the last child as
+     * described for {@link #BLOCK_ALIGN_AFTER}, with equal spacing between the
+     * children. If there is only one child, it shall be aligned with the before
+     * edge only, as for {@link #BLOCK_ALIGN_BEFORE}.
+     */
+    public static final String BLOCK_ALIGN_JUSTIFY             = &quot;Justify&quot;;
+    /**
+     * InlineAlign: Start: Start edge of each child’s allocation rectangle
+     * aligned with that of the table cell’s content rectangle.
+     */
+    public static final String INLINE_ALIGN_START              = &quot;Start&quot;;
+    /**
+     * InlineAlign: Center: Each child centered within the table cell. The
+     * distance between the start edges of the child’s allocation rectangle and
+     * the table cell’s content rectangle shall be the same as the distance
+     * between their end edges.
+     */
+    public static final String INLINE_ALIGN_CENTER             = &quot;Center&quot;;
+    /**
+     * InlineAlign: End: End edge of each child’s allocation rectangle aligned
+     * with that of the table cell’s content rectangle.
+     */
+    public static final String INLINE_ALIGN_END                = &quot;End&quot;;
+    /**
+     * LineHeight: NormalAdjust the line height to include any nonzero value
+     * specified for BaselineShift.
+     */
+    public static final String LINE_HEIGHT_NORMAL              = &quot;Normal&quot;;
+    /**
+     * LineHeight: Auto: Adjustment for the value of BaselineShift shall not be
+     * made.
+     */
+    public static final String LINE_HEIGHT_AUTO                = &quot;Auto&quot;;
+    /**
+     * TextDecorationType: None: No text decoration
+     */
+    public static final String TEXT_DECORATION_TYPE_NONE       = &quot;None&quot;;
+    /**
+     * TextDecorationType: Underline: A line below the text
+     */
+    public static final String TEXT_DECORATION_TYPE_UNDERLINE  = &quot;Underline&quot;;
+    /**
+     * TextDecorationType: Overline: A line above the text
+     */
+    public static final String TEXT_DECORATION_TYPE_OVERLINE   = &quot;Overline&quot;;
+    /**
+     * TextDecorationType: LineThrough: A line through the middle of the text
+     */
+    public static final String TEXT_DECORATION_TYPE_LINE_THROUGH = &quot;LineThrough&quot;;
+    /**
+     * RubyAlign: Start: The content shall be aligned on the start edge in the
+     * inline-progression direction.
+     */
+    public static final String RUBY_ALIGN_START                = &quot;Start&quot;;
+    /**
+     * RubyAlign: Center: The content shall be centered in the
+     * inline-progression direction.
+     */
+    public static final String RUBY_ALIGN_CENTER               = &quot;Center&quot;;
+    /**
+     * RubyAlign: End: The content shall be aligned on the end edge in the
+     * inline-progression direction.
+     */
+    public static final String RUBY_ALIGN_END                  = &quot;End&quot;;
+    /**
+     * RubyAlign: Justify:  The content shall be expanded to fill the available
+     * width in the inline-progression direction.
+     */
+    public static final String RUBY_ALIGN_JUSTIFY              = &quot;Justify&quot;;
+    /**
+     * RubyAlign: Distribute: The content shall be expanded to fill the
+     * available width in the inline-progression direction. However, space shall
+     * also be inserted at the start edge and end edge of the text. The spacing
+     * shall be distributed using a 1:2:1 (start:infix:end) ratio. It shall be
+     * changed to a 0:1:1 ratio if the ruby appears at the start of a text line
+     * or to a 1:1:0 ratio if the ruby appears at the end of the text line.
+     */
+    public static final String RUBY_ALIGN_DISTRIBUTE           = &quot;Distribute&quot;;
+    /**
+     * RubyPosition: Before: The RT content shall be aligned along the before
+     * edge of the element.
+     */
+    public static final String RUBY_POSITION_BEFORE            = &quot;Before&quot;;
+    /**
+     * RubyPosition: After: The RT content shall be aligned along the after edge
+     * of the element.
+     */
+    public static final String RUBY_POSITION_AFTER             = &quot;After&quot;;
+    /**
+     * RubyPosition: Warichu: The RT and associated RP elements shall be
+     * formatted as a warichu, following the RB element.
+     */
+    public static final String RUBY_POSITION_WARICHU           = &quot;Warichu&quot;;
+    /**
+     * RubyPosition: Inline: The RT and associated RP elements shall be
+     * formatted as a parenthesis comment, following the RB element.
+     */
+    public static final String RUBY_POSITION_INLINE            = &quot;Inline&quot;;
+    /**
+     * GlyphOrientationVertical: Auto
+     */
+    public static final String GLYPH_ORIENTATION_VERTICAL_AUTO = &quot;Auto&quot;;
+    /**
+     * GlyphOrientationVertical: -180°
+     */
+    public static final String GLYPH_ORIENTATION_VERTICAL_MINUS_180_DEGREES = &quot;-180&quot;;
+    /**
+     * GlyphOrientationVertical: -90°
+     */
+    public static final String GLYPH_ORIENTATION_VERTICAL_MINUS_90_DEGREES = &quot;-90&quot;;
+    /**
+     * GlyphOrientationVertical: 0°
+     */
+    public static final String GLYPH_ORIENTATION_VERTICAL_ZERO_DEGREES = &quot;0&quot;;
+    /**
+     * GlyphOrientationVertical: 90°
+     */
+    public static final String GLYPH_ORIENTATION_VERTICAL_90_DEGREES = &quot;90&quot;;
+    /**
+     * GlyphOrientationVertical: 180°
+     */
+    public static final String GLYPH_ORIENTATION_VERTICAL_180_DEGREES = &quot;180&quot;;
+    /**
+     * GlyphOrientationVertical: 270°
+     */
+    public static final String GLYPH_ORIENTATION_VERTICAL_270_DEGREES = &quot;270&quot;;
+    /**
+     * GlyphOrientationVertical: 360°
+     */
+    public static final String GLYPH_ORIENTATION_VERTICAL_360_DEGREES = &quot;360&quot;;
+
+
+    /**
+     * Default constructor.
+     */
+    public PDLayoutAttributeObject()
+<span class="nc" id="L357">    {</span>
+<span class="nc" id="L358">        this.setOwner(OWNER_LAYOUT);</span>
+<span class="nc" id="L359">    }</span>
+
+    /**
+     * Creates a new Layout attribute object with a given dictionary.
+     * 
+     * @param dictionary the dictionary
+     */
+    public PDLayoutAttributeObject(COSDictionary dictionary)
+    {
+<span class="nc" id="L368">        super(dictionary);</span>
+<span class="nc" id="L369">    }</span>
+
+
+    /**
+     * Gets the positioning of the element with respect to the enclosing
+     * reference area and other content (Placement). The default value is
+     * {@link #PLACEMENT_INLINE}.
+     * 
+     * @return the placement
+     */
+    public String getPlacement()
+    {
+<span class="nc" id="L381">        return this.getName(PLACEMENT, PLACEMENT_INLINE);</span>
+    }
+
+    /**
+     * Sets the positioning of the element with respect to the enclosing
+     * reference area and other content (Placement). The value should be one of:
+     * &lt;ul&gt;
+     *   &lt;li&gt;{@link #PLACEMENT_BLOCK},&lt;/li&gt;
+     *   &lt;li&gt;{@link #PLACEMENT_INLINE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #PLACEMENT_BEFORE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #PLACEMENT_START},&lt;/li&gt;
+     *   &lt;li&gt;{@link #PLACEMENT_END}.&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * @param placement the placement
+     */
+    public void setPlacement(String placement)
+    {
+<span class="nc" id="L399">        this.setName(PLACEMENT, placement);</span>
+<span class="nc" id="L400">    }</span>
+
+    /**
+     * Gets the writing mode (WritingMode). The default value is
+     * {@link #WRITING_MODE_LRTB}.
+     * 
+     * @return the writing mode
+     */
+    public String getWritingMode()
+    {
+<span class="nc" id="L410">        return this.getName(WRITING_MODE, WRITING_MODE_LRTB);</span>
+    }
+
+    /**
+     * Sets the writing mode (WritingMode). The value should be one of:
+     * &lt;ul&gt;
+     *   &lt;li&gt;{@link #WRITING_MODE_LRTB},&lt;/li&gt;
+     *   &lt;li&gt;{@link #WRITING_MODE_RLTB},&lt;/li&gt;
+     *   &lt;li&gt;{@link #WRITING_MODE_TBRL}.&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * @param writingMode the writing mode
+     */
+    public void setWritingMode(String writingMode)
+    {
+<span class="nc" id="L425">        this.setName(WRITING_MODE, writingMode);</span>
+<span class="nc" id="L426">    }</span>
+
+    /**
+     * Gets the background colour (BackgroundColor).
+     * 
+     * @return the background colour
+     */
+    public PDGamma getBackgroundColor()
+    {
+<span class="nc" id="L435">        return this.getColor(BACKGROUND_COLOR);</span>
+    }
+
+    /**
+     * Sets the background colour (BackgroundColor).
+     * 
+     * @param backgroundColor the background colour
+     */
+    public void setBackgroundColor(PDGamma backgroundColor)
+    {
+<span class="nc" id="L445">        this.setColor(BACKGROUND_COLOR, backgroundColor);</span>
+<span class="nc" id="L446">    }</span>
+
+    /**
+     * Gets the border colour (BorderColor).
+     * 
+     * @return a single border colour ({@link PDGamma}) or four border colours
+     *  ({@link PDFourColours})
+     */
+    public Object getBorderColors()
+    {
+<span class="nc" id="L456">        return this.getColorOrFourColors(BORDER_COLOR);</span>
+    }
+
+    /**
+     * Sets the same border colour for all four sides (BorderColor).
+     * 
+     * @param borderColor the border colour
+     */
+    public void setAllBorderColors(PDGamma borderColor)
+    {
+<span class="nc" id="L466">        this.setColor(BORDER_COLOR, borderColor);</span>
+<span class="nc" id="L467">    }</span>
+
+    /**
+     * Sets the border colours for four sides separately (BorderColor).
+     * 
+     * @param borderColors the border colours
+     */
+    public void setBorderColors(PDFourColours borderColors)
+    {
+<span class="nc" id="L476">        this.setFourColors(BORDER_COLOR, borderColors);</span>
+<span class="nc" id="L477">    }</span>
+
+    /**
+     * Gets the border style (BorderStyle). The default value is
+     * {@link #BORDER_STYLE_NONE}.
+     * 
+     * @return the border styles (a String or an array of four Strings)
+     */
+    public Object getBorderStyle()
+    {
+<span class="nc" id="L487">        return this.getNameOrArrayOfName(BORDER_STYLE, BORDER_STYLE_NONE);</span>
+    }
+
+    /**
+     * Sets the same border style for all four sides (BorderStyle). The value
+     * should be one of:
+     * &lt;ul&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_NONE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_HIDDEN},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_DOTTED},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_DASHED},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_SOLID},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_DOUBLE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_GROOVE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_RIDGE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_INSET},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_OUTSET}.&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * @param borderStyle the border style
+     */
+    public void setAllBorderStyles(String borderStyle)
+    {
+<span class="nc" id="L510">        this.setName(BORDER_STYLE, borderStyle);</span>
+<span class="nc" id="L511">    }</span>
+
+    /**
+     * Sets the border styles for four sides separately (BorderStyle). The
+     * values should be of:
+     * &lt;ul&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_NONE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_HIDDEN},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_DOTTED},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_DASHED},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_SOLID},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_DOUBLE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_GROOVE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_RIDGE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_INSET},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_OUTSET}.&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * @param borderStyles the border styles (an array of four Strings)
+     */
+    public void setBorderStyles(String[] borderStyles)
+    {
+<span class="nc" id="L533">        this.setArrayOfName(BORDER_STYLE, borderStyles);</span>
+<span class="nc" id="L534">    }</span>
+
+    /**
+     * Gets the border thickness (BorderThickness).
+     * 
+     * @return the border thickness (a Float or an array of four floats)
+     */
+    public Object getBorderThickness()
+    {
+<span class="nc" id="L543">        return this.getNumberOrArrayOfNumber(BORDER_THICKNESS, UNSPECIFIED);</span>
+    }
+
+    /**
+     * Sets the same border thickness for all four sides (BorderThickness).
+     * 
+     * @param borderThickness the border thickness
+     */
+    public void setAllBorderThicknesses(float borderThickness)
+    {
+<span class="nc" id="L553">        this.setNumber(BORDER_THICKNESS, borderThickness);</span>
+<span class="nc" id="L554">    }</span>
+
+    /**
+     * Sets the same border thickness for all four sides (BorderThickness).
+     * 
+     * @param borderThickness the border thickness
+     */
+    public void setAllBorderThicknesses(int borderThickness)
+    {
+<span class="nc" id="L563">        this.setNumber(BORDER_THICKNESS, borderThickness);</span>
+<span class="nc" id="L564">    }</span>
+
+    /**
+     * Sets the border thicknesses for four sides separately (BorderThickness).
+     * 
+     * @param borderThicknesses the border thickness (an array of four floats)
+     */
+    public void setBorderThicknesses(float[] borderThicknesses)
+    {
+<span class="nc" id="L573">        this.setArrayOfNumber(BORDER_THICKNESS, borderThicknesses);</span>
+<span class="nc" id="L574">    }</span>
+
+    /**
+     * Gets the padding (Padding). The default value is 0.
+     * 
+     * @return the padding (a Float or an array of float)
+     */
+    public Object getPadding()
+    {
+<span class="nc" id="L583">        return this.getNumberOrArrayOfNumber(PADDING, 0.f);</span>
+    }
+
+    /**
+     * Sets the same padding for all four sides (Padding).
+     * 
+     * @param padding the padding
+     */
+    public void setAllPaddings(float padding)
+    {
+<span class="nc" id="L593">        this.setNumber(PADDING, padding);</span>
+<span class="nc" id="L594">    }</span>
+
+    /**
+     * Sets the same padding for all four sides (Padding).
+     * 
+     * @param padding the padding
+     */
+    public void setAllPaddings(int padding)
+    {
+<span class="nc" id="L603">        this.setNumber(PADDING, padding);</span>
+<span class="nc" id="L604">    }</span>
+
+    /**
+     * Sets the paddings for four sides separately (Padding).
+     * 
+     * @param paddings the paddings (an array of four floats)
+     */
+    public void setPaddings(float[] paddings)
+    {
+<span class="nc" id="L613">        this.setArrayOfNumber(PADDING, paddings);</span>
+<span class="nc" id="L614">    }</span>
+
+    /**
+     * Gets the color to be used for drawing text and the default value for the
+     * colour of table borders and text decorations (Color).
+     * 
+     * @return the colour
+     */
+    public PDGamma getColor()
+    {
+<span class="nc" id="L624">        return this.getColor(COLOR);</span>
+    }
+
+    /**
+     * Sets the color to be used for drawing text and the default value for the
+     * colour of table borders and text decorations (Color).
+     * 
+     * @param color the colour
+     */
+    public void setColor(PDGamma color)
+    {
+<span class="nc" id="L635">        this.setColor(COLOR, color);</span>
+<span class="nc" id="L636">    }</span>
+
+    /**
+     * Gets the amount of extra space preceding the before edge of the BLSE in
+     * the block-progression direction (SpaceBefore). The default value is 0.
+     * 
+     * @return the space before
+     */
+    public float getSpaceBefore()
+    {
+<span class="nc" id="L646">        return this.getNumber(SPACE_BEFORE, 0.f);</span>
+    }
+
+    /**
+     * Sets the amount of extra space preceding the before edge of the BLSE in
+     * the block-progression direction (SpaceBefore).
+     * 
+     * @param spaceBefore the space before
+     */
+    public void setSpaceBefore(float spaceBefore)
+    {
+<span class="nc" id="L657">        this.setNumber(SPACE_BEFORE, spaceBefore);</span>
+<span class="nc" id="L658">    }</span>
+
+    /**
+     * Sets the amount of extra space preceding the before edge of the BLSE in
+     * the block-progression direction (SpaceBefore).
+     * 
+     * @param spaceBefore the space before
+     */
+    public void setSpaceBefore(int spaceBefore)
+    {
+<span class="nc" id="L668">        this.setNumber(SPACE_BEFORE, spaceBefore);</span>
+<span class="nc" id="L669">    }</span>
+
+    /**
+     * Gets the amount of extra space following the after edge of the BLSE in
+     * the block-progression direction (SpaceAfter). The default value is 0.
+     * 
+     * @return the space after
+     */
+    public float getSpaceAfter()
+    {
+<span class="nc" id="L679">        return this.getNumber(SPACE_AFTER, 0.f);</span>
+    }
+
+    /**
+     * Sets the amount of extra space following the after edge of the BLSE in
+     * the block-progression direction (SpaceAfter).
+     * 
+     * @param spaceAfter the space after
+     */
+    public void setSpaceAfter(float spaceAfter)
+    {
+<span class="nc" id="L690">        this.setNumber(SPACE_AFTER, spaceAfter);</span>
+<span class="nc" id="L691">    }</span>
+
+    /**
+     * Sets the amount of extra space following the after edge of the BLSE in
+     * the block-progression direction (SpaceAfter).
+     * 
+     * @param spaceAfter the space after
+     */
+    public void setSpaceAfter(int spaceAfter)
+    {
+<span class="nc" id="L701">        this.setNumber(SPACE_AFTER, spaceAfter);</span>
+<span class="nc" id="L702">    }</span>
+
+    /**
+     * Gets the distance from the start edge of the reference area to that of
+     * the BLSE in the inline-progression direction (StartIndent). The default value is 0.
+     * 
+     * @return the start indent
+     */
+    public float getStartIndent()
+    {
+<span class="nc" id="L712">        return this.getNumber(START_INDENT, 0.f);</span>
+    }
+
+    /**
+     * Sets the distance from the start edge of the reference area to that of
+     * the BLSE in the inline-progression direction (StartIndent).
+     * 
+     * @param startIndent the start indent
+     */
+    public void setStartIndent(float startIndent)
+    {
+<span class="nc" id="L723">        this.setNumber(START_INDENT, startIndent);</span>
+<span class="nc" id="L724">    }</span>
+
+    /**
+     * Sets the distance from the start edge of the reference area to that of
+     * the BLSE in the inline-progression direction (StartIndent).
+     * 
+     * @param startIndent the start indent
+     */
+    public void setStartIndent(int startIndent)
+    {
+<span class="nc" id="L734">        this.setNumber(START_INDENT, startIndent);</span>
+<span class="nc" id="L735">    }</span>
+
+    /**
+     * Gets the distance from the end edge of the BLSE to that of the reference
+     * area in the inline-progression direction (EndIndent). The default value
+     * is 0.
+     * 
+     * @return the end indent
+     */
+    public float getEndIndent()
+    {
+<span class="nc" id="L746">        return this.getNumber(END_INDENT, 0.f);</span>
+    }
+
+    /**
+     * Sets the distance from the end edge of the BLSE to that of the reference
+     * area in the inline-progression direction (EndIndent).
+     * 
+     * @param endIndent the end indent
+     */
+    public void setEndIndent(float endIndent)
+    {
+<span class="nc" id="L757">        this.setNumber(END_INDENT, endIndent);</span>
+<span class="nc" id="L758">    }</span>
+
+    /**
+     * Sets the distance from the end edge of the BLSE to that of the reference
+     * area in the inline-progression direction (EndIndent).
+     * 
+     * @param endIndent the end indent
+     */
+    public void setEndIndent(int endIndent)
+    {
+<span class="nc" id="L768">        this.setNumber(END_INDENT, endIndent);</span>
+<span class="nc" id="L769">    }</span>
+
+    /**
+     * Gets the additional distance in the inline-progression direction from the
+     * start edge of the BLSE, as specified by StartIndent, to that of the first
+     * line of text (TextIndent). The default value is 0.
+     * 
+     * @return the text indent
+     */
+    public float getTextIndent()
+    {
+<span class="nc" id="L780">        return this.getNumber(TEXT_INDENT, 0.f);</span>
+    }
+
+    /**
+     * Sets the additional distance in the inline-progression direction from the
+     * start edge of the BLSE, as specified by StartIndent, to that of the first
+     * line of text (TextIndent).
+     * 
+     * @param textIndent the text indent
+     */
+    public void setTextIndent(float textIndent)
+    {
+<span class="nc" id="L792">        this.setNumber(TEXT_INDENT, textIndent);</span>
+<span class="nc" id="L793">    }</span>
+
+    /**
+     * Sets the additional distance in the inline-progression direction from the
+     * start edge of the BLSE, as specified by StartIndent, to that of the first
+     * line of text (TextIndent).
+     * 
+     * @param textIndent the text indent
+     */
+    public void setTextIndent(int textIndent)
+    {
+<span class="nc" id="L804">        this.setNumber(TEXT_INDENT, textIndent);</span>
+<span class="nc" id="L805">    }</span>
+
+    /**
+     * Gets the alignment, in the inline-progression direction, of text and
+     * other content within lines of the BLSE (TextAlign). The default value is
+     * {@link #TEXT_ALIGN_START}.
+     * 
+     * @return the text alignment
+     */
+    public String getTextAlign()
+    {
+<span class="nc" id="L816">        return this.getName(TEXT_ALIGN, TEXT_ALIGN_START);</span>
+    }
+
+    /**
+     * Sets the alignment, in the inline-progression direction, of text and
+     * other content within lines of the BLSE (TextAlign). The value should be
+     * one of:
+     * &lt;ul&gt;
+     *   &lt;li&gt;{@link #TEXT_ALIGN_START},&lt;/li&gt;
+     *   &lt;li&gt;{@link #TEXT_ALIGN_CENTER},&lt;/li&gt;
+     *   &lt;li&gt;{@link #TEXT_ALIGN_END},&lt;/li&gt;
+     *   &lt;li&gt;{@link #TEXT_ALIGN_JUSTIFY}.&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * @param textIndent the text alignment
+     */
+    public void setTextAlign(String textIndent)
+    {
+<span class="nc" id="L834">        this.setName(TEXT_ALIGN, textIndent);</span>
+<span class="nc" id="L835">    }</span>
+
+    /**
+     * Gets the bounding box.
+     * 
+     * @return the bounding box.
+     */
+    public PDRectangle getBBox()
+    {
+<span class="nc" id="L844">        COSArray array = this.getCOSObject().getCOSArray(COSName.BBOX);</span>
+<span class="nc bnc" id="L845" title="All 2 branches missed.">        if (array != null)</span>
+        {
+<span class="nc" id="L847">            return new PDRectangle(array);</span>
+        }
+<span class="nc" id="L849">        return null;</span>
+    }
+
+    /**
+     * Sets the bounding box.
+     * 
+     * @param bbox the bounding box
+     */
+    public void setBBox(PDRectangle bbox)
+    {
+<span class="nc" id="L859">        String name = BBOX;</span>
+<span class="nc" id="L860">        COSBase oldValue = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L861">        this.getCOSObject().setItem(name, bbox);</span>
+<span class="nc bnc" id="L862" title="All 2 branches missed.">        COSBase newValue = bbox == null ? null : bbox.getCOSObject();</span>
+<span class="nc" id="L863">        this.potentiallyNotifyChanged(oldValue, newValue);</span>
+<span class="nc" id="L864">    }</span>
+
+    /**
+     * Gets the width of the element’s content rectangle in the
+     * inline-progression direction (Width). The default value is
+     * {@link #WIDTH_AUTO}.
+     * 
+     * @return the width (a Float or a String)
+     */
+    public Object getWidth()
+    {
+<span class="nc" id="L875">        return this.getNumberOrName(WIDTH, WIDTH_AUTO);</span>
+    }
+
+    /**
+     * Sets the width of the element’s content rectangle in the
+     * inline-progression direction (Width) to {@link #WIDTH_AUTO}.
+     */
+    public void setWidthAuto()
+    {
+<span class="nc" id="L884">        this.setName(WIDTH, WIDTH_AUTO);</span>
+<span class="nc" id="L885">    }</span>
+
+    /**
+     * Sets the width of the element’s content rectangle in the
+     * inline-progression direction (Width).
+     * 
+     * @param width the width
+     */
+    public void setWidth(float width)
+    {
+<span class="nc" id="L895">        this.setNumber(WIDTH, width);</span>
+<span class="nc" id="L896">    }</span>
+
+    /**
+     * Sets the width of the element’s content rectangle in the
+     * inline-progression direction (Width).
+     * 
+     * @param width the width
+     */
+    public void setWidth(int width)
+    {
+<span class="nc" id="L906">        this.setNumber(WIDTH, width);</span>
+<span class="nc" id="L907">    }</span>
+
+    /**
+     * Gets the height of the element’s content rectangle in the
+     * block-progression direction (Height). The default value is
+     * {@link #HEIGHT_AUTO}.
+     * 
+     * @return the height (a Float or a String)
+     */
+    public Object getHeight()
+    {
+<span class="nc" id="L918">        return this.getNumberOrName(HEIGHT, HEIGHT_AUTO);</span>
+    }
+
+    /**
+     * Sets the height of the element’s content rectangle in the
+     * block-progression direction (Height) to {@link #HEIGHT_AUTO}.
+     */
+    public void setHeightAuto()
+    {
+<span class="nc" id="L927">        this.setName(HEIGHT, HEIGHT_AUTO);</span>
+<span class="nc" id="L928">    }</span>
+
+    /**
+     * Sets the height of the element’s content rectangle in the
+     * block-progression direction (Height).
+     * 
+     * @param height the height
+     */
+    public void setHeight(float height)
+    {
+<span class="nc" id="L938">        this.setNumber(HEIGHT, height);</span>
+<span class="nc" id="L939">    }</span>
+
+    /**
+     * Sets the height of the element’s content rectangle in the
+     * block-progression direction (Height).
+     * 
+     * @param height the height
+     */
+    public void setHeight(int height)
+    {
+<span class="nc" id="L949">        this.setNumber(HEIGHT, height);</span>
+<span class="nc" id="L950">    }</span>
+
+    /**
+     * Gets the alignment, in the block-progression direction, of content within
+     * the table cell (BlockAlign). The default value is
+     * {@link #BLOCK_ALIGN_BEFORE}.
+     * 
+     * @return the block alignment
+     */
+    public String getBlockAlign()
+    {
+<span class="nc" id="L961">        return this.getName(BLOCK_ALIGN, BLOCK_ALIGN_BEFORE);</span>
+    }
+
+    /**
+     * Sets the alignment, in the block-progression direction, of content within
+     * the table cell (BlockAlign). The value should be one of:
+     * &lt;ul&gt;
+     *   &lt;li&gt;{@link #BLOCK_ALIGN_BEFORE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BLOCK_ALIGN_MIDDLE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BLOCK_ALIGN_AFTER},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BLOCK_ALIGN_JUSTIFY}.&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * @param blockAlign the block alignment
+     */
+    public void setBlockAlign(String blockAlign)
+    {
+<span class="nc" id="L978">        this.setName(BLOCK_ALIGN, blockAlign);</span>
+<span class="nc" id="L979">    }</span>
+
+    /**
+     * Gets the alignment, in the inline-progression direction, of content
+     * within the table cell (InlineAlign). The default value is
+     * {@link #INLINE_ALIGN_START}.
+     * 
+     * @return the inline alignment
+     */
+    public String getInlineAlign()
+    {
+<span class="nc" id="L990">        return this.getName(INLINE_ALIGN, INLINE_ALIGN_START);</span>
+    }
+
+    /**
+     * Sets the alignment, in the inline-progression direction, of content
+     * within the table cell (InlineAlign). The value should be one of
+     * &lt;ul&gt;
+     *   &lt;li&gt;{@link #INLINE_ALIGN_START},&lt;/li&gt;
+     *   &lt;li&gt;{@link #INLINE_ALIGN_CENTER},&lt;/li&gt;
+     *   &lt;li&gt;{@link #INLINE_ALIGN_END}.&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * @param inlineAlign the inline alignment
+     */
+    public void setInlineAlign(String inlineAlign)
+    {
+<span class="nc" id="L1006">        this.setName(INLINE_ALIGN, inlineAlign);</span>
+<span class="nc" id="L1007">    }</span>
+
+    /**
+     * Gets the style of the border drawn on each edge of a table cell
+     * (TBorderStyle).
+     * 
+     * @return the border style.
+     */
+    public Object getTBorderStyle()
+    {
+<span class="nc" id="L1017">        return this.getNameOrArrayOfName(T_BORDER_STYLE, BORDER_STYLE_NONE);</span>
+    }
+
+    /**
+     * Sets the same table border style for all four sides (TBorderStyle). The
+     * value should be one of:
+     * &lt;ul&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_NONE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_HIDDEN},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_DOTTED},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_DASHED},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_SOLID},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_DOUBLE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_GROOVE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_RIDGE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_INSET},&lt;/li&gt;
+     *   &lt;li&gt;{@link #BORDER_STYLE_OUTSET}.&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * @param tBorderStyle the table border style
+     */
+    public void setAllTBorderStyles(String tBorderStyle)
+    {
+<span class="nc" id="L1040">        this.setName(T_BORDER_STYLE, tBorderStyle);</span>
+<span class="nc" id="L1041">    }</span>
+
+    /**
+     * Sets the style of the border drawn on each edge of a table cell (TBorderStyle). The values should be of:
+     * &lt;ul&gt;
+     * &lt;li&gt;{@link #BORDER_STYLE_NONE},&lt;/li&gt;
+     * &lt;li&gt;{@link #BORDER_STYLE_HIDDEN},&lt;/li&gt;
+     * &lt;li&gt;{@link #BORDER_STYLE_DOTTED},&lt;/li&gt;
+     * &lt;li&gt;{@link #BORDER_STYLE_DASHED},&lt;/li&gt;
+     * &lt;li&gt;{@link #BORDER_STYLE_SOLID},&lt;/li&gt;
+     * &lt;li&gt;{@link #BORDER_STYLE_DOUBLE},&lt;/li&gt;
+     * &lt;li&gt;{@link #BORDER_STYLE_GROOVE},&lt;/li&gt;
+     * &lt;li&gt;{@link #BORDER_STYLE_RIDGE},&lt;/li&gt;
+     * &lt;li&gt;{@link #BORDER_STYLE_INSET},&lt;/li&gt;
+     * &lt;li&gt;{@link #BORDER_STYLE_OUTSET}.&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * @param tBorderStyles the table border styles
+     */
+    public void setTBorderStyles(String[] tBorderStyles)
+    {
+<span class="nc" id="L1062">        this.setArrayOfName(T_BORDER_STYLE, tBorderStyles);</span>
+<span class="nc" id="L1063">    }</span>
+
+    /**
+     * Gets the offset to account for the separation between the table cell’s
+     * content rectangle and the surrounding border (TPadding). The default
+     * value is 0.
+     * 
+     * @return the table padding (a Float or an array of float)
+     */
+    public Object getTPadding()
+    {
+<span class="nc" id="L1074">        return this.getNumberOrArrayOfNumber(T_PADDING, 0.f);</span>
+    }
+
+    /**
+     * Sets the same table padding for all four sides (TPadding).
+     * 
+     * @param tPadding the table padding
+     */
+    public void setAllTPaddings(float tPadding)
+    {
+<span class="nc" id="L1084">        this.setNumber(T_PADDING, tPadding);</span>
+<span class="nc" id="L1085">    }</span>
+
+    /**
+     * Sets the same table padding for all four sides (TPadding).
+     * 
+     * @param tPadding the table padding
+     */
+    public void setAllTPaddings(int tPadding)
+    {
+<span class="nc" id="L1094">        this.setNumber(T_PADDING, tPadding);</span>
+<span class="nc" id="L1095">    }</span>
+
+    /**
+     * Sets the table paddings for four sides separately (TPadding).
+     * 
+     * @param tPaddings the table paddings (an array of four floats)
+     */
+    public void setTPaddings(float[] tPaddings)
+    {
+<span class="nc" id="L1104">        this.setArrayOfNumber(T_PADDING, tPaddings);</span>
+<span class="nc" id="L1105">    }</span>
+
+    /**
+     * Gets the distance by which the element’s baseline shall be shifted
+     * relative to that of its parent element (BaselineShift). The default value
+     * is 0.
+     * 
+     * @return the baseline shift
+     */
+    public float getBaselineShift()
+    {
+<span class="nc" id="L1116">        return this.getNumber(BASELINE_SHIFT, 0.f);</span>
+    }
+
+    /**
+     * Sets the distance by which the element’s baseline shall be shifted
+     * relative to that of its parent element (BaselineShift).
+     * 
+     * @param baselineShift the baseline shift
+     */
+    public void setBaselineShift(float baselineShift)
+    {
+<span class="nc" id="L1127">        this.setNumber(BASELINE_SHIFT, baselineShift);</span>
+<span class="nc" id="L1128">    }</span>
+
+    /**
+     * Sets the distance by which the element’s baseline shall be shifted
+     * relative to that of its parent element (BaselineShift).
+     * 
+     * @param baselineShift the baseline shift
+     */
+    public void setBaselineShift(int baselineShift)
+    {
+<span class="nc" id="L1138">        this.setNumber(BASELINE_SHIFT, baselineShift);</span>
+<span class="nc" id="L1139">    }</span>
+
+    /**
+     * Gets the element’s preferred height in the block-progression direction
+     * (LineHeight). The default value is {@link #LINE_HEIGHT_NORMAL}.
+     * 
+     * @return the line height (a Float or a String)
+     */
+    public Object getLineHeight()
+    {
+<span class="nc" id="L1149">        return this.getNumberOrName(LINE_HEIGHT, LINE_HEIGHT_NORMAL);</span>
+    }
+
+    /**
+     * Sets the element’s preferred height in the block-progression direction
+     * (LineHeight) to {@link #LINE_HEIGHT_NORMAL}.
+     */
+    public void setLineHeightNormal()
+    {
+<span class="nc" id="L1158">        this.setName(LINE_HEIGHT, LINE_HEIGHT_NORMAL);</span>
+<span class="nc" id="L1159">    }</span>
+
+    /**
+     * Sets the element’s preferred height in the block-progression direction
+     * (LineHeight) to {@link #LINE_HEIGHT_AUTO}.
+     */
+    public void setLineHeightAuto()
+    {
+<span class="nc" id="L1167">        this.setName(LINE_HEIGHT, LINE_HEIGHT_AUTO);</span>
+<span class="nc" id="L1168">    }</span>
+
+    /**
+     * Sets the element’s preferred height in the block-progression direction
+     * (LineHeight).
+     * 
+     * @param lineHeight the line height
+     */
+    public void setLineHeight(float lineHeight)
+    {
+<span class="nc" id="L1178">        this.setNumber(LINE_HEIGHT, lineHeight);</span>
+<span class="nc" id="L1179">    }</span>
+
+    /**
+     * Sets the element’s preferred height in the block-progression direction
+     * (LineHeight).
+     * 
+     * @param lineHeight the line height
+     */
+    public void setLineHeight(int lineHeight)
+    {
+<span class="nc" id="L1189">        this.setNumber(LINE_HEIGHT, lineHeight);</span>
+<span class="nc" id="L1190">    }</span>
+
+    /**
+     * Gets the colour to be used for drawing text decorations
+     * (TextDecorationColor).
+     * 
+     * @return the text decoration colour
+     */
+    public PDGamma getTextDecorationColor()
+    {
+<span class="nc" id="L1200">        return this.getColor(TEXT_DECORATION_COLOR);</span>
+    }
+
+    /**
+     * Sets the colour to be used for drawing text decorations
+     * (TextDecorationColor).
+     * 
+     * @param textDecorationColor the text decoration colour
+     */
+    public void setTextDecorationColor(PDGamma textDecorationColor)
+    {
+<span class="nc" id="L1211">        this.setColor(TEXT_DECORATION_COLOR, textDecorationColor);</span>
+<span class="nc" id="L1212">    }</span>
+
+    /**
+     * Gets the thickness of each line drawn as part of the text decoration
+     * (TextDecorationThickness).
+     * 
+     * @return the text decoration thickness
+     */
+    public float getTextDecorationThickness()
+    {
+<span class="nc" id="L1222">        return this.getNumber(TEXT_DECORATION_THICKNESS);</span>
+    }
+
+    /**
+     * Sets the thickness of each line drawn as part of the text decoration
+     * (TextDecorationThickness).
+     * 
+     * @param textDecorationThickness the text decoration thickness
+     */
+    public void setTextDecorationThickness(float textDecorationThickness)
+    {
+<span class="nc" id="L1233">        this.setNumber(TEXT_DECORATION_THICKNESS, textDecorationThickness);</span>
+<span class="nc" id="L1234">    }</span>
+
+    /**
+     * Sets the thickness of each line drawn as part of the text decoration
+     * (TextDecorationThickness).
+     * 
+     * @param textDecorationThickness the text decoration thickness
+     */
+    public void setTextDecorationThickness(int textDecorationThickness)
+    {
+<span class="nc" id="L1244">        this.setNumber(TEXT_DECORATION_THICKNESS, textDecorationThickness);</span>
+<span class="nc" id="L1245">    }</span>
+
+    /**
+     * Gets the type of text decoration (TextDecorationType). The default value
+     * is {@link #TEXT_DECORATION_TYPE_NONE}.
+     * 
+     * @return the type of text decoration
+     */
+    public String getTextDecorationType()
+    {
+<span class="nc" id="L1255">        return this.getName(TEXT_DECORATION_TYPE, TEXT_DECORATION_TYPE_NONE);</span>
+    }
+
+    /**
+     * Sets the type of text decoration (TextDecorationType). The value should
+     * be one of:
+     * &lt;ul&gt;
+     *   &lt;li&gt;{@link #TEXT_DECORATION_TYPE_NONE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #TEXT_DECORATION_TYPE_UNDERLINE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #TEXT_DECORATION_TYPE_OVERLINE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #TEXT_DECORATION_TYPE_LINE_THROUGH}.&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * @param textDecorationType the type of text decoration
+     */
+    public void setTextDecorationType(String textDecorationType)
+    {
+<span class="nc" id="L1272">        this.setName(TEXT_DECORATION_TYPE, textDecorationType);</span>
+<span class="nc" id="L1273">    }</span>
+
+    /**
+     * Gets the justification of the lines within a ruby assembly (RubyAlign).
+     * The default value is {@link #RUBY_ALIGN_DISTRIBUTE}.
+     * 
+     * @return the ruby alignment
+     */
+    public String getRubyAlign()
+    {
+<span class="nc" id="L1283">        return this.getName(RUBY_ALIGN, RUBY_ALIGN_DISTRIBUTE);</span>
+    }
+
+    /**
+     * Sets the justification of the lines within a ruby assembly (RubyAlign).
+     * The value should be one of:
+     * &lt;ul&gt;
+     *   &lt;li&gt;{@link #RUBY_ALIGN_START},&lt;/li&gt;
+     *   &lt;li&gt;{@link #RUBY_ALIGN_CENTER},&lt;/li&gt;
+     *   &lt;li&gt;{@link #RUBY_ALIGN_END},&lt;/li&gt;
+     *   &lt;li&gt;{@link #RUBY_ALIGN_JUSTIFY},&lt;/li&gt;
+     *   &lt;li&gt;{@link #RUBY_ALIGN_DISTRIBUTE},&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * @param rubyAlign the ruby alignment
+     */
+    public void setRubyAlign(String rubyAlign)
+    {
+<span class="nc" id="L1301">        this.setName(RUBY_ALIGN, rubyAlign);</span>
+<span class="nc" id="L1302">    }</span>
+
+    /**
+     * Gets the placement of the RT structure element relative to the RB element
+     * in a ruby assembly (RubyPosition). The default value is
+     * {@link #RUBY_POSITION_BEFORE}.
+     * 
+     * @return the ruby position
+     */
+    public String getRubyPosition()
+    {
+<span class="nc" id="L1313">        return this.getName(RUBY_POSITION, RUBY_POSITION_BEFORE);</span>
+    }
+
+    /**
+     * Sets the placement of the RT structure element relative to the RB element
+     * in a ruby assembly (RubyPosition). The value should be one of:
+     * &lt;ul&gt;
+     *   &lt;li&gt;{@link #RUBY_POSITION_BEFORE},&lt;/li&gt;
+     *   &lt;li&gt;{@link #RUBY_POSITION_AFTER},&lt;/li&gt;
+     *   &lt;li&gt;{@link #RUBY_POSITION_WARICHU},&lt;/li&gt;
+     *   &lt;li&gt;{@link #RUBY_POSITION_INLINE}.&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * @param rubyPosition the ruby position
+     */
+    public void setRubyPosition(String rubyPosition)
+    {
+<span class="nc" id="L1330">        this.setName(RUBY_POSITION, rubyPosition);</span>
+<span class="nc" id="L1331">    }</span>
+
+    /**
+     * Gets the orientation of glyphs when the inline-progression direction is
+     * top to bottom or bottom to top (GlyphOrientationVertical). The default
+     * value is {@link #GLYPH_ORIENTATION_VERTICAL_AUTO}.
+     * 
+     * @return the vertical glyph orientation
+     */
+    public String getGlyphOrientationVertical()
+    {
+<span class="nc" id="L1342">        return this.getName(GLYPH_ORIENTATION_VERTICAL,</span>
+            GLYPH_ORIENTATION_VERTICAL_AUTO);
+    }
+
+    /**
+     * Sets the orientation of glyphs when the inline-progression direction is
+     * top to bottom or bottom to top (GlyphOrientationVertical). The value
+     * should be one of:
+     * &lt;ul&gt;
+     *   &lt;li&gt;{@link #GLYPH_ORIENTATION_VERTICAL_AUTO},&lt;/li&gt;
+     *   &lt;li&gt;{@link #GLYPH_ORIENTATION_VERTICAL_MINUS_180_DEGREES},&lt;/li&gt;
+     *   &lt;li&gt;{@link #GLYPH_ORIENTATION_VERTICAL_MINUS_90_DEGREES},&lt;/li&gt;
+     *   &lt;li&gt;{@link #GLYPH_ORIENTATION_VERTICAL_ZERO_DEGREES},&lt;/li&gt;
+     *   &lt;li&gt;{@link #GLYPH_ORIENTATION_VERTICAL_90_DEGREES},&lt;/li&gt;
+     *   &lt;li&gt;{@link #GLYPH_ORIENTATION_VERTICAL_180_DEGREES},&lt;/li&gt;
+     *   &lt;li&gt;{@link #GLYPH_ORIENTATION_VERTICAL_270_DEGREES},&lt;/li&gt;
+     *   &lt;li&gt;{@link #GLYPH_ORIENTATION_VERTICAL_360_DEGREES}.&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * @param glyphOrientationVertical the vertical glyph orientation
+     */
+    public void setGlyphOrientationVertical(String glyphOrientationVertical)
+    {
+<span class="nc" id="L1365">        this.setName(GLYPH_ORIENTATION_VERTICAL, glyphOrientationVertical);</span>
+<span class="nc" id="L1366">    }</span>
+
+    /**
+     * Gets the number of columns in the content of the grouping element
+     * (ColumnCount). The default value is 1.
+     * 
+     * @return the column count
+     */
+    public int getColumnCount()
+    {
+<span class="nc" id="L1376">        return this.getInteger(COLUMN_COUNT, 1);</span>
+    }
+
+    /**
+     * Sets the number of columns in the content of the grouping element
+     * (ColumnCount).
+     * 
+     * @param columnCount the column count
+     */
+    public void setColumnCount(int columnCount)
+    {
+<span class="nc" id="L1387">        this.setInteger(COLUMN_COUNT, columnCount);</span>
+<span class="nc" id="L1388">    }</span>
+
+    /**
+     * Gets the desired space between adjacent columns in the inline-progression
+     * direction (ColumnGap).
+     * 
+     * @return the column gap (FLoat or array of floats)
+     */
+    public Object getColumnGap()
+    {
+<span class="nc" id="L1398">        return this.getNumberOrArrayOfNumber(COLUMN_GAP, UNSPECIFIED);</span>
+    }
+
+    /**
+     * Sets the desired space between all columns in the inline-progression
+     * direction (ColumnGap).
+     * 
+     * @param columnGap the column gap
+     */
+    public void setColumnGap(float columnGap)
+    {
+<span class="nc" id="L1409">        this.setNumber(COLUMN_GAP, columnGap);</span>
+<span class="nc" id="L1410">    }</span>
+
+    /**
+     * Sets the desired space between all columns in the inline-progression
+     * direction (ColumnGap).
+     * 
+     * @param columnGap the column gap
+     */
+    public void setColumnGap(int columnGap)
+    {
+<span class="nc" id="L1420">        this.setNumber(COLUMN_GAP, columnGap);</span>
+<span class="nc" id="L1421">    }</span>
+
+    /**
+     * Sets the desired space between adjacent columns in the inline-progression
+     * direction (ColumnGap), the first element specifying the space between the
+     * first and second columns, the second specifying the space between the
+     * second and third columns, and so on.
+     * 
+     * @param columnGaps the column gaps
+     */
+    public void setColumnGaps(float[] columnGaps)
+    {
+<span class="nc" id="L1433">        this.setArrayOfNumber(COLUMN_GAP, columnGaps);</span>
+<span class="nc" id="L1434">    }</span>
+
+    /**
+     * Gets the desired width of the columns, measured in default user space
+     * units in the inline-progression direction (ColumnWidths).
+     * 
+     * @return the column widths (Float or array of floats)
+     */
+    public Object getColumnWidths()
+    {
+<span class="nc" id="L1444">        return this.getNumberOrArrayOfNumber(COLUMN_WIDTHS, UNSPECIFIED);</span>
+    }
+
+    /**
+     * Sets the same column width for all columns (ColumnWidths).
+     * 
+     * @param columnWidth the column width
+     */
+    public void setAllColumnWidths(float columnWidth)
+    {
+<span class="nc" id="L1454">        this.setNumber(COLUMN_WIDTHS, columnWidth);</span>
+<span class="nc" id="L1455">    }</span>
+
+    /**
+     * Sets the same column width for all columns (ColumnWidths).
+     * 
+     * @param columnWidth the column width
+     */
+    public void setAllColumnWidths(int columnWidth)
+    {
+<span class="nc" id="L1464">        this.setNumber(COLUMN_WIDTHS, columnWidth);</span>
+<span class="nc" id="L1465">    }</span>
+
+    /**
+     * Sets the column widths for the columns separately (ColumnWidths).
+     * 
+     * @param columnWidths the column widths
+     */
+    public void setColumnWidths(float[] columnWidths)
+    {
+<span class="nc" id="L1474">        this.setArrayOfNumber(COLUMN_WIDTHS, columnWidths);</span>
+<span class="nc" id="L1475">    }</span>
+
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L1480">        StringBuilder sb = new StringBuilder().append(super.toString());</span>
+<span class="nc bnc" id="L1481" title="All 2 branches missed.">        if (this.isSpecified(PLACEMENT))</span>
+        {
+<span class="nc" id="L1483">            sb.append(&quot;, Placement=&quot;).append(this.getPlacement());</span>
+        }
+<span class="nc bnc" id="L1485" title="All 2 branches missed.">        if (this.isSpecified(WRITING_MODE))</span>
+        {
+<span class="nc" id="L1487">            sb.append(&quot;, WritingMode=&quot;).append(this.getWritingMode());</span>
+        }
+<span class="nc bnc" id="L1489" title="All 2 branches missed.">        if (this.isSpecified(BACKGROUND_COLOR))</span>
+        {
+<span class="nc" id="L1491">            sb.append(&quot;, BackgroundColor=&quot;).append(this.getBackgroundColor());</span>
+        }
+<span class="nc bnc" id="L1493" title="All 2 branches missed.">        if (this.isSpecified(BORDER_COLOR))</span>
+        {
+<span class="nc" id="L1495">            sb.append(&quot;, BorderColor=&quot;).append(this.getBorderColors());</span>
+        }
+<span class="nc bnc" id="L1497" title="All 2 branches missed.">        if (this.isSpecified(BORDER_STYLE))</span>
+        {
+<span class="nc" id="L1499">            Object borderStyle = this.getBorderStyle();</span>
+<span class="nc" id="L1500">            sb.append(&quot;, BorderStyle=&quot;);</span>
+<span class="nc bnc" id="L1501" title="All 2 branches missed.">            if (borderStyle instanceof String[])</span>
+            {
+<span class="nc" id="L1503">                sb.append(arrayToString((String[]) borderStyle));</span>
+            }
+            else
+            {
+<span class="nc" id="L1507">                sb.append(borderStyle);</span>
+            }
+        }
+<span class="nc bnc" id="L1510" title="All 2 branches missed.">        if (this.isSpecified(BORDER_THICKNESS))</span>
+        {
+<span class="nc" id="L1512">            Object borderThickness = this.getBorderThickness();</span>
+<span class="nc" id="L1513">            sb.append(&quot;, BorderThickness=&quot;);</span>
+<span class="nc bnc" id="L1514" title="All 2 branches missed.">            if (borderThickness instanceof float[])</span>
+            {
+<span class="nc" id="L1516">                sb.append(arrayToString((float[]) borderThickness));</span>
+            }
+            else
+            {
+<span class="nc" id="L1520">                sb.append(borderThickness);</span>
+            }
+        }
+<span class="nc bnc" id="L1523" title="All 2 branches missed.">        if (this.isSpecified(PADDING))</span>
+        {
+<span class="nc" id="L1525">            Object padding = this.getPadding();</span>
+<span class="nc" id="L1526">            sb.append(&quot;, Padding=&quot;);</span>
+<span class="nc bnc" id="L1527" title="All 2 branches missed.">            if (padding instanceof float[])</span>
+            {
+<span class="nc" id="L1529">                sb.append(arrayToString((float[]) padding));</span>
+            }
+            else
+            {
+<span class="nc" id="L1533">                sb.append(padding);</span>
+            }
+        }
+<span class="nc bnc" id="L1536" title="All 2 branches missed.">        if (this.isSpecified(COLOR))</span>
+        {
+<span class="nc" id="L1538">            sb.append(&quot;, Color=&quot;).append(this.getColor());</span>
+        }
+<span class="nc bnc" id="L1540" title="All 2 branches missed.">        if (this.isSpecified(SPACE_BEFORE))</span>
+        {
+<span class="nc" id="L1542">            sb.append(&quot;, SpaceBefore=&quot;)</span>
+<span class="nc" id="L1543">                .append(this.getSpaceBefore());</span>
+        }
+<span class="nc bnc" id="L1545" title="All 2 branches missed.">        if (this.isSpecified(SPACE_AFTER))</span>
+        {
+<span class="nc" id="L1547">            sb.append(&quot;, SpaceAfter=&quot;)</span>
+<span class="nc" id="L1548">                .append(this.getSpaceAfter());</span>
+        }
+<span class="nc bnc" id="L1550" title="All 2 branches missed.">        if (this.isSpecified(START_INDENT))</span>
+        {
+<span class="nc" id="L1552">            sb.append(&quot;, StartIndent=&quot;)</span>
+<span class="nc" id="L1553">                .append(this.getStartIndent());</span>
+        }
+<span class="nc bnc" id="L1555" title="All 2 branches missed.">        if (this.isSpecified(END_INDENT))</span>
+        {
+<span class="nc" id="L1557">            sb.append(&quot;, EndIndent=&quot;)</span>
+<span class="nc" id="L1558">                .append(this.getEndIndent());</span>
+        }
+<span class="nc bnc" id="L1560" title="All 2 branches missed.">        if (this.isSpecified(TEXT_INDENT))</span>
+        {
+<span class="nc" id="L1562">            sb.append(&quot;, TextIndent=&quot;)</span>
+<span class="nc" id="L1563">                .append(this.getTextIndent());</span>
+        }
+<span class="nc bnc" id="L1565" title="All 2 branches missed.">        if (this.isSpecified(TEXT_ALIGN))</span>
+        {
+<span class="nc" id="L1567">            sb.append(&quot;, TextAlign=&quot;).append(this.getTextAlign());</span>
+        }
+<span class="nc bnc" id="L1569" title="All 2 branches missed.">        if (this.isSpecified(BBOX))</span>
+        {
+<span class="nc" id="L1571">            sb.append(&quot;, BBox=&quot;).append(this.getBBox());</span>
+        }
+<span class="nc bnc" id="L1573" title="All 2 branches missed.">        if (this.isSpecified(WIDTH))</span>
+        {
+<span class="nc" id="L1575">            sb.append(&quot;, Width=&quot;).append(this.getWidth());</span>
+        }
+<span class="nc bnc" id="L1577" title="All 2 branches missed.">        if (this.isSpecified(HEIGHT))</span>
+        {
+<span class="nc" id="L1579">            sb.append(&quot;, Height=&quot;).append(this.getHeight());</span>
+        }
+<span class="nc bnc" id="L1581" title="All 2 branches missed.">        if (this.isSpecified(BLOCK_ALIGN))</span>
+        {
+<span class="nc" id="L1583">            sb.append(&quot;, BlockAlign=&quot;).append(this.getBlockAlign());</span>
+        }
+<span class="nc bnc" id="L1585" title="All 2 branches missed.">        if (this.isSpecified(INLINE_ALIGN))</span>
+        {
+<span class="nc" id="L1587">            sb.append(&quot;, InlineAlign=&quot;).append(this.getInlineAlign());</span>
+        }
+<span class="nc bnc" id="L1589" title="All 2 branches missed.">        if (this.isSpecified(T_BORDER_STYLE))</span>
+        {
+<span class="nc" id="L1591">            Object tBorderStyle = this.getTBorderStyle();</span>
+<span class="nc" id="L1592">            sb.append(&quot;, TBorderStyle=&quot;);</span>
+<span class="nc bnc" id="L1593" title="All 2 branches missed.">            if (tBorderStyle instanceof String[])</span>
+            {
+<span class="nc" id="L1595">                sb.append(arrayToString((String[]) tBorderStyle));</span>
+            }
+            else
+            {
+<span class="nc" id="L1599">                sb.append(tBorderStyle);</span>
+            }
+        }
+<span class="nc bnc" id="L1602" title="All 2 branches missed.">        if (this.isSpecified(T_PADDING))</span>
+        {
+<span class="nc" id="L1604">            Object tPadding = this.getTPadding();</span>
+<span class="nc" id="L1605">            sb.append(&quot;, TPadding=&quot;);</span>
+<span class="nc bnc" id="L1606" title="All 2 branches missed.">            if (tPadding instanceof float[])</span>
+            {
+<span class="nc" id="L1608">                sb.append(arrayToString((float[]) tPadding));</span>
+            }
+            else
+            {
+<span class="nc" id="L1612">                sb.append(tPadding);</span>
+            }
+        }
+<span class="nc bnc" id="L1615" title="All 2 branches missed.">        if (this.isSpecified(BASELINE_SHIFT))</span>
+        {
+<span class="nc" id="L1617">            sb.append(&quot;, BaselineShift=&quot;)</span>
+<span class="nc" id="L1618">                .append(this.getBaselineShift());</span>
+        }
+<span class="nc bnc" id="L1620" title="All 2 branches missed.">        if (this.isSpecified(LINE_HEIGHT))</span>
+        {
+<span class="nc" id="L1622">            sb.append(&quot;, LineHeight=&quot;).append(this.getLineHeight());</span>
+        }
+<span class="nc bnc" id="L1624" title="All 2 branches missed.">        if (this.isSpecified(TEXT_DECORATION_COLOR))</span>
+        {
+<span class="nc" id="L1626">            sb.append(&quot;, TextDecorationColor=&quot;)</span>
+<span class="nc" id="L1627">                .append(this.getTextDecorationColor());</span>
+        }
+<span class="nc bnc" id="L1629" title="All 2 branches missed.">        if (this.isSpecified(TEXT_DECORATION_THICKNESS))</span>
+        {
+<span class="nc" id="L1631">            sb.append(&quot;, TextDecorationThickness=&quot;)</span>
+<span class="nc" id="L1632">                .append(this.getTextDecorationThickness());</span>
+        }
+<span class="nc bnc" id="L1634" title="All 2 branches missed.">        if (this.isSpecified(TEXT_DECORATION_TYPE))</span>
+        {
+<span class="nc" id="L1636">            sb.append(&quot;, TextDecorationType=&quot;)</span>
+<span class="nc" id="L1637">                .append(this.getTextDecorationType());</span>
+        }
+<span class="nc bnc" id="L1639" title="All 2 branches missed.">        if (this.isSpecified(RUBY_ALIGN))</span>
+        {
+<span class="nc" id="L1641">            sb.append(&quot;, RubyAlign=&quot;).append(this.getRubyAlign());</span>
+        }
+<span class="nc bnc" id="L1643" title="All 2 branches missed.">        if (this.isSpecified(RUBY_POSITION))</span>
+        {
+<span class="nc" id="L1645">            sb.append(&quot;, RubyPosition=&quot;).append(this.getRubyPosition());</span>
+        }
+<span class="nc bnc" id="L1647" title="All 2 branches missed.">        if (this.isSpecified(GLYPH_ORIENTATION_VERTICAL))</span>
+        {
+<span class="nc" id="L1649">            sb.append(&quot;, GlyphOrientationVertical=&quot;)</span>
+<span class="nc" id="L1650">                .append(this.getGlyphOrientationVertical());</span>
+        }
+<span class="nc bnc" id="L1652" title="All 2 branches missed.">        if (this.isSpecified(COLUMN_COUNT))</span>
+        {
+<span class="nc" id="L1654">            sb.append(&quot;, ColumnCount=&quot;)</span>
+<span class="nc" id="L1655">                .append(this.getColumnCount());</span>
+        }
+<span class="nc bnc" id="L1657" title="All 2 branches missed.">        if (this.isSpecified(COLUMN_GAP))</span>
+        {
+<span class="nc" id="L1659">            Object columnGap = this.getColumnGap();</span>
+<span class="nc" id="L1660">            sb.append(&quot;, ColumnGap=&quot;);</span>
+<span class="nc bnc" id="L1661" title="All 2 branches missed.">            if (columnGap instanceof float[])</span>
+            {
+<span class="nc" id="L1663">                sb.append(arrayToString((float[]) columnGap));</span>
+            }
+            else
+            {
+<span class="nc" id="L1667">                sb.append(columnGap);</span>
+            }
+        }
+<span class="nc bnc" id="L1670" title="All 2 branches missed.">        if (this.isSpecified(COLUMN_WIDTHS))</span>
+        {
+<span class="nc" id="L1672">            Object columnWidth = this.getColumnWidths();</span>
+<span class="nc" id="L1673">            sb.append(&quot;, ColumnWidths=&quot;);</span>
+<span class="nc bnc" id="L1674" title="All 2 branches missed.">            if (columnWidth instanceof float[])</span>
+            {
+<span class="nc" id="L1676">                sb.append(arrayToString((float[]) columnWidth));</span>
+            }
+            else
+            {
+<span class="nc" id="L1680">                sb.append(columnWidth);</span>
+            }
+        }
+<span class="nc" id="L1683">        return sb.toString();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

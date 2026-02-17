@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDAnnotationFileAttachment.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation</a> &gt; <span class="el_source">PDAnnotationFileAttachment.java</span></div><h1>PDAnnotationFileAttachment.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.annotation;
+
+import java.io.IOException;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.common.filespecification.PDFileSpecification;
+import org.apache.pdfbox.pdmodel.interactive.annotation.handlers.PDAppearanceHandler;
+import org.apache.pdfbox.pdmodel.interactive.annotation.handlers.PDFileAttachmentAppearanceHandler;
+
+/**
+ * This is the class that represents a file attachment.
+ *
+ * @author Ben Litchfield
+ */
+public class PDAnnotationFileAttachment extends PDAnnotationMarkup
+{
+    /**
+     * See get/setAttachmentName.
+     */
+    public static final String ATTACHMENT_NAME_PUSH_PIN = &quot;PushPin&quot;;
+    /**
+     * See get/setAttachmentName.
+     */
+    public static final String ATTACHMENT_NAME_GRAPH = &quot;Graph&quot;;
+    /**
+     * See get/setAttachmentName.
+     */
+    public static final String ATTACHMENT_NAME_PAPERCLIP = &quot;Paperclip&quot;;
+    /**
+     * See get/setAttachmentName.
+     */
+    public static final String ATTACHMENT_NAME_TAG = &quot;Tag&quot;;
+
+    /**
+     * The type of annotation.
+     */
+    public static final String SUB_TYPE = &quot;FileAttachment&quot;;
+
+    private PDAppearanceHandler customAppearanceHandler;
+
+    /**
+     * Constructor.
+     */
+    public PDAnnotationFileAttachment()
+<span class="nc" id="L63">    {</span>
+<span class="nc" id="L64">        getCOSObject().setName(COSName.SUBTYPE, SUB_TYPE);</span>
+<span class="nc" id="L65">    }</span>
+
+    /**
+     * Creates a Link annotation from a COSDictionary, expected to be a correct object definition.
+     *
+     * @param field the PDF object to represent as a field.
+     */
+    public PDAnnotationFileAttachment(COSDictionary field)
+    {
+<span class="nc" id="L74">        super(field);</span>
+<span class="nc" id="L75">    }</span>
+
+    /**
+     * Return the attached file.
+     *
+     * @return The attached file.
+     *
+     * @throws IOException If there is an error creating the file spec.
+     */
+    public PDFileSpecification getFile() throws IOException
+    {
+<span class="nc" id="L86">        return PDFileSpecification.createFS(getCOSObject().getDictionaryObject(COSName.FS));</span>
+    }
+
+    /**
+     * Set the attached file.
+     *
+     * @param file The file that is attached.
+     */
+    public void setFile(PDFileSpecification file)
+    {
+<span class="nc" id="L96">        getCOSObject().setItem(COSName.FS, file);</span>
+<span class="nc" id="L97">    }</span>
+
+    /**
+     * This is the name used to draw the type of attachment. See the ATTACHMENT_NAME_XXX constants.
+     *
+     * @return The name that describes the visual cue for the attachment.
+     */
+    public String getAttachmentName()
+    {
+<span class="nc" id="L106">        return getCOSObject().getNameAsString(COSName.NAME, ATTACHMENT_NAME_PUSH_PIN);</span>
+    }
+
+    /**
+     * Set the name used to draw the attachment icon. See the ATTACHMENT_NAME_XXX constants.
+     *
+     * @param name The name of the visual icon to draw.
+     */
+    public void setAttachmentName(String name)
+    {
+<span class="nc" id="L116">        getCOSObject().setName(COSName.NAME, name);</span>
+<span class="nc" id="L117">    }</span>
+
+    /**
+     * Set a custom appearance handler for generating the annotations appearance streams.
+     * 
+     * @param appearanceHandler custom appearance handler
+     */
+    public void setCustomAppearanceHandler(PDAppearanceHandler appearanceHandler)
+    {
+<span class="nc" id="L126">        customAppearanceHandler = appearanceHandler;</span>
+<span class="nc" id="L127">    }</span>
+
+    @Override
+    public void constructAppearances()
+    {
+<span class="nc" id="L132">        this.constructAppearances(null);</span>
+<span class="nc" id="L133">    }</span>
+
+    @Override
+    public void constructAppearances(PDDocument document)
+    {
+<span class="nc bnc" id="L138" title="All 2 branches missed.">        if (customAppearanceHandler == null)</span>
+        {
+<span class="nc" id="L140">            PDFileAttachmentAppearanceHandler appearanceHandler = new PDFileAttachmentAppearanceHandler(this, document);</span>
+<span class="nc" id="L141">            appearanceHandler.generateAppearanceStreams();</span>
+<span class="nc" id="L142">        }</span>
+        else
+        {
+<span class="nc" id="L145">            customAppearanceHandler.generateAppearanceStreams();</span>
+        }
+<span class="nc" id="L147">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

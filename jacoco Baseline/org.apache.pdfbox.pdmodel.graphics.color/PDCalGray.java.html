@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDCalGray.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.color</a> &gt; <span class="el_source">PDCalGray.java</span></div><h1>PDCalGray.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.color;
+
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSName;
+
+/**
+ * A CalGray colour space is a special case of a single-component CIE-based
+ * colour space.
+ *
+ * @author John Hewson
+ * @author Ben Litchfield
+ */
+public final class PDCalGray extends PDCIEDictionaryBasedColorSpace
+{
+<span class="nc" id="L34">    private final PDColor initialColor = new PDColor(new float[] { 0 }, this);</span>
+    
+    // PDFBOX-4119: cache the results for much improved performance
+    // cached values MUST be cloned, because they are modified by the caller.
+    // this can be observed in rendering of PDFBOX-1724
+<span class="nc" id="L39">    private final Map&lt;Float, float[]&gt; map1 = new HashMap&lt;&gt;();</span>
+
+    /**
+     * Create a new CalGray color space.
+     */
+    public PDCalGray()
+    {
+<span class="nc" id="L46">        super(COSName.CALGRAY);</span>
+<span class="nc" id="L47">    }</span>
+
+    /**
+     * Creates a new CalGray color space using the given COS array.
+     *
+     * @param array the COS array which represents this color space
+     */
+    public PDCalGray(COSArray array)
+    {
+<span class="nc" id="L56">        super(array);</span>
+<span class="nc" id="L57">    }</span>
+
+    @Override
+    public String getName()
+    {
+<span class="nc" id="L62">        return COSName.CALGRAY.getName();</span>
+    }
+
+    @Override
+    public int getNumberOfComponents()
+    {
+<span class="nc" id="L68">        return 1;</span>
+    }
+
+    @Override
+    public float[] getDefaultDecode(int bitsPerComponent)
+    {
+<span class="nc" id="L74">        return new float[] { 0, 1 };</span>
+    }
+
+    @Override
+    public PDColor getInitialColor()
+    {
+<span class="nc" id="L80">        return initialColor;</span>
+    }
+
+    @Override
+    public float[] toRGB(float[] value)
+    {
+        // see implementation of toRGB in PDCalRGB, and PDFBOX-2971
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        if (isWhitePoint())</span>
+        {
+<span class="nc" id="L89">            float a = value[0];</span>
+<span class="nc" id="L90">            float[] result = map1.get(a);</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">            if (result != null)</span>
+            {
+<span class="nc" id="L93">                return result.clone();</span>
+            }
+<span class="nc" id="L95">            float gamma = getGamma();</span>
+<span class="nc" id="L96">            float powAG = (float) Math.pow(a, gamma);</span>
+<span class="nc" id="L97">            result = convXYZtoRGB(powAG, powAG, powAG);</span>
+<span class="nc" id="L98">            map1.put(a, result.clone());</span>
+<span class="nc" id="L99">            return result;</span>
+        }
+        else
+        {
+<span class="nc" id="L103">            return new float[] { value[0], value[0], value[0] };</span>
+        }
+    }
+
+    /**
+     * This will get the gamma value. If none is present then the default of 1
+     * will be returned.
+     *
+     * @return The gamma value.
+     */
+    public float getGamma()
+    {
+<span class="nc" id="L115">        return dictionary.getFloat(COSName.GAMMA, 1.0f);</span>
+    }
+
+    /**
+     * Set the gamma value.
+     *
+     * @param value The new gamma value.
+     */
+    public void setGamma(float value)
+    {
+<span class="nc" id="L125">        dictionary.setItem(COSName.GAMMA, new COSFloat(value));</span>
+<span class="nc" id="L126">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

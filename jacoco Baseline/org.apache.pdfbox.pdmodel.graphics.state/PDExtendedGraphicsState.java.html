@@ -1,0 +1,732 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDExtendedGraphicsState.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.state</a> &gt; <span class="el_source">PDExtendedGraphicsState.java</span></div><h1>PDExtendedGraphicsState.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.state;
+
+import java.io.IOException;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.pdmodel.ResourceCache;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.graphics.PDFontSetting;
+import org.apache.pdfbox.pdmodel.graphics.PDLineDashPattern;
+import org.apache.pdfbox.pdmodel.graphics.blend.BlendMode;
+
+/**
+ * An extended graphics state dictionary.
+ *
+ * @author Ben Litchfield
+ */
+public class PDExtendedGraphicsState implements COSObjectable
+{
+    private final COSDictionary dict;
+    private final ResourceCache cache;
+
+    /**
+     * Default constructor, creates blank graphics state.
+     */
+    public PDExtendedGraphicsState()
+<span class="nc" id="L47">    {</span>
+<span class="nc" id="L48">        dict = new COSDictionary();</span>
+<span class="nc" id="L49">        dict.setItem(COSName.TYPE, COSName.EXT_G_STATE);</span>
+<span class="nc" id="L50">        cache = null;</span>
+<span class="nc" id="L51">    }</span>
+
+    /**
+     * Create a graphics state from an existing dictionary.
+     *
+     * @param dictionary The existing graphics state.
+     */
+    public PDExtendedGraphicsState(COSDictionary dictionary)
+    {
+<span class="nc" id="L60">        this(dictionary, null);</span>
+<span class="nc" id="L61">    }</span>
+
+    /**
+     * Create a graphics state from an existing dictionary.
+     *
+     * @param dictionary The existing graphics state.
+     * @param resourceCache Resource cache, may be null.
+     */
+    public PDExtendedGraphicsState(COSDictionary dictionary, ResourceCache resourceCache)
+<span class="nc" id="L70">    {</span>
+<span class="nc" id="L71">        dict = dictionary;</span>
+<span class="nc" id="L72">        cache = resourceCache;</span>
+<span class="nc" id="L73">    }</span>
+
+    /**
+     * This will implement the gs operator.
+     *
+     * @param gs The state to copy this dictionaries values into.
+     *
+     * @throws IOException If there is an error copying font information.
+     */
+    public void copyIntoGraphicsState( PDGraphicsState gs ) throws IOException
+    {
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        for( COSName key : dict.keySet() )</span>
+        {
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            if( key.equals( COSName.LW ) )</span>
+            {
+<span class="nc" id="L88">                gs.setLineWidth( defaultIfNull( getLineWidth(), 1 ) );</span>
+            }
+<span class="nc bnc" id="L90" title="All 2 branches missed.">            else if( key.equals( COSName.LC ) )</span>
+            {
+<span class="nc" id="L92">                gs.setLineCap( getLineCapStyle() );</span>
+            }
+<span class="nc bnc" id="L94" title="All 2 branches missed.">            else if( key.equals( COSName.LJ ) )</span>
+            {
+<span class="nc" id="L96">                gs.setLineJoin( getLineJoinStyle() );</span>
+            }
+<span class="nc bnc" id="L98" title="All 2 branches missed.">            else if( key.equals( COSName.ML ) )</span>
+            {
+<span class="nc" id="L100">                gs.setMiterLimit( defaultIfNull( getMiterLimit(), 10 ) );</span>
+            }
+<span class="nc bnc" id="L102" title="All 2 branches missed.">            else if( key.equals( COSName.D ) )</span>
+            {
+<span class="nc" id="L104">                gs.setLineDashPattern( getLineDashPattern() );</span>
+            }
+<span class="nc bnc" id="L106" title="All 2 branches missed.">            else if( key.equals( COSName.RI ) )</span>
+            {
+<span class="nc" id="L108">                gs.setRenderingIntent( getRenderingIntent() );</span>
+            }
+<span class="nc bnc" id="L110" title="All 2 branches missed.">            else if( key.equals( COSName.OPM ) )</span>
+            {
+<span class="nc" id="L112">                Integer overprintMode = getOverprintMode();</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">                gs.setOverprintMode(overprintMode != null ? overprintMode : 0);</span>
+<span class="nc" id="L114">            }</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">            else if( key.equals( COSName.OP ) )</span>
+            {
+<span class="nc" id="L117">                gs.setOverprint( getStrokingOverprintControl());</span>
+            }
+<span class="nc bnc" id="L119" title="All 2 branches missed.">            else if( key.equals( COSName.OP_NS ) )</span>
+            {
+<span class="nc" id="L121">                gs.setNonStrokingOverprint(getNonStrokingOverprintControl());</span>
+            }
+<span class="nc bnc" id="L123" title="All 2 branches missed.">            else if( key.equals( COSName.FONT ) )</span>
+            {
+<span class="nc" id="L125">                PDFontSetting setting = getFontSetting();</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">                if (setting != null)</span>
+                {
+<span class="nc" id="L128">                    gs.getTextState().setFont( setting.getFont() );</span>
+<span class="nc" id="L129">                    gs.getTextState().setFontSize( setting.getFontSize() );</span>
+                }
+<span class="nc" id="L131">            }</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">            else if( key.equals( COSName.FL ) )</span>
+            {
+<span class="nc" id="L134">                gs.setFlatness( defaultIfNull( getFlatnessTolerance(), 1.0f ) );</span>
+            }
+<span class="nc bnc" id="L136" title="All 2 branches missed.">            else if( key.equals( COSName.SM ) )</span>
+            {
+<span class="nc" id="L138">                gs.setSmoothness( defaultIfNull( getSmoothnessTolerance(), 0 ) );</span>
+            }
+<span class="nc bnc" id="L140" title="All 2 branches missed.">            else if( key.equals( COSName.SA ) )</span>
+            {
+<span class="nc" id="L142">                gs.setStrokeAdjustment( getAutomaticStrokeAdjustment() );</span>
+            }
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            else if( key.equals( COSName.CA ) )</span>
+            {
+<span class="nc" id="L146">                gs.setAlphaConstant( defaultIfNull( getStrokingAlphaConstant(), 1.0f ) );</span>
+            }
+<span class="nc bnc" id="L148" title="All 2 branches missed.">            else if( key.equals( COSName.CA_NS ) )</span>
+            {
+<span class="nc" id="L150">                gs.setNonStrokeAlphaConstant( defaultIfNull( getNonStrokingAlphaConstant(), 1.0f ) );</span>
+            }
+<span class="nc bnc" id="L152" title="All 2 branches missed.">            else if( key.equals( COSName.AIS ) )</span>
+            {
+<span class="nc" id="L154">                gs.setAlphaSource( getAlphaSourceFlag() );</span>
+            }
+<span class="nc bnc" id="L156" title="All 2 branches missed.">            else if( key.equals( COSName.TK ) )</span>
+            {
+<span class="nc" id="L158">                gs.getTextState().setKnockoutFlag( getTextKnockoutFlag() );</span>
+            }
+<span class="nc bnc" id="L160" title="All 2 branches missed.">            else if( key.equals( COSName.SMASK ) ) </span>
+            {
+<span class="nc" id="L162">                PDSoftMask softmask = getSoftMask();</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">                if (softmask != null)</span>
+                {
+                    // Softmask must know the CTM at the time the ExtGState is activated. Read
+                    // https://bugs.ghostscript.com/show_bug.cgi?id=691157#c7 for a good explanation.
+<span class="nc" id="L167">                    softmask.setInitialTransformationMatrix(gs.getCurrentTransformationMatrix().clone());</span>
+                }
+<span class="nc" id="L169">                gs.setSoftMask(softmask);</span>
+<span class="nc" id="L170">            }</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">            else if( key.equals( COSName.BM ) ) </span>
+            {
+<span class="nc" id="L173">                gs.setBlendMode( getBlendMode() );</span>
+            }
+<span class="nc bnc" id="L175" title="All 2 branches missed.">            else if (key.equals(COSName.TR))</span>
+            {
+<span class="nc bnc" id="L177" title="All 2 branches missed.">                if (dict.containsKey(COSName.TR2))</span>
+                {
+                    // &quot;If both TR and TR2 are present in the same graphics state parameter dictionary, 
+                    // TR2 shall take precedence.&quot;
+<span class="nc" id="L181">                    continue;</span>
+                }
+<span class="nc" id="L183">                gs.setTransfer(getTransfer());</span>
+            }
+<span class="nc bnc" id="L185" title="All 2 branches missed.">            else if (key.equals(COSName.TR2))</span>
+            {
+<span class="nc" id="L187">                gs.setTransfer(getTransfer2());</span>
+            }
+<span class="nc" id="L189">        }</span>
+<span class="nc" id="L190">    }</span>
+
+    /**
+     * Returns the provided default value in case 'standard' value is &lt;code&gt;null&lt;/code&gt;. To be used
+     * in cases unboxing may lead to a NPE.
+     *
+     * @param standardValue 'standard' value
+     * @param defaultValue default value
+     *
+     * @return 'standard' value if not &lt;code&gt;null&lt;/code&gt; otherwise default value
+     */
+    private float defaultIfNull(Float standardValue, float defaultValue)
+    {
+<span class="nc bnc" id="L203" title="All 2 branches missed.">        return standardValue != null ? standardValue : defaultValue;</span>
+    }
+
+    /**
+     * This will get the underlying dictionary that this class acts on.
+     *
+     * @return The underlying dictionary for this class.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L214">        return dict;</span>
+    }
+
+    /**
+     * This will get the line width.  This will return null if there is no line width
+     *
+     * @return null or the LW value of the dictionary.
+     */
+    public Float getLineWidth()
+    {
+<span class="nc" id="L224">        return getFloatItem( COSName.LW );</span>
+    }
+
+    /**
+     * This will set the line width.
+     *
+     * @param width The line width for the object.
+     */
+    public void setLineWidth( Float width )
+    {
+<span class="nc" id="L234">        setFloatItem( COSName.LW, width );</span>
+<span class="nc" id="L235">    }</span>
+
+    /**
+     * This will get the line cap style.
+     *
+     * @return null or the LC value of the dictionary.
+     */
+    public int getLineCapStyle()
+    {
+<span class="nc" id="L244">        return dict.getInt( COSName.LC );</span>
+    }
+
+    /**
+     * This will set the line cap style for the graphics state.
+     *
+     * @param style The new line cap style to set.
+     */
+    public void setLineCapStyle( int style )
+    {
+<span class="nc" id="L254">        dict.setInt(COSName.LC, style);</span>
+<span class="nc" id="L255">    }</span>
+
+    /**
+     * This will get the line join style.
+     *
+     * @return null or the LJ value in the dictionary.
+     */
+    public int getLineJoinStyle()
+    {
+<span class="nc" id="L264">        return dict.getInt( COSName.LJ );</span>
+    }
+
+    /**
+     * This will set the line join style.
+     *
+     * @param style The new line join style.
+     */
+    public void setLineJoinStyle( int style )
+    {
+<span class="nc" id="L274">        dict.setInt(COSName.LJ, style);</span>
+<span class="nc" id="L275">    }</span>
+
+
+    /**
+     * This will get the miter limit.
+     *
+     * @return null or the ML value in the dictionary.
+     */
+    public Float getMiterLimit()
+    {
+<span class="nc" id="L285">        return getFloatItem( COSName.ML );</span>
+    }
+
+    /**
+     * This will set the miter limit for the graphics state.
+     *
+     * @param miterLimit The new miter limit value
+     */
+    public void setMiterLimit( Float miterLimit )
+    {
+<span class="nc" id="L295">        setFloatItem( COSName.ML, miterLimit );</span>
+<span class="nc" id="L296">    }</span>
+
+    /**
+     * This will get the dash pattern.
+     *
+     * @return null or the D value in the dictionary.
+     */
+    public PDLineDashPattern getLineDashPattern()
+    {
+<span class="nc" id="L305">        PDLineDashPattern retval = null;</span>
+<span class="nc" id="L306">        COSArray dp = dict.getCOSArray(COSName.D);</span>
+<span class="nc bnc" id="L307" title="All 4 branches missed.">        if (dp != null &amp;&amp; dp.size() == 2)</span>
+        {
+<span class="nc" id="L309">            COSBase dashArray = dp.getObject(0);</span>
+<span class="nc" id="L310">            COSBase phase = dp.getObject(1);</span>
+<span class="nc bnc" id="L311" title="All 4 branches missed.">            if (dashArray instanceof COSArray &amp;&amp; phase instanceof COSNumber)</span>
+            {
+<span class="nc" id="L313">                retval = new PDLineDashPattern((COSArray) dashArray, ((COSNumber) phase).intValue());</span>
+            }
+        }
+<span class="nc" id="L316">        return retval;</span>
+    }
+
+    /**
+     * This will set the dash pattern for the graphics state.
+     *
+     * @param dashPattern The dash pattern
+     */
+    public void setLineDashPattern( PDLineDashPattern dashPattern )
+    {
+<span class="nc" id="L326">        dict.setItem(COSName.D, dashPattern.getCOSObject());</span>
+<span class="nc" id="L327">    }</span>
+
+    /**
+     * This will get the rendering intent.
+     *
+     * @return null or the RI value in the dictionary.
+     */
+    public RenderingIntent getRenderingIntent()
+    {
+<span class="nc" id="L336">        String ri = dict.getNameAsString( &quot;RI&quot; );</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">        if (ri != null)</span>
+        {
+<span class="nc" id="L339">            return RenderingIntent.fromString(ri);</span>
+        }
+        else
+        {
+<span class="nc" id="L343">            return null;</span>
+        }
+    }
+
+    /**
+     * This will set the rendering intent for the graphics state.
+     *
+     * @param ri The new rendering intent
+     */
+    public void setRenderingIntent( String ri )
+    {
+<span class="nc" id="L354">        dict.setName(&quot;RI&quot;, ri);</span>
+<span class="nc" id="L355">    }</span>
+
+    /**
+     * This will get the overprint control.
+     *
+     * @return The overprint control or null if one has not been set.
+     */
+    public boolean getStrokingOverprintControl()
+    {
+<span class="nc" id="L364">        return dict.getBoolean(COSName.OP, false);</span>
+    }
+
+    /**
+     * This will set the overprint control(OP).
+     *
+     * @param op The overprint control.
+     */
+    public void setStrokingOverprintControl( boolean op )
+    {
+<span class="nc" id="L374">        dict.setBoolean(COSName.OP, op);</span>
+<span class="nc" id="L375">    }</span>
+
+    /**
+     * This will get the overprint control for non stroking operations.  If this
+     * value is null then the regular overprint control value will be returned.
+     *
+     * @return The overprint control or null if one has not been set.
+     */
+    public boolean getNonStrokingOverprintControl()
+    {
+<span class="nc" id="L385">        return dict.getBoolean( COSName.OP_NS, getStrokingOverprintControl() );</span>
+    }
+
+    /**
+     * This will set the overprint control(OP).
+     *
+     * @param op The overprint control.
+     */
+    public void setNonStrokingOverprintControl( boolean op )
+    {
+<span class="nc" id="L395">        dict.setBoolean(COSName.OP_NS, op);</span>
+<span class="nc" id="L396">    }</span>
+
+    /**
+     * This will get the overprint control mode.
+     *
+     * @return The overprint control mode or null if one has not been set.
+     */
+    public Integer getOverprintMode()
+    {
+<span class="nc" id="L405">        Integer retval = null;</span>
+<span class="nc" id="L406">        COSBase base = dict.getDictionaryObject(COSName.OPM);</span>
+<span class="nc bnc" id="L407" title="All 2 branches missed.">        if (base instanceof COSNumber)</span>
+        {
+<span class="nc" id="L409">            COSNumber value = (COSNumber) base;</span>
+<span class="nc" id="L410">            retval = value.intValue();</span>
+        }
+<span class="nc" id="L412">        return retval;</span>
+    }
+
+    /**
+     * This will set the overprint mode(OPM).
+     *
+     * @param overprintMode The overprint mode
+     */
+    public void setOverprintMode(Integer overprintMode)
+    {
+<span class="nc bnc" id="L422" title="All 2 branches missed.">        if (overprintMode == null)</span>
+        {
+<span class="nc" id="L424">            dict.removeItem(COSName.OPM);</span>
+        }
+        else
+        {
+<span class="nc" id="L428">            dict.setInt(COSName.OPM, overprintMode);</span>
+        }
+<span class="nc" id="L430">    }</span>
+
+    /**
+     * This will get the font setting of the graphics state.
+     *
+     * @return The font setting.
+     */
+    public PDFontSetting getFontSetting()
+    {
+<span class="nc" id="L439">        COSArray font = dict.getCOSArray(COSName.FONT);</span>
+<span class="nc bnc" id="L440" title="All 2 branches missed.">        return font != null ? new PDFontSetting(font) : null;</span>
+    }
+
+    /**
+     * This will set the font setting for this graphics state.
+     *
+     * @param fs The new font setting.
+     */
+    public void setFontSetting( PDFontSetting fs )
+    {
+<span class="nc" id="L450">        dict.setItem(COSName.FONT, fs);</span>
+<span class="nc" id="L451">    }</span>
+
+    /**
+     * This will get the flatness tolerance.
+     *
+     * @return The flatness tolerance or null if one has not been set.
+     */
+    public Float getFlatnessTolerance()
+    {
+<span class="nc" id="L460">        return getFloatItem( COSName.FL );</span>
+    }
+
+    /**
+     * This will set the flatness tolerance.
+     *
+     * @param flatness The new flatness tolerance
+     */
+    public void setFlatnessTolerance( Float flatness )
+    {
+<span class="nc" id="L470">        setFloatItem(COSName.FL, flatness);</span>
+<span class="nc" id="L471">    }</span>
+
+    /**
+     * This will get the smothness tolerance.
+     *
+     * @return The smothness tolerance or null if one has not been set.
+     */
+    public Float getSmoothnessTolerance()
+    {
+<span class="nc" id="L480">        return getFloatItem( COSName.SM );</span>
+    }
+
+    /**
+     * This will set the smoothness tolerance.
+     *
+     * @param smoothness The new smoothness tolerance
+     */
+    public void setSmoothnessTolerance( Float smoothness )
+    {
+<span class="nc" id="L490">        setFloatItem( COSName.SM, smoothness );</span>
+<span class="nc" id="L491">    }</span>
+
+    /**
+     * This will get the automatic stroke adjustment flag.
+     *
+     * @return The automatic stroke adjustment flag or null if one has not been set.
+     */
+    public boolean getAutomaticStrokeAdjustment()
+    {
+<span class="nc" id="L500">        return dict.getBoolean(COSName.SA, false);</span>
+    }
+
+    /**
+     * This will set the automatic stroke adjustment flag.
+     *
+     * @param sa The new automatic stroke adjustment flag.
+     */
+    public void setAutomaticStrokeAdjustment( boolean sa )
+    {
+<span class="nc" id="L510">        dict.setBoolean(COSName.SA, sa);</span>
+<span class="nc" id="L511">    }</span>
+
+    /**
+     * This will get the stroking alpha constant.
+     *
+     * @return The stroking alpha constant or null if one has not been set.
+     */
+    public Float getStrokingAlphaConstant()
+    {
+<span class="nc" id="L520">        return getFloatItem(COSName.CA);</span>
+    }
+
+    /**
+     * This will set the stroking alpha constant.
+     *
+     * @param alpha The new stroking alpha constant.
+     */
+    public void setStrokingAlphaConstant( Float alpha )
+    {
+<span class="nc" id="L530">        setFloatItem(COSName.CA, alpha);</span>
+<span class="nc" id="L531">    }</span>
+
+    /**
+     * This will get the non stroking alpha constant.
+     *
+     * @return The non stroking alpha constant or null if one has not been set.
+     */
+    public Float getNonStrokingAlphaConstant()
+    {
+<span class="nc" id="L540">        return getFloatItem( COSName.CA_NS );</span>
+    }
+
+    /**
+     * This will set the non stroking alpha constant.
+     *
+     * @param alpha The new non stroking alpha constant.
+     */
+    public void setNonStrokingAlphaConstant( Float alpha )
+    {
+<span class="nc" id="L550">        setFloatItem( COSName.CA_NS, alpha );</span>
+<span class="nc" id="L551">    }</span>
+
+    /**
+     * This will get the alpha source flag (“alpha is shape”), that specifies whether the current
+     * soft mask and alpha constant shall be interpreted as shape values (true) or opacity values
+     * (false).
+     *
+     * @return The alpha source flag.
+     */
+    public boolean getAlphaSourceFlag()
+    {
+<span class="nc" id="L562">        return dict.getBoolean(COSName.AIS, false);</span>
+    }
+
+    /**
+     * This will set the alpha source flag (“alpha is shape”), that specifies whether the current
+     * soft mask and alpha constant shall be interpreted as shape values (true) or opacity values
+     * (false).
+     *
+     * @param alpha The alpha source flag.
+     */
+    public void setAlphaSourceFlag( boolean alpha )
+    {
+<span class="nc" id="L574">        dict.setBoolean(COSName.AIS, alpha);</span>
+<span class="nc" id="L575">    }</span>
+
+    /**
+     * Returns the blending mode stored in the COS dictionary
+     *
+     * @return the blending mode
+     */
+    public BlendMode getBlendMode()
+    {
+<span class="nc" id="L584">        return BlendMode.getInstance(dict.getDictionaryObject(COSName.BM));</span>
+    }
+    
+    /**
+     * Set the blending mode.
+     * 
+     * @param bm blend mode
+     */
+    public void setBlendMode(BlendMode bm)
+    {
+<span class="nc" id="L594">        dict.setItem(COSName.BM, bm.getCOSName());</span>
+<span class="nc" id="L595">    }</span>
+
+    /**
+     * Returns the soft mask stored in the COS dictionary
+     *
+     * @return the soft mask or null if there isn't any.
+     */
+    public PDSoftMask getSoftMask()
+    {
+<span class="nc" id="L604">        COSBase smask = dict.getDictionaryObject(COSName.SMASK);</span>
+<span class="nc bnc" id="L605" title="All 2 branches missed.">        return smask == null ? null : PDSoftMask.create(smask, cache);</span>
+    }
+
+    /**
+
+    /**
+     * This will get the text knockout flag.
+     *
+     * @return The text knockout flag.
+     */
+    public boolean getTextKnockoutFlag()
+    {
+<span class="nc" id="L617">        return dict.getBoolean( COSName.TK,true );</span>
+    }
+
+    /**
+     * This will set the text knockout flag.
+     *
+     * @param tk The text knockout flag.
+     */
+    public void setTextKnockoutFlag( boolean tk )
+    {
+<span class="nc" id="L627">        dict.setBoolean(COSName.TK, tk);</span>
+<span class="nc" id="L628">    }</span>
+
+    /**
+     * This will get a float item from the dictionary.
+     *
+     * @param key The key to the item.
+     *
+     * @return The value for that item.
+     */
+    private Float getFloatItem( COSName key )
+    {
+<span class="nc" id="L639">        Float retval = null;</span>
+        
+<span class="nc" id="L641">        COSBase base = dict.getDictionaryObject(key);</span>
+<span class="nc bnc" id="L642" title="All 2 branches missed.">        if (base instanceof COSNumber)</span>
+        {
+<span class="nc" id="L644">            COSNumber value = (COSNumber) base;</span>
+<span class="nc" id="L645">            retval = value.floatValue();</span>
+        }
+<span class="nc" id="L647">        return retval;</span>
+    }
+
+    /**
+     * This will set a float object.
+     *
+     * @param key The key to the data that we are setting.
+     * @param value The value that we are setting.
+     */
+    private void setFloatItem( COSName key, Float value )
+    {
+<span class="nc bnc" id="L658" title="All 2 branches missed.">        if( value == null )</span>
+        {
+<span class="nc" id="L660">            dict.removeItem(key);</span>
+        }
+        else
+        {
+<span class="nc" id="L664">            dict.setItem(key, new COSFloat(value));</span>
+        }
+<span class="nc" id="L666">    }</span>
+
+    /**
+     * This will get the transfer function of the /TR dictionary.
+     *
+     * @return The transfer function. According to the PDF specification, this is either a single
+     * function (which applies to all process colorants) or an array of four functions (which apply
+     * to the process colorants individually). The name Identity may be used to represent the
+     * identity function.
+     */
+    public COSBase getTransfer()
+    {
+<span class="nc" id="L678">        COSBase base = dict.getDictionaryObject(COSName.TR);</span>
+<span class="nc bnc" id="L679" title="All 4 branches missed.">        if (base instanceof COSArray &amp;&amp; ((COSArray) base).size() != 4)</span>
+        {
+<span class="nc" id="L681">            return null;</span>
+        }
+<span class="nc" id="L683">        return base;</span>
+    }
+
+    /**
+     * This will set the transfer function of the /TR dictionary.
+     *
+     * @param transfer The transfer function. According to the PDF specification, this is either a
+     * single function (which applies to all process colorants) or an array of four functions (which
+     * apply to the process colorants individually). The name Identity may be used to represent the
+     * identity function.
+     */
+    public void setTransfer(COSBase transfer)
+    {
+<span class="nc" id="L696">        dict.setItem(COSName.TR, transfer);</span>
+<span class="nc" id="L697">    }</span>
+
+    /**
+     * This will get the transfer function of the /TR2 dictionary.
+     *
+     * @return The transfer function. According to the PDF specification, this is either a single
+     * function (which applies to all process colorants) or an array of four functions (which apply
+     * to the process colorants individually). The name Identity may be used to represent the
+     * identity function, and the name Default denotes the transfer function that was in effect at
+     * the start of the page.
+     */
+    public COSBase getTransfer2()
+    {
+<span class="nc" id="L710">        COSBase base = dict.getDictionaryObject(COSName.TR2);</span>
+<span class="nc bnc" id="L711" title="All 4 branches missed.">        if (base instanceof COSArray &amp;&amp; ((COSArray) base).size() != 4)</span>
+        {
+<span class="nc" id="L713">            return null;</span>
+        }
+<span class="nc" id="L715">        return base;</span>
+    }
+
+    /**
+     * This will set the transfer function of the /TR2 dictionary.
+     *
+     * @param transfer2 The transfer function. According to the PDF specification, this is either a
+     * single function (which applies to all process colorants) or an array of four functions (which
+     * apply to the process colorants individually). The name Identity may be used to represent the
+     * identity function, and the name Default denotes the transfer function that was in effect at
+     * the start of the page.
+     */
+    public void setTransfer2(COSBase transfer2)
+    {
+<span class="nc" id="L729">        dict.setItem(COSName.TR2, transfer2);</span>
+<span class="nc" id="L730">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDLab.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.color</a> &gt; <span class="el_source">PDLab.java</span></div><h1>PDLab.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.color;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.PDRange;
+
+import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
+import java.io.IOException;
+
+/**
+ * A Lab colour space is a CIE-based ABC colour space with two transformation stages.
+ *
+ * @author Ben Litchfield
+ * @author John Hewson
+ */
+public final class PDLab extends PDCIEDictionaryBasedColorSpace
+{
+    private PDColor initialColor;
+    
+    /**
+     * Creates a new Lab color space.
+     */
+    public PDLab()
+    {
+<span class="nc" id="L43">        super(COSName.LAB);</span>
+<span class="nc" id="L44">    }</span>
+
+    /**
+     * Creates a new Lab color space from a PDF array.
+     * @param lab the color space array
+     */
+    public PDLab(COSArray lab)
+    {
+<span class="nc" id="L52">        super(lab);</span>
+<span class="nc" id="L53">    }</span>
+    
+    @Override
+    public String getName()
+    {
+<span class="nc" id="L58">        return COSName.LAB.getName();</span>
+    }
+
+    //
+    // WARNING: this method is performance sensitive, modify with care!
+    //
+    @Override
+    public BufferedImage toRGBImage(WritableRaster raster) throws IOException
+    {
+<span class="nc" id="L67">        int width = raster.getWidth();</span>
+<span class="nc" id="L68">        int height = raster.getHeight();</span>
+
+<span class="nc" id="L70">        BufferedImage rgbImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);</span>
+<span class="nc" id="L71">        WritableRaster rgbRaster = rgbImage.getRaster();</span>
+
+<span class="nc" id="L73">        PDRange aRange = getARange();</span>
+<span class="nc" id="L74">        PDRange bRange = getBRange();</span>
+<span class="nc" id="L75">        float minA = aRange.getMin();</span>
+<span class="nc" id="L76">        float maxA = aRange.getMax();</span>
+<span class="nc" id="L77">        float minB = bRange.getMin();</span>
+<span class="nc" id="L78">        float maxB = bRange.getMax();</span>
+<span class="nc" id="L79">        float deltaA = maxA - minA;</span>
+<span class="nc" id="L80">        float deltaB = maxB - minB;</span>
+
+        // always three components: ABC
+<span class="nc" id="L83">        float[] abc = new float[3];</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        for (int y = 0; y &lt; height; y++)</span>
+        {
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            for (int x = 0; x &lt; width; x++)</span>
+            {
+<span class="nc" id="L88">                raster.getPixel(x, y, abc);</span>
+
+                // 0..255 -&gt; 0..1
+<span class="nc" id="L91">                abc[0] /= 255;</span>
+<span class="nc" id="L92">                abc[1] /= 255;</span>
+<span class="nc" id="L93">                abc[2] /= 255;</span>
+                
+                // scale to range
+<span class="nc" id="L96">                abc[0] *= 100;</span>
+<span class="nc" id="L97">                abc[1] = minA + abc[1] * deltaA;</span>
+<span class="nc" id="L98">                abc[2] = minB + abc[2] * deltaB;</span>
+
+<span class="nc" id="L100">                float[] rgb = toRGB(abc);</span>
+
+                // 0..1 -&gt; 0..255
+<span class="nc" id="L103">                rgb[0] *= 255;</span>
+<span class="nc" id="L104">                rgb[1] *= 255;</span>
+<span class="nc" id="L105">                rgb[2] *= 255;</span>
+
+<span class="nc" id="L107">                rgbRaster.setPixel(x, y, rgb);</span>
+            }
+        }
+
+<span class="nc" id="L111">        return rgbImage;</span>
+    }
+
+    @Override
+    public BufferedImage toRawImage(WritableRaster raster)
+    {
+        // Not handled at the moment.
+<span class="nc" id="L118">       return null;</span>
+    }
+
+    @Override
+    public float[] toRGB(float[] value)
+    {
+        // CIE LAB to RGB, see http://en.wikipedia.org/wiki/Lab_color_space
+
+        // L*
+<span class="nc" id="L127">        float lstar = (value[0] + 16f) * (1f / 116f);</span>
+
+        // TODO: how to use the blackpoint? scale linearly between black &amp; white?
+
+        // XYZ
+<span class="nc" id="L132">        float x = wpX * inverse(lstar + value[1] * (1f / 500f));</span>
+<span class="nc" id="L133">        float y = wpY * inverse(lstar);</span>
+<span class="nc" id="L134">        float z = wpZ * inverse(lstar - value[2] * (1f / 200f));</span>
+        
+<span class="nc" id="L136">        return convXYZtoRGB(x, y, z);</span>
+    }
+
+    // reverse transformation (f^-1)
+    private float inverse(float x)
+    {
+<span class="nc bnc" id="L142" title="All 2 branches missed.">        if (x &gt; 6.0 / 29.0)</span>
+        {
+<span class="nc" id="L144">            return x * x * x;</span>
+        }
+        else
+        {
+<span class="nc" id="L148">            return (108f / 841f) * (x - (4f / 29f));</span>
+        }
+    }
+
+    @Override
+    public int getNumberOfComponents()
+    {
+<span class="nc" id="L155">        return 3;</span>
+    }
+
+    @Override
+    public float[] getDefaultDecode(int bitsPerComponent)
+    {
+<span class="nc" id="L161">        PDRange a = getARange();</span>
+<span class="nc" id="L162">        PDRange b = getBRange();</span>
+<span class="nc" id="L163">        return new float[] { 0, 100, a.getMin(), a.getMax(), b.getMin(), b.getMax() };</span>
+    }
+
+    @Override
+    public PDColor getInitialColor()
+    {
+<span class="nc bnc" id="L169" title="All 2 branches missed.">        if (initialColor == null)</span>
+        {
+<span class="nc" id="L171">            initialColor = new PDColor(new float[] {</span>
+                    0,
+<span class="nc" id="L173">                    Math.max(0, getARange().getMin()),</span>
+<span class="nc" id="L174">                    Math.max(0, getBRange().getMin()) },</span>
+                    this);
+        }
+<span class="nc" id="L177">        return initialColor;</span>
+    }
+
+    /**
+     * creates a range array with default values (-100..100 -100..100).
+     * @return the new range array.
+     */
+    private COSArray getDefaultRangeArray()
+    {
+<span class="nc" id="L186">        COSFloat minus100 = new COSFloat(-100f);</span>
+<span class="nc" id="L187">        COSFloat plus100 = new COSFloat(100f);</span>
+<span class="nc" id="L188">        COSArray range = new COSArray();</span>
+<span class="nc" id="L189">        range.add(minus100);</span>
+<span class="nc" id="L190">        range.add(plus100);</span>
+<span class="nc" id="L191">        range.add(minus100);</span>
+<span class="nc" id="L192">        range.add(plus100);</span>
+<span class="nc" id="L193">        return range;</span>
+    }
+
+    /**
+     * This will get the valid range for the &quot;a&quot; component.
+     * If none is found then the default will be returned, which is -100..100.
+     * @return the &quot;a&quot; range.
+     */
+    public PDRange getARange()
+    {
+<span class="nc" id="L203">        COSArray rangeArray = dictionary.getCOSArray(COSName.RANGE);</span>
+<span class="nc bnc" id="L204" title="All 2 branches missed.">        if (rangeArray == null)</span>
+        {
+<span class="nc" id="L206">            rangeArray = getDefaultRangeArray();</span>
+        }
+<span class="nc" id="L208">        return new PDRange(rangeArray, 0);</span>
+    }
+
+    /**
+     * This will get the valid range for the &quot;b&quot; component.
+     * If none is found  then the default will be returned, which is -100..100.
+     * @return the &quot;b&quot; range.
+     */
+    public PDRange getBRange()
+    {
+<span class="nc" id="L218">        COSArray rangeArray = dictionary.getCOSArray(COSName.RANGE);</span>
+<span class="nc bnc" id="L219" title="All 2 branches missed.">        if (rangeArray == null)</span>
+        {
+<span class="nc" id="L221">            rangeArray = getDefaultRangeArray();</span>
+        }
+<span class="nc" id="L223">        return new PDRange(rangeArray, 1);</span>
+    }
+
+    /**
+     * This will set the range for the &quot;a&quot; component.
+     * @param range the new range for the &quot;a&quot; component, 
+     * or null if defaults (-100..100) are to be set.
+     */
+    public void setARange(PDRange range)
+    {
+<span class="nc" id="L233">        setComponentRangeArray(range, 0);</span>
+<span class="nc" id="L234">    }</span>
+
+    /**
+     * This will set the range for the &quot;b&quot; component.
+     * @param range the new range for the &quot;b&quot; component,
+     * or null if defaults (-100..100) are to be set.
+     */
+    public void setBRange(PDRange range)
+    {
+<span class="nc" id="L243">        setComponentRangeArray(range, 2);</span>
+<span class="nc" id="L244">    }</span>
+
+    private void setComponentRangeArray(PDRange range, int index)
+    {
+<span class="nc" id="L248">        COSArray rangeArray = dictionary.getCOSArray(COSName.RANGE);</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">        if (rangeArray == null)</span>
+        {
+<span class="nc" id="L251">            rangeArray = getDefaultRangeArray();</span>
+        }
+<span class="nc bnc" id="L253" title="All 2 branches missed.">        if (range == null)</span>
+        {
+            // reset to defaults
+<span class="nc" id="L256">            rangeArray.set(index, new COSFloat(-100));</span>
+<span class="nc" id="L257">            rangeArray.set(index + 1, new COSFloat(100));</span>
+        }
+        else
+        {
+<span class="nc" id="L261">            rangeArray.set(index, new COSFloat(range.getMin()));</span>
+<span class="nc" id="L262">            rangeArray.set(index + 1, new COSFloat(range.getMax()));</span>
+        }
+<span class="nc" id="L264">        dictionary.setItem(COSName.RANGE, rangeArray);</span>
+<span class="nc" id="L265">        initialColor = null;</span>
+<span class="nc" id="L266">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

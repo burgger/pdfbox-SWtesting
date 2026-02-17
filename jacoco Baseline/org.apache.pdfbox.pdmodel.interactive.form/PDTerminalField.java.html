@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDTerminalField.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.form</a> &gt; <span class="el_source">PDTerminalField.java</span></div><h1>PDTerminalField.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.form;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.fdf.FDFField;
+import org.apache.pdfbox.pdmodel.interactive.action.PDFormFieldAdditionalActions;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+
+/**
+ * A field in an interactive form.
+ * Fields may be one of four types: button, text, choice, or signature.
+ *
+ * @author sug
+ */
+public abstract class PDTerminalField extends PDField
+{
+    /**
+     * Constructor.
+     * 
+     * @param acroForm The form that this field is part of.
+     */
+    protected PDTerminalField(PDAcroForm acroForm)
+    {
+<span class="nc" id="L46">        super(acroForm);</span>
+<span class="nc" id="L47">    }</span>
+
+    /**
+     * Constructor.
+     * 
+     * @param acroForm The form that this field is part of.
+     * @param field the PDF object to represent as a field.
+     * @param parent the parent node of the node
+     */
+    PDTerminalField(PDAcroForm acroForm, COSDictionary field, PDNonTerminalField parent)
+    {
+<span class="nc" id="L58">        super(acroForm, field, parent);</span>
+<span class="nc" id="L59">    }</span>
+
+    /**
+     * Set the actions of the field.
+     * 
+     * @param actions The field actions.
+     */
+    public void setActions(PDFormFieldAdditionalActions actions)
+    {
+<span class="nc" id="L68">        getCOSObject().setItem(COSName.AA, actions);</span>
+<span class="nc" id="L69">    }</span>
+    
+    @Override
+    public int getFieldFlags()
+    {
+<span class="nc" id="L74">        int retval = 0;</span>
+<span class="nc" id="L75">        COSInteger ff = (COSInteger) getCOSObject().getDictionaryObject(COSName.FF);</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">        if (ff != null)</span>
+        {
+<span class="nc" id="L78">            retval = ff.intValue();</span>
+        }
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        else if (getParent() != null)</span>
+        {
+<span class="nc" id="L82">            retval = getParent().getFieldFlags();</span>
+        }
+<span class="nc" id="L84">        return retval;</span>
+    }
+    
+    @Override
+    public String getFieldType()
+    {
+<span class="nc" id="L90">        String fieldType = getCOSObject().getNameAsString(COSName.FT);</span>
+<span class="nc bnc" id="L91" title="All 4 branches missed.">        if (fieldType == null &amp;&amp; getParent() != null)</span>
+        {
+<span class="nc" id="L93">            fieldType = getParent().getFieldType();</span>
+        }
+<span class="nc" id="L95">        return fieldType;</span>
+    }
+
+    @Override
+    public void importFDF(FDFField fdfField) throws IOException
+    {
+<span class="nc" id="L101">        super.importFDF(fdfField);</span>
+        
+<span class="nc" id="L103">        Integer f = fdfField.getWidgetFieldFlags();</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">        for (PDAnnotationWidget widget : getWidgets())</span>
+        {
+<span class="nc bnc" id="L106" title="All 2 branches missed.">            if (f != null)</span>
+            {
+<span class="nc" id="L108">                widget.setAnnotationFlags(f);</span>
+            }
+            else
+            {
+                // these are supposed to be ignored if the F is set.
+<span class="nc" id="L113">                Integer setF = fdfField.getSetWidgetFieldFlags();</span>
+<span class="nc" id="L114">                int annotFlags = widget.getAnnotationFlags();</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">                if (setF != null)</span>
+                {
+<span class="nc" id="L117">                    annotFlags = annotFlags | setF;</span>
+<span class="nc" id="L118">                    widget.setAnnotationFlags(annotFlags);</span>
+                }
+
+<span class="nc" id="L121">                Integer clrF = fdfField.getClearWidgetFieldFlags();</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">                if (clrF != null)</span>
+                {
+                    // we have to clear the bits of the document fields for every bit that is
+                    // set in this field.
+                    //
+                    // Example:
+                    // docF = 1011
+                    // clrF = 1101
+                    // clrFValue = 0010;
+                    // newValue = 1011 &amp; 0010 which is 0010
+<span class="nc" id="L132">                    int clrFValue = clrF;</span>
+<span class="nc" id="L133">                    clrFValue ^= 0xFFFFFFFFL;</span>
+<span class="nc" id="L134">                    annotFlags = annotFlags &amp; clrFValue;</span>
+<span class="nc" id="L135">                    widget.setAnnotationFlags(annotFlags);</span>
+                }
+            }
+<span class="nc" id="L138">        }</span>
+<span class="nc" id="L139">    }</span>
+
+    @Override
+    FDFField exportFDF() throws IOException
+    {
+<span class="nc" id="L144">        FDFField fdfField = new FDFField();</span>
+<span class="nc" id="L145">        fdfField.setPartialFieldName(getPartialName());</span>
+<span class="nc" id="L146">        fdfField.setValue(getCOSObject().getDictionaryObject(COSName.V));</span>
+
+        // fixme: the old code which was here assumed that Kids were PDField instances,
+        //        which is never true. They're annotation widgets.
+        
+<span class="nc" id="L151">        return fdfField;</span>
+    }
+
+    /**
+     * Returns the widget annotations associated with this field.
+     *
+     * @return The list of widget annotations. Be aware that this list is &lt;i&gt;not&lt;/i&gt; backed by the
+     * actual widget collection of the field, so adding or deleting has no effect on the PDF
+     * document until you call {@link #setWidgets(java.util.List) setWidgets()} with the modified
+     * list.
+     */
+    @Override
+    public List&lt;PDAnnotationWidget&gt; getWidgets()
+    {
+<span class="nc" id="L165">        List&lt;PDAnnotationWidget&gt; widgets = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L166">        COSArray kids = getCOSObject().getCOSArray(COSName.KIDS);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">        if (kids == null)</span>
+        {
+            // the field itself is a widget
+<span class="nc" id="L170">            widgets.add(new PDAnnotationWidget(getCOSObject()));</span>
+        }
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        else if (!kids.isEmpty())</span>
+        {
+            // there are multiple widgets
+<span class="nc bnc" id="L175" title="All 2 branches missed.">            for (int i = 0; i &lt; kids.size(); i++)</span>
+            {
+<span class="nc" id="L177">                COSBase kid = kids.getObject(i);</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">                if (kid instanceof COSDictionary)</span>
+                {
+<span class="nc" id="L180">                    widgets.add(new PDAnnotationWidget((COSDictionary)kid));</span>
+                }
+            }
+        }
+<span class="nc" id="L184">        return widgets;</span>
+    }
+
+    /**
+     * Sets the field's widget annotations.
+     *
+     * @param children The list of widget annotations.
+     */
+    public void setWidgets(List&lt;PDAnnotationWidget&gt; children)
+    {
+<span class="nc" id="L194">        COSArray kidsArray = new COSArray(children);</span>
+<span class="nc" id="L195">        getCOSObject().setItem(COSName.KIDS, kidsArray);</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">        for (PDAnnotationWidget widget : children)</span>
+        {
+<span class="nc" id="L198">            widget.getCOSObject().setItem(COSName.PARENT, this);</span>
+<span class="nc" id="L199">        }</span>
+<span class="nc" id="L200">    }</span>
+    
+    /**
+     * Applies a value change to the field. Generates appearances if required and raises events.
+     * 
+     * @throws IOException if the appearance couldn't be generated
+     */
+    protected final void applyChange() throws IOException
+    {
+<span class="nc" id="L209">        constructAppearances();</span>
+        // if we supported JavaScript we would raise a field changed event here
+<span class="nc" id="L211">    }</span>
+    
+    /**
+     * Constructs appearance streams and appearance dictionaries for all widget annotations.
+     * Subclasses should not call this method directly but via {@link #applyChange()}.
+     * 
+     * @throws IOException if the appearance couldn't be generated
+     */
+    abstract void constructAppearances() throws IOException;
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

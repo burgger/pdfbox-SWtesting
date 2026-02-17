@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDDeviceNProcess.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.color</a> &gt; <span class="el_source">PDDeviceNProcess.java</span></div><h1>PDDeviceNProcess.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.color;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+/**
+ * A DeviceN Process Dictionary
+ *
+ * @author John Hewson
+ */
+public class PDDeviceNProcess
+{
+    /**
+     * Log instance.
+     */
+<span class="nc" id="L41">    private static final Logger LOG = LogManager.getLogger(PDDeviceNProcess.class);</span>
+
+    private final COSDictionary dictionary;
+
+    /**
+     * Creates a new DeviceN Process Dictionary.
+     */
+    public PDDeviceNProcess()
+<span class="nc" id="L49">    {</span>
+<span class="nc" id="L50">        dictionary = new COSDictionary();</span>
+<span class="nc" id="L51">    }</span>
+
+    /**
+     * Creates a new  DeviceN Process Dictionary from the given attributes.
+     * @param attributes a DeviceN attributes dictionary
+     */
+    public PDDeviceNProcess(COSDictionary attributes)
+<span class="nc" id="L58">    {</span>
+<span class="nc" id="L59">        dictionary = attributes;</span>
+<span class="nc" id="L60">    }</span>
+
+    /**
+     * Returns the underlying COS dictionary.
+     * @return the underlying COS dictionary.
+     */
+    public COSDictionary getCOSDictionary()
+    {
+<span class="nc" id="L68">        return dictionary;</span>
+    }
+
+    /**
+     * Returns the process color space
+     * @return the process color space
+     * @throws IOException if the color space cannot be read
+     */
+    public PDColorSpace getColorSpace() throws IOException
+    {
+<span class="nc" id="L78">        COSBase cosColorSpace = dictionary.getDictionaryObject(COSName.COLORSPACE);</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        if (cosColorSpace == null)</span>
+        {
+<span class="nc" id="L81">            return null; // TODO: return a default?</span>
+        }
+<span class="nc" id="L83">        return PDColorSpace.create(cosColorSpace);</span>
+    }
+
+    /**
+     * Returns the names of the color components.
+     * @return the names of the color components
+     */
+    public List&lt;String&gt; getComponents()
+    {
+<span class="nc" id="L92">        COSArray cosComponents = dictionary.getCOSArray(COSName.COMPONENTS);</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        if (cosComponents == null)</span>
+        {
+<span class="nc" id="L95">            return new ArrayList&lt;&gt;(0);</span>
+        }
+<span class="nc" id="L97">        List&lt;String&gt; components = new ArrayList&lt;&gt;(cosComponents.size());</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        for (COSBase name : cosComponents)</span>
+        {
+<span class="nc" id="L100">            components.add(((COSName)name).getName());</span>
+<span class="nc" id="L101">        }</span>
+<span class="nc" id="L102">        return components;</span>
+    }
+
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L108">        StringBuilder sb = new StringBuilder(&quot;Process{&quot;);</span>
+        try
+        {
+<span class="nc" id="L111">            sb.append(getColorSpace());</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">            for (String component : getComponents())</span>
+            {
+<span class="nc" id="L114">                sb.append(&quot; \&quot;&quot;);</span>
+<span class="nc" id="L115">                sb.append(component);</span>
+<span class="nc" id="L116">                sb.append('\&quot;');</span>
+<span class="nc" id="L117">            }</span>
+        }
+<span class="nc" id="L119">        catch (IOException e)</span>
+        {
+<span class="nc" id="L121">            LOG.debug(&quot;Couldn't get the colorants information - returning 'ERROR' instead'&quot;, e);</span>
+<span class="nc" id="L122">            sb.append(&quot;ERROR&quot;);</span>
+<span class="nc" id="L123">        }</span>
+<span class="nc" id="L124">        sb.append('}');</span>
+<span class="nc" id="L125">        return sb.toString();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

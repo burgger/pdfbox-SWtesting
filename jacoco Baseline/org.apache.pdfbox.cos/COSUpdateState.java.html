@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>COSUpdateState.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.cos</a> &gt; <span class="el_source">COSUpdateState.java</span></div><h1>COSUpdateState.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.cos;
+
+/**
+ * A {@link COSUpdateState} instance manages update states for a {@link COSUpdateInfo}. Such states are used to create
+ * a {@link COSIncrement} for the incremental saving of a {@link COSDocument}.
+ *
+ * @author Christian Appl
+ * @see COSDocumentState
+ * @see COSUpdateInfo
+ * @see COSIncrement
+ */
+public class COSUpdateState
+{
+    
+    /**
+     * The {@link COSUpdateInfo} the {@link COSUpdateState} does manage update states for.
+     */
+    private final COSUpdateInfo updateInfo;
+    /**
+     * The {@link COSDocumentState} the {@link #updateInfo} is linked to.
+     */
+<span class="fc" id="L38">    private COSDocumentState originDocumentState = null;</span>
+    /**
+     * The actual update state of {@link #updateInfo}.
+     * &lt;ul&gt;
+     * &lt;li&gt;{@code true}, if {@link #updateInfo} has been updated after the document completed parsing.&lt;/li&gt;
+     * &lt;li&gt;{@code false}, if {@link #updateInfo} has remained unaltered since the document completed parsing.&lt;/li&gt;
+     * &lt;/ul&gt;
+     */
+<span class="fc" id="L46">    private boolean updated = false;</span>
+    
+    /**
+     * Creates a new {@link COSUpdateState} for the given {@link COSUpdateInfo}.
+     *
+     * @param updateInfo The {@link COSUpdateInfo}, that shall be managed by this {@link COSUpdateState}.
+     */
+    public COSUpdateState(COSUpdateInfo updateInfo)
+<span class="fc" id="L54">    {</span>
+<span class="fc" id="L55">        this.updateInfo = updateInfo;</span>
+<span class="fc" id="L56">    }</span>
+    
+    /**
+     * &lt;p&gt;
+     * Links the given {@link COSDocumentState} to the {@link #updated} state of the managed {@link #updateInfo}.&lt;br&gt;
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * This shall also initialize {@link #updated} accordingly and will also set the same {@link COSDocumentState} for
+     * all possibly contained substructures.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * Should {@link #originDocumentState} already have been set, by a prior call to this method, this shall deny to
+     * overwrite it.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * {@link COSDocumentState#isAcceptingUpdates()} shall determine, whether updates to {@link #updateInfo} are
+     * allowed.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * As long as no {@link COSDocumentState} is linked to this {@link COSUpdateState}, it shall not accept updates.
+     * &lt;/p&gt;
+     *
+     * @param originDocumentState The {@link COSDocumentState} that shall be linked to this {@link COSUpdateState}.
+     * @see #originDocumentState
+     * @see #updated
+     */
+    public void setOriginDocumentState(COSDocumentState originDocumentState)
+    {
+<span class="fc" id="L84">        setOriginDocumentState(originDocumentState, false);</span>
+<span class="fc" id="L85">    }</span>
+    
+    /**
+     * &lt;p&gt;
+     * Links the given {@link COSDocumentState} to the {@link #updated} state of the managed {@link #updateInfo}.&lt;br&gt;
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * This shall also initialize {@link #updated} accordingly and will also set the same {@link COSDocumentState} for
+     * all possibly contained substructures.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * Should {@link #originDocumentState} already have been set, by a prior call to this method, this shall deny to
+     * overwrite it.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * {@link COSDocumentState#isAcceptingUpdates()} shall determine, whether updates to {@link #updateInfo} are
+     * allowed.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * As long as no {@link COSDocumentState} is linked to this {@link COSUpdateState}, it shall not accept updates.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * Additionally to {@link #setOriginDocumentState(COSDocumentState)}, this shall also deny changing
+     * {@link #updated}, should the flag {@code dereferencing} indicate, that this is caused by dereferencing a
+     * {@link COSObject}.
+     * &lt;/p&gt;
+     *
+     * @param originDocumentState The {@link COSDocumentState} that shall be linked to this {@link COSUpdateState}.
+     * @param dereferencing       {@code true}, if this update of the {@link COSDocumentState} is caused by
+     *                            dereferencing a {@link COSObject}.
+     * @see #originDocumentState
+     * @see #updated
+     */
+    private void setOriginDocumentState(COSDocumentState originDocumentState, boolean dereferencing)
+    {
+<span class="fc bfc" id="L120" title="All 4 branches covered.">        if(this.originDocumentState != null || originDocumentState == null)</span>
+        {
+<span class="fc" id="L122">            return;</span>
+        }
+<span class="fc" id="L124">        this.originDocumentState = originDocumentState;</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        if(!dereferencing)</span>
+        {
+<span class="fc" id="L127">            update();</span>
+        }
+        
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        if(updateInfo instanceof COSDictionary)</span>
+        {
+<span class="fc" id="L132">            COSDictionary dictionary = (COSDictionary) updateInfo;</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            for(COSBase entry : dictionary.getValues())</span>
+            {
+<span class="fc bfc" id="L135" title="All 2 branches covered.">                if (entry instanceof COSUpdateInfo)</span>
+                {
+<span class="fc" id="L137">                    ((COSUpdateInfo) entry).getUpdateState().setOriginDocumentState(originDocumentState, dereferencing);</span>
+                }
+<span class="fc" id="L139">            }</span>
+<span class="fc" id="L140">        }</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">        else if(updateInfo instanceof COSArray)</span>
+        {
+<span class="fc" id="L143">            COSArray array = (COSArray) updateInfo;</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">            for(COSBase entry : array)</span>
+            {
+<span class="fc bfc" id="L146" title="All 2 branches covered.">                if (entry instanceof COSUpdateInfo)</span>
+                {
+<span class="fc" id="L148">                    ((COSUpdateInfo) entry).getUpdateState().setOriginDocumentState(originDocumentState, dereferencing);</span>
+                }
+<span class="fc" id="L150">            }</span>
+<span class="fc" id="L151">        }</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">        else if(updateInfo instanceof COSObject)</span>
+        {
+<span class="fc" id="L154">            COSObject object = (COSObject) updateInfo;</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">            if (object.isDereferenced())</span>
+            {
+<span class="fc" id="L157">                COSBase reference = object.getObject();</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">                if (reference instanceof COSUpdateInfo)</span>
+                {
+<span class="fc" id="L160">                    ((COSUpdateInfo) reference).getUpdateState().setOriginDocumentState(originDocumentState, dereferencing);</span>
+                }
+            }
+        }
+<span class="fc" id="L164">    }</span>
+    
+    /**
+     * &lt;p&gt;
+     * Returns the {@link #originDocumentState}, that is linked to the managed {@link #updateInfo}.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * {@link COSDocumentState#isAcceptingUpdates()} shall determine, whether updates to {@link #updateInfo} are
+     * allowed.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * As long as no {@link COSDocumentState} is linked to this {@link COSUpdateState}, it shall not accept updates.
+     * &lt;/p&gt;
+     *
+     * @return The {@link COSDocumentState} linked to this {@link COSUpdateState}.
+     * @see #setOriginDocumentState(COSDocumentState)
+     */
+    public COSDocumentState getOriginDocumentState()
+    {
+<span class="nc" id="L183">        return originDocumentState;</span>
+    }
+    
+    /**
+     * Returns {@code true}, if the linked {@link #originDocumentState} {@link COSDocumentState#isAcceptingUpdates()}
+     * and such a {@link COSDocumentState} has been linked to this {@link COSUpdateState}.
+     *
+     * @return {@code true}, if the linked {@link #originDocumentState} {@link COSDocumentState#isAcceptingUpdates()}
+     * and such a {@link COSDocumentState} has been linked to this {@link COSUpdateState}.
+     * @see #originDocumentState
+     * @see COSDocumentState#isAcceptingUpdates()
+     */
+    boolean isAcceptingUpdates()
+    {
+<span class="fc bfc" id="L197" title="All 4 branches covered.">        return originDocumentState != null &amp;&amp; originDocumentState.isAcceptingUpdates();</span>
+    }
+    
+    /**
+     * Returns the actual {@link #updated} state of the managed {@link #updateInfo}.
+     *
+     * @return The actual {@link #updated} state of the managed {@link #updateInfo}
+     * @see #updated
+     */
+    public boolean isUpdated()
+    {
+<span class="nc" id="L208">        return updated;</span>
+    }
+    
+    /**
+     * Calls {@link #update(boolean)} with {@code true} as the new update state.&lt;br&gt;
+     * This shall only then have an effect, if {@link #isAcceptingUpdates()} returns {@code true}.
+     *
+     * @see #update(boolean)
+     * @see #updated
+     * @see #isAcceptingUpdates()
+     */
+    void update()
+    {
+<span class="fc" id="L221">        update(true);</span>
+<span class="fc" id="L222">    }</span>
+    
+    /**
+     * Sets the {@link #updated} state of the managed {@link #updateInfo} to the given state.&lt;br&gt;
+     * This shall only then have an effect, if {@link #isAcceptingUpdates()} returns {@code true}.
+     *
+     * @param updated The state to set for {@link #updated}.
+     * @see #update(boolean)
+     * @see #updated
+     * @see #isAcceptingUpdates()
+     */
+    void update(boolean updated)
+    {
+<span class="fc bfc" id="L235" title="All 2 branches covered.">        if(isAcceptingUpdates())</span>
+        {
+<span class="fc" id="L237">            this.updated = updated;</span>
+        }
+<span class="fc" id="L239">    }</span>
+    
+    /**
+     * &lt;p&gt;
+     * Shall call {@link #update()} for this {@link COSUpdateState} and shall
+     * {@link #setOriginDocumentState(COSDocumentState)} for the given child, initializing it´s {@link #updated} state
+     * and {@link #originDocumentState}.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * This shall have no effect for a child, that is not an instance of {@link COSUpdateInfo}.
+     * &lt;/p&gt;
+     *
+     * @param child The child that shall also be updated.
+     * @see #update()
+     * @see #setOriginDocumentState(COSDocumentState)
+     */
+    void update(COSBase child)
+    {
+<span class="fc" id="L257">        update();</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        if(child instanceof COSUpdateInfo)</span>
+        {
+<span class="fc" id="L260">            ((COSUpdateInfo) child).getUpdateState().setOriginDocumentState(originDocumentState);</span>
+        }
+<span class="fc" id="L262">    }</span>
+    
+    /**
+     * &lt;p&gt;
+     * Shall call {@link #update()} for this {@link COSUpdateState} and shall
+     * {@link #setOriginDocumentState(COSDocumentState)} for the given children, initializing their {@link #updated}
+     * state and {@link #originDocumentState}.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * This shall have no effect for a child, that is not an instance of {@link COSUpdateInfo}.
+     * &lt;/p&gt;
+     *
+     * @param children The children that shall also be updated.
+     * @see #update()
+     * @see #setOriginDocumentState(COSDocumentState)
+     */
+    void update(COSArray children)
+    {
+<span class="nc" id="L280">        update((Iterable&lt;COSBase&gt;) children);</span>
+<span class="nc" id="L281">    }</span>
+    
+    /**
+     * &lt;p&gt;
+     * Shall call {@link #update()} for this {@link COSUpdateState} and shall
+     * {@link #setOriginDocumentState(COSDocumentState)} for the given children, initializing their {@link #updated}
+     * state and {@link #originDocumentState}.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * This shall have no effect for a child, that is not an instance of {@link COSUpdateInfo}.
+     * &lt;/p&gt;
+     *
+     * @param children The children that shall also be updated.
+     * @see #update()
+     * @see #setOriginDocumentState(COSDocumentState)
+     */
+    void update(Iterable&lt;COSBase&gt; children)
+    {
+<span class="nc" id="L299">        update();</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">        if(children == null)</span>
+        {
+<span class="nc" id="L302">            return;</span>
+        }
+<span class="nc bnc" id="L304" title="All 2 branches missed.">        for(COSBase child : children)</span>
+        {
+<span class="nc bnc" id="L306" title="All 2 branches missed.">            if(child instanceof COSUpdateInfo)</span>
+            {
+<span class="nc" id="L308">                ((COSUpdateInfo) child).getUpdateState().setOriginDocumentState(originDocumentState);</span>
+            }
+<span class="nc" id="L310">        }</span>
+<span class="nc" id="L311">    }</span>
+    
+    /**
+     * This shall {@link #setOriginDocumentState(COSDocumentState, boolean)} for the dereferenced child,
+     * initializing its {@link #originDocumentState}.
+     * &lt;p&gt;
+     * This shall have no effect for a child, that is not an instance of {@link COSUpdateInfo} and will never change
+     * the child´s {@link #updated} state.
+     * &lt;/p&gt;
+     *
+     * @param child The child, that has been dereferenced.
+     * @see #setOriginDocumentState(COSDocumentState, boolean)
+     */
+    void dereferenceChild(COSBase child)
+    {
+<span class="pc bpc" id="L326" title="1 of 2 branches missed.">        if(child instanceof COSUpdateInfo)</span>
+        {
+<span class="fc" id="L328">            ((COSUpdateInfo) child).getUpdateState().setOriginDocumentState(originDocumentState, true);</span>
+        }
+<span class="fc" id="L330">    }</span>
+    
+    /**
+     * Uses the managed {@link #updateInfo} as the base object of a new {@link COSIncrement}.
+     *
+     * @return A {@link COSIncrement} based on the managed {@link #updateInfo}.
+     * @see COSUpdateInfo
+     * @see COSIncrement
+     */
+    COSIncrement toIncrement()
+    {
+<span class="nc" id="L341">        return new COSIncrement(updateInfo);</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

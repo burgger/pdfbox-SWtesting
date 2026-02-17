@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDType3Font.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font</a> &gt; <span class="el_source">PDType3Font.java</span></div><h1>PDType3Font.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.font;
+
+import java.awt.geom.GeneralPath;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Objects;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+import org.apache.fontbox.FontBoxFont;
+import org.apache.fontbox.util.BoundingBox;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.ResourceCache;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.encoding.DictionaryEncoding;
+import org.apache.pdfbox.pdmodel.font.encoding.Encoding;
+import org.apache.pdfbox.pdmodel.font.encoding.GlyphList;
+import org.apache.pdfbox.util.Matrix;
+import org.apache.pdfbox.util.Vector;
+
+/**
+ * A PostScript Type 3 Font.
+ *
+ * @author Ben Litchfield
+ */
+public class PDType3Font extends PDSimpleFont
+{
+    /**
+     * Log instance.
+     */
+<span class="nc" id="L54">    private static final Logger LOG = LogManager.getLogger(PDType3Font.class);</span>
+
+    private PDResources resources;
+    private COSDictionary charProcs;
+    private Matrix fontMatrix;
+    private BoundingBox fontBBox;
+    private final ResourceCache resourceCache;
+
+    /**
+     * Constructor.
+     *
+     * @param fontDictionary The font dictionary according to the PDF specification.
+     * 
+     * @throws IOException if the font could not be created
+     */
+    public PDType3Font(COSDictionary fontDictionary) throws IOException
+    {
+<span class="nc" id="L71">        this(fontDictionary, null);</span>
+<span class="nc" id="L72">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param fontDictionary The font dictionary according to the PDF specification.
+     * @param resourceCache Resource cache, can be null.
+     * 
+     * @throws IOException if the font could not be created
+     */
+    public PDType3Font(COSDictionary fontDictionary, ResourceCache resourceCache) throws IOException
+    {
+<span class="nc" id="L84">        super(fontDictionary);</span>
+<span class="nc" id="L85">        this.resourceCache = resourceCache;</span>
+<span class="nc" id="L86">        readEncoding();</span>
+<span class="nc" id="L87">    }</span>
+
+    @Override
+    public String getName()
+    {
+<span class="nc" id="L92">        return dict.getNameAsString(COSName.NAME);</span>
+    }
+
+    @Override
+    protected final void readEncoding() throws IOException
+    {
+<span class="nc" id="L98">        COSBase encodingBase = dict.getDictionaryObject(COSName.ENCODING);</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        if (encodingBase instanceof COSName)</span>
+        {
+<span class="nc" id="L101">            COSName encodingName = (COSName) encodingBase;</span>
+<span class="nc" id="L102">            encoding = Encoding.getInstance(encodingName);</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">            if (encoding == null)</span>
+            {
+<span class="nc" id="L105">                LOG.warn(&quot;Unknown encoding: {}&quot;, encodingName.getName());</span>
+            }
+<span class="nc" id="L107">        }</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        else if (encodingBase instanceof COSDictionary)</span>
+        {
+<span class="nc" id="L110">            encoding = new DictionaryEncoding((COSDictionary) encodingBase);</span>
+        }
+<span class="nc" id="L112">        glyphList = GlyphList.getAdobeGlyphList();</span>
+<span class="nc" id="L113">    }</span>
+    
+    @Override
+    protected Encoding readEncodingFromFont() throws IOException
+    {
+        // Type 3 fonts do not have a built-in encoding
+<span class="nc" id="L119">        throw new UnsupportedOperationException(&quot;not supported for Type 3 fonts&quot;);</span>
+    }
+
+    @Override
+    protected Boolean isFontSymbolic()
+    {
+<span class="nc" id="L125">        return false;</span>
+    }
+
+    @Override
+    public GeneralPath getPath(String name) throws IOException
+    {
+        // Type 3 fonts do not use vector paths
+<span class="nc" id="L132">        throw new UnsupportedOperationException(&quot;not supported for Type 3 fonts&quot;);</span>
+    }
+
+    @Override
+    public boolean hasGlyph(String name) throws IOException
+    {
+<span class="nc" id="L138">        COSDictionary cp = getCharProcs();</span>
+<span class="nc bnc" id="L139" title="All 4 branches missed.">        return cp != null &amp;&amp; cp.getCOSStream(COSName.getPDFName(name)) != null;</span>
+    }
+
+    @Override
+    public FontBoxFont getFontBoxFont()
+    {
+        // Type 3 fonts do not use FontBox fonts
+<span class="nc" id="L146">        throw new UnsupportedOperationException(&quot;not supported for Type 3 fonts&quot;);</span>
+    }
+
+    @Override
+    public Vector getDisplacement(int code) throws IOException
+    {
+<span class="nc" id="L152">        return getFontMatrix().transform(new Vector(getWidth(code), 0));</span>
+    }
+
+    @Override
+    public float getWidth(int code) throws IOException
+    {
+<span class="nc" id="L158">        int firstChar = dict.getInt(COSName.FIRST_CHAR, -1);</span>
+<span class="nc" id="L159">        int lastChar = dict.getInt(COSName.LAST_CHAR, -1);</span>
+<span class="nc" id="L160">        List&lt;Float&gt; widths = getWidths();</span>
+<span class="nc bnc" id="L161" title="All 6 branches missed.">        if (!widths.isEmpty() &amp;&amp; code &gt;= firstChar &amp;&amp; code &lt;= lastChar)</span>
+        {
+<span class="nc bnc" id="L163" title="All 2 branches missed.">            if (code - firstChar &gt;= widths.size())</span>
+            {
+<span class="nc" id="L165">                return 0;</span>
+            }
+<span class="nc" id="L167">            Float w = widths.get(code - firstChar);</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">            return w == null ? 0 : w;</span>
+        }
+        else
+        {
+<span class="nc" id="L172">            PDFontDescriptor fd = getFontDescriptor();</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">            if (fd != null)</span>
+            {
+<span class="nc" id="L175">                return fd.getMissingWidth();</span>
+            }
+            else
+            {
+<span class="nc" id="L179">                return getWidthFromFont(code);</span>
+            }
+        }
+    }
+
+    @Override
+    public float getWidthFromFont(int code) throws IOException
+    {
+<span class="nc" id="L187">        PDType3CharProc charProc = getCharProc(code);</span>
+<span class="nc bnc" id="L188" title="All 4 branches missed.">        if (charProc == null || charProc.getCOSObject().getLength() == 0)</span>
+        {
+<span class="nc" id="L190">            return 0;</span>
+        }
+<span class="nc" id="L192">        return charProc.getWidth();</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @return true because type 3 fonts are embedded by design.
+     */
+    @Override
+    public boolean isEmbedded()
+    {
+<span class="nc" id="L203">        return true;</span>
+    }
+
+    @Override
+    public float getHeight(int code) throws IOException
+    {
+<span class="nc" id="L209">        PDFontDescriptor desc = getFontDescriptor();</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">        if (desc != null)</span>
+        {
+            // the following values are all more or less accurate at least all are average
+            // values. Maybe we'll find another way to get those value for every single glyph
+            // in the future if needed
+<span class="nc" id="L215">            PDRectangle bbox = desc.getFontBoundingBox();</span>
+<span class="nc" id="L216">            float retval = 0;</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">            if (bbox != null)</span>
+            {
+<span class="nc" id="L219">                retval = bbox.getHeight() / 2;</span>
+            }
+<span class="nc bnc" id="L221" title="All 2 branches missed.">            if (Float.compare(retval, 0) == 0)</span>
+            {
+<span class="nc" id="L223">                retval = desc.getCapHeight();</span>
+            }
+<span class="nc bnc" id="L225" title="All 2 branches missed.">            if (Float.compare(retval, 0) == 0)</span>
+            {
+<span class="nc" id="L227">                retval = desc.getAscent();</span>
+            }
+<span class="nc bnc" id="L229" title="All 2 branches missed.">            if (Float.compare(retval, 0) == 0)</span>
+            {
+<span class="nc" id="L231">                retval = desc.getXHeight();</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">                if (retval &gt; 0)</span>
+                {
+<span class="nc" id="L234">                    retval -= desc.getDescent();</span>
+                }
+            }
+<span class="nc" id="L237">            return retval;</span>
+        }
+<span class="nc" id="L239">        return 0;</span>
+    }
+
+    @Override
+    protected byte[] encode(int unicode) throws IOException
+    {
+<span class="nc" id="L245">        throw new UnsupportedOperationException(&quot;Not implemented: Type3&quot;);</span>
+    }
+
+    @Override
+    public int readCode(InputStream in) throws IOException
+    {
+<span class="nc" id="L251">        return in.read();</span>
+    }
+
+    @Override
+    public Matrix getFontMatrix()
+    {
+<span class="nc bnc" id="L257" title="All 2 branches missed.">        if (fontMatrix == null)</span>
+        {
+<span class="nc" id="L259">            COSArray matrix = dict.getCOSArray(COSName.FONT_MATRIX);</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">            fontMatrix = checkFontMatrixValues(matrix) ? Matrix.createMatrix(matrix)</span>
+<span class="nc" id="L261">                    : super.getFontMatrix();</span>
+        }
+<span class="nc" id="L263">        return fontMatrix;</span>
+    }
+
+    private boolean checkFontMatrixValues(COSArray matrix)
+    {
+<span class="nc bnc" id="L268" title="All 4 branches missed.">        return matrix != null &amp;&amp; matrix.size() == 6</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">                &amp;&amp; matrix.toCOSNumberFloatList().stream().allMatch(Objects::nonNull);</span>
+    }
+
+    @Override
+    public boolean isDamaged()
+    {
+        // there's no font file to load
+<span class="nc" id="L276">        return false;</span>
+    }
+
+    @Override
+    public boolean isStandard14()
+    {
+<span class="nc" id="L282">        return false;</span>
+    }
+
+    /**
+     * Returns the optional resources of the type3 stream.
+     *
+     * @return the resources bound to be used when parsing the type3 stream
+     */
+    public PDResources getResources()
+    {
+<span class="nc bnc" id="L292" title="All 2 branches missed.">        if (resources == null)</span>
+        {
+<span class="nc" id="L294">            COSDictionary resDict = dict.getCOSDictionary(COSName.RESOURCES);</span>
+<span class="nc bnc" id="L295" title="All 2 branches missed.">            if (resDict != null)</span>
+            {
+<span class="nc" id="L297">                resources = new PDResources(resDict, resourceCache);</span>
+            }
+        }
+<span class="nc" id="L300">        return resources;</span>
+    }
+
+    /**
+     * This will get the fonts bounding box from its dictionary.
+     *
+     * @return The fonts bounding box.
+     */
+    public PDRectangle getFontBBox()
+    {
+<span class="nc" id="L310">        COSArray bBox = dict.getCOSArray(COSName.FONT_BBOX);</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">        return bBox != null ? new PDRectangle(bBox) : null;</span>
+    }
+
+    @Override
+    public BoundingBox getBoundingBox()
+    {
+<span class="nc bnc" id="L317" title="All 2 branches missed.">        if (fontBBox == null)</span>
+        {
+<span class="nc" id="L319">            fontBBox = generateBoundingBox();</span>
+        }
+<span class="nc" id="L321">        return fontBBox;</span>
+    }
+
+    private BoundingBox generateBoundingBox()
+    {
+<span class="nc" id="L326">        PDRectangle rect = getFontBBox();</span>
+<span class="nc bnc" id="L327" title="All 2 branches missed.">        if (rect == null)</span>
+        {
+<span class="nc" id="L329">            LOG.warn(&quot;FontBBox missing, returning empty rectangle&quot;);</span>
+<span class="nc" id="L330">            return new BoundingBox();</span>
+        }
+<span class="nc bnc" id="L332" title="All 2 branches missed.">        if (!isNonZeroBoundingBox(rect))</span>
+        {
+            // Plan B: get the max bounding box of the glyphs
+<span class="nc" id="L335">            COSDictionary cp = getCharProcs();</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">            if (cp != null)</span>
+            {
+<span class="nc bnc" id="L338" title="All 2 branches missed.">                for (COSName name : cp.keySet())</span>
+                {
+<span class="nc" id="L340">                    COSStream typ3CharProcStream = cp.getCOSStream(name);</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">                    if (typ3CharProcStream != null)</span>
+                    {
+<span class="nc" id="L343">                        PDType3CharProc charProc = new PDType3CharProc(this, typ3CharProcStream);</span>
+                        try
+                        {
+<span class="nc" id="L346">                            PDRectangle glyphBBox = charProc.getGlyphBBox();</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">                            if (glyphBBox == null)</span>
+                            {
+<span class="nc" id="L349">                                continue;</span>
+                            }
+<span class="nc" id="L351">                            rect.setLowerLeftX(</span>
+<span class="nc" id="L352">                                    Math.min(rect.getLowerLeftX(), glyphBBox.getLowerLeftX()));</span>
+<span class="nc" id="L353">                            rect.setLowerLeftY(</span>
+<span class="nc" id="L354">                                    Math.min(rect.getLowerLeftY(), glyphBBox.getLowerLeftY()));</span>
+<span class="nc" id="L355">                            rect.setUpperRightX(</span>
+<span class="nc" id="L356">                                    Math.max(rect.getUpperRightX(), glyphBBox.getUpperRightX()));</span>
+<span class="nc" id="L357">                            rect.setUpperRightY(</span>
+<span class="nc" id="L358">                                    Math.max(rect.getUpperRightY(), glyphBBox.getUpperRightY()));</span>
+                        }
+<span class="nc" id="L360">                        catch (IOException ex)</span>
+                        {
+                            // ignore
+<span class="nc" id="L363">                            LOG.debug(</span>
+                                    &quot;error getting the glyph bounding box - font bounding box will be used&quot;,
+                                    ex);
+<span class="nc" id="L366">                        }</span>
+                    }
+<span class="nc" id="L368">                }</span>
+            }
+        }
+<span class="nc" id="L371">        return new BoundingBox(rect.getLowerLeftX(), rect.getLowerLeftY(),</span>
+<span class="nc" id="L372">                rect.getUpperRightX(), rect.getUpperRightY());</span>
+    }
+
+    /**
+     * Returns the dictionary containing all streams to be used to render the glyphs.
+     * 
+     * @return the dictionary containing all glyph streams.
+     */
+    public COSDictionary getCharProcs()
+    {
+<span class="nc bnc" id="L382" title="All 2 branches missed.">        if (charProcs == null)</span>
+        {
+<span class="nc" id="L384">            charProcs = dict.getCOSDictionary(COSName.CHAR_PROCS);</span>
+        }
+<span class="nc" id="L386">        return charProcs;</span>
+    }
+    
+    /**
+     * Returns the stream of the glyph for the given character code
+     * 
+     * @param code character code
+     * @return the stream to be used to render the glyph
+     */
+    public PDType3CharProc getCharProc(int code)
+    {
+<span class="nc bnc" id="L397" title="All 4 branches missed.">        if (getEncoding() == null || getCharProcs() == null)</span>
+        {
+<span class="nc" id="L399">            return null;</span>
+        }
+<span class="nc" id="L401">        String name = getEncoding().getName(code);</span>
+<span class="nc" id="L402">        COSStream stream = getCharProcs().getCOSStream(COSName.getPDFName(name));</span>
+<span class="nc bnc" id="L403" title="All 2 branches missed.">        return stream != null ? new PDType3CharProc(this, stream) : null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

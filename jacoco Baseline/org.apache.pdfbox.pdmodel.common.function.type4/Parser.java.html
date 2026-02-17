@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Parser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.common.function.type4</a> &gt; <span class="el_source">Parser.java</span></div><h1>Parser.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.common.function.type4;
+
+/**
+ * Parser for PDF Type 4 functions. This implements a small subset of the PostScript
+ * language but is no full PostScript interpreter.
+ *
+ */
+public final class Parser
+{
+
+    /** Used to indicate the parsers current state. */
+<span class="nc" id="L28">    private enum State</span>
+    {
+<span class="nc" id="L30">        NEWLINE, WHITESPACE, COMMENT, TOKEN</span>
+    }
+
+    private Parser()
+    {
+        //nop
+    }
+
+    /**
+     * Parses a Type 4 function and sends the syntactic elements to the given
+     * syntax handler.
+     * @param input the text source
+     * @param handler the syntax handler
+     */
+    public static void parse(CharSequence input, SyntaxHandler handler)
+    {
+<span class="nc" id="L46">        Tokenizer tokenizer = new Tokenizer(input, handler);</span>
+<span class="nc" id="L47">        tokenizer.tokenize();</span>
+<span class="nc" id="L48">    }</span>
+
+    /**
+     * This interface defines all possible syntactic elements of a Type 4 function.
+     * It is called by the parser as the function is interpreted.
+     */
+    public interface SyntaxHandler
+    {
+
+        /**
+         * Indicates that a new line starts.
+         * @param text the new line character (CR, LF, CR/LF or FF)
+         */
+        void newLine(CharSequence text);
+
+        /**
+         * Called when whitespace characters are encountered.
+         * @param text the whitespace text
+         */
+        void whitespace(CharSequence text);
+
+        /**
+         * Called when a token is encountered. No distinction between operators and values
+         * is done here.
+         * @param text the token text
+         */
+        void token(CharSequence text);
+
+        /**
+         * Called for a comment.
+         * @param text the comment
+         */
+        void comment(CharSequence text);
+    }
+
+    /**
+     * Abstract base class for a {@link SyntaxHandler}.
+     */
+<span class="nc" id="L86">    public abstract static class AbstractSyntaxHandler implements SyntaxHandler</span>
+    {
+
+        /** {@inheritDoc} */
+        @Override
+        public void comment(CharSequence text)
+        {
+            //nop
+<span class="nc" id="L94">        }</span>
+
+        /** {@inheritDoc} */
+        @Override
+        public void newLine(CharSequence text)
+        {
+            //nop
+<span class="nc" id="L101">        }</span>
+
+        /** {@inheritDoc} */
+        @Override
+        public void whitespace(CharSequence text)
+        {
+            //nop
+<span class="nc" id="L108">        }</span>
+
+    }
+
+    /**
+     * Tokenizer for Type 4 functions.
+     */
+<span class="nc" id="L115">    private static final class Tokenizer</span>
+    {
+
+        private static final char NUL = '\u0000'; //NUL
+        private static final char EOT = '\u0004'; //END OF TRANSMISSION
+        private static final char TAB = '\u0009'; //TAB CHARACTER
+        private static final char FF = '\u000C'; //FORM FEED
+        private static final char CR = '\r'; //CARRIAGE RETURN
+        private static final char LF = '\n'; //LINE FEED
+        private static final char SPACE = '\u0020'; //SPACE
+
+        private final CharSequence input;
+        private int index;
+        private final SyntaxHandler handler;
+<span class="nc" id="L129">        private State state = State.WHITESPACE;</span>
+<span class="nc" id="L130">        private final StringBuilder buffer = new StringBuilder();</span>
+
+        private Tokenizer(CharSequence text, SyntaxHandler syntaxHandler)
+<span class="nc" id="L133">        {</span>
+<span class="nc" id="L134">            this.input = text;</span>
+<span class="nc" id="L135">            this.handler = syntaxHandler;</span>
+<span class="nc" id="L136">        }</span>
+
+        private boolean hasMore()
+        {
+<span class="nc bnc" id="L140" title="All 2 branches missed.">            return index &lt; input.length();</span>
+        }
+
+        private char currentChar()
+        {
+<span class="nc" id="L145">            return input.charAt(index);</span>
+        }
+
+        private char nextChar()
+        {
+<span class="nc" id="L150">            index++;</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">            if (!hasMore())</span>
+            {
+<span class="nc" id="L153">                return EOT;</span>
+            }
+            else
+            {
+<span class="nc" id="L157">                return currentChar();</span>
+            }
+        }
+
+        private char peek()
+        {
+<span class="nc bnc" id="L163" title="All 2 branches missed.">            if (index &lt; input.length() - 1)</span>
+            {
+<span class="nc" id="L165">                return input.charAt(index + 1);</span>
+            }
+            else
+            {
+<span class="nc" id="L169">                return EOT;</span>
+            }
+        }
+
+        private State nextState()
+        {
+<span class="nc" id="L175">            char ch = currentChar();</span>
+<span class="nc bnc" id="L176" title="All 4 branches missed.">            switch (ch)</span>
+            {
+            case CR:
+            case LF:
+            case FF: //FF
+<span class="nc" id="L181">                state = State.NEWLINE;</span>
+<span class="nc" id="L182">                break;</span>
+            case NUL:
+            case TAB:
+            case SPACE:
+<span class="nc" id="L186">                state = State.WHITESPACE;</span>
+<span class="nc" id="L187">                break;</span>
+            case '%':
+<span class="nc" id="L189">                state = State.COMMENT;</span>
+<span class="nc" id="L190">                break;</span>
+            default:
+<span class="nc" id="L192">                state = State.TOKEN;</span>
+            }
+<span class="nc" id="L194">            return state;</span>
+        }
+
+        private void tokenize()
+        {
+<span class="nc bnc" id="L199" title="All 2 branches missed.">            while (hasMore())</span>
+            {
+<span class="nc" id="L201">                buffer.setLength(0);</span>
+<span class="nc" id="L202">                nextState();</span>
+<span class="nc bnc" id="L203" title="All 4 branches missed.">                switch (state)</span>
+                {
+                case NEWLINE:
+<span class="nc" id="L206">                    scanNewLine();</span>
+<span class="nc" id="L207">                    break;</span>
+                case WHITESPACE:
+<span class="nc" id="L209">                    scanWhitespace();</span>
+<span class="nc" id="L210">                    break;</span>
+                case COMMENT:
+<span class="nc" id="L212">                    scanComment();</span>
+<span class="nc" id="L213">                    break;</span>
+                default:
+<span class="nc" id="L215">                    scanToken();</span>
+                }
+            }
+<span class="nc" id="L218">        }</span>
+
+        private void scanNewLine()
+        {
+<span class="nc bnc" id="L222" title="All 2 branches missed.">            assert state == State.NEWLINE;</span>
+<span class="nc" id="L223">            char ch = currentChar();</span>
+<span class="nc" id="L224">            buffer.append(ch);</span>
+<span class="nc bnc" id="L225" title="All 4 branches missed.">            if (ch == CR &amp;&amp; peek() == LF)</span>
+            {
+                //CRLF is treated as one newline
+<span class="nc" id="L228">                buffer.append(nextChar());</span>
+            }
+<span class="nc" id="L230">            handler.newLine(buffer);</span>
+<span class="nc" id="L231">            nextChar();</span>
+<span class="nc" id="L232">        }</span>
+
+        private void scanWhitespace()
+        {
+<span class="nc bnc" id="L236" title="All 2 branches missed.">            assert state == State.WHITESPACE;</span>
+<span class="nc" id="L237">            buffer.append(currentChar());</span>
+            loop:
+<span class="nc bnc" id="L239" title="All 2 branches missed.">            while (hasMore())</span>
+            {
+<span class="nc" id="L241">                char ch = nextChar();</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">                switch (ch)</span>
+                {
+                case NUL:
+                case TAB:
+                case SPACE:
+<span class="nc" id="L247">                    buffer.append(ch);</span>
+<span class="nc" id="L248">                    break;</span>
+                default:
+<span class="nc" id="L250">                    break loop;</span>
+                }
+<span class="nc" id="L252">            }</span>
+<span class="nc" id="L253">            handler.whitespace(buffer);</span>
+<span class="nc" id="L254">        }</span>
+
+        private void scanComment()
+        {
+<span class="nc bnc" id="L258" title="All 2 branches missed.">            assert state == State.COMMENT;</span>
+<span class="nc" id="L259">            buffer.append(currentChar());</span>
+            loop:
+<span class="nc bnc" id="L261" title="All 2 branches missed.">            while (hasMore())</span>
+            {
+<span class="nc" id="L263">                char ch = nextChar();</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">                switch (ch)</span>
+                {
+                case CR:
+                case LF:
+                case FF:
+<span class="nc" id="L269">                    break loop;</span>
+                default:
+<span class="nc" id="L271">                    buffer.append(ch);</span>
+                }
+<span class="nc" id="L273">            }</span>
+            //EOF reached
+<span class="nc" id="L275">            handler.comment(buffer);</span>
+<span class="nc" id="L276">        }</span>
+
+        private void scanToken()
+        {
+<span class="nc bnc" id="L280" title="All 2 branches missed.">            assert state == State.TOKEN;</span>
+<span class="nc" id="L281">            char ch = currentChar();</span>
+<span class="nc" id="L282">            buffer.append(ch);</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">            switch (ch)</span>
+            {
+            case '{':
+            case '}':
+<span class="nc" id="L287">                handler.token(buffer);</span>
+<span class="nc" id="L288">                nextChar();</span>
+<span class="nc" id="L289">                return;</span>
+            default:
+                //continue
+            }
+            loop:
+<span class="nc bnc" id="L294" title="All 2 branches missed.">            while (hasMore())</span>
+            {
+<span class="nc" id="L296">                ch = nextChar();</span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">                switch (ch)</span>
+                {
+                case NUL:
+                case TAB:
+                case SPACE:
+                case CR:
+                case LF:
+                case FF:
+                case EOT:
+                case '{':
+                case '}':
+<span class="nc" id="L308">                    break loop;</span>
+                default:
+<span class="nc" id="L310">                    buffer.append(ch);</span>
+                }
+            }
+            //EOF reached
+<span class="nc" id="L314">            handler.token(buffer);</span>
+<span class="nc" id="L315">        }</span>
+
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

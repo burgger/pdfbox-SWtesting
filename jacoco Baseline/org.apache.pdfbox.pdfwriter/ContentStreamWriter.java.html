@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ContentStreamWriter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdfwriter</a> &gt; <span class="el_source">ContentStreamWriter.java</span></div><h1>ContentStreamWriter.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdfwriter;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import org.apache.pdfbox.contentstream.operator.Operator;
+import org.apache.pdfbox.contentstream.operator.OperatorName;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSBoolean;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNull;
+import org.apache.pdfbox.cos.COSString;
+
+/**
+ * A class that will take a list of tokens and write out a stream with them.
+ *
+ * @author Ben Litchfield
+ */
+public class ContentStreamWriter
+{
+    private final OutputStream output;
+    /**
+     * space character.
+     */
+<span class="nc" id="L47">    public static final byte[] SPACE = { 32 };</span>
+
+    /**
+     * standard line separator
+     */
+<span class="nc" id="L52">    public static final byte[] EOL = { 0x0A };</span>
+
+    /**
+     * This will create a new content stream writer.
+     *
+     * @param out The stream to write the data to.
+     */
+    public ContentStreamWriter( OutputStream out )
+<span class="nc" id="L60">    {</span>
+<span class="nc" id="L61">        output = out;</span>
+<span class="nc" id="L62">    }</span>
+
+    /**
+     * Writes a single operand token.
+     *
+     * @param base The operand to write to the stream.
+     * @throws IOException If there is an error writing to the stream.
+     */
+    public void writeToken(COSBase base) throws IOException
+    {
+<span class="nc" id="L72">        writeObject(base);</span>
+<span class="nc" id="L73">    }</span>
+
+    /**
+     *  Writes a single operator token.
+     *
+     * @param op The operator to write to the stream.
+     * @throws IOException If there is an error writing to the stream.
+     */
+    public void writeToken(Operator op) throws IOException
+    {
+<span class="nc" id="L83">        writeObject(op);</span>
+<span class="nc" id="L84">    }</span>
+
+    /**
+     * Writes a series of tokens followed by a new line.
+     * 
+     * @param tokens The tokens to write to the stream.
+     * @throws IOException If there is an error writing to the stream.
+     */
+    public void writeTokens(Object... tokens) throws IOException
+    {
+<span class="nc bnc" id="L94" title="All 2 branches missed.">        for (Object token : tokens)</span>
+        {
+<span class="nc" id="L96">            writeObject(token);</span>
+        }
+<span class="nc" id="L98">        output.write(&quot;\n&quot;.getBytes(StandardCharsets.US_ASCII));</span>
+<span class="nc" id="L99">    }</span>
+
+    /**
+     * This will write out the list of tokens to the stream.
+     *
+     * @param tokens The tokens to write to the stream.
+     * @throws IOException If there is an error writing to the stream.
+     */
+    public void writeTokens( List&lt;?&gt; tokens ) throws IOException
+    {
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        for (Object token : tokens)</span>
+        {
+<span class="nc" id="L111">            writeObject(token);</span>
+<span class="nc" id="L112">        }</span>
+<span class="nc" id="L113">    }</span>
+
+    private void writeObject(Object o) throws IOException
+    {
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (o instanceof COSBase)</span>
+        {
+<span class="nc" id="L119">            writeObject((COSBase) o);</span>
+        }
+<span class="nc bnc" id="L121" title="All 2 branches missed.">        else if (o instanceof Operator)</span>
+        {
+<span class="nc" id="L123">            writeObject((Operator) o);</span>
+        }
+        else
+        {
+<span class="nc" id="L127">            throw new IOException(&quot;Error:Unknown type in content stream:&quot; + o);</span>
+        }
+<span class="nc" id="L129">    }</span>
+
+    private void writeObject(Operator op) throws IOException
+    {
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (op.getName().equals(OperatorName.BEGIN_INLINE_IMAGE))</span>
+        {
+<span class="nc" id="L135">            output.write(OperatorName.BEGIN_INLINE_IMAGE.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="nc" id="L136">            output.write(EOL);</span>
+<span class="nc" id="L137">            COSDictionary dic = op.getImageParameters();</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">            for (COSName key : dic.keySet())</span>
+            {
+<span class="nc" id="L140">                COSBase value = dic.getDictionaryObject(key);</span>
+<span class="nc" id="L141">                key.writePDF(output);</span>
+<span class="nc" id="L142">                output.write(SPACE);</span>
+<span class="nc" id="L143">                writeObject(value);</span>
+<span class="nc" id="L144">                output.write(EOL);</span>
+<span class="nc" id="L145">            }</span>
+<span class="nc" id="L146">            output.write(OperatorName.BEGIN_INLINE_IMAGE_DATA.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="nc" id="L147">            output.write(EOL);</span>
+<span class="nc" id="L148">            output.write(op.getImageData());</span>
+<span class="nc" id="L149">            output.write(EOL);</span>
+<span class="nc" id="L150">            output.write(OperatorName.END_INLINE_IMAGE.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="nc" id="L151">            output.write(EOL);</span>
+<span class="nc" id="L152">        }</span>
+        else
+        {
+<span class="nc" id="L155">            output.write(op.getName().getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="nc" id="L156">            output.write(EOL);</span>
+        }
+<span class="nc" id="L158">    }</span>
+
+    private void writeObject( COSBase o ) throws IOException
+    {
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        if( o instanceof COSString )</span>
+        {
+<span class="nc" id="L164">            COSWriter.writeString((COSString)o, output);</span>
+<span class="nc" id="L165">            output.write( SPACE );</span>
+        }
+<span class="nc bnc" id="L167" title="All 2 branches missed.">        else if( o instanceof COSFloat )</span>
+        {
+<span class="nc" id="L169">            ((COSFloat)o).writePDF( output );</span>
+<span class="nc" id="L170">            output.write( SPACE );</span>
+        }
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        else if( o instanceof COSInteger )</span>
+        {
+<span class="nc" id="L174">            ((COSInteger)o).writePDF( output );</span>
+<span class="nc" id="L175">            output.write( SPACE );</span>
+        }
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        else if( o instanceof COSBoolean )</span>
+        {
+<span class="nc" id="L179">            ((COSBoolean)o).writePDF( output );</span>
+<span class="nc" id="L180">            output.write( SPACE );</span>
+        }
+<span class="nc bnc" id="L182" title="All 2 branches missed.">        else if( o instanceof COSName )</span>
+        {
+<span class="nc" id="L184">            ((COSName)o).writePDF( output );</span>
+<span class="nc" id="L185">            output.write( SPACE );</span>
+        }
+<span class="nc bnc" id="L187" title="All 2 branches missed.">        else if( o instanceof COSArray )</span>
+        {
+<span class="nc" id="L189">            COSArray array = (COSArray)o;</span>
+<span class="nc" id="L190">            output.write(COSWriter.ARRAY_OPEN);</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">            for( int i=0; i&lt;array.size(); i++ )</span>
+            {
+<span class="nc" id="L193">                writeObject(array.get(i));</span>
+            }
+<span class="nc" id="L195">            output.write(COSWriter.ARRAY_CLOSE);</span>
+<span class="nc" id="L196">            output.write(SPACE);</span>
+<span class="nc" id="L197">        }</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">        else if( o instanceof COSDictionary )</span>
+        {
+<span class="nc" id="L200">            COSDictionary obj = (COSDictionary)o;</span>
+<span class="nc" id="L201">            output.write( COSWriter.DICT_OPEN );</span>
+<span class="nc bnc" id="L202" title="All 2 branches missed.">            for (Map.Entry&lt;COSName, COSBase&gt; entry : obj.entrySet())</span>
+            {
+<span class="nc bnc" id="L204" title="All 2 branches missed.">                if (entry.getValue() != null)</span>
+                {
+<span class="nc" id="L206">                    writeObject(entry.getKey());</span>
+<span class="nc" id="L207">                    writeObject(entry.getValue());</span>
+                }
+<span class="nc" id="L209">            }</span>
+<span class="nc" id="L210">            output.write( COSWriter.DICT_CLOSE );</span>
+<span class="nc" id="L211">            output.write( SPACE );</span>
+<span class="nc" id="L212">        }</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        else if (o instanceof COSNull)</span>
+        {
+<span class="nc" id="L215">            output.write(&quot;null&quot;.getBytes(StandardCharsets.US_ASCII));</span>
+<span class="nc" id="L216">            output.write(SPACE);</span>
+        }
+        else
+        {
+<span class="nc" id="L220">            throw new IOException( &quot;Error:Unknown type in content stream:&quot; + o );</span>
+        }
+<span class="nc" id="L222">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

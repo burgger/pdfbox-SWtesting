@@ -1,0 +1,561 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FDFDictionary.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.fdf</a> &gt; <span class="el_source">FDFDictionary.java</span></div><h1>FDFDictionary.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.fdf;
+
+import java.io.IOException;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.common.COSArrayList;
+import org.apache.pdfbox.pdmodel.common.filespecification.PDFileSpecification;
+import org.apache.pdfbox.pdmodel.common.filespecification.PDSimpleFileSpecification;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/**
+ * This represents an FDF dictionary that is part of the FDF document.
+ *
+ * @author Ben Litchfield
+ */
+public class FDFDictionary implements COSObjectable
+{
+
+<span class="nc" id="L47">    private static final Logger LOG = LogManager.getLogger(FDFDictionary.class);</span>
+
+    private final COSDictionary fdf;
+
+    /**
+     * Default constructor.
+     */
+    public FDFDictionary()
+<span class="nc" id="L55">    {</span>
+<span class="nc" id="L56">        fdf = new COSDictionary();</span>
+<span class="nc" id="L57">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param fdfDictionary The FDF documents catalog.
+     */
+    public FDFDictionary(COSDictionary fdfDictionary)
+<span class="nc" id="L65">    {</span>
+<span class="nc" id="L66">        fdf = fdfDictionary;</span>
+<span class="nc" id="L67">    }</span>
+
+    /**
+     * This will create an FDF dictionary from an XFDF XML document.
+     *
+     * @param fdfXML The XML document that contains the XFDF data.
+     */
+    public FDFDictionary(Element fdfXML)
+    {
+<span class="nc" id="L76">        this();</span>
+<span class="nc" id="L77">        NodeList nodeList = fdfXML.getChildNodes();</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        for (int i = 0; i &lt; nodeList.getLength(); i++)</span>
+        {
+<span class="nc" id="L80">            Node node = nodeList.item(i);</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">            if (node instanceof Element)</span>
+            {
+<span class="nc" id="L83">                Element child = (Element) node;</span>
+<span class="nc bnc" id="L84" title="All 5 branches missed.">                switch (child.getTagName())</span>
+                {
+                    case &quot;f&quot;:
+<span class="nc" id="L87">                        PDSimpleFileSpecification fs = new PDSimpleFileSpecification();</span>
+<span class="nc" id="L88">                        fs.setFile(child.getAttribute(&quot;href&quot;));</span>
+<span class="nc" id="L89">                        setFile(fs);</span>
+<span class="nc" id="L90">                        break;</span>
+                    case &quot;ids&quot;:
+<span class="nc" id="L92">                        COSArray ids = new COSArray();</span>
+<span class="nc" id="L93">                        String original = child.getAttribute(&quot;original&quot;);</span>
+<span class="nc" id="L94">                        String modified = child.getAttribute(&quot;modified&quot;);</span>
+                        try
+                        {
+<span class="nc" id="L97">                            ids.add(COSString.parseHex(original));</span>
+                        }
+<span class="nc" id="L99">                        catch (IOException e)</span>
+                        {
+<span class="nc" id="L101">                            LOG.warn(() -&gt;</span>
+<span class="nc" id="L102">                                    &quot;Error parsing ID entry for attribute 'original' [&quot; + </span>
+                                            original + &quot;]. ID entry ignored.&quot;,
+                                    e);
+<span class="nc" id="L105">                        }</span>
+                        try
+                        {
+<span class="nc" id="L108">                            ids.add(COSString.parseHex(modified));</span>
+                        }
+<span class="nc" id="L110">                        catch (IOException e)</span>
+                        {
+<span class="nc" id="L112">                            LOG.warn(() -&gt;</span>
+<span class="nc" id="L113">                                    &quot;Error parsing ID entry for attribute 'modified' [ + &quot; + </span>
+                                            modified + &quot;]. ID entry ignored.&quot;, 
+                                    e);
+<span class="nc" id="L116">                        }</span>
+<span class="nc" id="L117">                        setID(ids);</span>
+<span class="nc" id="L118">                        break;</span>
+                    case &quot;fields&quot;:
+<span class="nc" id="L120">                        NodeList fields = child.getChildNodes();</span>
+<span class="nc" id="L121">                        List&lt;FDFField&gt; fieldList = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">                        for (int f = 0; f &lt; fields.getLength(); f++)</span>
+                        {
+<span class="nc" id="L124">                            Node currentNode = fields.item(f);</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">                            if (currentNode instanceof Element</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">                                    &amp;&amp; ((Element) currentNode).getTagName().equals(&quot;field&quot;))</span>
+                            {
+                                try
+                                {
+<span class="nc" id="L130">                                    fieldList.add(new FDFField((Element) fields.item(f)));</span>
+                                }
+<span class="nc" id="L132">                                catch (IOException e)</span>
+                                {
+<span class="nc" id="L134">                                    LOG.warn(() -&gt; &quot;Error parsing field entry [&quot; + </span>
+<span class="nc" id="L135">                                            currentNode.getNodeValue() + &quot;]. Field ignored.&quot;,</span>
+                                            e);
+<span class="nc" id="L137">                                }</span>
+                            }
+                        }
+<span class="nc" id="L140">                        setFields(fieldList);</span>
+<span class="nc" id="L141">                        break;</span>
+                    case &quot;annots&quot;:
+<span class="nc" id="L143">                        NodeList annots = child.getChildNodes();</span>
+<span class="nc" id="L144">                        List&lt;FDFAnnotation&gt; annotList = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">                        for (int j = 0; j &lt; annots.getLength(); j++)</span>
+                        {
+<span class="nc" id="L147">                            Node annotNode = annots.item(j);</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">                            if (annotNode instanceof Element)</span>
+                            {
+                                // the node name defines the annotation type
+<span class="nc" id="L151">                                Element annot = (Element) annotNode;</span>
+<span class="nc" id="L152">                                String annotationName = annot.getNodeName();</span>
+                                try
+                                {
+<span class="nc bnc" id="L155" title="All 18 branches missed.">                                    switch (annotationName)</span>
+                                    {
+                                        case &quot;text&quot;:
+<span class="nc" id="L158">                                            annotList.add(new FDFAnnotationText(annot));</span>
+<span class="nc" id="L159">                                            break;</span>
+                                        case &quot;caret&quot;:
+<span class="nc" id="L161">                                            annotList.add(new FDFAnnotationCaret(annot));</span>
+<span class="nc" id="L162">                                            break;</span>
+                                        case &quot;freetext&quot;:
+<span class="nc" id="L164">                                            annotList.add(new FDFAnnotationFreeText(annot));</span>
+<span class="nc" id="L165">                                            break;</span>
+                                        case &quot;fileattachment&quot;:
+<span class="nc" id="L167">                                            annotList.add(new FDFAnnotationFileAttachment(annot));</span>
+<span class="nc" id="L168">                                            break;</span>
+                                        case &quot;highlight&quot;:
+<span class="nc" id="L170">                                            annotList.add(new FDFAnnotationHighlight(annot));</span>
+<span class="nc" id="L171">                                            break;</span>
+                                        case &quot;ink&quot;:
+<span class="nc" id="L173">                                            annotList.add(new FDFAnnotationInk(annot));</span>
+<span class="nc" id="L174">                                            break;</span>
+                                        case &quot;line&quot;:
+<span class="nc" id="L176">                                            annotList.add(new FDFAnnotationLine(annot));</span>
+<span class="nc" id="L177">                                            break;</span>
+                                        case &quot;link&quot;:
+<span class="nc" id="L179">                                            annotList.add(new FDFAnnotationLink(annot));</span>
+<span class="nc" id="L180">                                            break;</span>
+                                        case &quot;circle&quot;:
+<span class="nc" id="L182">                                            annotList.add(new FDFAnnotationCircle(annot));</span>
+<span class="nc" id="L183">                                            break;</span>
+                                        case &quot;square&quot;:
+<span class="nc" id="L185">                                            annotList.add(new FDFAnnotationSquare(annot));</span>
+<span class="nc" id="L186">                                            break;</span>
+                                        case &quot;polygon&quot;:
+<span class="nc" id="L188">                                            annotList.add(new FDFAnnotationPolygon(annot));</span>
+<span class="nc" id="L189">                                            break;</span>
+                                        case &quot;polyline&quot;:
+<span class="nc" id="L191">                                            annotList.add(new FDFAnnotationPolyline(annot));</span>
+<span class="nc" id="L192">                                            break;</span>
+                                        case &quot;sound&quot;:
+<span class="nc" id="L194">                                            annotList.add(new FDFAnnotationSound(annot));</span>
+<span class="nc" id="L195">                                            break;</span>
+                                        case &quot;squiggly&quot;:
+<span class="nc" id="L197">                                            annotList.add(new FDFAnnotationSquiggly(annot));</span>
+<span class="nc" id="L198">                                            break;</span>
+                                        case &quot;stamp&quot;:
+<span class="nc" id="L200">                                            annotList.add(new FDFAnnotationStamp(annot));</span>
+<span class="nc" id="L201">                                            break;</span>
+                                        case &quot;strikeout&quot;:
+<span class="nc" id="L203">                                            annotList.add(new FDFAnnotationStrikeOut(annot));</span>
+<span class="nc" id="L204">                                            break;</span>
+                                        case &quot;underline&quot;:
+<span class="nc" id="L206">                                            annotList.add(new FDFAnnotationUnderline(annot));</span>
+<span class="nc" id="L207">                                            break;</span>
+                                        default:
+<span class="nc" id="L209">                                            LOG.warn(&quot;Unknown or unsupported annotation type '{}'&quot;,</span>
+                                                    annotationName);
+                                            break;
+                                    }
+                                }
+<span class="nc" id="L214">                                catch (IOException e)</span>
+                                {
+<span class="nc" id="L216">                                    LOG.warn(() -&gt;</span>
+<span class="nc" id="L217">                                            &quot;Error parsing annotation information [&quot; +</span>
+<span class="nc" id="L218">                                            annot.getNodeValue() + &quot;]. Annotation ignored&quot;,</span>
+                                            e);
+<span class="nc" id="L220">                                }</span>
+                            }
+                        }
+<span class="nc" id="L223">                        setAnnotations(annotList);</span>
+<span class="nc" id="L224">                        break;</span>
+                    default:
+                        break;
+                }
+            }
+        }
+<span class="nc" id="L230">    }</span>
+
+    /**
+     * This will write this element as an XML document.
+     *
+     * @param output The stream to write the xml to.
+     *
+     * @throws IOException If there is an error writing the XML.
+     */
+    public void writeXML(Writer output) throws IOException
+    {
+<span class="nc" id="L241">        PDFileSpecification fs = this.getFile();</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">        if (fs != null)</span>
+        {
+<span class="nc" id="L244">            output.write(&quot;&lt;f href=\&quot;&quot; + fs.getFile() + &quot;\&quot; /&gt;\n&quot;);</span>
+        }
+<span class="nc" id="L246">        COSArray ids = this.getID();</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">        if (ids != null)</span>
+        {
+<span class="nc" id="L249">            COSString original = (COSString) ids.getObject(0);</span>
+<span class="nc" id="L250">            COSString modified = (COSString) ids.getObject(1);</span>
+<span class="nc" id="L251">            output.write(&quot;&lt;ids original=\&quot;&quot; + original.toHexString() + &quot;\&quot; &quot;);</span>
+<span class="nc" id="L252">            output.write(&quot;modified=\&quot;&quot; + modified.toHexString() + &quot;\&quot; /&gt;\n&quot;);</span>
+        }
+<span class="nc" id="L254">        List&lt;FDFField&gt; fields = getFields();</span>
+<span class="nc bnc" id="L255" title="All 4 branches missed.">        if (fields != null &amp;&amp; !fields.isEmpty())</span>
+        {
+<span class="nc" id="L257">            output.write(&quot;&lt;fields&gt;\n&quot;);</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">            for (FDFField field : fields)</span>
+            {
+<span class="nc" id="L260">                field.writeXML(output);</span>
+<span class="nc" id="L261">            }</span>
+<span class="nc" id="L262">            output.write(&quot;&lt;/fields&gt;\n&quot;);</span>
+        }
+<span class="nc" id="L264">    }</span>
+
+    /**
+     * Convert this standard java object to a COS object.
+     *
+     * @return The cos object that matches this Java object.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L274">        return fdf;</span>
+    }
+
+    /**
+     * The source file or target file: the PDF document file that this FDF file was exported from or is intended to be
+     * imported into.
+     *
+     * @return The F entry of the FDF dictionary.
+     *
+     * @throws IOException If there is an error creating the file spec.
+     */
+    public PDFileSpecification getFile() throws IOException
+    {
+<span class="nc" id="L287">        return PDFileSpecification.createFS(fdf.getDictionaryObject(COSName.F));</span>
+    }
+
+    /**
+     * This will set the file specification.
+     *
+     * @param fs The file specification.
+     */
+    public final void setFile(PDFileSpecification fs)
+    {
+<span class="nc" id="L297">        fdf.setItem(COSName.F, fs);</span>
+<span class="nc" id="L298">    }</span>
+
+    /**
+     * This is the FDF id.
+     *
+     * @return The FDF ID.
+     */
+    public COSArray getID()
+    {
+<span class="nc" id="L307">        return fdf.getCOSArray(COSName.ID);</span>
+    }
+
+    /**
+     * This will set the FDF id.
+     *
+     * @param id The new id for the FDF.
+     */
+    public final void setID(COSArray id)
+    {
+<span class="nc" id="L317">        fdf.setItem(COSName.ID, id);</span>
+<span class="nc" id="L318">    }</span>
+
+    /**
+     * This will get the list of FDF Fields. This will return a list of FDFField objects.
+     *
+     * @return A list of FDF fields.
+     */
+    public List&lt;FDFField&gt; getFields()
+    {
+<span class="nc" id="L327">        List&lt;FDFField&gt; retval = null;</span>
+<span class="nc" id="L328">        COSArray fieldArray = fdf.getCOSArray(COSName.FIELDS);</span>
+<span class="nc bnc" id="L329" title="All 2 branches missed.">        if (fieldArray != null)</span>
+        {
+<span class="nc" id="L331">            List&lt;FDFField&gt; fields = new ArrayList&lt;&gt;(fieldArray.size());</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">            for (int i = 0; i &lt; fieldArray.size(); i++)</span>
+            {
+<span class="nc" id="L334">                fields.add(new FDFField((COSDictionary) fieldArray.getObject(i)));</span>
+            }
+<span class="nc" id="L336">            retval = new COSArrayList&lt;&gt;(fields, fieldArray);</span>
+        }
+<span class="nc" id="L338">        return retval;</span>
+    }
+
+    /**
+     * This will set the list of fields. This should be a list of FDFField objects.
+     *
+     * @param fields The list of fields.
+     */
+    public final void setFields(List&lt;FDFField&gt; fields)
+    {
+<span class="nc" id="L348">        fdf.setItem(COSName.FIELDS, new COSArray(fields));</span>
+<span class="nc" id="L349">    }</span>
+
+    /**
+     * This will get the status string to be displayed as the result of an action.
+     *
+     * @return The status.
+     */
+    public String getStatus()
+    {
+<span class="nc" id="L358">        return fdf.getString(COSName.STATUS);</span>
+    }
+
+    /**
+     * This will set the status string.
+     *
+     * @param status The new status string.
+     */
+    public void setStatus(String status)
+    {
+<span class="nc" id="L368">        fdf.setString(COSName.STATUS, status);</span>
+<span class="nc" id="L369">    }</span>
+
+    /**
+     * This will get the list of FDF Pages. This will return a list of FDFPage objects.
+     *
+     * @return A list of FDF pages.
+     */
+    public List&lt;FDFPage&gt; getPages()
+    {
+<span class="nc" id="L378">        List&lt;FDFPage&gt; retval = null;</span>
+<span class="nc" id="L379">        COSArray pageArray = fdf.getCOSArray(COSName.PAGES);</span>
+<span class="nc bnc" id="L380" title="All 2 branches missed.">        if (pageArray != null)</span>
+        {
+<span class="nc" id="L382">            List&lt;FDFPage&gt; pages = new ArrayList&lt;&gt;(pageArray.size());</span>
+<span class="nc bnc" id="L383" title="All 2 branches missed.">            for (int i = 0; i &lt; pageArray.size(); i++)</span>
+            {
+<span class="nc" id="L385">                pages.add(new FDFPage((COSDictionary) pageArray.get(i)));</span>
+            }
+<span class="nc" id="L387">            retval = new COSArrayList&lt;&gt;(pages, pageArray);</span>
+        }
+<span class="nc" id="L389">        return retval;</span>
+    }
+
+    /**
+     * This will set the list of pages. This should be a list of FDFPage objects.
+     *
+     *
+     * @param pages The list of pages.
+     */
+    public void setPages(List&lt;FDFPage&gt; pages)
+    {
+<span class="nc" id="L400">        fdf.setItem(COSName.PAGES, new COSArray(pages));</span>
+<span class="nc" id="L401">    }</span>
+
+    /**
+     * The encoding to be used for a FDF field. The default is PDFDocEncoding and this method will never return null.
+     *
+     * @return The encoding value.
+     */
+    public String getEncoding()
+    {
+<span class="nc" id="L410">        String encoding = fdf.getNameAsString(COSName.ENCODING);</span>
+<span class="nc bnc" id="L411" title="All 2 branches missed.">        if (encoding == null)</span>
+        {
+<span class="nc" id="L413">            encoding = &quot;PDFDocEncoding&quot;;</span>
+        }
+<span class="nc" id="L415">        return encoding;</span>
+
+    }
+
+    /**
+     * This will set the encoding.
+     *
+     * @param encoding The new encoding.
+     */
+    public void setEncoding(String encoding)
+    {
+<span class="nc" id="L426">        fdf.setName(COSName.ENCODING, encoding);</span>
+<span class="nc" id="L427">    }</span>
+
+    /**
+     * This will get the list of FDF Annotations. This will return a list of FDFAnnotation objects or null if the entry
+     * is not set.
+     *
+     * @return A list of FDF annotations.
+     *
+     * @throws IOException If there is an error creating the annotation list.
+     */
+    public List&lt;FDFAnnotation&gt; getAnnotations() throws IOException
+    {
+<span class="nc" id="L439">        List&lt;FDFAnnotation&gt; retval = null;</span>
+<span class="nc" id="L440">        COSArray annotArray = fdf.getCOSArray(COSName.ANNOTS);</span>
+<span class="nc bnc" id="L441" title="All 2 branches missed.">        if (annotArray != null)</span>
+        {
+<span class="nc" id="L443">            List&lt;FDFAnnotation&gt; annots = new ArrayList&lt;&gt;(annotArray.size());</span>
+<span class="nc bnc" id="L444" title="All 2 branches missed.">            for (int i = 0; i &lt; annotArray.size(); i++)</span>
+            {
+<span class="nc" id="L446">                annots.add(FDFAnnotation.create((COSDictionary) annotArray.getObject(i)));</span>
+            }
+<span class="nc" id="L448">            retval = new COSArrayList&lt;&gt;(annots, annotArray);</span>
+        }
+<span class="nc" id="L450">        return retval;</span>
+    }
+
+    /**
+     * This will set the list of annotations. This should be a list of FDFAnnotation objects.
+     *
+     *
+     * @param annots The list of annotations.
+     */
+    public final void setAnnotations(List&lt;FDFAnnotation&gt; annots)
+    {
+<span class="nc" id="L461">        fdf.setItem(COSName.ANNOTS, new COSArray(annots));</span>
+<span class="nc" id="L462">    }</span>
+
+    /**
+     * This will get the incremental updates since the PDF was last opened.
+     *
+     * @return The differences entry of the FDF dictionary.
+     */
+    public COSStream getDifferences()
+    {
+<span class="nc" id="L471">        return fdf.getCOSStream(COSName.DIFFERENCES);</span>
+    }
+
+    /**
+     * This will set the differences stream.
+     *
+     * @param diff The new differences stream.
+     */
+    public void setDifferences(COSStream diff)
+    {
+<span class="nc" id="L481">        fdf.setItem(COSName.DIFFERENCES, diff);</span>
+<span class="nc" id="L482">    }</span>
+
+    /**
+     * This will get the target frame in the browser to open this document.
+     *
+     * @return The target frame.
+     */
+    public String getTarget()
+    {
+<span class="nc" id="L491">        return fdf.getString(COSName.TARGET);</span>
+    }
+
+    /**
+     * This will set the target frame in the browser to open this document.
+     *
+     * @param target The new target frame.
+     */
+    public void setTarget(String target)
+    {
+<span class="nc" id="L501">        fdf.setString(COSName.TARGET, target);</span>
+<span class="nc" id="L502">    }</span>
+
+    /**
+     * This will get the list of embedded FDF entries, or null if the entry is null. This will return a list of
+     * PDFileSpecification objects.
+     *
+     * @return A list of embedded FDF files.
+     *
+     * @throws IOException If there is an error creating the file spec.
+     */
+    public List&lt;PDFileSpecification&gt; getEmbeddedFDFs() throws IOException
+    {
+<span class="nc" id="L514">        List&lt;PDFileSpecification&gt; retval = null;</span>
+<span class="nc" id="L515">        COSArray embeddedArray = fdf.getCOSArray(COSName.EMBEDDED_FDFS);</span>
+<span class="nc bnc" id="L516" title="All 2 branches missed.">        if (embeddedArray != null)</span>
+        {
+<span class="nc" id="L518">            List&lt;PDFileSpecification&gt; embedded = new ArrayList&lt;&gt;(embeddedArray.size());</span>
+<span class="nc bnc" id="L519" title="All 2 branches missed.">            for (int i = 0; i &lt; embeddedArray.size(); i++)</span>
+            {
+<span class="nc" id="L521">                embedded.add(PDFileSpecification.createFS(embeddedArray.get(i)));</span>
+            }
+<span class="nc" id="L523">            retval = new COSArrayList&lt;&gt;(embedded, embeddedArray);</span>
+        }
+<span class="nc" id="L525">        return retval;</span>
+    }
+
+    /**
+     * This will set the list of embedded FDFs. This should be a list of PDFileSpecification objects.
+     *
+     *
+     * @param embedded The list of embedded FDFs.
+     */
+    public void setEmbeddedFDFs(List&lt;PDFileSpecification&gt; embedded)
+    {
+<span class="nc" id="L536">        fdf.setItem(COSName.EMBEDDED_FDFS, new COSArray(embedded));</span>
+<span class="nc" id="L537">    }</span>
+
+    /**
+     * This will get the java script entry.
+     *
+     * @return The java script entry describing javascript commands.
+     */
+    public FDFJavaScript getJavaScript()
+    {
+<span class="nc" id="L546">        COSDictionary dic = fdf.getCOSDictionary(COSName.JAVA_SCRIPT);</span>
+<span class="nc bnc" id="L547" title="All 2 branches missed.">        return dic != null ? new FDFJavaScript(dic) : null;</span>
+    }
+
+    /**
+     * This will set the JavaScript entry.
+     *
+     * @param js The javascript entries.
+     */
+    public void setJavaScript(FDFJavaScript js)
+    {
+<span class="nc" id="L557">        fdf.setItem(COSName.JAVA_SCRIPT, js);</span>
+<span class="nc" id="L558">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

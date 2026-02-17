@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CCITTFaxFilter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.filter</a> &gt; <span class="el_source">CCITTFaxFilter.java</span></div><h1>CCITTFaxFilter.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.filter;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PushbackInputStream;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+
+/**
+ * Decodes image data that has been encoded using either Group 3 or Group 4
+ * CCITT facsimile (fax) encoding, and encodes image data to Group 4.
+ *
+ * @author Ben Litchfield
+ * @author Marcel Kammer
+ * @author Paul King
+ */
+<span class="nc" id="L35">final class CCITTFaxFilter extends Filter</span>
+{
+    @Override
+    public DecodeResult decode(InputStream encoded, OutputStream decoded,
+                                         COSDictionary parameters, int index) throws IOException
+    {
+        // get decode parameters
+<span class="nc" id="L42">        COSDictionary decodeParms = getDecodeParams(parameters, index);</span>
+
+        // parse dimensions
+<span class="nc" id="L45">        int cols = decodeParms.getInt(COSName.COLUMNS, 1728);</span>
+<span class="nc" id="L46">        int rows = decodeParms.getInt(COSName.ROWS, 0);</span>
+<span class="nc" id="L47">        int height = parameters.getInt(COSName.HEIGHT, COSName.H, 0);</span>
+<span class="nc bnc" id="L48" title="All 4 branches missed.">        if (rows &gt; 0 &amp;&amp; height &gt; 0)</span>
+        {
+            // PDFBOX-771, PDFBOX-3727: rows in DecodeParms sometimes contains an incorrect value
+<span class="nc" id="L51">            rows = height;</span>
+        }
+        else
+        {
+            // at least one of the values has to have a valid value
+<span class="nc" id="L56">            rows = Math.max(rows, height);</span>
+        }
+
+        // decompress data
+<span class="nc" id="L60">        int k = decodeParms.getInt(COSName.K, 0);</span>
+<span class="nc" id="L61">        boolean encodedByteAlign = decodeParms.getBoolean(COSName.ENCODED_BYTE_ALIGN, false);</span>
+<span class="nc" id="L62">        int arraySize = (cols + 7) / 8 * rows;</span>
+        // TODO possible options??
+<span class="nc" id="L64">        byte[] decompressed = new byte[arraySize];</span>
+        CCITTFaxDecoderStream s;
+        int type;
+<span class="nc" id="L67">        long tiffOptions = 0;</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        if (k == 0)</span>
+        {
+<span class="nc bnc" id="L70" title="All 2 branches missed.">            if (decodeParms.containsKey(COSName.END_OF_LINE))</span>
+            {
+                // PDFBOX-6080: respect the parameter if it exists
+<span class="nc" id="L73">                boolean hasEndOfLine = decodeParms.getBoolean(COSName.END_OF_LINE, false);</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">                type = hasEndOfLine ? TIFFExtension.COMPRESSION_CCITT_T4 : TIFFExtension.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE;</span>
+<span class="nc" id="L75">            }</span>
+            else
+            {
+                // In twelvemonkeys, this part is found in CCITTFaxDecoderStream.findCompressionType()
+                // needed for 015315-p8-ccitt.pdf, PDFBOX-2123-1bit.pdf, PDFBOX-2778.pdf
+<span class="nc" id="L80">                type = TIFFExtension.COMPRESSION_CCITT_T4; // Group 3 1D</span>
+<span class="nc" id="L81">                byte[] streamData = new byte[20];</span>
+<span class="nc" id="L82">                int bytesRead = encoded.read(streamData);</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">                if (bytesRead == -1)</span>
+                {
+<span class="nc" id="L85">                    throw new IOException(&quot;EOF while reading CCITT header&quot;);</span>
+                }
+<span class="nc" id="L87">                PushbackInputStream pushbackInputStream = new PushbackInputStream(encoded, streamData.length);</span>
+<span class="nc" id="L88">                pushbackInputStream.unread(streamData, 0, bytesRead);</span>
+<span class="nc" id="L89">                encoded = pushbackInputStream;</span>
+<span class="nc bnc" id="L90" title="All 6 branches missed.">                if (streamData[0] != 0 || (streamData[1] &gt;&gt; 4 != 1 &amp;&amp; streamData[1] != 1))</span>
+                {
+                    // leading EOL (0b000000000001) not found, search further and try RLE if not found
+<span class="nc" id="L93">                    type = TIFFExtension.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE;</span>
+<span class="nc" id="L94">                    short b = (short) (((streamData[0] &lt;&lt; 8) + (streamData[1] &amp; 0xff)) &gt;&gt; 4);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">                    for (int i = 12; i &lt; bytesRead * 8; i++)</span>
+                    {
+<span class="nc" id="L97">                        b = (short) ((b &lt;&lt; 1) + ((streamData[(i / 8)] &gt;&gt; (7 - (i % 8))) &amp; 0x01));</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">                        if ((b &amp; 0xFFF) == 1)</span>
+                        {
+<span class="nc" id="L100">                            type = TIFFExtension.COMPRESSION_CCITT_T4;</span>
+<span class="nc" id="L101">                            break;</span>
+                        }
+                    }
+                }
+<span class="nc" id="L105">            }</span>
+        }
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        else if (k &gt; 0)</span>
+        {
+            // Group 3 2D
+<span class="nc" id="L110">            type = TIFFExtension.COMPRESSION_CCITT_T4;</span>
+<span class="nc" id="L111">            tiffOptions = TIFFExtension.GROUP3OPT_2DENCODING;</span>
+        }
+        else
+        {
+            // Group 4
+<span class="nc" id="L116">            type = TIFFExtension.COMPRESSION_CCITT_T6;</span>
+        }
+<span class="nc" id="L118">        s = new CCITTFaxDecoderStream(encoded, cols, type, tiffOptions, encodedByteAlign);</span>
+<span class="nc" id="L119">        readFromDecoderStream(s, decompressed);</span>
+
+        // invert bitmap
+<span class="nc" id="L122">        boolean blackIsOne = decodeParms.getBoolean(COSName.BLACK_IS_1, false);</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (!blackIsOne)</span>
+        {
+            // Inverting the bitmap
+            // Note the previous approach with starting from an IndexColorModel didn't work
+            // reliably. In some cases the image wouldn't be painted for some reason.
+            // So a safe but slower approach was taken.
+<span class="nc" id="L129">            invertBitmap(decompressed);</span>
+        }
+
+<span class="nc" id="L132">        decoded.write(decompressed);</span>
+<span class="nc" id="L133">        return new DecodeResult(parameters);</span>
+    }
+
+    void readFromDecoderStream(CCITTFaxDecoderStream decoderStream, byte[] result)
+            throws IOException
+    {
+<span class="nc" id="L139">        int pos = 0;</span>
+        int read;
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        while ((read = decoderStream.read(result, pos, result.length - pos)) &gt; -1)</span>
+        {
+<span class="nc" id="L143">            pos += read;</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            if (pos &gt;= result.length)</span>
+            {
+<span class="nc" id="L146">                break;</span>
+            }
+        }
+<span class="nc" id="L149">    }</span>
+
+    private void invertBitmap(byte[] bufferData)
+    {
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        for (int i = 0, c = bufferData.length; i &lt; c; i++)</span>
+        {
+<span class="nc" id="L155">            bufferData[i] = (byte) (~bufferData[i] &amp; 0xFF);</span>
+        }
+<span class="nc" id="L157">    }</span>
+
+    @Override
+    protected void encode(InputStream input, OutputStream encoded, COSDictionary parameters)
+            throws IOException
+    {
+<span class="nc" id="L163">        int cols = parameters.getInt(COSName.COLUMNS);</span>
+<span class="nc" id="L164">        int rows = parameters.getInt(COSName.ROWS);</span>
+<span class="nc" id="L165">        CCITTFaxEncoderStream ccittFaxEncoderStream = </span>
+                new CCITTFaxEncoderStream(encoded, cols, rows, TIFFExtension.FILL_LEFT_TO_RIGHT);
+<span class="nc" id="L167">        input.transferTo(ccittFaxEncoderStream);</span>
+<span class="nc" id="L168">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

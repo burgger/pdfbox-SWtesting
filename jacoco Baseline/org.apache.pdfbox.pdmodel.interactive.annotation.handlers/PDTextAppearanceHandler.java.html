@@ -1,0 +1,681 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDTextAppearanceHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation.handlers</a> &gt; <span class="el_source">PDTextAppearanceHandler.java</span></div><h1>PDTextAppearanceHandler.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2018 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.annotation.handlers;
+
+import java.awt.geom.AffineTransform;
+import java.awt.geom.GeneralPath;
+import java.awt.geom.PathIterator;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDAppearanceContentStream;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName;
+import org.apache.pdfbox.pdmodel.graphics.blend.BlendMode;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationText;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ *
+ * @author Tilman Hausherr
+ */
+public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
+{
+<span class="nc" id="L47">    private static final Logger LOG = LogManager.getLogger(PDTextAppearanceHandler.class);</span>
+
+<span class="nc" id="L49">    private static final Set&lt;String&gt; SUPPORTED_NAMES = new HashSet&lt;&gt;();</span>
+
+    static
+    {
+<span class="nc" id="L53">        SUPPORTED_NAMES.add(PDAnnotationText.NAME_NOTE);</span>
+<span class="nc" id="L54">        SUPPORTED_NAMES.add(PDAnnotationText.NAME_INSERT);</span>
+<span class="nc" id="L55">        SUPPORTED_NAMES.add(PDAnnotationText.NAME_CROSS);</span>
+<span class="nc" id="L56">        SUPPORTED_NAMES.add(PDAnnotationText.NAME_HELP);</span>
+<span class="nc" id="L57">        SUPPORTED_NAMES.add(PDAnnotationText.NAME_CIRCLE);</span>
+<span class="nc" id="L58">        SUPPORTED_NAMES.add(PDAnnotationText.NAME_PARAGRAPH);</span>
+<span class="nc" id="L59">        SUPPORTED_NAMES.add(PDAnnotationText.NAME_NEW_PARAGRAPH);</span>
+<span class="nc" id="L60">        SUPPORTED_NAMES.add(PDAnnotationText.NAME_CHECK);</span>
+<span class="nc" id="L61">        SUPPORTED_NAMES.add(PDAnnotationText.NAME_STAR);</span>
+<span class="nc" id="L62">        SUPPORTED_NAMES.add(PDAnnotationText.NAME_RIGHT_ARROW);</span>
+<span class="nc" id="L63">        SUPPORTED_NAMES.add(PDAnnotationText.NAME_RIGHT_POINTER);</span>
+<span class="nc" id="L64">        SUPPORTED_NAMES.add(PDAnnotationText.NAME_CROSS_HAIRS);</span>
+<span class="nc" id="L65">        SUPPORTED_NAMES.add(PDAnnotationText.NAME_UP_ARROW);</span>
+<span class="nc" id="L66">        SUPPORTED_NAMES.add(PDAnnotationText.NAME_UP_LEFT_ARROW);</span>
+<span class="nc" id="L67">        SUPPORTED_NAMES.add(PDAnnotationText.NAME_COMMENT);</span>
+<span class="nc" id="L68">        SUPPORTED_NAMES.add(PDAnnotationText.NAME_KEY);</span>
+<span class="nc" id="L69">    }</span>
+
+    public PDTextAppearanceHandler(PDAnnotation annotation)
+    {
+<span class="nc" id="L73">        super(annotation);</span>
+<span class="nc" id="L74">    }</span>
+
+    public PDTextAppearanceHandler(PDAnnotation annotation, PDDocument document)
+    {
+<span class="nc" id="L78">        super(annotation, document);</span>
+<span class="nc" id="L79">    }</span>
+
+    @Override
+    public void generateNormalAppearance()
+    {
+<span class="nc" id="L84">        PDAnnotationText annotation = (PDAnnotationText) getAnnotation();</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">        if (!SUPPORTED_NAMES.contains(annotation.getName()))</span>
+        {
+<span class="nc" id="L87">            return;</span>
+        }
+
+<span class="nc" id="L90">        try (PDAppearanceContentStream contentStream = getNormalAppearanceAsContentStream())</span>
+        {
+<span class="nc" id="L92">            PDColor bgColor = getColor();</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">            if (bgColor == null)</span>
+            {
+                // White is used by Adobe when /C entry is missing
+<span class="nc" id="L96">                contentStream.setNonStrokingColor(1f);</span>
+            }
+            else
+            {
+<span class="nc" id="L100">                contentStream.setNonStrokingColor(bgColor);</span>
+            }
+            // stroking color is always black which is the PDF default
+
+<span class="nc" id="L104">            setOpacity(contentStream, annotation.getConstantOpacity());</span>
+
+<span class="nc bnc" id="L106" title="All 17 branches missed.">            switch (annotation.getName())</span>
+            {
+                case PDAnnotationText.NAME_NOTE:
+<span class="nc" id="L109">                    drawNote(annotation, contentStream);</span>
+<span class="nc" id="L110">                    break;</span>
+                case PDAnnotationText.NAME_CROSS:
+<span class="nc" id="L112">                    drawZapf(annotation, contentStream, 19, 0, &quot;a22&quot;); // 0x2716</span>
+<span class="nc" id="L113">                    break;</span>
+                case PDAnnotationText.NAME_CIRCLE:
+<span class="nc" id="L115">                    drawCircles(annotation, contentStream);</span>
+<span class="nc" id="L116">                    break;</span>
+                case PDAnnotationText.NAME_INSERT:
+<span class="nc" id="L118">                    drawInsert(annotation, contentStream);</span>
+<span class="nc" id="L119">                    break;</span>
+                case PDAnnotationText.NAME_HELP:
+<span class="nc" id="L121">                    drawHelp(annotation, contentStream);</span>
+<span class="nc" id="L122">                    break;</span>
+                case PDAnnotationText.NAME_PARAGRAPH:
+<span class="nc" id="L124">                    drawParagraph(annotation, contentStream);</span>
+<span class="nc" id="L125">                    break;</span>
+                case PDAnnotationText.NAME_NEW_PARAGRAPH:
+<span class="nc" id="L127">                    drawNewParagraph(annotation, contentStream);</span>
+<span class="nc" id="L128">                    break;</span>
+                case PDAnnotationText.NAME_STAR:
+<span class="nc" id="L130">                    drawZapf(annotation, contentStream, 19, 0, &quot;a35&quot;); // 0x2605</span>
+<span class="nc" id="L131">                    break;</span>
+                case PDAnnotationText.NAME_CHECK:
+<span class="nc" id="L133">                    drawZapf(annotation, contentStream, 19, 50, &quot;a20&quot;); // 0x2714</span>
+<span class="nc" id="L134">                    break;</span>
+                case PDAnnotationText.NAME_RIGHT_ARROW:
+<span class="nc" id="L136">                    drawRightArrow(annotation, contentStream);</span>
+<span class="nc" id="L137">                    break;</span>
+                case PDAnnotationText.NAME_RIGHT_POINTER:
+<span class="nc" id="L139">                    drawZapf(annotation, contentStream, 17, 50, &quot;a174&quot;); // 0x27A4</span>
+<span class="nc" id="L140">                    break;</span>
+                case PDAnnotationText.NAME_CROSS_HAIRS:
+<span class="nc" id="L142">                    drawCrossHairs(annotation, contentStream);</span>
+<span class="nc" id="L143">                    break;</span>
+                case PDAnnotationText.NAME_UP_ARROW:
+<span class="nc" id="L145">                    drawUpArrow(annotation, contentStream);</span>
+<span class="nc" id="L146">                    break;</span>
+                case PDAnnotationText.NAME_UP_LEFT_ARROW:
+<span class="nc" id="L148">                    drawUpLeftArrow(annotation, contentStream);</span>
+<span class="nc" id="L149">                    break;</span>
+                case PDAnnotationText.NAME_COMMENT:
+<span class="nc" id="L151">                    drawComment(annotation, contentStream);</span>
+<span class="nc" id="L152">                    break;</span>
+                case PDAnnotationText.NAME_KEY:
+<span class="nc" id="L154">                    drawKey(annotation, contentStream);</span>
+<span class="nc" id="L155">                    break;</span>
+                default:
+                    break;
+            }
+        }
+<span class="nc" id="L160">        catch (IOException e)</span>
+        {
+<span class="nc" id="L162">            LOG.error(e);</span>
+<span class="nc" id="L163">        }</span>
+<span class="nc" id="L164">    }</span>
+
+    private PDRectangle adjustRectAndBBox(PDAnnotationText annotation, float width, float height)
+    {
+        // For /Note (other types have different values):
+        // Adobe takes the left upper bound as anchor, and adjusts the rectangle to 18 x 20.
+        // Observed with files 007071.pdf, 038785.pdf, 038787.pdf,
+        // but not with 047745.pdf p133 and 084374.pdf p48, both have the NoZoom flag.
+        // there the BBox is also set to fixed values, but the rectangle is left untouched.
+        // When no flags are there, Adobe sets /F 24 = NoZoom NoRotate.
+            
+<span class="nc" id="L175">        PDRectangle rect = getRectangle();</span>
+        PDRectangle bbox;
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        if (!annotation.isNoZoom())</span>
+        {
+<span class="nc" id="L179">            rect.setUpperRightX(rect.getLowerLeftX() + width);</span>
+<span class="nc" id="L180">            rect.setLowerLeftY(rect.getUpperRightY() - height);</span>
+<span class="nc" id="L181">            annotation.setRectangle(rect);</span>
+        }
+<span class="nc bnc" id="L183" title="All 2 branches missed.">        if (!annotation.getCOSObject().containsKey(COSName.F))</span>
+        {
+            // We set these flags because Adobe does so, but PDFBox doesn't support them when rendering.
+<span class="nc" id="L186">            annotation.setNoRotate(true);</span>
+<span class="nc" id="L187">            annotation.setNoZoom(true);</span>
+        }
+<span class="nc" id="L189">        bbox = new PDRectangle(width, height);</span>
+<span class="nc" id="L190">        annotation.getNormalAppearanceStream().setBBox(bbox);</span>
+<span class="nc" id="L191">        return bbox;</span>
+    }
+
+    private void drawNote(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
+            throws IOException
+    {
+<span class="nc" id="L197">        PDRectangle bbox = adjustRectAndBBox(annotation, 18, 20);</span>
+<span class="nc" id="L198">        contentStream.setMiterLimit(4);</span>
+
+        // get round edge the easy way. Adobe uses 4 lines with 4 arcs of radius 0.785 which is bigger.
+<span class="nc" id="L201">        contentStream.setLineJoinStyle(1);</span>
+
+<span class="nc" id="L203">        contentStream.setLineCapStyle(0);</span>
+<span class="nc" id="L204">        contentStream.setLineWidth(0.61f); // value from Adobe</span>
+<span class="nc" id="L205">        float width = bbox.getWidth();</span>
+<span class="nc" id="L206">        float height = bbox.getHeight();</span>
+<span class="nc" id="L207">        contentStream.addRect(1, 1, width - 2, height - 2);</span>
+<span class="nc" id="L208">        contentStream.moveTo(width / 4, height / 7 * 2);</span>
+<span class="nc" id="L209">        contentStream.lineTo(width * 3 / 4 - 1, height / 7 * 2);</span>
+<span class="nc" id="L210">        contentStream.moveTo(width / 4, height / 7 * 3);</span>
+<span class="nc" id="L211">        contentStream.lineTo(width * 3 / 4 - 1, height / 7 * 3);</span>
+<span class="nc" id="L212">        contentStream.moveTo(width / 4, height / 7 * 4);</span>
+<span class="nc" id="L213">        contentStream.lineTo(width * 3 / 4 - 1, height / 7 * 4);</span>
+<span class="nc" id="L214">        contentStream.moveTo(width / 4, height / 7 * 5);</span>
+<span class="nc" id="L215">        contentStream.lineTo(width * 3 / 4 - 1, height / 7 * 5);</span>
+<span class="nc" id="L216">        contentStream.fillAndStroke();</span>
+<span class="nc" id="L217">    }</span>
+
+    private void drawCircles(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
+            throws IOException
+    {
+<span class="nc" id="L222">        PDRectangle bbox = adjustRectAndBBox(annotation, 20, 20);</span>
+
+        // strategy used by Adobe:
+        // 1) add small circle in white using /ca /CA 0.6 and width 1
+        // 2) fill
+        // 3) add small circle in one direction
+        // 4) add large circle in other direction
+        // 5) stroke + fill
+        // with square width 20 small r = 6.36, large r = 9.756
+
+<span class="nc" id="L232">        float smallR = 6.36f;</span>
+<span class="nc" id="L233">        float largeR = 9.756f;</span>
+
+        // adjustments because the bottom of the circle is flat
+<span class="nc" id="L236">        contentStream.transform(Matrix.getScaleInstance(0.95f, 0.95f));</span>
+<span class="nc" id="L237">        contentStream.transform(Matrix.getTranslateInstance(0, 0.5f));</span>
+
+<span class="nc" id="L239">        contentStream.setMiterLimit(4);</span>
+<span class="nc" id="L240">        contentStream.setLineJoinStyle(1);</span>
+<span class="nc" id="L241">        contentStream.setLineCapStyle(0);</span>
+<span class="nc" id="L242">        contentStream.saveGraphicsState();</span>
+<span class="nc" id="L243">        contentStream.setLineWidth(1);</span>
+<span class="nc" id="L244">        PDExtendedGraphicsState gs = new PDExtendedGraphicsState();</span>
+<span class="nc" id="L245">        gs.setAlphaSourceFlag(false);</span>
+<span class="nc" id="L246">        gs.setStrokingAlphaConstant(0.6f);</span>
+<span class="nc" id="L247">        gs.setNonStrokingAlphaConstant(0.6f);</span>
+<span class="nc" id="L248">        gs.setBlendMode(BlendMode.NORMAL);</span>
+<span class="nc" id="L249">        contentStream.setGraphicsStateParameters(gs);</span>
+<span class="nc" id="L250">        contentStream.setNonStrokingColor(1f);</span>
+<span class="nc" id="L251">        float width = bbox.getWidth() / 2;</span>
+<span class="nc" id="L252">        float height = bbox.getHeight() / 2;</span>
+<span class="nc" id="L253">        drawCircle(contentStream, width, height, smallR);</span>
+<span class="nc" id="L254">        contentStream.fill();</span>
+<span class="nc" id="L255">        contentStream.restoreGraphicsState();</span>
+
+<span class="nc" id="L257">        contentStream.setLineWidth(0.59f); // value from Adobe</span>
+<span class="nc" id="L258">        drawCircle(contentStream, width, height, smallR);</span>
+<span class="nc" id="L259">        drawCircle2(contentStream, width, height, largeR);</span>
+<span class="nc" id="L260">        contentStream.fillAndStroke();</span>
+<span class="nc" id="L261">    }</span>
+
+    private void drawInsert(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
+            throws IOException
+    {
+<span class="nc" id="L266">        PDRectangle bbox = adjustRectAndBBox(annotation, 17, 20);</span>
+
+<span class="nc" id="L268">        contentStream.setMiterLimit(4);</span>
+<span class="nc" id="L269">        contentStream.setLineJoinStyle(0);</span>
+<span class="nc" id="L270">        contentStream.setLineCapStyle(0);</span>
+<span class="nc" id="L271">        contentStream.setLineWidth(0.59f); // value from Adobe</span>
+<span class="nc" id="L272">        contentStream.moveTo(bbox.getWidth() / 2 - 1, bbox.getHeight() - 2);</span>
+<span class="nc" id="L273">        contentStream.lineTo(1, 1);</span>
+<span class="nc" id="L274">        contentStream.lineTo(bbox.getWidth() - 2, 1);</span>
+<span class="nc" id="L275">        contentStream.closeAndFillAndStroke();</span>
+<span class="nc" id="L276">    }</span>
+
+    private void drawHelp(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
+            throws IOException
+    {
+<span class="nc" id="L281">        PDRectangle bbox = adjustRectAndBBox(annotation, 20, 20);</span>
+
+<span class="nc" id="L283">        float min = Math.min(bbox.getWidth(), bbox.getHeight());</span>
+
+<span class="nc" id="L285">        contentStream.setMiterLimit(4);</span>
+<span class="nc" id="L286">        contentStream.setLineJoinStyle(1);</span>
+<span class="nc" id="L287">        contentStream.setLineCapStyle(0);</span>
+<span class="nc" id="L288">        contentStream.setLineWidth(0.59f); // value from Adobe</span>
+
+        // Adobe first fills a white circle with CA ca 0.6, so do we
+<span class="nc" id="L291">        contentStream.saveGraphicsState();</span>
+<span class="nc" id="L292">        contentStream.setLineWidth(1);</span>
+<span class="nc" id="L293">        PDExtendedGraphicsState gs = new PDExtendedGraphicsState();</span>
+<span class="nc" id="L294">        gs.setAlphaSourceFlag(false);</span>
+<span class="nc" id="L295">        gs.setStrokingAlphaConstant(0.6f);</span>
+<span class="nc" id="L296">        gs.setNonStrokingAlphaConstant(0.6f);</span>
+<span class="nc" id="L297">        gs.setBlendMode(BlendMode.NORMAL);</span>
+<span class="nc" id="L298">        contentStream.setGraphicsStateParameters(gs);</span>
+<span class="nc" id="L299">        contentStream.setNonStrokingColor(1f);</span>
+<span class="nc" id="L300">        drawCircle2(contentStream, min / 2, min / 2, min / 2 - 1);</span>
+<span class="nc" id="L301">        contentStream.fill();</span>
+<span class="nc" id="L302">        contentStream.restoreGraphicsState();</span>
+
+<span class="nc" id="L304">        contentStream.saveGraphicsState();</span>
+        // rescale so that &quot;?&quot; fits into circle and move &quot;?&quot; to circle center
+        // values gathered by trial and error
+<span class="nc" id="L307">        contentStream.transform(Matrix.getScaleInstance(0.001f * min / 2.25f, 0.001f * min / 2.25f));</span>
+<span class="nc" id="L308">        contentStream.transform(Matrix.getTranslateInstance(500, 375));</span>
+
+        // we get the shape of an Helvetica bold &quot;?&quot; and use that one.
+        // Adobe uses a different font (which one?), or created the shape from scratch.
+<span class="nc" id="L312">        GeneralPath path = Standard14Fonts.getGlyphPath(FontName.HELVETICA_BOLD, &quot;question&quot;);</span>
+<span class="nc" id="L313">        addPath(contentStream, path);</span>
+<span class="nc" id="L314">        contentStream.restoreGraphicsState();</span>
+        // draw the outer circle counterclockwise to fill area between circle and &quot;?&quot;
+<span class="nc" id="L316">        drawCircle2(contentStream, min / 2, min / 2, min / 2 - 1);</span>
+<span class="nc" id="L317">        contentStream.fillAndStroke();</span>
+<span class="nc" id="L318">    }</span>
+
+    private void drawParagraph(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
+            throws IOException
+    {
+<span class="nc" id="L323">        PDRectangle bbox = adjustRectAndBBox(annotation, 20, 20);</span>
+
+<span class="nc" id="L325">        float min = Math.min(bbox.getWidth(), bbox.getHeight());</span>
+
+<span class="nc" id="L327">        contentStream.setMiterLimit(4);</span>
+<span class="nc" id="L328">        contentStream.setLineJoinStyle(1);</span>
+<span class="nc" id="L329">        contentStream.setLineCapStyle(0);</span>
+<span class="nc" id="L330">        contentStream.setLineWidth(0.59f); // value from Adobe</span>
+
+        // Adobe first fills a white circle with CA ca 0.6, so do we
+<span class="nc" id="L333">        contentStream.saveGraphicsState();</span>
+<span class="nc" id="L334">        contentStream.setLineWidth(1);</span>
+<span class="nc" id="L335">        PDExtendedGraphicsState gs = new PDExtendedGraphicsState();</span>
+<span class="nc" id="L336">        gs.setAlphaSourceFlag(false);</span>
+<span class="nc" id="L337">        gs.setStrokingAlphaConstant(0.6f);</span>
+<span class="nc" id="L338">        gs.setNonStrokingAlphaConstant(0.6f);</span>
+<span class="nc" id="L339">        gs.setBlendMode(BlendMode.NORMAL);</span>
+<span class="nc" id="L340">        contentStream.setGraphicsStateParameters(gs);</span>
+<span class="nc" id="L341">        contentStream.setNonStrokingColor(1f);</span>
+<span class="nc" id="L342">        drawCircle2(contentStream, min / 2, min / 2, min / 2 - 1);</span>
+<span class="nc" id="L343">        contentStream.fill();</span>
+<span class="nc" id="L344">        contentStream.restoreGraphicsState();</span>
+
+<span class="nc" id="L346">        contentStream.saveGraphicsState();</span>
+        // rescale so that &quot;?&quot; fits into circle and move &quot;?&quot; to circle center
+        // values gathered by trial and error
+<span class="nc" id="L349">        contentStream.transform(Matrix.getScaleInstance(0.001f * min / 3, 0.001f * min / 3));</span>
+<span class="nc" id="L350">        contentStream.transform(Matrix.getTranslateInstance(850, 900));</span>
+
+        // we get the shape of an Helvetica &quot;?&quot; and use that one.
+        // Adobe uses a different font (which one?), or created the shape from scratch.
+<span class="nc" id="L354">        GeneralPath path = Standard14Fonts.getGlyphPath(FontName.HELVETICA, &quot;paragraph&quot;);</span>
+<span class="nc" id="L355">        addPath(contentStream, path);</span>
+<span class="nc" id="L356">        contentStream.restoreGraphicsState();</span>
+<span class="nc" id="L357">        contentStream.fillAndStroke();</span>
+<span class="nc" id="L358">        drawCircle(contentStream, min / 2, min / 2, min / 2 - 1);</span>
+<span class="nc" id="L359">        contentStream.stroke();</span>
+<span class="nc" id="L360">    }</span>
+
+    private void drawNewParagraph(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
+            throws IOException
+    {
+<span class="nc" id="L365">        adjustRectAndBBox(annotation, 13, 20);</span>
+
+<span class="nc" id="L367">        contentStream.setMiterLimit(4);</span>
+<span class="nc" id="L368">        contentStream.setLineJoinStyle(0);</span>
+<span class="nc" id="L369">        contentStream.setLineCapStyle(0);</span>
+<span class="nc" id="L370">        contentStream.setLineWidth(0.59f); // value from Adobe</span>
+
+        // small triangle (values from Adobe)
+<span class="nc" id="L373">        contentStream.moveTo(6.4995f, 20);</span>
+<span class="nc" id="L374">        contentStream.lineTo(0.295f, 7.287f);</span>
+<span class="nc" id="L375">        contentStream.lineTo(12.705f, 7.287f);</span>
+<span class="nc" id="L376">        contentStream.closeAndFillAndStroke();</span>
+
+        // rescale and translate so that &quot;NP&quot; fits below the triangle
+        // values gathered by trial and error
+<span class="nc" id="L380">        contentStream.transform(Matrix.getScaleInstance(0.001f * 4, 0.001f * 4));</span>
+<span class="nc" id="L381">        contentStream.transform(Matrix.getTranslateInstance(200, 0));</span>
+<span class="nc" id="L382">        addPath(contentStream,</span>
+<span class="nc" id="L383">                Standard14Fonts.getGlyphPath(FontName.HELVETICA_BOLD, &quot;N&quot;));</span>
+<span class="nc" id="L384">        contentStream.transform(Matrix.getTranslateInstance(1300, 0));</span>
+<span class="nc" id="L385">        addPath(contentStream,</span>
+<span class="nc" id="L386">                Standard14Fonts.getGlyphPath(FontName.HELVETICA_BOLD, &quot;P&quot;));</span>
+<span class="nc" id="L387">        contentStream.fill();</span>
+<span class="nc" id="L388">    }</span>
+
+    private void drawCrossHairs(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
+            throws IOException
+    {
+<span class="nc" id="L393">        List&lt;Number&gt; fontMatrix = new PDType1Font(FontName.SYMBOL).getFontBoxFont().getFontMatrix();</span>
+<span class="nc" id="L394">        float xScale = (float) fontMatrix.get(0);</span>
+<span class="nc" id="L395">        float yScale = (float) fontMatrix.get(3);</span>
+
+<span class="nc" id="L397">        PDRectangle bbox = adjustRectAndBBox(annotation, 20, 20);</span>
+
+<span class="nc" id="L399">        float min = Math.min(bbox.getWidth(), bbox.getHeight());</span>
+
+<span class="nc" id="L401">        contentStream.setMiterLimit(4);</span>
+<span class="nc" id="L402">        contentStream.setLineJoinStyle(0);</span>
+<span class="nc" id="L403">        contentStream.setLineCapStyle(0);</span>
+<span class="nc" id="L404">        contentStream.setLineWidth(0.61f); // value from Adobe</span>
+
+<span class="nc" id="L406">        contentStream.transform(Matrix.getScaleInstance(xScale * min * 1.3333f, yScale * min * 1.3333f));</span>
+<span class="nc" id="L407">        contentStream.transform(Matrix.getTranslateInstance(0, 50));</span>
+
+        // we get the shape of a Symbol crosshair (0x2295) and use that one.
+        // Adobe uses a different font (which one?), or created the shape from scratch.
+<span class="nc" id="L411">        GeneralPath path = Standard14Fonts.getGlyphPath(FontName.SYMBOL, &quot;circleplus&quot;);</span>
+<span class="nc" id="L412">        addPath(contentStream, path);</span>
+<span class="nc" id="L413">        contentStream.fillAndStroke();</span>
+<span class="nc" id="L414">    }</span>
+
+    private void drawUpArrow(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
+                 throws IOException
+    {
+<span class="nc" id="L419">        adjustRectAndBBox(annotation, 17, 20);</span>
+
+<span class="nc" id="L421">        contentStream.setMiterLimit(4);</span>
+<span class="nc" id="L422">        contentStream.setLineJoinStyle(1);</span>
+<span class="nc" id="L423">        contentStream.setLineCapStyle(0);</span>
+<span class="nc" id="L424">        contentStream.setLineWidth(0.59f); // value from Adobe</span>
+
+<span class="nc" id="L426">        contentStream.moveTo(1, 7);</span>
+<span class="nc" id="L427">        contentStream.lineTo(5, 7);</span>
+<span class="nc" id="L428">        contentStream.lineTo(5, 1);</span>
+<span class="nc" id="L429">        contentStream.lineTo(12, 1);</span>
+<span class="nc" id="L430">        contentStream.lineTo(12, 7);</span>
+<span class="nc" id="L431">        contentStream.lineTo(16, 7);</span>
+<span class="nc" id="L432">        contentStream.lineTo(8.5f, 19);</span>
+<span class="nc" id="L433">        contentStream.closeAndFillAndStroke();</span>
+<span class="nc" id="L434">    }</span>
+
+    private void drawUpLeftArrow(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
+                 throws IOException
+    {
+<span class="nc" id="L439">        adjustRectAndBBox(annotation, 17, 17);</span>
+
+<span class="nc" id="L441">        contentStream.setMiterLimit(4);</span>
+<span class="nc" id="L442">        contentStream.setLineJoinStyle(1);</span>
+<span class="nc" id="L443">        contentStream.setLineCapStyle(0);</span>
+<span class="nc" id="L444">        contentStream.setLineWidth(0.59f); // value from Adobe</span>
+        
+<span class="nc" id="L446">        contentStream.transform(Matrix.getRotateInstance(Math.toRadians(45), 8, -4));</span>
+
+<span class="nc" id="L448">        contentStream.moveTo(1, 7);</span>
+<span class="nc" id="L449">        contentStream.lineTo(5, 7);</span>
+<span class="nc" id="L450">        contentStream.lineTo(5, 1);</span>
+<span class="nc" id="L451">        contentStream.lineTo(12, 1);</span>
+<span class="nc" id="L452">        contentStream.lineTo(12, 7);</span>
+<span class="nc" id="L453">        contentStream.lineTo(16, 7);</span>
+<span class="nc" id="L454">        contentStream.lineTo(8.5f, 19);</span>
+<span class="nc" id="L455">        contentStream.closeAndFillAndStroke();</span>
+<span class="nc" id="L456">    }</span>
+    
+    private void drawRightArrow(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
+            throws IOException
+    {
+<span class="nc" id="L461">        PDRectangle bbox = adjustRectAndBBox(annotation, 20, 20);</span>
+
+<span class="nc" id="L463">        float min = Math.min(bbox.getWidth(), bbox.getHeight());</span>
+
+<span class="nc" id="L465">        contentStream.setMiterLimit(4);</span>
+<span class="nc" id="L466">        contentStream.setLineJoinStyle(1);</span>
+<span class="nc" id="L467">        contentStream.setLineCapStyle(0);</span>
+<span class="nc" id="L468">        contentStream.setLineWidth(0.59f); // value from Adobe</span>
+
+        // Adobe first fills a white circle with CA ca 0.6, so do we
+<span class="nc" id="L471">        contentStream.saveGraphicsState();</span>
+<span class="nc" id="L472">        contentStream.setLineWidth(1);</span>
+<span class="nc" id="L473">        PDExtendedGraphicsState gs = new PDExtendedGraphicsState();</span>
+<span class="nc" id="L474">        gs.setAlphaSourceFlag(false);</span>
+<span class="nc" id="L475">        gs.setStrokingAlphaConstant(0.6f);</span>
+<span class="nc" id="L476">        gs.setNonStrokingAlphaConstant(0.6f);</span>
+<span class="nc" id="L477">        gs.setBlendMode(BlendMode.NORMAL);</span>
+<span class="nc" id="L478">        contentStream.setGraphicsStateParameters(gs);</span>
+<span class="nc" id="L479">        contentStream.setNonStrokingColor(1f);</span>
+<span class="nc" id="L480">        drawCircle2(contentStream, min / 2, min / 2, min / 2 - 1);</span>
+<span class="nc" id="L481">        contentStream.fill();</span>
+<span class="nc" id="L482">        contentStream.restoreGraphicsState();</span>
+
+<span class="nc" id="L484">        contentStream.saveGraphicsState();</span>
+<span class="nc" id="L485">        contentStream.moveTo(8, 17.5f);</span>
+<span class="nc" id="L486">        contentStream.lineTo(8, 13.5f);</span>
+<span class="nc" id="L487">        contentStream.lineTo(3, 13.5f);</span>
+<span class="nc" id="L488">        contentStream.lineTo(3, 6.5f);</span>
+<span class="nc" id="L489">        contentStream.lineTo(8, 6.5f);</span>
+<span class="nc" id="L490">        contentStream.lineTo(8, 2.5f);</span>
+<span class="nc" id="L491">        contentStream.lineTo(18, 10);</span>
+<span class="nc" id="L492">        contentStream.closePath();</span>
+<span class="nc" id="L493">        contentStream.restoreGraphicsState();</span>
+        // surprisingly, this one not counterclockwise.
+<span class="nc" id="L495">        drawCircle(contentStream, min / 2, min / 2, min / 2 - 1);</span>
+<span class="nc" id="L496">        contentStream.fillAndStroke();</span>
+<span class="nc" id="L497">    }</span>
+
+    private void drawComment(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
+                 throws IOException
+    {
+<span class="nc" id="L502">        adjustRectAndBBox(annotation, 18, 18);</span>
+
+<span class="nc" id="L504">        contentStream.setMiterLimit(4);</span>
+<span class="nc" id="L505">        contentStream.setLineJoinStyle(1);</span>
+<span class="nc" id="L506">        contentStream.setLineCapStyle(0);</span>
+<span class="nc" id="L507">        contentStream.setLineWidth(200);</span>
+
+        // Adobe first fills a white rectangle with CA ca 0.6, so do we
+<span class="nc" id="L510">        contentStream.saveGraphicsState();</span>
+<span class="nc" id="L511">        contentStream.setLineWidth(1);</span>
+<span class="nc" id="L512">        PDExtendedGraphicsState gs = new PDExtendedGraphicsState();</span>
+<span class="nc" id="L513">        gs.setAlphaSourceFlag(false);</span>
+<span class="nc" id="L514">        gs.setStrokingAlphaConstant(0.6f);</span>
+<span class="nc" id="L515">        gs.setNonStrokingAlphaConstant(0.6f);</span>
+<span class="nc" id="L516">        gs.setBlendMode(BlendMode.NORMAL);</span>
+<span class="nc" id="L517">        contentStream.setGraphicsStateParameters(gs);</span>
+<span class="nc" id="L518">        contentStream.setNonStrokingColor(1f);</span>
+<span class="nc" id="L519">        contentStream.addRect(0.3f, 0.3f, 18-0.6f, 18-0.6f);</span>
+<span class="nc" id="L520">        contentStream.fill();</span>
+<span class="nc" id="L521">        contentStream.restoreGraphicsState();</span>
+
+<span class="nc" id="L523">        contentStream.transform(Matrix.getScaleInstance(0.003f, 0.003f));</span>
+<span class="nc" id="L524">        contentStream.transform(Matrix.getTranslateInstance(500, -300));</span>
+
+        // outer shape was gathered from Font Awesome by &quot;printing&quot; comment.svg
+        // into a PDF and looking at the content stream
+<span class="nc" id="L528">        contentStream.moveTo(2549, 5269);</span>
+<span class="nc" id="L529">        contentStream.curveTo(1307, 5269, 300, 4451, 300, 3441);</span>
+<span class="nc" id="L530">        contentStream.curveTo(300, 3023, 474, 2640, 764, 2331);</span>
+<span class="nc" id="L531">        contentStream.curveTo(633, 1985, 361, 1691, 357, 1688);</span>
+<span class="nc" id="L532">        contentStream.curveTo(299, 1626, 283, 1537, 316, 1459);</span>
+<span class="nc" id="L533">        contentStream.curveTo(350, 1382, 426, 1332, 510, 1332);</span>
+<span class="nc" id="L534">        contentStream.curveTo(1051, 1332, 1477, 1558, 1733, 1739);</span>
+<span class="nc" id="L535">        contentStream.curveTo(1987, 1659, 2261, 1613, 2549, 1613);</span>
+<span class="nc" id="L536">        contentStream.curveTo(3792, 1613, 4799, 2431, 4799, 3441);</span>
+<span class="nc" id="L537">        contentStream.curveTo(4799, 4451, 3792, 5269, 2549, 5269);</span>
+<span class="nc" id="L538">        contentStream.closePath();</span>
+
+        // can't use addRect: if we did that, we wouldn't get the donut effect
+<span class="nc" id="L541">        contentStream.moveTo(0.3f / 0.003f - 500, 0.3f / 0.003f + 300);</span>
+<span class="nc" id="L542">        contentStream.lineTo(0.3f / 0.003f - 500, 0.3f / 0.003f + 300 + 17.4f / 0.003f);</span>
+<span class="nc" id="L543">        contentStream.lineTo(0.3f / 0.003f - 500 + 17.4f / 0.003f, 0.3f / 0.003f + 300 + 17.4f / 0.003f);</span>
+<span class="nc" id="L544">        contentStream.lineTo(0.3f / 0.003f - 500 + 17.4f / 0.003f, 0.3f / 0.003f + 300);</span>
+
+<span class="nc" id="L546">        contentStream.closeAndFillAndStroke();</span>
+<span class="nc" id="L547">    }</span>
+    
+    private void drawKey(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
+                 throws IOException
+    {
+<span class="nc" id="L552">        adjustRectAndBBox(annotation, 13, 18);</span>
+
+<span class="nc" id="L554">        contentStream.setMiterLimit(4);</span>
+<span class="nc" id="L555">        contentStream.setLineJoinStyle(1);</span>
+<span class="nc" id="L556">        contentStream.setLineCapStyle(0);</span>
+<span class="nc" id="L557">        contentStream.setLineWidth(200);</span>
+
+<span class="nc" id="L559">        contentStream.transform(Matrix.getScaleInstance(0.003f, 0.003f));</span>
+<span class="nc" id="L560">        contentStream.transform(Matrix.getRotateInstance(Math.toRadians(45), 2500, -800));</span>
+
+        // shape was gathered from Font Awesome by &quot;printing&quot; key.svg into a PDF
+        // and looking at the content stream
+<span class="nc" id="L564">        contentStream.moveTo(4799, 4004);</span>
+<span class="nc" id="L565">        contentStream.curveTo(4799, 3149, 4107, 2457, 3253, 2457);</span>
+<span class="nc" id="L566">        contentStream.curveTo(3154, 2457, 3058, 2466, 2964, 2484);</span>
+<span class="nc" id="L567">        contentStream.lineTo(2753, 2246);</span>
+<span class="nc" id="L568">        contentStream.curveTo(2713, 2201, 2656, 2175, 2595, 2175);</span>
+<span class="nc" id="L569">        contentStream.lineTo(2268, 2175);</span>
+<span class="nc" id="L570">        contentStream.lineTo(2268, 1824);</span>
+<span class="nc" id="L571">        contentStream.curveTo(2268, 1707, 2174, 1613, 2057, 1613);</span>
+<span class="nc" id="L572">        contentStream.lineTo(1706, 1613);</span>
+<span class="nc" id="L573">        contentStream.lineTo(1706, 1261);</span>
+<span class="nc" id="L574">        contentStream.curveTo(1706, 1145, 1611, 1050, 1495, 1050);</span>
+<span class="nc" id="L575">        contentStream.lineTo(510, 1050);</span>
+<span class="nc" id="L576">        contentStream.curveTo(394, 1050, 300, 1145, 300, 1261);</span>
+<span class="nc" id="L577">        contentStream.lineTo(300, 1947);</span>
+<span class="nc" id="L578">        contentStream.curveTo(300, 2003, 322, 2057, 361, 2097);</span>
+<span class="nc" id="L579">        contentStream.lineTo(1783, 3519);</span>
+<span class="nc" id="L580">        contentStream.curveTo(1733, 3671, 1706, 3834, 1706, 4004);</span>
+<span class="nc" id="L581">        contentStream.curveTo(1706, 4858, 2398, 5550, 3253, 5550);</span>
+<span class="nc" id="L582">        contentStream.curveTo(4109, 5550, 4799, 4860, 4799, 4004);</span>
+<span class="nc" id="L583">        contentStream.closePath();</span>
+<span class="nc" id="L584">        contentStream.moveTo(3253, 4425);</span>
+<span class="nc" id="L585">        contentStream.curveTo(3253, 4192, 3441, 4004, 3674, 4004);</span>
+<span class="nc" id="L586">        contentStream.curveTo(3907, 4004, 4096, 4192, 4096, 4425);</span>
+<span class="nc" id="L587">        contentStream.curveTo(4096, 4658, 3907, 4847, 3674, 4847);</span>
+<span class="nc" id="L588">        contentStream.curveTo(3441, 4847, 3253, 4658, 3253, 4425);</span>
+<span class="nc" id="L589">        contentStream.fillAndStroke();</span>
+<span class="nc" id="L590">    }</span>
+
+    private void drawZapf(PDAnnotationText annotation, final PDAppearanceContentStream contentStream,
+            int by, int ty, String glyphName) throws IOException
+    {
+<span class="nc" id="L595">        PDRectangle bbox = adjustRectAndBBox(annotation, 20, by);</span>
+
+<span class="nc" id="L597">        float min = Math.min(bbox.getWidth(), bbox.getHeight());</span>
+
+<span class="nc" id="L599">        contentStream.setMiterLimit(4);</span>
+<span class="nc" id="L600">        contentStream.setLineJoinStyle(1);</span>
+<span class="nc" id="L601">        contentStream.setLineCapStyle(0);</span>
+<span class="nc" id="L602">        contentStream.setLineWidth(0.59f); // value from Adobe</span>
+
+<span class="nc" id="L604">        List&lt;Number&gt; fontMatrix = new PDType1Font(FontName.ZAPF_DINGBATS).getFontBoxFont().getFontMatrix();</span>
+<span class="nc" id="L605">        float xScale = (float) fontMatrix.get(0);</span>
+<span class="nc" id="L606">        float yScale = (float) fontMatrix.get(3);</span>
+<span class="nc" id="L607">        contentStream.transform(Matrix.getScaleInstance(xScale * min / 0.8f, yScale * min / 0.8f));</span>
+<span class="nc" id="L608">        contentStream.transform(Matrix.getTranslateInstance(0, ty));</span>
+
+        // we get the shape of a Zapf Dingbats glyph and use that one.
+        // Adobe uses a different font (which one?), or created the shape from scratch.
+<span class="nc" id="L612">        GeneralPath path = Standard14Fonts.getGlyphPath(FontName.ZAPF_DINGBATS, glyphName);</span>
+<span class="nc" id="L613">        addPath(contentStream, path);</span>
+<span class="nc" id="L614">        contentStream.fillAndStroke();</span>
+<span class="nc" id="L615">    }</span>
+
+    private void addPath(final PDAppearanceContentStream contentStream, GeneralPath path) throws IOException
+    {
+<span class="nc" id="L619">        double curX = 0;</span>
+<span class="nc" id="L620">        double curY = 0;</span>
+<span class="nc" id="L621">        PathIterator it = path.getPathIterator(new AffineTransform());</span>
+<span class="nc" id="L622">        double[] coords = new double[6];</span>
+<span class="nc bnc" id="L623" title="All 2 branches missed.">        while (!it.isDone())</span>
+        {
+<span class="nc" id="L625">            int type = it.currentSegment(coords);</span>
+<span class="nc bnc" id="L626" title="All 6 branches missed.">            switch (type)</span>
+            {
+                case PathIterator.SEG_CLOSE:
+<span class="nc" id="L629">                    contentStream.closePath();</span>
+<span class="nc" id="L630">                    break;</span>
+                case PathIterator.SEG_CUBICTO:
+<span class="nc" id="L632">                    contentStream.curveTo((float) coords[0], (float) coords[1], (float) coords[2],</span>
+                                          (float) coords[3], (float) coords[4], (float) coords[5]);
+<span class="nc" id="L634">                    curX = coords[4];</span>
+<span class="nc" id="L635">                    curY = coords[5];</span>
+<span class="nc" id="L636">                    break;</span>
+                case PathIterator.SEG_QUADTO:
+                    // Convert quadratic Bézier curve to cubic
+                    // https://fontforge.github.io/bezier.html
+                    // CP1 = QP0 + 2/3 *(QP1-QP0)
+                    // CP2 = QP2 + 2/3 *(QP1-QP2)
+<span class="nc" id="L642">                    double cp1x = curX + 2d / 3d * (coords[0] - curX);</span>
+<span class="nc" id="L643">                    double cp1y = curY + 2d / 3d * (coords[1] - curY);</span>
+<span class="nc" id="L644">                    double cp2x = coords[2] + 2d / 3d * (coords[0] - coords[2]);</span>
+<span class="nc" id="L645">                    double cp2y = coords[3] + 2d / 3d * (coords[1] - coords[3]);</span>
+<span class="nc" id="L646">                    contentStream.curveTo((float) cp1x, (float) cp1y,</span>
+                                          (float) cp2x, (float) cp2y,
+                                          (float) coords[2], (float) coords[3]);
+<span class="nc" id="L649">                    curX = coords[2];</span>
+<span class="nc" id="L650">                    curY = coords[3];</span>
+<span class="nc" id="L651">                    break;</span>
+                case PathIterator.SEG_LINETO:
+<span class="nc" id="L653">                    contentStream.lineTo((float) coords[0], (float) coords[1]);</span>
+<span class="nc" id="L654">                    curX = coords[0];</span>
+<span class="nc" id="L655">                    curY = coords[1];</span>
+<span class="nc" id="L656">                    break;</span>
+                case PathIterator.SEG_MOVETO:
+<span class="nc" id="L658">                    contentStream.moveTo((float) coords[0], (float) coords[1]);</span>
+<span class="nc" id="L659">                    curX = coords[0];</span>
+<span class="nc" id="L660">                    curY = coords[1];</span>
+<span class="nc" id="L661">                    break;</span>
+                default:
+                    break;
+            }
+<span class="nc" id="L665">            it.next();</span>
+<span class="nc" id="L666">        }</span>
+<span class="nc" id="L667">    }</span>
+
+    @Override
+    public void generateRolloverAppearance()
+    {
+        // No rollover appearance generated
+<span class="nc" id="L673">    }</span>
+
+    @Override
+    public void generateDownAppearance()
+    {
+        // No down appearance generated
+<span class="nc" id="L679">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

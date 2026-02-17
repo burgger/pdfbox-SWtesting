@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>COSObjectPool.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdfwriter.compress</a> &gt; <span class="el_source">COSObjectPool.java</span></div><h1>COSObjectPool.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdfwriter.compress;
+
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.cos.COSObjectKey;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * An instance of this class maps {@link COSBase} instances to {@link COSObjectKey}s and allows for a bidirectional
+ * lookup.
+ * 
+ * @author Christian Appl
+ */
+public class COSObjectPool
+{
+<span class="nc" id="L34">    private final Map&lt;COSObjectKey, COSBase&gt; keyPool = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L35">    private final Map&lt;COSBase, COSObjectKey&gt; objectPool = new HashMap&lt;&gt;();</span>
+
+<span class="nc" id="L37">    private long highestXRefObjectNumber = 0;</span>
+
+    /**
+     * Creates a map of {@link COSBase} instances to {@link COSObjectKey}s, allowing bidirectional lookups. This
+     * constructor can be used for pre - initialized structures to start the assignment of new object numbers starting
+     * from the hereby given offset.
+     *
+     * @param highestXRefObjectNumber The highest known object number.
+     */
+    public COSObjectPool(long highestXRefObjectNumber)
+<span class="nc" id="L47">    {</span>
+<span class="nc" id="L48">        this.highestXRefObjectNumber = Math.max(this.highestXRefObjectNumber,</span>
+                highestXRefObjectNumber);
+<span class="nc" id="L50">    }</span>
+
+    /**
+     * Update the key and object maps.
+     *
+     * @param key The key, that shall be added.
+     * @param object The object, that shall be added.
+     * @return The actual key, the object has been added for.
+     */
+    public COSObjectKey put(COSObjectKey key, COSBase object)
+    {
+        // to avoid to mixup indirect COSInteger objects holding the same value we have to check
+        // if the given key is the same than the key which is stored for the &quot;same&quot; base object wihtin the object pool
+        // the same is always true for COSFloat, COSBoolean and COSName and under certain circumstances for the remainig
+        // types as well
+<span class="nc bnc" id="L65" title="All 6 branches missed.">        if (object == null || (contains(object) &amp;&amp; getKey(object).equals(key)))</span>
+        {
+<span class="nc" id="L67">            return null;</span>
+        }
+<span class="nc" id="L69">        COSObjectKey actualKey = key;</span>
+<span class="nc bnc" id="L70" title="All 4 branches missed.">        if (actualKey == null || contains(actualKey))</span>
+        {
+<span class="nc" id="L72">            highestXRefObjectNumber++;</span>
+<span class="nc" id="L73">            actualKey = new COSObjectKey(highestXRefObjectNumber, 0);</span>
+<span class="nc" id="L74">            object.setKey(actualKey);</span>
+        }
+        else
+        {
+<span class="nc" id="L78">            highestXRefObjectNumber = Math.max(key.getNumber(), highestXRefObjectNumber);</span>
+        }
+<span class="nc" id="L80">        keyPool.put(actualKey, object);</span>
+<span class="nc" id="L81">        objectPool.put(object, actualKey);</span>
+<span class="nc" id="L82">        return actualKey;</span>
+    }
+
+    /**
+     * Returns the {@link COSObjectKey} for a given registered {@link COSBase}. Returns null if such an object is not
+     * registered.
+     *
+     * @param object The {@link COSBase} a {@link COSObjectKey} shall be determined for.
+     * @return key The {@link COSObjectKey}, that matches the registered {@link COSBase}, or null if such an object is
+     * not registered.
+     */
+    public COSObjectKey getKey(COSBase object)
+    {
+<span class="nc" id="L95">        COSObjectKey key = null;</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        if (object instanceof COSObject)</span>
+        {
+<span class="nc" id="L98">            key = objectPool.get(((COSObject) object).getObject());</span>
+        }
+<span class="nc bnc" id="L100" title="All 2 branches missed.">        if (key == null)</span>
+        {
+<span class="nc" id="L102">            return objectPool.get(object);</span>
+        }
+<span class="nc" id="L104">        return key;</span>
+    }
+
+    /**
+     * Returns true, if a {@link COSBase} is registered for the given {@link COSObjectKey}.
+     *
+     * @param key The {@link COSObjectKey} that shall be checked for a registered {@link COSBase}.
+     * @return True, if a {@link COSBase} is registered for the given {@link COSObjectKey}.
+     */
+    public boolean contains(COSObjectKey key)
+    {
+<span class="nc" id="L115">        return keyPool.containsKey(key);</span>
+    }
+
+    /**
+     * Returns the {@link COSBase}, that is registered for the given {@link COSObjectKey}, or null if no object is
+     * registered for that key.
+     *
+     * @param key The {@link COSObjectKey} a registered {@link COSBase} shall be found for.
+     * @return The {@link COSBase}, that is registered for the given {@link COSObjectKey}, or null if no object is
+     * registered for that key.
+     */
+    public COSBase getObject(COSObjectKey key)
+    {
+<span class="nc" id="L128">        return keyPool.get(key);</span>
+    }
+
+    /**
+     * Returns true, if the given {@link COSBase} is a registered object of this pool.
+     *
+     * @param object The {@link COSBase} that shall be checked.
+     * @return True, if such a {@link COSBase} is registered in this pool.
+     */
+    public boolean contains(COSBase object)
+    {
+<span class="nc bnc" id="L139" title="All 2 branches missed.">        return (object instanceof COSObject</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">                &amp;&amp; objectPool.containsKey(((COSObject) object).getObject()))</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">                || objectPool.containsKey(object);</span>
+    }
+
+    /**
+     * Returns the highest known object number (see: {@link COSObjectKey} for further information), that is currently
+     * registered in this pool.
+     *
+     * @return The highest known object number (see: {@link COSObjectKey} for further information), that is currently
+     * registered in this pool.
+     */
+    public long getHighestXRefObjectNumber()
+    {
+<span class="nc" id="L153">        return highestXRefObjectNumber;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

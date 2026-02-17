@@ -1,0 +1,598 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>COSArrayList.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.common</a> &gt; <span class="el_source">COSArrayList.java</span></div><h1>COSArrayList.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.common;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNull;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+
+/**
+ * This is an implementation of a List that will sync its contents to a COSArray.
+ *
+ * @author Ben Litchfield
+ * @param &lt;E&gt; Element type.
+ */
+public class COSArrayList&lt;E&gt; implements List&lt;E&gt;
+{
+    private final COSArray array;
+    private final List&lt;E&gt; actual;
+
+    // indicates that the list has been filtered
+    // i.e. the number of entries in array and actual differ 
+<span class="nc" id="L47">    private boolean isFiltered = false;</span>
+
+    private COSDictionary parentDict;
+    private COSName dictKey;
+
+    /**
+     * Default constructor.
+     */
+    public COSArrayList()
+<span class="nc" id="L56">    {</span>
+<span class="nc" id="L57">        array = new COSArray();</span>
+<span class="nc" id="L58">        actual = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L59">    }</span>
+
+    /**
+     * Create the COSArrayList specifying the List and the backing COSArray.
+     * 
+     * &lt;p&gt;User of this constructor need to ensure that the entries in the List and
+     * the backing COSArray are matching i.e. the COSObject of the List entry is
+     * included in the COSArray.
+     *   
+     * &lt;p&gt;If the number of entries in the List and the COSArray differ
+     * it is assumed that the List has been filtered. In that case the COSArrayList
+     * shall only be used for reading purposes and no longer for updating.
+     * 
+     * @param actualList The list of standard java objects
+     * @param cosArray The COS array object to sync to.
+     */
+    public COSArrayList( List&lt;E&gt; actualList, COSArray cosArray )
+<span class="nc" id="L76">    {</span>
+<span class="nc" id="L77">        actual = actualList;</span>
+<span class="nc" id="L78">        array = cosArray;</span>
+
+        // if the number of entries differs this may come from a filter being
+        // applied at the PDModel level 
+<span class="nc bnc" id="L82" title="All 2 branches missed.">        if (actual.size() != array.size()) {</span>
+<span class="nc" id="L83">            isFiltered = true;</span>
+        }
+<span class="nc" id="L85">    }</span>
+
+    /**
+     * This constructor is to be used if the array doesn't exist, but is to be created and added to
+     * the parent dictionary as soon as the first element is added to the array.
+     *
+     * @param dictionary The dictionary that holds the item, and will hold the array if an item is
+     * added.
+     * @param dictionaryKey The key into the dictionary to set the item.
+     */
+    public COSArrayList(COSDictionary dictionary, COSName dictionaryKey)
+<span class="nc" id="L96">    {</span>
+<span class="nc" id="L97">        array = new COSArray();</span>
+<span class="nc" id="L98">        actual = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L99">        parentDict = dictionary;</span>
+<span class="nc" id="L100">        dictKey = dictionaryKey;</span>
+<span class="nc" id="L101">    }</span>
+
+    /**
+     * This is a really special constructor.  Sometimes the PDF spec says
+     * that a dictionary entry can either be a single item or an array of those
+     * items.  But in the PDModel interface we really just want to always return
+     * a java.util.List.  In the case were we get the list and never modify it
+     * we don't want to convert to COSArray and put one element, unless we append
+     * to the list.  So here we are going to create this object with a single
+     * item instead of a list, but allow more items to be added and then converted
+     * to an array.
+     *
+     * @param actualObject The PDModel object.
+     * @param item The COS Model object.
+     * @param dictionary The dictionary that holds the item, and will hold the array if an item is added.
+     * @param dictionaryKey The key into the dictionary to set the item.
+     */
+    public COSArrayList( E actualObject, COSBase item, COSDictionary dictionary, COSName dictionaryKey )
+<span class="nc" id="L119">    {</span>
+<span class="nc" id="L120">        array = new COSArray();</span>
+<span class="nc" id="L121">        array.add( item );</span>
+<span class="nc" id="L122">        actual = new ArrayList&lt;&gt;(1);</span>
+<span class="nc" id="L123">        actual.add( actualObject );</span>
+
+<span class="nc" id="L125">        parentDict = dictionary;</span>
+<span class="nc" id="L126">        dictKey = dictionaryKey;</span>
+<span class="nc" id="L127">    }</span>
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int size()
+    {
+<span class="nc" id="L135">        return actual.size();</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isEmpty()
+    {
+<span class="nc" id="L144">        return actual.isEmpty();</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean contains(Object o)
+    {
+<span class="nc" id="L153">        return actual.contains(o);</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Iterator&lt;E&gt; iterator()
+    {
+<span class="nc" id="L162">        return actual.iterator();</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Object[] toArray()
+    {
+<span class="nc" id="L171">        return actual.toArray();</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public &lt;X&gt;X[] toArray(X[] a)
+    {
+<span class="nc" id="L180">        return actual.toArray(a);</span>
+
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean add(E o)
+    {
+        //when adding if there is a parentDict then change the item
+        //in the dictionary from a single item to an array.
+<span class="nc bnc" id="L192" title="All 2 branches missed.">        if( parentDict != null )</span>
+        {
+<span class="nc" id="L194">            parentDict.setItem( dictKey, array );</span>
+            //clear the parent dict so it doesn't happen again, there might be
+            //a usecase for keeping the parentDict around but not now.
+<span class="nc" id="L197">            parentDict = null;</span>
+        }
+        //string is a special case because we can't subclass to be COSObjectable
+<span class="nc bnc" id="L200" title="All 2 branches missed.">        if( o instanceof String )</span>
+        {
+<span class="nc" id="L202">            array.add( new COSString( (String)o ) );</span>
+        }
+        else
+        {
+<span class="nc bnc" id="L206" title="All 2 branches missed.">            if(array != null)</span>
+            {
+<span class="nc" id="L208">                array.add(((COSObjectable)o).getCOSObject());</span>
+            }
+        }
+<span class="nc" id="L211">        return actual.add(o);</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean remove(Object o)
+    {
+
+<span class="nc bnc" id="L221" title="All 2 branches missed.">        if (isFiltered) {</span>
+<span class="nc" id="L222">            throw new UnsupportedOperationException(&quot;removing entries from a filtered List is not permitted&quot;);</span>
+        }
+
+<span class="nc" id="L225">        boolean retval = true;</span>
+<span class="nc" id="L226">        int index = actual.indexOf( o );</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        if( index &gt;= 0 )</span>
+        {
+<span class="nc" id="L229">            actual.remove( index );</span>
+<span class="nc" id="L230">            array.remove( index );</span>
+        }
+        else
+        {
+<span class="nc" id="L234">            retval = false;</span>
+        }
+<span class="nc" id="L236">        return retval;</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean containsAll(Collection&lt;?&gt; c)
+    {
+<span class="nc" id="L245">        return actual.containsAll( c );</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean addAll(Collection&lt;? extends E&gt; c)
+    {
+<span class="nc bnc" id="L254" title="All 2 branches missed.">        if (isFiltered) {</span>
+<span class="nc" id="L255">            throw new UnsupportedOperationException(&quot;Adding to a filtered List is not permitted&quot;);</span>
+        }
+
+        //when adding if there is a parentDict then change the item
+        //in the dictionary from a single item to an array.
+<span class="nc bnc" id="L260" title="All 4 branches missed.">        if( parentDict != null &amp;&amp; !c.isEmpty())</span>
+        {
+<span class="nc" id="L262">            parentDict.setItem( dictKey, array );</span>
+            //clear the parent dict so it doesn't happen again, there might be
+            //a usecase for keeping the parentDict around but not now.
+<span class="nc" id="L265">            parentDict = null;</span>
+        }
+<span class="nc" id="L267">        array.addAll( toCOSObjectList( c ) );</span>
+<span class="nc" id="L268">        return actual.addAll( c );</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean addAll(int index, Collection&lt;? extends E&gt; c)
+    {
+<span class="nc bnc" id="L277" title="All 2 branches missed.">        if (isFiltered) {</span>
+<span class="nc" id="L278">            throw new UnsupportedOperationException(&quot;Inserting to a filtered List is not permitted&quot;);</span>
+        }
+
+        //when adding if there is a parentDict then change the item
+        //in the dictionary from a single item to an array.
+<span class="nc bnc" id="L283" title="All 4 branches missed.">        if( parentDict != null &amp;&amp; !c.isEmpty())</span>
+        {
+<span class="nc" id="L285">            parentDict.setItem( dictKey, array );</span>
+            //clear the parent dict so it doesn't happen again, there might be
+            //a usecase for keeping the parentDict around but not now.
+<span class="nc" id="L288">            parentDict = null;</span>
+        }
+
+<span class="nc" id="L291">        array.addAll( index, toCOSObjectList( c ) );</span>
+<span class="nc" id="L292">        return actual.addAll( index, c );</span>
+    }
+
+    /**
+     * This will convert a list of COSObjectables to an array list of COSBase objects.
+     *
+     * @param cosObjectableList A list of COSObjectable.
+     *
+     * @return A list of COSBase.
+     * @throws IllegalArgumentException if an object type is not supported for conversion to a
+     * COSBase object.
+     */
+    public static COSArray converterToCOSArray(List&lt;?&gt; cosObjectableList)
+    {
+<span class="nc" id="L306">        COSArray array = null;</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">        if( cosObjectableList != null )</span>
+        {
+<span class="nc bnc" id="L309" title="All 2 branches missed.">            if( cosObjectableList instanceof COSArrayList )</span>
+            {
+                //if it is already a COSArrayList then we don't want to recreate the array, we want to reuse it.
+<span class="nc" id="L312">                array = ((COSArrayList&lt;?&gt;)cosObjectableList).array;</span>
+            }
+            else
+            {
+<span class="nc" id="L316">                array = new COSArray();</span>
+<span class="nc bnc" id="L317" title="All 2 branches missed.">                for (Object next : cosObjectableList)</span>
+                {
+<span class="nc bnc" id="L319" title="All 2 branches missed.">                    if( next instanceof String )</span>
+                    {
+<span class="nc" id="L321">                        array.add( new COSString( (String)next ) );</span>
+                    }
+<span class="nc bnc" id="L323" title="All 4 branches missed.">                    else if( next instanceof Integer || next instanceof Long )</span>
+                    {
+<span class="nc" id="L325">                        array.add( COSInteger.get( ((Number)next).longValue() ) );</span>
+                    }
+<span class="nc bnc" id="L327" title="All 4 branches missed.">                    else if( next instanceof Float || next instanceof Double )</span>
+                    {
+<span class="nc" id="L329">                        array.add( new COSFloat( ((Number)next).floatValue() ) );</span>
+                    }
+<span class="nc bnc" id="L331" title="All 2 branches missed.">                    else if( next instanceof COSObjectable )</span>
+                    {
+<span class="nc" id="L333">                        COSObjectable object = (COSObjectable)next;</span>
+<span class="nc" id="L334">                        array.add( object.getCOSObject() );</span>
+<span class="nc" id="L335">                    }</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">                    else if( next == null )</span>
+                    {
+<span class="nc" id="L338">                        array.add( COSNull.NULL );</span>
+                    }
+                    else
+                    {
+<span class="nc" id="L342">                        throw new IllegalArgumentException( &quot;Error: Don't know how to convert type to COSBase '&quot; +</span>
+<span class="nc" id="L343">                        next.getClass().getName() + &quot;'&quot; );</span>
+                    }
+<span class="nc" id="L345">                }</span>
+            }
+        }
+<span class="nc" id="L348">        return array;</span>
+    }
+
+    private List&lt;COSBase&gt; toCOSObjectList( Collection&lt;?&gt; list )
+    {
+<span class="nc" id="L353">        List&lt;COSBase&gt; cosObjects = new ArrayList&lt;&gt;(list.size());</span>
+<span class="nc" id="L354">        list.forEach(next -&gt;</span>
+        {
+<span class="nc bnc" id="L356" title="All 2 branches missed.">            if( next instanceof String )</span>
+            {
+<span class="nc" id="L358">                cosObjects.add( new COSString( (String)next ) );</span>
+            }
+            else
+            {
+<span class="nc" id="L362">                COSObjectable cos = (COSObjectable)next;</span>
+<span class="nc" id="L363">                cosObjects.add( cos.getCOSObject() );</span>
+            }
+<span class="nc" id="L365">        });</span>
+<span class="nc" id="L366">        return cosObjects;</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean removeAll(Collection&lt;?&gt; c)
+    {
+<span class="nc" id="L375">        c.forEach(item -&gt; {</span>
+<span class="nc" id="L376">            COSBase itemCOSBase = ((COSObjectable)item).getCOSObject();</span>
+            // remove all indirect objects too by dereferencing them
+            // before doing the comparison
+<span class="nc bnc" id="L379" title="All 2 branches missed.">            for (int i=array.size()-1; i&gt;=0; i--)</span>
+            {
+<span class="nc bnc" id="L381" title="All 2 branches missed.">                if (itemCOSBase.equals(array.getObject(i)))</span>
+                {
+<span class="nc" id="L383">                    array.remove(i);</span>
+                }
+            }
+<span class="nc" id="L386">        });</span>
+
+<span class="nc" id="L388">        return actual.removeAll( c );</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean retainAll(Collection&lt;?&gt; c)
+    {
+<span class="nc" id="L397">        c.forEach(item -&gt; {</span>
+<span class="nc" id="L398">            COSBase itemCOSBase = ((COSObjectable)item).getCOSObject();</span>
+            // remove all indirect objects too by dereferencing them
+            // before doing the comparison
+<span class="nc bnc" id="L401" title="All 2 branches missed.">            for (int i=array.size()-1; i&gt;=0; i--)</span>
+            {
+<span class="nc bnc" id="L403" title="All 2 branches missed.">                if (!itemCOSBase.equals(array.getObject(i)))</span>
+                {
+<span class="nc" id="L405">                    array.remove(i);</span>
+                }
+            }
+<span class="nc" id="L408">        });</span>
+
+<span class="nc" id="L410">        return actual.retainAll( c );</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void clear()
+    {
+        //when adding if there is a parentDict then change the item
+        //in the dictionary from a single item to an array.
+<span class="nc bnc" id="L421" title="All 2 branches missed.">        if( parentDict != null )</span>
+        {
+<span class="nc" id="L423">            parentDict.setItem( dictKey, null );</span>
+        }
+<span class="nc" id="L425">        actual.clear();</span>
+<span class="nc" id="L426">        array.clear();</span>
+<span class="nc" id="L427">    }</span>
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(Object o)
+    {
+<span class="nc" id="L435">        return actual.equals( o );</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode()
+    {
+<span class="nc" id="L444">        return actual.hashCode();</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public E get(int index)
+    {
+<span class="nc" id="L453">        return actual.get( index );</span>
+
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public E set(int index, E element)
+    {
+<span class="nc bnc" id="L463" title="All 2 branches missed.">        if (isFiltered) {</span>
+<span class="nc" id="L464">            throw new UnsupportedOperationException(&quot;Replacing an element in a filtered List is not permitted&quot;);</span>
+        }
+
+<span class="nc bnc" id="L467" title="All 2 branches missed.">        if( element instanceof String )</span>
+        {
+<span class="nc" id="L469">            COSString item = new COSString( (String)element );</span>
+<span class="nc bnc" id="L470" title="All 4 branches missed.">            if( parentDict != null &amp;&amp; index == 0 )</span>
+            {
+<span class="nc" id="L472">                parentDict.setItem( dictKey, item );</span>
+            }
+<span class="nc" id="L474">            array.set( index, item );</span>
+<span class="nc" id="L475">        }</span>
+        else
+        {
+<span class="nc" id="L478">            COSBase cosObject = ((COSObjectable) element).getCOSObject();</span>
+<span class="nc bnc" id="L479" title="All 4 branches missed.">            if( parentDict != null &amp;&amp; index == 0 )</span>
+            {
+<span class="nc" id="L481">                parentDict.setItem(dictKey, cosObject);</span>
+            }
+<span class="nc" id="L483">            array.set(index, cosObject);</span>
+        }
+<span class="nc" id="L485">        return actual.set( index, element );</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void add(int index, E element)
+    {
+<span class="nc bnc" id="L494" title="All 2 branches missed.">        if (isFiltered) {</span>
+<span class="nc" id="L495">            throw new UnsupportedOperationException(&quot;Adding an element in a filtered List is not permitted&quot;);</span>
+        }
+
+        //when adding if there is a parentDict then change the item
+        //in the dictionary from a single item to an array.
+<span class="nc bnc" id="L500" title="All 2 branches missed.">        if( parentDict != null )</span>
+        {
+<span class="nc" id="L502">            parentDict.setItem( dictKey, array );</span>
+            //clear the parent dict so it doesn't happen again, there might be
+            //a usecase for keeping the parentDict around but not now.
+<span class="nc" id="L505">            parentDict = null;</span>
+        }
+<span class="nc" id="L507">        actual.add( index, element );</span>
+<span class="nc bnc" id="L508" title="All 2 branches missed.">        if( element instanceof String )</span>
+        {
+<span class="nc" id="L510">            array.add( index, new COSString( (String)element ) );</span>
+        }
+        else
+        {
+<span class="nc" id="L514">            array.add( index, ((COSObjectable)element).getCOSObject() );</span>
+        }
+<span class="nc" id="L516">    }</span>
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public E remove(int index)
+    {
+<span class="nc bnc" id="L524" title="All 2 branches missed.">        if (isFiltered) {</span>
+<span class="nc" id="L525">            throw new UnsupportedOperationException(&quot;removing entries from a filtered List is not permitted&quot;);</span>
+        }
+
+<span class="nc" id="L528">        array.remove( index );</span>
+<span class="nc" id="L529">        return actual.remove( index );</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int indexOf(Object o)
+    {
+<span class="nc" id="L538">        return actual.indexOf( o );</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int lastIndexOf(Object o)
+    {
+<span class="nc" id="L547">        return actual.lastIndexOf( o );</span>
+
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ListIterator&lt;E&gt; listIterator()
+    {
+<span class="nc" id="L557">        return actual.listIterator();</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ListIterator&lt;E&gt; listIterator(int index)
+    {
+<span class="nc" id="L566">        return actual.listIterator( index );</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List&lt;E&gt; subList(int fromIndex, int toIndex)
+    {
+<span class="nc" id="L575">        return actual.subList( fromIndex, toIndex );</span>
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L584">        return &quot;COSArrayList{&quot; + array.toString() + &quot;}&quot;;</span>
+    }
+    
+    /**
+     * This will return then underlying COSArray.
+     * 
+     * @return the COSArray
+     */
+    public COSArray toList() 
+    {
+<span class="nc" id="L594">        return array;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

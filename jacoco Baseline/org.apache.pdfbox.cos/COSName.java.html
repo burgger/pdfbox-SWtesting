@@ -1,0 +1,808 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>COSName.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.cos</a> &gt; <span class="el_source">COSName.java</span></div><h1>COSName.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.cos;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.ref.Cleaner;
+import java.lang.ref.WeakReference;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.pdfbox.util.Hex;
+
+/**
+ * A PDF Name object.
+ *
+ * @author Ben Litchfield
+ */
+public final class COSName extends COSBase implements Comparable&lt;COSName&gt;
+{
+    // using ConcurrentHashMap because this can be accessed by multiple threads
+<span class="fc" id="L37">    private static final Map&lt;String, WeakReference&lt;COSName&gt;&gt; NAME_MAP = //</span>
+            new ConcurrentHashMap&lt;&gt;(8192);
+<span class="fc" id="L39">    private static final Cleaner CLEANER = Cleaner.create();</span>
+
+    //
+    // IMPORTANT: this list is *alphabetized* and does not need any JavaDoc
+    //
+
+    // A
+<span class="fc" id="L46">    public static final COSName A = getPDFName(&quot;A&quot;);</span>
+<span class="fc" id="L47">    public static final COSName AA = getPDFName(&quot;AA&quot;);</span>
+<span class="fc" id="L48">    public static final COSName ABSOLUTE_COLORIMETRIC = getPDFName(&quot;AbsoluteColorimetric&quot;);</span>
+<span class="fc" id="L49">    public static final COSName AC = getPDFName(&quot;AC&quot;);</span>
+<span class="fc" id="L50">    public static final COSName ACRO_FORM = getPDFName(&quot;AcroForm&quot;);</span>
+<span class="fc" id="L51">    public static final COSName ACTUAL_TEXT = getPDFName(&quot;ActualText&quot;);</span>
+<span class="fc" id="L52">    public static final COSName ADBE = getPDFName(&quot;ADBE&quot;);</span>
+<span class="fc" id="L53">    public static final COSName ADBE_PKCS7_DETACHED = getPDFName(&quot;adbe.pkcs7.detached&quot;);</span>
+<span class="fc" id="L54">    public static final COSName ADBE_PKCS7_SHA1 = getPDFName(&quot;adbe.pkcs7.sha1&quot;);</span>
+<span class="fc" id="L55">    public static final COSName ADBE_X509_RSA_SHA1 = getPDFName(&quot;adbe.x509.rsa_sha1&quot;);</span>
+<span class="fc" id="L56">    public static final COSName ADOBE_PPKLITE = getPDFName(&quot;Adobe.PPKLite&quot;);</span>
+<span class="fc" id="L57">    public static final COSName AESV2 = getPDFName(&quot;AESV2&quot;);</span>
+<span class="fc" id="L58">    public static final COSName AESV3 = getPDFName(&quot;AESV3&quot;);</span>
+<span class="fc" id="L59">    public static final COSName AF = getPDFName(&quot;AF&quot;);</span>
+<span class="fc" id="L60">    public static final COSName AF_RELATIONSHIP = COSName.getPDFName(&quot;AFRelationship&quot;);</span>
+<span class="fc" id="L61">    public static final COSName AFTER = getPDFName(&quot;After&quot;);</span>
+<span class="fc" id="L62">    public static final COSName AI_META_DATA = getPDFName(&quot;AIMetaData&quot;);</span>
+<span class="fc" id="L63">    public static final COSName AIS = getPDFName(&quot;AIS&quot;);</span>
+<span class="fc" id="L64">    public static final COSName ALL_OFF = getPDFName(&quot;AllOff&quot;);</span>
+<span class="fc" id="L65">    public static final COSName ALL_ON = getPDFName(&quot;AllOn&quot;);</span>
+<span class="fc" id="L66">    public static final COSName ALT = getPDFName(&quot;Alt&quot;);</span>
+<span class="fc" id="L67">    public static final COSName ALPHA = getPDFName(&quot;Alpha&quot;);</span>
+<span class="fc" id="L68">    public static final COSName ALTERNATE = getPDFName(&quot;Alternate&quot;);</span>
+<span class="fc" id="L69">    public static final COSName ANNOT = getPDFName(&quot;Annot&quot;);</span>
+<span class="fc" id="L70">    public static final COSName ANNOTS = getPDFName(&quot;Annots&quot;);</span>
+<span class="fc" id="L71">    public static final COSName ANTI_ALIAS = getPDFName(&quot;AntiAlias&quot;);</span>
+<span class="fc" id="L72">    public static final COSName ANY_OFF = getPDFName(&quot;AnyOff&quot;);</span>
+<span class="fc" id="L73">    public static final COSName ANY_ON = getPDFName(&quot;AnyOn&quot;);</span>
+<span class="fc" id="L74">    public static final COSName AP = getPDFName(&quot;AP&quot;);</span>
+<span class="fc" id="L75">    public static final COSName AP_REF = getPDFName(&quot;APRef&quot;);</span>
+<span class="fc" id="L76">    public static final COSName APP = getPDFName(&quot;App&quot;);</span>
+<span class="fc" id="L77">    public static final COSName ART_BOX = getPDFName(&quot;ArtBox&quot;);</span>
+<span class="fc" id="L78">    public static final COSName ARTIFACT = getPDFName(&quot;Artifact&quot;);</span>
+<span class="fc" id="L79">    public static final COSName AS = getPDFName(&quot;AS&quot;);</span>
+<span class="fc" id="L80">    public static final COSName ASCENT = getPDFName(&quot;Ascent&quot;);</span>
+<span class="fc" id="L81">    public static final COSName ASCII_HEX_DECODE = getPDFName(&quot;ASCIIHexDecode&quot;);</span>
+<span class="fc" id="L82">    public static final COSName ASCII_HEX_DECODE_ABBREVIATION = getPDFName(&quot;AHx&quot;);</span>
+<span class="fc" id="L83">    public static final COSName ASCII85_DECODE = getPDFName(&quot;ASCII85Decode&quot;);</span>
+<span class="fc" id="L84">    public static final COSName ASCII85_DECODE_ABBREVIATION = getPDFName(&quot;A85&quot;);</span>
+<span class="fc" id="L85">    public static final COSName ATTACHED = getPDFName(&quot;Attached&quot;);</span>
+<span class="fc" id="L86">    public static final COSName AUTHOR = getPDFName(&quot;Author&quot;);</span>
+<span class="fc" id="L87">    public static final COSName AVG_WIDTH = getPDFName(&quot;AvgWidth&quot;);</span>
+    // B
+<span class="fc" id="L89">    public static final COSName B = getPDFName(&quot;B&quot;);</span>
+<span class="fc" id="L90">    public static final COSName BACKGROUND = getPDFName(&quot;Background&quot;);</span>
+<span class="fc" id="L91">    public static final COSName BASE_ENCODING = getPDFName(&quot;BaseEncoding&quot;);</span>
+<span class="fc" id="L92">    public static final COSName BASE_FONT = getPDFName(&quot;BaseFont&quot;);</span>
+<span class="fc" id="L93">    public static final COSName BASE_STATE = getPDFName(&quot;BaseState&quot;);</span>
+<span class="fc" id="L94">    public static final COSName BASE_VERSION = getPDFName(&quot;BaseVersion&quot;);</span>
+<span class="fc" id="L95">    public static final COSName BBOX = getPDFName(&quot;BBox&quot;);</span>
+<span class="fc" id="L96">    public static final COSName BC = getPDFName(&quot;BC&quot;);</span>
+<span class="fc" id="L97">    public static final COSName BE = getPDFName(&quot;BE&quot;);</span>
+<span class="fc" id="L98">    public static final COSName BEAD = getPDFName(&quot;BEAD&quot;);</span>
+<span class="fc" id="L99">    public static final COSName BEFORE = getPDFName(&quot;Before&quot;);</span>
+<span class="fc" id="L100">    public static final COSName BG = getPDFName(&quot;BG&quot;);</span>
+<span class="fc" id="L101">    public static final COSName BITS_PER_COMPONENT = getPDFName(&quot;BitsPerComponent&quot;);</span>
+<span class="fc" id="L102">    public static final COSName BITS_PER_COORDINATE = getPDFName(&quot;BitsPerCoordinate&quot;);</span>
+<span class="fc" id="L103">    public static final COSName BITS_PER_FLAG = getPDFName(&quot;BitsPerFlag&quot;);</span>
+<span class="fc" id="L104">    public static final COSName BITS_PER_SAMPLE = getPDFName(&quot;BitsPerSample&quot;);</span>
+<span class="fc" id="L105">    public static final COSName BL = getPDFName(&quot;Bl&quot;);</span>
+<span class="fc" id="L106">    public static final COSName BLACK_IS_1 = getPDFName(&quot;BlackIs1&quot;);</span>
+<span class="fc" id="L107">    public static final COSName BLACK_POINT = getPDFName(&quot;BlackPoint&quot;);</span>
+<span class="fc" id="L108">    public static final COSName BLEED_BOX = getPDFName(&quot;BleedBox&quot;);</span>
+<span class="fc" id="L109">    public static final COSName BM = getPDFName(&quot;BM&quot;);</span>
+<span class="fc" id="L110">    public static final COSName BORDER = getPDFName(&quot;Border&quot;);</span>
+<span class="fc" id="L111">    public static final COSName BOUNDS = getPDFName(&quot;Bounds&quot;);</span>
+<span class="fc" id="L112">    public static final COSName BPC = getPDFName(&quot;BPC&quot;);</span>
+<span class="fc" id="L113">    public static final COSName BS = getPDFName(&quot;BS&quot;);</span>
+    //** Acro form field type for button fields.
+<span class="fc" id="L115">    public static final COSName BTN = getPDFName(&quot;Btn&quot;);</span>
+<span class="fc" id="L116">    public static final COSName BYTERANGE = getPDFName(&quot;ByteRange&quot;);</span>
+    // C
+<span class="fc" id="L118">    public static final COSName C = getPDFName(&quot;C&quot;);</span>
+<span class="fc" id="L119">    public static final COSName C0 = getPDFName(&quot;C0&quot;);</span>
+<span class="fc" id="L120">    public static final COSName C1 = getPDFName(&quot;C1&quot;);</span>
+<span class="fc" id="L121">    public static final COSName CA = getPDFName(&quot;CA&quot;);</span>
+<span class="fc" id="L122">    public static final COSName CA_NS = getPDFName(&quot;ca&quot;);</span>
+<span class="fc" id="L123">    public static final COSName CALGRAY = getPDFName(&quot;CalGray&quot;);</span>
+<span class="fc" id="L124">    public static final COSName CALRGB = getPDFName(&quot;CalRGB&quot;);</span>
+<span class="fc" id="L125">    public static final COSName CAP = getPDFName(&quot;Cap&quot;);</span>
+<span class="fc" id="L126">    public static final COSName CAP_HEIGHT = getPDFName(&quot;CapHeight&quot;);</span>
+<span class="fc" id="L127">    public static final COSName CATALOG = getPDFName(&quot;Catalog&quot;);</span>
+<span class="fc" id="L128">    public static final COSName CCITTFAX_DECODE = getPDFName(&quot;CCITTFaxDecode&quot;);</span>
+<span class="fc" id="L129">    public static final COSName CCITTFAX_DECODE_ABBREVIATION = getPDFName(&quot;CCF&quot;);</span>
+<span class="fc" id="L130">    public static final COSName CENTER_WINDOW = getPDFName(&quot;CenterWindow&quot;);</span>
+<span class="fc" id="L131">    public static final COSName CERT = getPDFName(&quot;Cert&quot;);</span>
+<span class="fc" id="L132">    public static final COSName CERTS = getPDFName(&quot;Certs&quot;);</span>
+<span class="fc" id="L133">    public static final COSName CF = getPDFName(&quot;CF&quot;);</span>
+<span class="fc" id="L134">    public static final COSName CFM = getPDFName(&quot;CFM&quot;);</span>
+    //** Acro form field type for choice fields.
+<span class="fc" id="L136">    public static final COSName CH = getPDFName(&quot;Ch&quot;);</span>
+<span class="fc" id="L137">    public static final COSName CHAR_PROCS = getPDFName(&quot;CharProcs&quot;);</span>
+<span class="fc" id="L138">    public static final COSName CHAR_SET = getPDFName(&quot;CharSet&quot;);</span>
+<span class="fc" id="L139">    public static final COSName CHECK_SUM = getPDFName(&quot;CheckSum&quot;);</span>
+<span class="fc" id="L140">    public static final COSName CI = getPDFName(&quot;CI&quot;);</span>
+<span class="fc" id="L141">    public static final COSName CICI_SIGNIT = getPDFName(&quot;CICI.SignIt&quot;);</span>
+<span class="fc" id="L142">    public static final COSName CID_FONT_TYPE0 = getPDFName(&quot;CIDFontType0&quot;);</span>
+<span class="fc" id="L143">    public static final COSName CID_FONT_TYPE2 = getPDFName(&quot;CIDFontType2&quot;);</span>
+<span class="fc" id="L144">    public static final COSName CID_TO_GID_MAP = getPDFName(&quot;CIDToGIDMap&quot;);</span>
+<span class="fc" id="L145">    public static final COSName CID_SET = getPDFName(&quot;CIDSet&quot;);</span>
+<span class="fc" id="L146">    public static final COSName CIDSYSTEMINFO = getPDFName(&quot;CIDSystemInfo&quot;);</span>
+<span class="fc" id="L147">    public static final COSName CL = getPDFName(&quot;CL&quot;);</span>
+<span class="fc" id="L148">    public static final COSName CLASS_MAP = getPDFName(&quot;ClassMap&quot;);</span>
+<span class="fc" id="L149">    public static final COSName CLR_F = getPDFName(&quot;ClrF&quot;);</span>
+<span class="fc" id="L150">    public static final COSName CLR_FF = getPDFName(&quot;ClrFf&quot;);</span>
+<span class="fc" id="L151">    public static final COSName CMAP = getPDFName(&quot;CMap&quot;);</span>
+<span class="fc" id="L152">    public static final COSName CMAPNAME = getPDFName(&quot;CMapName&quot;);</span>
+<span class="fc" id="L153">    public static final COSName CMYK = getPDFName(&quot;CMYK&quot;);</span>
+<span class="fc" id="L154">    public static final COSName CO = getPDFName(&quot;CO&quot;);</span>
+<span class="fc" id="L155">    public static final COSName COLOR = getPDFName(&quot;Color&quot;);</span>
+<span class="fc" id="L156">    public static final COSName COLLECTION = getPDFName(&quot;Collection&quot;);</span>
+<span class="fc" id="L157">    public static final COSName COLLECTION_ITEM = getPDFName(&quot;CollectionItem&quot;);</span>
+<span class="fc" id="L158">    public static final COSName COLLECTION_FIELD = getPDFName(&quot;CollectionField&quot;);</span>
+<span class="fc" id="L159">    public static final COSName COLLECTION_SCHEMA = getPDFName(&quot;CollectionSchema&quot;);</span>
+<span class="fc" id="L160">    public static final COSName COLLECTION_SORT = getPDFName(&quot;CollectionSort&quot;);</span>
+<span class="fc" id="L161">    public static final COSName COLLECTION_SUBITEM = getPDFName(&quot;CollectionSubitem&quot;);</span>
+<span class="fc" id="L162">    public static final COSName COLOR_BURN = getPDFName(&quot;ColorBurn&quot;);</span>
+<span class="fc" id="L163">    public static final COSName COLOR_DODGE = getPDFName(&quot;ColorDodge&quot;);</span>
+<span class="fc" id="L164">    public static final COSName COLORANTS = getPDFName(&quot;Colorants&quot;);</span>
+<span class="fc" id="L165">    public static final COSName COLORS = getPDFName(&quot;Colors&quot;);</span>
+<span class="fc" id="L166">    public static final COSName COLORSPACE = getPDFName(&quot;ColorSpace&quot;);</span>
+<span class="fc" id="L167">    public static final COSName COLUMNS = getPDFName(&quot;Columns&quot;);</span>
+<span class="fc" id="L168">    public static final COSName COMPATIBLE = getPDFName(&quot;Compatible&quot;);</span>
+<span class="fc" id="L169">    public static final COSName COMPONENTS = getPDFName(&quot;Components&quot;);</span>
+<span class="fc" id="L170">    public static final COSName CONTACT_INFO = getPDFName(&quot;ContactInfo&quot;);</span>
+<span class="fc" id="L171">    public static final COSName CONTENTS = getPDFName(&quot;Contents&quot;);</span>
+<span class="fc" id="L172">    public static final COSName COORDS = getPDFName(&quot;Coords&quot;);</span>
+<span class="fc" id="L173">    public static final COSName COUNT = getPDFName(&quot;Count&quot;);</span>
+<span class="fc" id="L174">    public static final COSName CP = getPDFName(&quot;CP&quot;);</span>
+<span class="fc" id="L175">    public static final COSName CREATION_DATE = getPDFName(&quot;CreationDate&quot;);</span>
+<span class="fc" id="L176">    public static final COSName CREATOR = getPDFName(&quot;Creator&quot;);</span>
+<span class="fc" id="L177">    public static final COSName CRL = getPDFName(&quot;CRL&quot;);</span>
+<span class="fc" id="L178">    public static final COSName CRLS = getPDFName(&quot;CRLS&quot;);</span>
+<span class="fc" id="L179">    public static final COSName CROP_BOX = getPDFName(&quot;CropBox&quot;);</span>
+<span class="fc" id="L180">    public static final COSName CRYPT = getPDFName(&quot;Crypt&quot;);</span>
+<span class="fc" id="L181">    public static final COSName CS = getPDFName(&quot;CS&quot;);</span>
+<span class="fc" id="L182">    public static final COSName CYX = getPDFName(&quot;CYX&quot;);</span>
+    // D
+<span class="fc" id="L184">    public static final COSName D = getPDFName(&quot;D&quot;);</span>
+<span class="fc" id="L185">    public static final COSName DA = getPDFName(&quot;DA&quot;);</span>
+<span class="fc" id="L186">    public static final COSName DARKEN = getPDFName(&quot;Darken&quot;);</span>
+<span class="fc" id="L187">    public static final COSName DATE = getPDFName(&quot;Date&quot;);</span>
+<span class="fc" id="L188">    public static final COSName DCT_DECODE = getPDFName(&quot;DCTDecode&quot;);</span>
+<span class="fc" id="L189">    public static final COSName DCT_DECODE_ABBREVIATION = getPDFName(&quot;DCT&quot;);</span>
+<span class="fc" id="L190">    public static final COSName DECODE = getPDFName(&quot;Decode&quot;);</span>
+<span class="fc" id="L191">    public static final COSName DECODE_PARMS = getPDFName(&quot;DecodeParms&quot;);</span>
+<span class="fc" id="L192">    public static final COSName DEFAULT = getPDFName(&quot;default&quot;);</span>
+<span class="fc" id="L193">    public static final COSName DEFAULT_CMYK = getPDFName(&quot;DefaultCMYK&quot;);</span>
+<span class="fc" id="L194">    public static final COSName DEFAULT_CRYPT_FILTER = getPDFName(&quot;DefaultCryptFilter&quot;);</span>
+<span class="fc" id="L195">    public static final COSName DEFAULT_GRAY = getPDFName(&quot;DefaultGray&quot;);</span>
+<span class="fc" id="L196">    public static final COSName DEFAULT_RGB = getPDFName(&quot;DefaultRGB&quot;);</span>
+<span class="fc" id="L197">    public static final COSName DESC = getPDFName(&quot;Desc&quot;);</span>
+<span class="fc" id="L198">    public static final COSName DESCENDANT_FONTS = getPDFName(&quot;DescendantFonts&quot;);</span>
+<span class="fc" id="L199">    public static final COSName DESCENT = getPDFName(&quot;Descent&quot;);</span>
+<span class="fc" id="L200">    public static final COSName DEST = getPDFName(&quot;Dest&quot;);</span>
+<span class="fc" id="L201">    public static final COSName DEST_OUTPUT_PROFILE = getPDFName(&quot;DestOutputProfile&quot;);</span>
+<span class="fc" id="L202">    public static final COSName DESTS = getPDFName(&quot;Dests&quot;);</span>
+<span class="fc" id="L203">    public static final COSName DEVICECMYK = getPDFName(&quot;DeviceCMYK&quot;);</span>
+<span class="fc" id="L204">    public static final COSName DEVICEGRAY = getPDFName(&quot;DeviceGray&quot;);</span>
+<span class="fc" id="L205">    public static final COSName DEVICEN = getPDFName(&quot;DeviceN&quot;);</span>
+<span class="fc" id="L206">    public static final COSName DEVICERGB = getPDFName(&quot;DeviceRGB&quot;);</span>
+<span class="fc" id="L207">    public static final COSName DI = getPDFName(&quot;Di&quot;);</span>
+<span class="fc" id="L208">    public static final COSName DIFFERENCE = getPDFName(&quot;Difference&quot;);</span>
+<span class="fc" id="L209">    public static final COSName DIFFERENCES = getPDFName(&quot;Differences&quot;);</span>
+<span class="fc" id="L210">    public static final COSName DIGEST_METHOD = getPDFName(&quot;DigestMethod&quot;);</span>
+<span class="fc" id="L211">    public static final COSName DIGEST_RIPEMD160 = getPDFName(&quot;RIPEMD160&quot;);</span>
+<span class="fc" id="L212">    public static final COSName DIGEST_SHA1 = getPDFName(&quot;SHA1&quot;);</span>
+<span class="fc" id="L213">    public static final COSName DIGEST_SHA256 = getPDFName(&quot;SHA256&quot;);</span>
+<span class="fc" id="L214">    public static final COSName DIGEST_SHA384 = getPDFName(&quot;SHA384&quot;);</span>
+<span class="fc" id="L215">    public static final COSName DIGEST_SHA512 = getPDFName(&quot;SHA512&quot;);</span>
+<span class="fc" id="L216">    public static final COSName DIRECTION = getPDFName(&quot;Direction&quot;);</span>
+<span class="fc" id="L217">    public static final COSName DISPLAY_DOC_TITLE = getPDFName(&quot;DisplayDocTitle&quot;);</span>
+<span class="fc" id="L218">    public static final COSName DL = getPDFName(&quot;DL&quot;);</span>
+<span class="fc" id="L219">    public static final COSName DM = getPDFName(&quot;Dm&quot;);</span>
+<span class="fc" id="L220">    public static final COSName DOC = getPDFName(&quot;Doc&quot;);</span>
+<span class="fc" id="L221">    public static final COSName DOC_CHECKSUM = getPDFName(&quot;DocChecksum&quot;);</span>
+<span class="fc" id="L222">    public static final COSName DOC_TIME_STAMP = getPDFName(&quot;DocTimeStamp&quot;);</span>
+<span class="fc" id="L223">    public static final COSName DOCMDP = getPDFName(&quot;DocMDP&quot;);</span>
+<span class="fc" id="L224">    public static final COSName DOCUMENT = getPDFName(&quot;Document&quot;);</span>
+<span class="fc" id="L225">    public static final COSName DOMAIN = getPDFName(&quot;Domain&quot;);</span>
+<span class="fc" id="L226">    public static final COSName DOS = getPDFName(&quot;DOS&quot;);</span>
+<span class="fc" id="L227">    public static final COSName DP = getPDFName(&quot;DP&quot;);</span>
+<span class="fc" id="L228">    public static final COSName DR = getPDFName(&quot;DR&quot;);</span>
+<span class="fc" id="L229">    public static final COSName DS = getPDFName(&quot;DS&quot;);</span>
+<span class="fc" id="L230">    public static final COSName DSS = getPDFName(&quot;DSS&quot;);</span>
+<span class="fc" id="L231">    public static final COSName DUPLEX = getPDFName(&quot;Duplex&quot;);</span>
+<span class="fc" id="L232">    public static final COSName DUR = getPDFName(&quot;Dur&quot;);</span>
+<span class="fc" id="L233">    public static final COSName DV = getPDFName(&quot;DV&quot;);</span>
+<span class="fc" id="L234">    public static final COSName DW = getPDFName(&quot;DW&quot;);</span>
+<span class="fc" id="L235">    public static final COSName DW2 = getPDFName(&quot;DW2&quot;);</span>
+    // E
+<span class="fc" id="L237">    public static final COSName E = getPDFName(&quot;E&quot;);</span>
+<span class="fc" id="L238">    public static final COSName EARLY_CHANGE = getPDFName(&quot;EarlyChange&quot;);</span>
+<span class="fc" id="L239">    public static final COSName EF = getPDFName(&quot;EF&quot;);</span>
+<span class="fc" id="L240">    public static final COSName EMBEDDED_FDFS = getPDFName(&quot;EmbeddedFDFs&quot;);</span>
+<span class="fc" id="L241">    public static final COSName EMBEDDED_FILE = getPDFName(&quot;EmbeddedFile&quot;);</span>
+<span class="fc" id="L242">    public static final COSName EMBEDDED_FILES = getPDFName(&quot;EmbeddedFiles&quot;);</span>
+<span class="fc" id="L243">    public static final COSName EMPTY = getPDFName(&quot;&quot;);</span>
+<span class="fc" id="L244">    public static final COSName ENCODE = getPDFName(&quot;Encode&quot;);</span>
+<span class="fc" id="L245">    public static final COSName ENCODED_BYTE_ALIGN = getPDFName(&quot;EncodedByteAlign&quot;);    </span>
+<span class="fc" id="L246">    public static final COSName ENCODING = getPDFName(&quot;Encoding&quot;);</span>
+<span class="fc" id="L247">    public static final COSName ENCODING_90MS_RKSJ_H = getPDFName(&quot;90ms-RKSJ-H&quot;);</span>
+<span class="fc" id="L248">    public static final COSName ENCODING_90MS_RKSJ_V = getPDFName(&quot;90ms-RKSJ-V&quot;);</span>
+<span class="fc" id="L249">    public static final COSName ENCODING_ETEN_B5_H = getPDFName(&quot;ETen-B5-H&quot;);</span>
+<span class="fc" id="L250">    public static final COSName ENCODING_ETEN_B5_V = getPDFName(&quot;ETen-B5-V&quot;);</span>
+<span class="fc" id="L251">    public static final COSName ENCRYPT = getPDFName(&quot;Encrypt&quot;);</span>
+<span class="fc" id="L252">    public static final COSName ENCRYPT_META_DATA = getPDFName(&quot;EncryptMetadata&quot;);</span>
+<span class="fc" id="L253">    public static final COSName ENCRYPTED_PAYLOAD = getPDFName(&quot;EncryptedPayload&quot;);</span>
+<span class="fc" id="L254">    public static final COSName END_OF_LINE = getPDFName(&quot;EndOfLine&quot;);</span>
+<span class="fc" id="L255">    public static final COSName ENTRUST_PPKEF = getPDFName(&quot;Entrust.PPKEF&quot;);</span>
+<span class="fc" id="L256">    public static final COSName EXCLUSION = getPDFName(&quot;Exclusion&quot;);</span>
+<span class="fc" id="L257">    public static final COSName EXTENSIONS = getPDFName(&quot;Extensions&quot;);</span>
+<span class="fc" id="L258">    public static final COSName EXTENSION_LEVEL = getPDFName(&quot;ExtensionLevel&quot;);</span>
+<span class="fc" id="L259">    public static final COSName EX_DATA = getPDFName(&quot;ExData&quot;);</span>
+<span class="fc" id="L260">    public static final COSName EXPORT = getPDFName(&quot;Export&quot;);</span>
+<span class="fc" id="L261">    public static final COSName EXPORT_STATE = getPDFName(&quot;ExportState&quot;);</span>
+<span class="fc" id="L262">    public static final COSName EXT_G_STATE = getPDFName(&quot;ExtGState&quot;);</span>
+<span class="fc" id="L263">    public static final COSName EXTEND = getPDFName(&quot;Extend&quot;);</span>
+<span class="fc" id="L264">    public static final COSName EXTENDS = getPDFName(&quot;Extends&quot;);</span>
+    // F
+<span class="fc" id="L266">    public static final COSName F = getPDFName(&quot;F&quot;);</span>
+<span class="fc" id="L267">    public static final COSName F_DECODE_PARMS = getPDFName(&quot;FDecodeParms&quot;);</span>
+<span class="fc" id="L268">    public static final COSName F_FILTER = getPDFName(&quot;FFilter&quot;);</span>
+<span class="fc" id="L269">    public static final COSName FB = getPDFName(&quot;FB&quot;);</span>
+<span class="fc" id="L270">    public static final COSName FDF = getPDFName(&quot;FDF&quot;);</span>
+<span class="fc" id="L271">    public static final COSName FF = getPDFName(&quot;Ff&quot;);</span>
+<span class="fc" id="L272">    public static final COSName FIELDS = getPDFName(&quot;Fields&quot;);</span>
+<span class="fc" id="L273">    public static final COSName FILESPEC = getPDFName(&quot;Filespec&quot;);</span>
+<span class="fc" id="L274">    public static final COSName FILTER = getPDFName(&quot;Filter&quot;);</span>
+<span class="fc" id="L275">    public static final COSName FIRST = getPDFName(&quot;First&quot;);</span>
+<span class="fc" id="L276">    public static final COSName FIRST_CHAR = getPDFName(&quot;FirstChar&quot;);</span>
+<span class="fc" id="L277">    public static final COSName FIT_WINDOW = getPDFName(&quot;FitWindow&quot;);</span>
+<span class="fc" id="L278">    public static final COSName FL = getPDFName(&quot;FL&quot;);</span>
+<span class="fc" id="L279">    public static final COSName FLAGS = getPDFName(&quot;Flags&quot;);</span>
+<span class="fc" id="L280">    public static final COSName FLATE_DECODE = getPDFName(&quot;FlateDecode&quot;);</span>
+<span class="fc" id="L281">    public static final COSName FLATE_DECODE_ABBREVIATION = getPDFName(&quot;Fl&quot;);</span>
+<span class="fc" id="L282">    public static final COSName FO = getPDFName(&quot;Fo&quot;);</span>
+<span class="fc" id="L283">    public static final COSName FOLDERS = getPDFName(&quot;Folders&quot;);</span>
+<span class="fc" id="L284">    public static final COSName FONT = getPDFName(&quot;Font&quot;);</span>
+<span class="fc" id="L285">    public static final COSName FONT_BBOX = getPDFName(&quot;FontBBox&quot;);</span>
+<span class="fc" id="L286">    public static final COSName FONT_DESC = getPDFName(&quot;FontDescriptor&quot;);</span>
+<span class="fc" id="L287">    public static final COSName FONT_FAMILY = getPDFName(&quot;FontFamily&quot;);</span>
+<span class="fc" id="L288">    public static final COSName FONT_FILE = getPDFName(&quot;FontFile&quot;);</span>
+<span class="fc" id="L289">    public static final COSName FONT_FILE2 = getPDFName(&quot;FontFile2&quot;);</span>
+<span class="fc" id="L290">    public static final COSName FONT_FILE3 = getPDFName(&quot;FontFile3&quot;);</span>
+<span class="fc" id="L291">    public static final COSName FONT_MATRIX = getPDFName(&quot;FontMatrix&quot;);</span>
+<span class="fc" id="L292">    public static final COSName FONT_NAME = getPDFName(&quot;FontName&quot;);</span>
+<span class="fc" id="L293">    public static final COSName FONT_STRETCH = getPDFName(&quot;FontStretch&quot;);</span>
+<span class="fc" id="L294">    public static final COSName FONT_WEIGHT = getPDFName(&quot;FontWeight&quot;);</span>
+<span class="fc" id="L295">    public static final COSName FORM = getPDFName(&quot;Form&quot;);</span>
+<span class="fc" id="L296">    public static final COSName FORMTYPE = getPDFName(&quot;FormType&quot;);</span>
+<span class="fc" id="L297">    public static final COSName FRM = getPDFName(&quot;FRM&quot;);</span>
+<span class="fc" id="L298">    public static final COSName FS = getPDFName(&quot;FS&quot;);</span>
+<span class="fc" id="L299">    public static final COSName FT = getPDFName(&quot;FT&quot;);</span>
+<span class="fc" id="L300">    public static final COSName FUNCTION = getPDFName(&quot;Function&quot;);</span>
+<span class="fc" id="L301">    public static final COSName FUNCTION_TYPE = getPDFName(&quot;FunctionType&quot;);</span>
+<span class="fc" id="L302">    public static final COSName FUNCTIONS = getPDFName(&quot;Functions&quot;);</span>
+    // G
+<span class="fc" id="L304">    public static final COSName G = getPDFName(&quot;G&quot;);</span>
+<span class="fc" id="L305">    public static final COSName GAMMA = getPDFName(&quot;Gamma&quot;);</span>
+<span class="fc" id="L306">    public static final COSName GROUP = getPDFName(&quot;Group&quot;);</span>
+<span class="fc" id="L307">    public static final COSName GTS_PDFA1 = getPDFName(&quot;GTS_PDFA1&quot;);</span>
+    // H
+<span class="fc" id="L309">    public static final COSName H = getPDFName(&quot;H&quot;);</span>
+<span class="fc" id="L310">    public static final COSName HARD_LIGHT = getPDFName(&quot;HardLight&quot;);</span>
+<span class="fc" id="L311">    public static final COSName HEIGHT = getPDFName(&quot;Height&quot;);</span>
+<span class="fc" id="L312">    public static final COSName HELV = getPDFName(&quot;Helv&quot;);</span>
+<span class="fc" id="L313">    public static final COSName HIDE_MENUBAR = getPDFName(&quot;HideMenubar&quot;);</span>
+<span class="fc" id="L314">    public static final COSName HIDE_TOOLBAR = getPDFName(&quot;HideToolbar&quot;);</span>
+<span class="fc" id="L315">    public static final COSName HIDE_WINDOWUI = getPDFName(&quot;HideWindowUI&quot;);</span>
+<span class="fc" id="L316">    public static final COSName HUE = getPDFName(&quot;Hue&quot;);</span>
+    // I
+<span class="fc" id="L318">    public static final COSName I = getPDFName(&quot;I&quot;);</span>
+<span class="fc" id="L319">    public static final COSName IC = getPDFName(&quot;IC&quot;);</span>
+<span class="fc" id="L320">    public static final COSName ICCBASED = getPDFName(&quot;ICCBased&quot;);</span>
+<span class="fc" id="L321">    public static final COSName ID = getPDFName(&quot;ID&quot;);</span>
+<span class="fc" id="L322">    public static final COSName ID_TREE = getPDFName(&quot;IDTree&quot;);</span>
+<span class="fc" id="L323">    public static final COSName IDENTITY = getPDFName(&quot;Identity&quot;);</span>
+<span class="fc" id="L324">    public static final COSName IDENTITY_H = getPDFName(&quot;Identity-H&quot;);</span>
+<span class="fc" id="L325">    public static final COSName IDENTITY_V = getPDFName(&quot;Identity-V&quot;);</span>
+<span class="fc" id="L326">    public static final COSName IF = getPDFName(&quot;IF&quot;);</span>
+<span class="fc" id="L327">    public static final COSName ILLUSTRATOR = getPDFName(&quot;Illustrator&quot;);</span>
+<span class="fc" id="L328">    public static final COSName IM = getPDFName(&quot;IM&quot;);</span>
+<span class="fc" id="L329">    public static final COSName IMAGE = getPDFName(&quot;Image&quot;);</span>
+<span class="fc" id="L330">    public static final COSName IMAGE_MASK = getPDFName(&quot;ImageMask&quot;);</span>
+<span class="fc" id="L331">    public static final COSName INDEX = getPDFName(&quot;Index&quot;);</span>
+<span class="fc" id="L332">    public static final COSName INDEXED = getPDFName(&quot;Indexed&quot;);</span>
+<span class="fc" id="L333">    public static final COSName INFO = getPDFName(&quot;Info&quot;);</span>
+<span class="fc" id="L334">    public static final COSName INKLIST = getPDFName(&quot;InkList&quot;);</span>
+<span class="fc" id="L335">    public static final COSName INTENT = getPDFName(&quot;Intent&quot;);</span>
+<span class="fc" id="L336">    public static final COSName INTERPOLATE = getPDFName(&quot;Interpolate&quot;);</span>
+<span class="fc" id="L337">    public static final COSName IRT = getPDFName(&quot;IRT&quot;);</span>
+<span class="fc" id="L338">    public static final COSName IT = getPDFName(&quot;IT&quot;);</span>
+<span class="fc" id="L339">    public static final COSName ITALIC_ANGLE = getPDFName(&quot;ItalicAngle&quot;);</span>
+<span class="fc" id="L340">    public static final COSName ISSUER = getPDFName(&quot;Issuer&quot;);</span>
+<span class="fc" id="L341">    public static final COSName IX = getPDFName(&quot;IX&quot;);</span>
+
+    // J
+<span class="fc" id="L344">    public static final COSName JAVA_SCRIPT = getPDFName(&quot;JavaScript&quot;);</span>
+<span class="fc" id="L345">    public static final COSName JBIG2_DECODE = getPDFName(&quot;JBIG2Decode&quot;);</span>
+<span class="fc" id="L346">    public static final COSName JBIG2_GLOBALS = getPDFName(&quot;JBIG2Globals&quot;);</span>
+<span class="fc" id="L347">    public static final COSName JPX_DECODE = getPDFName(&quot;JPXDecode&quot;);</span>
+<span class="fc" id="L348">    public static final COSName JS = getPDFName(&quot;JS&quot;);</span>
+    // K
+<span class="fc" id="L350">    public static final COSName K = getPDFName(&quot;K&quot;);</span>
+<span class="fc" id="L351">    public static final COSName KEYWORDS = getPDFName(&quot;Keywords&quot;);</span>
+<span class="fc" id="L352">    public static final COSName KEY_USAGE = getPDFName(&quot;KeyUsage&quot;);</span>
+<span class="fc" id="L353">    public static final COSName KIDS = getPDFName(&quot;Kids&quot;);</span>
+    // L
+<span class="fc" id="L355">    public static final COSName L = getPDFName(&quot;L&quot;);</span>
+<span class="fc" id="L356">    public static final COSName LAB = getPDFName(&quot;Lab&quot;);</span>
+<span class="fc" id="L357">    public static final COSName LANG = getPDFName(&quot;Lang&quot;);</span>
+<span class="fc" id="L358">    public static final COSName LAST = getPDFName(&quot;Last&quot;);</span>
+<span class="fc" id="L359">    public static final COSName LAST_CHAR = getPDFName(&quot;LastChar&quot;);</span>
+<span class="fc" id="L360">    public static final COSName LAST_MODIFIED = getPDFName(&quot;LastModified&quot;);</span>
+<span class="fc" id="L361">    public static final COSName LC = getPDFName(&quot;LC&quot;);</span>
+<span class="fc" id="L362">    public static final COSName LE = getPDFName(&quot;LE&quot;);</span>
+<span class="fc" id="L363">    public static final COSName LEADING = getPDFName(&quot;Leading&quot;);</span>
+<span class="fc" id="L364">    public static final COSName LEGAL_ATTESTATION = getPDFName(&quot;LegalAttestation&quot;);</span>
+<span class="fc" id="L365">    public static final COSName LENGTH = getPDFName(&quot;Length&quot;);</span>
+<span class="fc" id="L366">    public static final COSName LENGTH1 = getPDFName(&quot;Length1&quot;);</span>
+<span class="fc" id="L367">    public static final COSName LENGTH2 = getPDFName(&quot;Length2&quot;);</span>
+<span class="fc" id="L368">    public static final COSName LENGTH3 = getPDFName(&quot;Length3&quot;);</span>
+<span class="fc" id="L369">    public static final COSName LIGHTEN = getPDFName(&quot;Lighten&quot;);</span>
+<span class="fc" id="L370">    public static final COSName LIMITS = getPDFName(&quot;Limits&quot;);</span>
+<span class="fc" id="L371">    public static final COSName LINEARIZED = getPDFName(&quot;Linearized&quot;);</span>
+<span class="fc" id="L372">    public static final COSName LINK = getPDFName(&quot;Link&quot;);</span>
+<span class="fc" id="L373">    public static final COSName LJ = getPDFName(&quot;LJ&quot;);</span>
+<span class="fc" id="L374">    public static final COSName LL = getPDFName(&quot;LL&quot;);</span>
+<span class="fc" id="L375">    public static final COSName LLE = getPDFName(&quot;LLE&quot;);</span>
+<span class="fc" id="L376">    public static final COSName LLO = getPDFName(&quot;LLO&quot;);</span>
+<span class="fc" id="L377">    public static final COSName LOCATION = getPDFName(&quot;Location&quot;);</span>
+<span class="fc" id="L378">    public static final COSName LUMINOSITY = getPDFName(&quot;Luminosity&quot;);</span>
+<span class="fc" id="L379">    public static final COSName LW = getPDFName(&quot;LW&quot;);</span>
+<span class="fc" id="L380">    public static final COSName LZW_DECODE = getPDFName(&quot;LZWDecode&quot;);</span>
+<span class="fc" id="L381">    public static final COSName LZW_DECODE_ABBREVIATION = getPDFName(&quot;LZW&quot;);</span>
+    // M
+<span class="fc" id="L383">    public static final COSName M = getPDFName(&quot;M&quot;);</span>
+<span class="fc" id="L384">    public static final COSName MAC = getPDFName(&quot;Mac&quot;);</span>
+<span class="fc" id="L385">    public static final COSName MAC_EXPERT_ENCODING = getPDFName(&quot;MacExpertEncoding&quot;);</span>
+<span class="fc" id="L386">    public static final COSName MAC_ROMAN_ENCODING = getPDFName(&quot;MacRomanEncoding&quot;);</span>
+<span class="fc" id="L387">    public static final COSName MARK_INFO = getPDFName(&quot;MarkInfo&quot;);</span>
+<span class="fc" id="L388">    public static final COSName MASK = getPDFName(&quot;Mask&quot;);</span>
+<span class="fc" id="L389">    public static final COSName MATRIX = getPDFName(&quot;Matrix&quot;);</span>
+<span class="fc" id="L390">    public static final COSName MATTE = getPDFName(&quot;Matte&quot;);</span>
+<span class="fc" id="L391">    public static final COSName MAX_LEN = getPDFName(&quot;MaxLen&quot;);</span>
+<span class="fc" id="L392">    public static final COSName MAX_WIDTH = getPDFName(&quot;MaxWidth&quot;);</span>
+<span class="fc" id="L393">    public static final COSName MCID = getPDFName(&quot;MCID&quot;);</span>
+<span class="fc" id="L394">    public static final COSName MCR = getPDFName(&quot;MCR&quot;);</span>
+<span class="fc" id="L395">    public static final COSName MDP = getPDFName(&quot;MDP&quot;);</span>
+<span class="fc" id="L396">    public static final COSName MEDIA_BOX = getPDFName(&quot;MediaBox&quot;);</span>
+<span class="fc" id="L397">    public static final COSName MEASURE = getPDFName(&quot;Measure&quot;);</span>
+<span class="fc" id="L398">    public static final COSName METADATA = getPDFName(&quot;Metadata&quot;);</span>
+<span class="fc" id="L399">    public static final COSName MISSING_WIDTH = getPDFName(&quot;MissingWidth&quot;);</span>
+<span class="fc" id="L400">    public static final COSName MIX = getPDFName(&quot;Mix&quot;);</span>
+<span class="fc" id="L401">    public static final COSName MK = getPDFName(&quot;MK&quot;);</span>
+<span class="fc" id="L402">    public static final COSName ML = getPDFName(&quot;ML&quot;);</span>
+<span class="fc" id="L403">    public static final COSName MM_TYPE1 = getPDFName(&quot;MMType1&quot;);</span>
+<span class="fc" id="L404">    public static final COSName MOD_DATE = getPDFName(&quot;ModDate&quot;);</span>
+<span class="fc" id="L405">    public static final COSName MULTIPLY = getPDFName(&quot;Multiply&quot;);</span>
+    // N
+<span class="fc" id="L407">    public static final COSName N = getPDFName(&quot;N&quot;);</span>
+<span class="fc" id="L408">    public static final COSName NAME = getPDFName(&quot;Name&quot;);</span>
+<span class="fc" id="L409">    public static final COSName NAMES = getPDFName(&quot;Names&quot;);</span>
+<span class="fc" id="L410">    public static final COSName NAVIGATOR = getPDFName(&quot;Navigator&quot;);</span>
+<span class="fc" id="L411">    public static final COSName NEED_APPEARANCES = getPDFName(&quot;NeedAppearances&quot;);</span>
+<span class="fc" id="L412">    public static final COSName NEW_WINDOW = getPDFName(&quot;NewWindow&quot;);</span>
+<span class="fc" id="L413">    public static final COSName NEXT = getPDFName(&quot;Next&quot;);</span>
+<span class="fc" id="L414">    public static final COSName NM = getPDFName(&quot;NM&quot;);</span>
+<span class="fc" id="L415">    public static final COSName NON_EFONT_NO_WARN = getPDFName(&quot;NonEFontNoWarn&quot;);</span>
+<span class="fc" id="L416">    public static final COSName NON_FULL_SCREEN_PAGE_MODE = getPDFName(&quot;NonFullScreenPageMode&quot;);</span>
+<span class="fc" id="L417">    public static final COSName NONE = getPDFName(&quot;None&quot;);</span>
+<span class="fc" id="L418">    public static final COSName NORMAL = getPDFName(&quot;Normal&quot;);</span>
+<span class="fc" id="L419">    public static final COSName NUMS = getPDFName(&quot;Nums&quot;);</span>
+    // O
+<span class="fc" id="L421">    public static final COSName O = getPDFName(&quot;O&quot;);</span>
+<span class="fc" id="L422">    public static final COSName OBJ = getPDFName(&quot;Obj&quot;);</span>
+<span class="fc" id="L423">    public static final COSName OBJR = getPDFName(&quot;OBJR&quot;);</span>
+<span class="fc" id="L424">    public static final COSName OBJ_STM = getPDFName(&quot;ObjStm&quot;);</span>
+<span class="fc" id="L425">    public static final COSName OC = getPDFName(&quot;OC&quot;);</span>
+<span class="fc" id="L426">    public static final COSName OCG = getPDFName(&quot;OCG&quot;);</span>
+<span class="fc" id="L427">    public static final COSName OCGS = getPDFName(&quot;OCGs&quot;);</span>
+<span class="fc" id="L428">    public static final COSName OCMD = getPDFName(&quot;OCMD&quot;);</span>
+<span class="fc" id="L429">    public static final COSName OCPROPERTIES = getPDFName(&quot;OCProperties&quot;);</span>
+<span class="fc" id="L430">    public static final COSName OCSP = getPDFName(&quot;OCSP&quot;);</span>
+<span class="fc" id="L431">    public static final COSName OCSPS = getPDFName(&quot;OCSPs&quot;);</span>
+<span class="fc" id="L432">    public static final COSName OE = getPDFName(&quot;OE&quot;);</span>
+<span class="fc" id="L433">    public static final COSName OID = getPDFName(&quot;OID&quot;);</span>
+    
+    /**
+     * &quot;OFF&quot;, to be used for OCGs, not for Acroform
+     */
+<span class="fc" id="L438">    public static final COSName OFF = getPDFName(&quot;OFF&quot;);</span>
+    
+    /**
+     * &quot;Off&quot;, to be used for Acroform, not for OCGs
+     */
+<span class="fc" id="L443">    public static final COSName Off = getPDFName(&quot;Off&quot;);    </span>
+    
+<span class="fc" id="L445">    public static final COSName ON = getPDFName(&quot;ON&quot;);</span>
+<span class="fc" id="L446">    public static final COSName OP = getPDFName(&quot;OP&quot;);</span>
+<span class="fc" id="L447">    public static final COSName OP_NS = getPDFName(&quot;op&quot;);</span>
+<span class="fc" id="L448">    public static final COSName OPEN_ACTION = getPDFName(&quot;OpenAction&quot;);</span>
+<span class="fc" id="L449">    public static final COSName OPEN_TYPE = getPDFName(&quot;OpenType&quot;);</span>
+<span class="fc" id="L450">    public static final COSName OPM = getPDFName(&quot;OPM&quot;);</span>
+<span class="fc" id="L451">    public static final COSName OPT = getPDFName(&quot;Opt&quot;);</span>
+<span class="fc" id="L452">    public static final COSName ORDER = getPDFName(&quot;Order&quot;);</span>
+<span class="fc" id="L453">    public static final COSName ORDERING = getPDFName(&quot;Ordering&quot;);</span>
+<span class="fc" id="L454">    public static final COSName OS = getPDFName(&quot;OS&quot;);</span>
+<span class="fc" id="L455">    public static final COSName OUTLINES = getPDFName(&quot;Outlines&quot;);</span>
+<span class="fc" id="L456">    public static final COSName OUTPUT_CONDITION = getPDFName(&quot;OutputCondition&quot;);</span>
+<span class="fc" id="L457">    public static final COSName OUTPUT_CONDITION_IDENTIFIER = getPDFName(</span>
+            &quot;OutputConditionIdentifier&quot;);
+<span class="fc" id="L459">    public static final COSName OUTPUT_INTENT = getPDFName(&quot;OutputIntent&quot;);</span>
+<span class="fc" id="L460">    public static final COSName OUTPUT_INTENTS = getPDFName(&quot;OutputIntents&quot;);</span>
+<span class="fc" id="L461">    public static final COSName OVERLAY = getPDFName(&quot;Overlay&quot;);</span>
+    // P
+<span class="fc" id="L463">    public static final COSName P = getPDFName(&quot;P&quot;);</span>
+<span class="fc" id="L464">    public static final COSName PA = getPDFName(&quot;PA&quot;);</span>
+<span class="fc" id="L465">    public static final COSName PAGE = getPDFName(&quot;Page&quot;);</span>
+<span class="fc" id="L466">    public static final COSName PAGE_LABELS = getPDFName(&quot;PageLabels&quot;);</span>
+<span class="fc" id="L467">    public static final COSName PAGE_LAYOUT = getPDFName(&quot;PageLayout&quot;);</span>
+<span class="fc" id="L468">    public static final COSName PAGE_MODE = getPDFName(&quot;PageMode&quot;);</span>
+<span class="fc" id="L469">    public static final COSName PAGES = getPDFName(&quot;Pages&quot;);</span>
+<span class="fc" id="L470">    public static final COSName PAINT_TYPE = getPDFName(&quot;PaintType&quot;);</span>
+<span class="fc" id="L471">    public static final COSName PANOSE = getPDFName(&quot;Panose&quot;);    </span>
+<span class="fc" id="L472">    public static final COSName PARAMS = getPDFName(&quot;Params&quot;);</span>
+<span class="fc" id="L473">    public static final COSName PARENT = getPDFName(&quot;Parent&quot;);</span>
+<span class="fc" id="L474">    public static final COSName PARENT_TREE = getPDFName(&quot;ParentTree&quot;);</span>
+<span class="fc" id="L475">    public static final COSName PARENT_TREE_NEXT_KEY = getPDFName(&quot;ParentTreeNextKey&quot;);</span>
+<span class="fc" id="L476">    public static final COSName PART = getPDFName(&quot;Part&quot;);</span>
+<span class="fc" id="L477">    public static final COSName PATH = getPDFName(&quot;Path&quot;);</span>
+<span class="fc" id="L478">    public static final COSName PATTERN = getPDFName(&quot;Pattern&quot;);</span>
+<span class="fc" id="L479">    public static final COSName PATTERN_TYPE = getPDFName(&quot;PatternType&quot;);</span>
+<span class="fc" id="L480">    public static final COSName PC = getPDFName(&quot;PC&quot;);</span>
+<span class="fc" id="L481">    public static final COSName PDF_DOC_ENCODING = getPDFName(&quot;PDFDocEncoding&quot;);</span>
+<span class="fc" id="L482">    public static final COSName PERMS = getPDFName(&quot;Perms&quot;);</span>
+<span class="fc" id="L483">    public static final COSName PERCEPTUAL = getPDFName(&quot;Perceptual&quot;);</span>
+<span class="fc" id="L484">    public static final COSName PIECE_INFO = getPDFName(&quot;PieceInfo&quot;);</span>
+<span class="fc" id="L485">    public static final COSName PG = getPDFName(&quot;Pg&quot;);</span>
+<span class="fc" id="L486">    public static final COSName PI = getPDFName(&quot;PI&quot;);</span>
+<span class="fc" id="L487">    public static final COSName PO = getPDFName(&quot;PO&quot;);</span>
+<span class="fc" id="L488">    public static final COSName POPUP = getPDFName(&quot;Popup&quot;);</span>
+<span class="fc" id="L489">    public static final COSName PRE_RELEASE = getPDFName(&quot;PreRelease&quot;);</span>
+<span class="fc" id="L490">    public static final COSName PREDICTOR = getPDFName(&quot;Predictor&quot;);</span>
+<span class="fc" id="L491">    public static final COSName PREV = getPDFName(&quot;Prev&quot;);</span>
+<span class="fc" id="L492">    public static final COSName PRINT = getPDFName(&quot;Print&quot;);</span>
+<span class="fc" id="L493">    public static final COSName PRINT_AREA = getPDFName(&quot;PrintArea&quot;);</span>
+<span class="fc" id="L494">    public static final COSName PRINT_CLIP = getPDFName(&quot;PrintClip&quot;);</span>
+<span class="fc" id="L495">    public static final COSName PRINT_SCALING = getPDFName(&quot;PrintScaling&quot;);</span>
+<span class="fc" id="L496">    public static final COSName PRINT_STATE = getPDFName(&quot;PrintState&quot;);</span>
+<span class="fc" id="L497">    public static final COSName PRIVATE = getPDFName(&quot;Private&quot;);</span>
+<span class="fc" id="L498">    public static final COSName PROC_SET = getPDFName(&quot;ProcSet&quot;);</span>
+<span class="fc" id="L499">    public static final COSName PROCESS = getPDFName(&quot;Process&quot;);</span>
+<span class="fc" id="L500">    public static final COSName PRODUCER = getPDFName(&quot;Producer&quot;);</span>
+<span class="fc" id="L501">    public static final COSName PROP_BUILD = getPDFName(&quot;Prop_Build&quot;);</span>
+<span class="fc" id="L502">    public static final COSName PROPERTIES = getPDFName(&quot;Properties&quot;);</span>
+<span class="fc" id="L503">    public static final COSName PS = getPDFName(&quot;PS&quot;);</span>
+<span class="fc" id="L504">    public static final COSName PUB_SEC = getPDFName(&quot;PubSec&quot;);</span>
+<span class="fc" id="L505">    public static final COSName PV = getPDFName(&quot;PV&quot;);</span>
+    // Q
+<span class="fc" id="L507">    public static final COSName Q = getPDFName(&quot;Q&quot;);</span>
+<span class="fc" id="L508">    public static final COSName QUADPOINTS = getPDFName(&quot;QuadPoints&quot;);</span>
+    // R
+<span class="fc" id="L510">    public static final COSName R = getPDFName(&quot;R&quot;);</span>
+<span class="fc" id="L511">    public static final COSName RANGE = getPDFName(&quot;Range&quot;);</span>
+<span class="fc" id="L512">    public static final COSName RC = getPDFName(&quot;RC&quot;);</span>
+<span class="fc" id="L513">    public static final COSName RD = getPDFName(&quot;RD&quot;);</span>
+<span class="fc" id="L514">    public static final COSName REASON = getPDFName(&quot;Reason&quot;);</span>
+<span class="fc" id="L515">    public static final COSName REASONS = getPDFName(&quot;Reasons&quot;);</span>
+<span class="fc" id="L516">    public static final COSName RECIPIENTS = getPDFName(&quot;Recipients&quot;);</span>
+<span class="fc" id="L517">    public static final COSName RECT = getPDFName(&quot;Rect&quot;);</span>
+<span class="fc" id="L518">    public static final COSName REFERENCE = getPDFName(&quot;Reference&quot;);</span>
+<span class="fc" id="L519">    public static final COSName REGISTRY = getPDFName(&quot;Registry&quot;);</span>
+<span class="fc" id="L520">    public static final COSName REGISTRY_NAME = getPDFName(&quot;RegistryName&quot;);</span>
+<span class="fc" id="L521">    public static final COSName RELATIVE_COLORIMETRIC = getPDFName(&quot;RelativeColorimetric&quot;);</span>
+<span class="fc" id="L522">    public static final COSName RENAME = getPDFName(&quot;Rename&quot;);</span>
+<span class="fc" id="L523">    public static final COSName REPEAT = getPDFName(&quot;Repeat&quot;);</span>
+<span class="fc" id="L524">    public static final COSName RES_FORK = getPDFName(&quot;ResFork&quot;);</span>
+<span class="fc" id="L525">    public static final COSName RESOURCES = getPDFName(&quot;Resources&quot;);</span>
+<span class="fc" id="L526">    public static final COSName RGB = getPDFName(&quot;RGB&quot;);</span>
+<span class="fc" id="L527">    public static final COSName RI = getPDFName(&quot;RI&quot;);</span>
+<span class="fc" id="L528">    public static final COSName ROLE_MAP = getPDFName(&quot;RoleMap&quot;);</span>
+<span class="fc" id="L529">    public static final COSName ROOT = getPDFName(&quot;Root&quot;);</span>
+<span class="fc" id="L530">    public static final COSName ROTATE = getPDFName(&quot;Rotate&quot;);</span>
+<span class="fc" id="L531">    public static final COSName ROWS = getPDFName(&quot;Rows&quot;);</span>
+<span class="fc" id="L532">    public static final COSName RT = getPDFName(&quot;RT&quot;);</span>
+<span class="fc" id="L533">    public static final COSName RUN_LENGTH_DECODE = getPDFName(&quot;RunLengthDecode&quot;);</span>
+<span class="fc" id="L534">    public static final COSName RUN_LENGTH_DECODE_ABBREVIATION = getPDFName(&quot;RL&quot;);</span>
+<span class="fc" id="L535">    public static final COSName RV = getPDFName(&quot;RV&quot;);</span>
+    // S
+<span class="fc" id="L537">    public static final COSName S = getPDFName(&quot;S&quot;);</span>
+<span class="fc" id="L538">    public static final COSName SA = getPDFName(&quot;SA&quot;);</span>
+<span class="fc" id="L539">    public static final COSName SATURATION = getPDFName(&quot;Saturation&quot;);</span>
+<span class="fc" id="L540">    public static final COSName SCHEMA = getPDFName(&quot;Schema&quot;);</span>
+<span class="fc" id="L541">    public static final COSName SCREEN = getPDFName(&quot;Screen&quot;);</span>
+<span class="fc" id="L542">    public static final COSName SE = getPDFName(&quot;SE&quot;);</span>
+<span class="fc" id="L543">    public static final COSName SEPARATION = getPDFName(&quot;Separation&quot;);</span>
+<span class="fc" id="L544">    public static final COSName SET_F = getPDFName(&quot;SetF&quot;);</span>
+<span class="fc" id="L545">    public static final COSName SET_FF = getPDFName(&quot;SetFf&quot;);</span>
+<span class="fc" id="L546">    public static final COSName SHADING = getPDFName(&quot;Shading&quot;);</span>
+<span class="fc" id="L547">    public static final COSName SHADING_TYPE = getPDFName(&quot;ShadingType&quot;);</span>
+<span class="fc" id="L548">    public static final COSName SIG = getPDFName(&quot;Sig&quot;);</span>
+<span class="fc" id="L549">    public static final COSName SIG_FLAGS = getPDFName(&quot;SigFlags&quot;);</span>
+<span class="fc" id="L550">    public static final COSName SIG_REF = getPDFName(&quot;SigRef&quot;);</span>
+<span class="fc" id="L551">    public static final COSName SIZE = getPDFName(&quot;Size&quot;);</span>
+<span class="fc" id="L552">    public static final COSName SM = getPDFName(&quot;SM&quot;);</span>
+<span class="fc" id="L553">    public static final COSName SMASK = getPDFName(&quot;SMask&quot;);</span>
+<span class="fc" id="L554">    public static final COSName SMASK_IN_DATA = getPDFName(&quot;SMaskInData&quot;);    </span>
+<span class="fc" id="L555">    public static final COSName SOFT_LIGHT = getPDFName(&quot;SoftLight&quot;);</span>
+<span class="fc" id="L556">    public static final COSName SORT = getPDFName(&quot;Sort&quot;);</span>
+<span class="fc" id="L557">    public static final COSName SOUND = getPDFName(&quot;Sound&quot;);</span>
+<span class="fc" id="L558">    public static final COSName SPLIT = getPDFName(&quot;Split&quot;);</span>
+<span class="fc" id="L559">    public static final COSName SS = getPDFName(&quot;SS&quot;);</span>
+<span class="fc" id="L560">    public static final COSName ST = getPDFName(&quot;St&quot;);</span>
+<span class="fc" id="L561">    public static final COSName STANDARD_ENCODING = getPDFName(&quot;StandardEncoding&quot;);</span>
+<span class="fc" id="L562">    public static final COSName STATE = getPDFName(&quot;State&quot;);</span>
+<span class="fc" id="L563">    public static final COSName STATE_MODEL = getPDFName(&quot;StateModel&quot;);</span>
+<span class="fc" id="L564">    public static final COSName STATUS = getPDFName(&quot;Status&quot;);</span>
+<span class="fc" id="L565">    public static final COSName STD_CF = getPDFName(&quot;StdCF&quot;);</span>
+<span class="fc" id="L566">    public static final COSName STEM_H = getPDFName(&quot;StemH&quot;);</span>
+<span class="fc" id="L567">    public static final COSName STEM_V = getPDFName(&quot;StemV&quot;);</span>
+<span class="fc" id="L568">    public static final COSName STM_F = getPDFName(&quot;StmF&quot;);</span>
+<span class="fc" id="L569">    public static final COSName STR_F = getPDFName(&quot;StrF&quot;);</span>
+<span class="fc" id="L570">    public static final COSName STRUCT_ELEM = getPDFName(&quot;StructElem&quot;);</span>
+<span class="fc" id="L571">    public static final COSName STRUCT_PARENT = getPDFName(&quot;StructParent&quot;);</span>
+<span class="fc" id="L572">    public static final COSName STRUCT_PARENTS = getPDFName(&quot;StructParents&quot;);</span>
+<span class="fc" id="L573">    public static final COSName STRUCT_TREE_ROOT = getPDFName(&quot;StructTreeRoot&quot;);</span>
+<span class="fc" id="L574">    public static final COSName STYLE = getPDFName(&quot;Style&quot;);</span>
+<span class="fc" id="L575">    public static final COSName SUB_FILTER = getPDFName(&quot;SubFilter&quot;);</span>
+<span class="fc" id="L576">    public static final COSName SUBJ = getPDFName(&quot;Subj&quot;);</span>
+<span class="fc" id="L577">    public static final COSName SUBJECT = getPDFName(&quot;Subject&quot;);</span>
+<span class="fc" id="L578">    public static final COSName SUBJECT_DN = getPDFName(&quot;SubjectDN&quot;);</span>
+<span class="fc" id="L579">    public static final COSName SUBTYPE = getPDFName(&quot;Subtype&quot;);</span>
+<span class="fc" id="L580">    public static final COSName SUPPLEMENT = getPDFName(&quot;Supplement&quot;);</span>
+<span class="fc" id="L581">    public static final COSName SV = getPDFName(&quot;SV&quot;);</span>
+<span class="fc" id="L582">    public static final COSName SV_CERT = getPDFName(&quot;SVCert&quot;);</span>
+<span class="fc" id="L583">    public static final COSName SW = getPDFName(&quot;SW&quot;);</span>
+<span class="fc" id="L584">    public static final COSName SY = getPDFName(&quot;Sy&quot;);</span>
+<span class="fc" id="L585">    public static final COSName SYNCHRONOUS = getPDFName(&quot;Synchronous&quot;);</span>
+    // T
+<span class="fc" id="L587">    public static final COSName T = getPDFName(&quot;T&quot;);</span>
+<span class="fc" id="L588">    public static final COSName TARGET = getPDFName(&quot;Target&quot;);</span>
+<span class="fc" id="L589">    public static final COSName TEMPLATES = getPDFName(&quot;Templates&quot;);</span>
+<span class="fc" id="L590">    public static final COSName THREAD = getPDFName(&quot;Thread&quot;);</span>
+<span class="fc" id="L591">    public static final COSName THREADS = getPDFName(&quot;Threads&quot;);</span>
+<span class="fc" id="L592">    public static final COSName THREE_DD = getPDFName(&quot;3DD&quot;);</span>
+<span class="fc" id="L593">    public static final COSName THUMB = getPDFName(&quot;Thumb&quot;);</span>
+<span class="fc" id="L594">    public static final COSName TI = getPDFName(&quot;TI&quot;);</span>
+<span class="fc" id="L595">    public static final COSName TILING_TYPE = getPDFName(&quot;TilingType&quot;);</span>
+<span class="fc" id="L596">    public static final COSName TIME_STAMP = getPDFName(&quot;TimeStamp&quot;);</span>
+<span class="fc" id="L597">    public static final COSName TITLE = getPDFName(&quot;Title&quot;);</span>
+<span class="fc" id="L598">    public static final COSName TK = getPDFName(&quot;TK&quot;);</span>
+<span class="fc" id="L599">    public static final COSName TM = getPDFName(&quot;TM&quot;);</span>
+<span class="fc" id="L600">    public static final COSName TO_UNICODE = getPDFName(&quot;ToUnicode&quot;);</span>
+<span class="fc" id="L601">    public static final COSName TR = getPDFName(&quot;TR&quot;);</span>
+<span class="fc" id="L602">    public static final COSName TR2 = getPDFName(&quot;TR2&quot;);</span>
+<span class="fc" id="L603">    public static final COSName TRAPPED = getPDFName(&quot;Trapped&quot;);</span>
+<span class="fc" id="L604">    public static final COSName TRANS = getPDFName(&quot;Trans&quot;);</span>
+<span class="fc" id="L605">    public static final COSName TRANSFORM_METHOD = getPDFName(&quot;TransformMethod&quot;);</span>
+<span class="fc" id="L606">    public static final COSName TRANSFORM_PARAMS = getPDFName(&quot;TransformParams&quot;);</span>
+<span class="fc" id="L607">    public static final COSName TRANSPARENCY = getPDFName(&quot;Transparency&quot;);</span>
+<span class="fc" id="L608">    public static final COSName TREF = getPDFName(&quot;TRef&quot;);</span>
+<span class="fc" id="L609">    public static final COSName TRIM_BOX = getPDFName(&quot;TrimBox&quot;);</span>
+<span class="fc" id="L610">    public static final COSName TRUE_TYPE = getPDFName(&quot;TrueType&quot;);</span>
+<span class="fc" id="L611">    public static final COSName TRUSTED_MODE = getPDFName(&quot;TrustedMode&quot;);</span>
+<span class="fc" id="L612">    public static final COSName TU = getPDFName(&quot;TU&quot;);</span>
+    /** Acro form field type for text field. */
+<span class="fc" id="L614">    public static final COSName TX = getPDFName(&quot;Tx&quot;);</span>
+<span class="fc" id="L615">    public static final COSName TYPE = getPDFName(&quot;Type&quot;);</span>
+<span class="fc" id="L616">    public static final COSName TYPE0 = getPDFName(&quot;Type0&quot;);</span>
+<span class="fc" id="L617">    public static final COSName TYPE1 = getPDFName(&quot;Type1&quot;);</span>
+<span class="fc" id="L618">    public static final COSName TYPE3 = getPDFName(&quot;Type3&quot;);</span>
+    // U
+<span class="fc" id="L620">    public static final COSName U = getPDFName(&quot;U&quot;);</span>
+<span class="fc" id="L621">    public static final COSName UE = getPDFName(&quot;UE&quot;);</span>
+<span class="fc" id="L622">    public static final COSName UF = getPDFName(&quot;UF&quot;);</span>
+<span class="fc" id="L623">    public static final COSName UNCHANGED = getPDFName(&quot;Unchanged&quot;);</span>
+<span class="fc" id="L624">    public static final COSName UNIX = getPDFName(&quot;Unix&quot;);</span>
+<span class="fc" id="L625">    public static final COSName URI = getPDFName(&quot;URI&quot;);</span>
+<span class="fc" id="L626">    public static final COSName URL = getPDFName(&quot;URL&quot;);</span>
+<span class="fc" id="L627">    public static final COSName URL_TYPE = getPDFName(&quot;URLType&quot;);</span>
+<span class="fc" id="L628">    public static final COSName USAGE = getPDFName(&quot;Usage&quot;);</span>
+<span class="fc" id="L629">    public static final COSName USE_CMAP = getPDFName(&quot;UseCMap&quot;);</span>
+<span class="fc" id="L630">    public static final COSName USER_UNIT = getPDFName(&quot;UserUnit&quot;);</span>
+    // V
+<span class="fc" id="L632">    public static final COSName V = getPDFName(&quot;V&quot;);</span>
+<span class="fc" id="L633">    public static final COSName VE = getPDFName(&quot;VE&quot;);</span>
+<span class="fc" id="L634">    public static final COSName VERISIGN_PPKVS = getPDFName(&quot;VeriSign.PPKVS&quot;);</span>
+<span class="fc" id="L635">    public static final COSName VERSION = getPDFName(&quot;Version&quot;);</span>
+<span class="fc" id="L636">    public static final COSName VERTICES = getPDFName(&quot;Vertices&quot;);</span>
+<span class="fc" id="L637">    public static final COSName VERTICES_PER_ROW = getPDFName(&quot;VerticesPerRow&quot;);</span>
+<span class="fc" id="L638">    public static final COSName VIEW = getPDFName(&quot;View&quot;);</span>
+<span class="fc" id="L639">    public static final COSName VIEW_AREA = getPDFName(&quot;ViewArea&quot;);</span>
+<span class="fc" id="L640">    public static final COSName VIEW_CLIP = getPDFName(&quot;ViewClip&quot;);</span>
+<span class="fc" id="L641">    public static final COSName VIEW_STATE = getPDFName(&quot;ViewState&quot;);</span>
+<span class="fc" id="L642">    public static final COSName VIEWER_PREFERENCES = getPDFName(&quot;ViewerPreferences&quot;);</span>
+<span class="fc" id="L643">    public static final COSName VOLUME = getPDFName(&quot;Volume&quot;);</span>
+<span class="fc" id="L644">    public static final COSName VP = getPDFName(&quot;VP&quot;);</span>
+<span class="fc" id="L645">    public static final COSName VRI = getPDFName(&quot;VRI&quot;);</span>
+    // W
+<span class="fc" id="L647">    public static final COSName W = getPDFName(&quot;W&quot;);</span>
+<span class="fc" id="L648">    public static final COSName W2 = getPDFName(&quot;W2&quot;);</span>
+<span class="fc" id="L649">    public static final COSName WC = getPDFName(&quot;WC&quot;);</span>
+<span class="fc" id="L650">    public static final COSName WHITE_POINT = getPDFName(&quot;WhitePoint&quot;);</span>
+<span class="fc" id="L651">    public static final COSName WIDGET = getPDFName(&quot;Widget&quot;);</span>
+<span class="fc" id="L652">    public static final COSName WIDTH = getPDFName(&quot;Width&quot;);</span>
+<span class="fc" id="L653">    public static final COSName WIDTHS = getPDFName(&quot;Widths&quot;);</span>
+<span class="fc" id="L654">    public static final COSName WIN = getPDFName(&quot;Win&quot;);</span>
+<span class="fc" id="L655">    public static final COSName WIN_ANSI_ENCODING = getPDFName(&quot;WinAnsiEncoding&quot;);</span>
+<span class="fc" id="L656">    public static final COSName WMODE = getPDFName(&quot;WMode&quot;);</span>
+<span class="fc" id="L657">    public static final COSName WP = getPDFName(&quot;WP&quot;);</span>
+<span class="fc" id="L658">    public static final COSName WS = getPDFName(&quot;WS&quot;);</span>
+    // X
+<span class="fc" id="L660">    public static final COSName X = getPDFName(&quot;X&quot;);</span>
+<span class="fc" id="L661">    public static final COSName XFA = getPDFName(&quot;XFA&quot;);</span>
+<span class="fc" id="L662">    public static final COSName X_STEP = getPDFName(&quot;XStep&quot;);</span>
+<span class="fc" id="L663">    public static final COSName XHEIGHT = getPDFName(&quot;XHeight&quot;);</span>
+<span class="fc" id="L664">    public static final COSName XOBJECT = getPDFName(&quot;XObject&quot;);</span>
+<span class="fc" id="L665">    public static final COSName XREF = getPDFName(&quot;XRef&quot;);</span>
+<span class="fc" id="L666">    public static final COSName XREF_STM = getPDFName(&quot;XRefStm&quot;);</span>
+    // Y
+<span class="fc" id="L668">    public static final COSName Y = getPDFName(&quot;Y&quot;);</span>
+<span class="fc" id="L669">    public static final COSName Y_STEP = getPDFName(&quot;YStep&quot;);</span>
+<span class="fc" id="L670">    public static final COSName YES = getPDFName(&quot;Yes&quot;);</span>
+
+    // Z
+<span class="fc" id="L673">    public static final COSName ZA_DB = getPDFName(&quot;ZaDb&quot;);</span>
+
+    // fields
+    private final String name;
+
+    /**
+     * This will get a COSName object with that name.
+     * 
+     * @param aName The name of the object.
+     * 
+     * @return A COSName with the specified name.
+     */
+    public static COSName getPDFName(String aName)
+    {
+<span class="fc" id="L687">        WeakReference&lt;COSName&gt; weakRef = NAME_MAP.get(aName);</span>
+<span class="fc bfc" id="L688" title="All 2 branches covered.">        COSName name = weakRef != null ? weakRef.get() : null;</span>
+
+<span class="fc bfc" id="L690" title="All 2 branches covered.">        if (name == null)</span>
+        {
+            // Although we use a ConcurrentHashMap, we cannot use computeIfAbsent() because the returned reference
+            // might be stale (even the newly created one).
+            // Use double checked locking to make the code thread safe.
+<span class="fc" id="L695">            synchronized (NAME_MAP)</span>
+            {
+<span class="fc" id="L697">                weakRef = NAME_MAP.get(aName);</span>
+<span class="pc bpc" id="L698" title="1 of 2 branches missed.">                name = weakRef != null ? weakRef.get() : null;</span>
+<span class="pc bpc" id="L699" title="1 of 2 branches missed.">                if (name == null)</span>
+                {
+<span class="fc" id="L701">                    name = new COSName(aName);</span>
+<span class="pc" id="L702">                    CLEANER.register(name, () -&gt; NAME_MAP.remove(aName));</span>
+<span class="fc" id="L703">                    NAME_MAP.put(aName, new WeakReference&lt;&gt;(name));</span>
+                }
+<span class="fc" id="L705">            }</span>
+        }
+
+<span class="fc" id="L708">        return name;</span>
+    }
+
+    /**
+     * Private constructor. This will limit the number of COSName objects that are created.
+     * 
+     * @param aName The name of the COSName object.
+     */
+    private COSName(String aName)
+<span class="fc" id="L717">    {</span>
+<span class="fc" id="L718">        this.name = aName;</span>
+<span class="fc" id="L719">    }</span>
+
+    /**
+     * This will get the name of this COSName object.
+     * 
+     * @return The name of the object.
+     */
+    public String getName()
+    {
+<span class="fc" id="L728">        return name;</span>
+    }
+
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L734">        return &quot;COSName{&quot; + name + &quot;}&quot;;</span>
+    }
+
+    @Override
+    public boolean equals(Object object)
+    {
+<span class="pc bpc" id="L740" title="1 of 4 branches missed.">        return object instanceof COSName &amp;&amp; name.equals(((COSName) object).name);</span>
+    }
+
+    @Override
+    public int hashCode()
+    {
+<span class="fc" id="L746">        return name.hashCode();</span>
+    }
+
+    @Override
+    public int compareTo(COSName other)
+    {
+<span class="nc" id="L752">        return name.compareTo(other.name);</span>
+    }
+
+    /**
+     * Returns true if the name is the empty string.
+     * @return true if the name is the empty string.
+     */
+    public boolean isEmpty()
+    {
+<span class="nc" id="L761">        return name.isEmpty();</span>
+    }
+
+    @Override
+    public void accept(ICOSVisitor visitor) throws IOException
+    {
+<span class="fc" id="L767">        visitor.visitFromName(this);</span>
+<span class="fc" id="L768">    }</span>
+
+    /**
+     * This will output this string as a PDF object.
+     * 
+     * @param output The stream to write to.
+     * @throws IOException If there is an error writing to the stream.
+     */
+    public void writePDF(OutputStream output) throws IOException
+    {
+<span class="fc" id="L778">        output.write('/');</span>
+<span class="fc" id="L779">        byte[] bytes = getName().getBytes(StandardCharsets.UTF_8);</span>
+<span class="fc bfc" id="L780" title="All 2 branches covered.">        for (byte b : bytes)</span>
+        {
+<span class="fc" id="L782">            int current = b &amp; 0xFF;</span>
+
+            // be more restrictive than the PDF spec, &quot;Name Objects&quot;, see PDFBOX-2073
+<span class="pc bpc" id="L785" title="17 of 28 branches missed.">            if (current &gt;= 'A' &amp;&amp; current &lt;= 'Z' ||</span>
+                    current &gt;= 'a' &amp;&amp; current &lt;= 'z' ||
+                    current &gt;= '0' &amp;&amp; current &lt;= '9' ||
+                    current == '+' ||
+                    current == '-' ||
+                    current == '_' ||
+                    current == '@' ||
+                    current == '*' ||
+                    current == '$' ||
+                    current == ';' ||
+                    current == '.')
+            {
+<span class="fc" id="L797">                output.write(current);</span>
+            }
+            else
+            {
+<span class="nc" id="L801">                output.write('#');</span>
+<span class="nc" id="L802">                Hex.writeHexByte(b, output);</span>
+            }
+        }
+<span class="fc" id="L805">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

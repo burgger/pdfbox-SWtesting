@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDAppearanceCharacteristicsDictionary.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation</a> &gt; <span class="el_source">PDAppearanceCharacteristicsDictionary.java</span></div><h1>PDAppearanceCharacteristicsDictionary.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.annotation;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceCMYK;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceGray;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
+import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
+
+/**
+ * This class represents an appearance characteristics dictionary.
+ *
+ */
+public class PDAppearanceCharacteristicsDictionary implements COSObjectable
+{
+
+    private final COSDictionary dictionary;
+
+    /**
+     * Constructor.
+     * 
+     * @param dict dictionary
+     */
+    public PDAppearanceCharacteristicsDictionary(COSDictionary dict)
+<span class="nc" id="L46">    {</span>
+<span class="nc" id="L47">        this.dictionary = dict;</span>
+<span class="nc" id="L48">    }</span>
+
+    /**
+     * returns the dictionary.
+     * 
+     * @return the dictionary
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L58">        return this.dictionary;</span>
+    }
+
+    /**
+     * This will retrieve the rotation of the annotation widget. It must be a multiple of 90. Default is 0
+     * 
+     * @return the rotation
+     */
+    public int getRotation()
+    {
+<span class="nc" id="L68">        return this.getCOSObject().getInt(COSName.R, 0);</span>
+    }
+
+    /**
+     * This will set the rotation.
+     * 
+     * @param rotation the rotation as a multiple of 90
+     */
+    public void setRotation(int rotation)
+    {
+<span class="nc" id="L78">        this.getCOSObject().setInt(COSName.R, rotation);</span>
+<span class="nc" id="L79">    }</span>
+
+    /**
+     * This will retrieve the border color.
+     * 
+     * @return the border color.
+     */
+    public PDColor getBorderColour()
+    {
+<span class="nc" id="L88">        return getColor(COSName.BC);</span>
+    }
+
+    /**
+     * This will set the border color.
+     * 
+     * @param c the border color
+     */
+    public void setBorderColour(PDColor c)
+    {
+<span class="nc" id="L98">        this.getCOSObject().setItem(COSName.BC, c.toCOSArray());</span>
+<span class="nc" id="L99">    }</span>
+
+    /**
+     * This will retrieve the background color.
+     * 
+     * @return the background color.
+     */
+    public PDColor getBackground()
+    {
+<span class="nc" id="L108">        return getColor(COSName.BG);</span>
+    }
+
+    /**
+     * This will set the background color.
+     * 
+     * @param c the background color
+     */
+    public void setBackground(PDColor c)
+    {
+<span class="nc" id="L118">        this.getCOSObject().setItem(COSName.BG, c.toCOSArray());</span>
+<span class="nc" id="L119">    }</span>
+
+    /**
+     * This will retrieve the normal caption.
+     * 
+     * @return the normal caption.
+     */
+    public String getNormalCaption()
+    {
+<span class="nc" id="L128">        return this.getCOSObject().getString(COSName.CA);</span>
+    }
+
+    /**
+     * This will set the normal caption.
+     * 
+     * @param caption the normal caption
+     */
+    public void setNormalCaption(String caption)
+    {
+<span class="nc" id="L138">        this.getCOSObject().setString(COSName.CA, caption);</span>
+<span class="nc" id="L139">    }</span>
+
+    /**
+     * This will retrieve the rollover caption.
+     * 
+     * @return the rollover caption.
+     */
+    public String getRolloverCaption()
+    {
+<span class="nc" id="L148">        return this.getCOSObject().getString(COSName.RC);</span>
+    }
+
+    /**
+     * This will set the rollover caption.
+     * 
+     * @param caption the rollover caption
+     */
+    public void setRolloverCaption(String caption)
+    {
+<span class="nc" id="L158">        this.getCOSObject().setString(COSName.RC, caption);</span>
+<span class="nc" id="L159">    }</span>
+
+    /**
+     * This will retrieve the alternate caption.
+     * 
+     * @return the alternate caption.
+     */
+    public String getAlternateCaption()
+    {
+<span class="nc" id="L168">        return this.getCOSObject().getString(COSName.AC);</span>
+    }
+
+    /**
+     * This will set the alternate caption.
+     * 
+     * @param caption the alternate caption
+     */
+    public void setAlternateCaption(String caption)
+    {
+<span class="nc" id="L178">        this.getCOSObject().setString(COSName.AC, caption);</span>
+<span class="nc" id="L179">    }</span>
+
+    /**
+     * This will retrieve the normal icon.
+     * 
+     * @return the normal icon.
+     */
+    public PDFormXObject getNormalIcon()
+    {
+<span class="nc" id="L188">        COSStream stream = getCOSObject().getCOSStream(COSName.I);</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">        return stream != null ? new PDFormXObject(stream) : null;</span>
+    }
+
+    /**
+     * This will retrieve the rollover icon.
+     * 
+     * @return the rollover icon
+     */
+    public PDFormXObject getRolloverIcon()
+    {
+<span class="nc" id="L199">        COSStream stream = getCOSObject().getCOSStream(COSName.RI);</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">        return stream != null ? new PDFormXObject(stream) : null;</span>
+    }
+
+    /**
+     * This will retrieve the alternate icon.
+     * 
+     * @return the alternate icon.
+     */
+    public PDFormXObject getAlternateIcon()
+    {
+<span class="nc" id="L210">        COSStream stream = getCOSObject().getCOSStream(COSName.IX);</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">        return stream != null ? new PDFormXObject(stream) : null;</span>
+    }
+
+    private PDColor getColor(COSName itemName)
+    {
+<span class="nc" id="L216">        COSArray cs = getCOSObject().getCOSArray(itemName);</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">        if (cs != null)</span>
+        {
+            PDColorSpace colorSpace;
+<span class="nc bnc" id="L220" title="All 4 branches missed.">            switch (cs.size())</span>
+            {
+            case 1:
+<span class="nc" id="L223">                colorSpace = PDDeviceGray.INSTANCE;</span>
+<span class="nc" id="L224">                break;</span>
+            case 3:
+<span class="nc" id="L226">                colorSpace = PDDeviceRGB.INSTANCE;</span>
+<span class="nc" id="L227">                break;</span>
+            case 4:
+<span class="nc" id="L229">                colorSpace = PDDeviceCMYK.INSTANCE;</span>
+<span class="nc" id="L230">                break;</span>
+            default:
+<span class="nc" id="L232">                return null;</span>
+            }
+<span class="nc" id="L234">            return new PDColor(cs, colorSpace);</span>
+        }
+<span class="nc" id="L236">        return null;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

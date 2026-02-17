@@ -1,0 +1,553 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDICCBased.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.color</a> &gt; <span class="el_source">PDICCBased.java</span></div><h1>PDICCBased.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.color;
+
+import java.awt.Transparency;
+import java.awt.color.CMMException;
+import java.awt.color.ColorSpace;
+import java.awt.color.ICC_ColorSpace;
+import java.awt.color.ICC_Profile;
+import java.awt.color.ProfileDataException;
+import java.awt.image.BufferedImage;
+import java.awt.image.ComponentColorModel;
+import java.awt.image.DataBuffer;
+import java.awt.image.WritableRaster;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.ResourceCache;
+import org.apache.pdfbox.pdmodel.common.PDRange;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+
+/**
+ * ICCBased color spaces are based on a cross-platform color profile as defined by the
+ * International Color Consortium (ICC).
+ *
+ * @author Ben Litchfield
+ * @author John Hewson
+ */
+public final class PDICCBased extends PDCIEBasedColorSpace
+{
+<span class="nc" id="L57">    private static final Logger LOG = LogManager.getLogger(PDICCBased.class);</span>
+
+    private final PDStream stream;
+<span class="nc" id="L60">    private int numberOfComponents = -1;</span>
+    private ICC_Profile iccProfile;
+    private PDColorSpace alternateColorSpace;
+    private ICC_ColorSpace awtColorSpace;
+    private PDColor initialColor;
+<span class="nc" id="L65">    private boolean isRGB = false;</span>
+    // allows to force using alternate color space instead of ICC color space for performance
+    // reasons with LittleCMS (LCMS), see PDFBOX-4309
+    // WARNING: do not activate this in a conforming reader
+<span class="nc" id="L69">    private boolean useOnlyAlternateColorSpace = false;</span>
+
+    /**
+     * Creates a new ICC color space with an empty stream.
+     * @param doc the document to store the ICC data
+     */
+    public PDICCBased(PDDocument doc)
+<span class="nc" id="L76">    {</span>
+<span class="nc" id="L77">        array = new COSArray();</span>
+<span class="nc" id="L78">        array.add(COSName.ICCBASED);</span>
+<span class="nc" id="L79">        stream = new PDStream(doc);</span>
+<span class="nc" id="L80">        array.add(stream);</span>
+<span class="nc" id="L81">    }</span>
+
+    /**
+     * Creates a new ICC color space using the PDF array.
+     *
+     * @param iccArray the ICC stream object.
+     * @throws IOException if there is an error reading the ICC profile or if the parameter is
+     * invalid.
+     */
+    private PDICCBased(COSArray iccArray) throws IOException
+<span class="nc" id="L91">    {</span>
+<span class="nc" id="L92">        useOnlyAlternateColorSpace = System</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">                .getProperty(&quot;org.apache.pdfbox.rendering.UseAlternateInsteadOfICCColorSpace&quot;) != null;</span>
+<span class="nc" id="L94">        array = iccArray;</span>
+<span class="nc" id="L95">        stream = new PDStream((COSStream) iccArray.getObject(1));</span>
+<span class="nc" id="L96">        loadICCProfile();</span>
+<span class="nc" id="L97">    }</span>
+
+    /**
+     * Creates a new ICC color space using the PDF array, optionally using a resource cache.
+     *
+     * @param iccArray the ICC stream object.
+     * @param resources resources to use as cache, or null for no caching.
+     * @return an ICC color space.
+     * @throws IOException if there is an error reading the ICC profile or if the parameter is
+     * invalid.
+     */
+    public static PDICCBased create(COSArray iccArray, PDResources resources) throws IOException
+    {
+<span class="nc" id="L110">        checkArray(iccArray);</span>
+<span class="nc" id="L111">        COSBase base = iccArray.get(1);</span>
+<span class="nc bnc" id="L112" title="All 4 branches missed.">        if (base instanceof COSObject &amp;&amp; resources != null)</span>
+        {
+<span class="nc" id="L114">            ResourceCache resourceCache = resources.getResourceCache();</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">            if (resourceCache != null)</span>
+            {
+<span class="nc" id="L117">                COSObject indirect = (COSObject) base;</span>
+<span class="nc" id="L118">                PDColorSpace space = resourceCache.getColorSpace(indirect);</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">                if (space instanceof PDICCBased)</span>
+                {
+<span class="nc" id="L121">                    return (PDICCBased) space;</span>
+                }
+                else
+                {
+<span class="nc" id="L125">                    PDICCBased newSpace = new PDICCBased(iccArray);</span>
+<span class="nc" id="L126">                    resourceCache.put(indirect, newSpace);</span>
+<span class="nc" id="L127">                    return newSpace;</span>
+                }
+            }
+        }
+<span class="nc" id="L131">        return new PDICCBased(iccArray);</span>
+    }
+
+    private static void checkArray(COSArray iccArray) throws IOException
+    {
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        if (iccArray.size() &lt; 2)</span>
+        {
+<span class="nc" id="L138">            throw new IOException(&quot;ICCBased colorspace array must have two elements&quot;);</span>
+        }
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        if (!(iccArray.getObject(1) instanceof COSStream))</span>
+        {
+<span class="nc" id="L142">            throw new IOException(&quot;ICCBased colorspace array must have a stream as second element&quot;);</span>
+        }
+<span class="nc" id="L144">    }</span>
+
+    @Override
+    public String getName()
+    {
+<span class="nc" id="L149">        return COSName.ICCBASED.getName();</span>
+    }
+
+    /**
+     * Get the underlying ICC profile stream.
+     * @return the underlying ICC profile stream
+     */
+    public PDStream getPDStream()
+    {
+<span class="nc" id="L158">        return stream;</span>
+    }
+
+    /**
+     * Load the ICC profile, or init alternateColorSpace color space.
+     */
+    private void loadICCProfile() throws IOException
+    {
+<span class="nc bnc" id="L166" title="All 2 branches missed.">        if (useOnlyAlternateColorSpace)</span>
+        {
+            try
+            {
+<span class="nc" id="L170">                fallbackToAlternateColorSpace(null);</span>
+<span class="nc" id="L171">                return;</span>
+            }
+<span class="nc" id="L173">            catch (IOException e)</span>
+            {
+<span class="nc" id="L175">                LOG.warn(&quot;Error initializing alternate color space: {}&quot;, e.getLocalizedMessage());</span>
+            }
+        }
+<span class="nc" id="L178">        try (InputStream input = this.stream.createInputStream())</span>
+        {
+            // if the embedded profile is sRGB then we can use Java's built-in profile, which
+            // results in a large performance gain as it's our native color space, see PDFBOX-2587
+            ICC_Profile profile;
+<span class="nc" id="L183">            synchronized (LOG)</span>
+            {
+<span class="nc" id="L185">                profile = ICC_Profile.getInstance(input);</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">                if (is_sRGB(profile))</span>
+                {
+<span class="nc" id="L188">                    isRGB = true;</span>
+<span class="nc" id="L189">                    awtColorSpace = (ICC_ColorSpace) ColorSpace.getInstance(ColorSpace.CS_sRGB);</span>
+<span class="nc" id="L190">                    iccProfile = awtColorSpace.getProfile();</span>
+                }
+                else
+                {
+<span class="nc" id="L194">                    profile = ensureDisplayProfile(profile);</span>
+<span class="nc" id="L195">                    awtColorSpace = new ICC_ColorSpace(profile);</span>
+<span class="nc" id="L196">                    iccProfile = profile;</span>
+                }
+
+                // set initial colour
+<span class="nc" id="L200">                int numOfComponents = getNumberOfComponents();</span>
+<span class="nc" id="L201">                float[] initial = new float[numOfComponents];</span>
+<span class="nc bnc" id="L202" title="All 2 branches missed.">                for (int c = 0; c &lt; initial.length; c++)</span>
+                {
+<span class="nc" id="L204">                    initial[c] = Math.max(0, getRangeForComponent(c).getMin());</span>
+                }
+<span class="nc" id="L206">                initialColor = new PDColor(initial, this);</span>
+
+                // do things that trigger a ProfileDataException
+                // or CMMException due to invalid profiles, see PDFBOX-1295 and PDFBOX-1740 (ü-file)
+                // or ArrayIndexOutOfBoundsException, see PDFBOX-3610
+                // also triggers &quot;CMMException: LCMS error 13&quot; for PDFBOX-5563 with LCMS, but
+                // calling &quot;new ComponentColorModel&quot; doesn't
+<span class="nc" id="L213">                awtColorSpace.toRGB(new float[numOfComponents]);</span>
+                // PDFBOX-4015: this one triggers &quot;CMMException: LCMS error 13&quot; with LCMS
+<span class="nc" id="L215">                new ComponentColorModel(awtColorSpace, false, false, Transparency.OPAQUE,</span>
+                        DataBuffer.TYPE_BYTE);
+<span class="nc" id="L217">            }</span>
+        }
+<span class="nc" id="L219">        catch (ProfileDataException | CMMException | IllegalArgumentException |</span>
+               ArrayIndexOutOfBoundsException | IOException e)
+        {
+<span class="nc" id="L222">            fallbackToAlternateColorSpace(e);</span>
+<span class="nc" id="L223">        }</span>
+<span class="nc" id="L224">    }</span>
+
+    private void fallbackToAlternateColorSpace(Exception e) throws IOException
+    {
+<span class="nc" id="L228">        awtColorSpace = null;</span>
+<span class="nc" id="L229">        alternateColorSpace = getAlternateColorSpace();</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">        if (alternateColorSpace.equals(PDDeviceRGB.INSTANCE))</span>
+        {
+<span class="nc" id="L232">            isRGB = true;</span>
+        }
+<span class="nc bnc" id="L234" title="All 2 branches missed.">        if (e != null)</span>
+        {
+<span class="nc" id="L236">            LOG.warn(&quot;Can't read embedded ICC profile ({}), using alternate color space: {}&quot;,</span>
+<span class="nc" id="L237">                    e.getLocalizedMessage(), alternateColorSpace.getName());</span>
+        }
+<span class="nc" id="L239">        initialColor = alternateColorSpace.getInitialColor();</span>
+<span class="nc" id="L240">    }</span>
+
+    /**
+     * Returns true if the given profile represents sRGB.
+     * (unreliable on the data of ColorSpace.CS_sRGB in openjdk)
+     */
+    private boolean is_sRGB(ICC_Profile profile)
+    {
+<span class="nc" id="L248">        byte[] bytes = Arrays.copyOfRange(profile.getData(ICC_Profile.icSigHead),</span>
+                ICC_Profile.icHdrModel, ICC_Profile.icHdrModel + 7);
+<span class="nc" id="L250">        String deviceModel = new String(bytes, StandardCharsets.US_ASCII).trim();</span>
+<span class="nc" id="L251">        return deviceModel.equals(&quot;sRGB&quot;);</span>
+    }
+
+    // PDFBOX-4114: fix profile that has the wrong display class,
+    // as done by Harald Kuhr in twelvemonkeys JPEGImageReader.ensureDisplayProfile()
+    private static ICC_Profile ensureDisplayProfile(ICC_Profile profile)
+    {
+<span class="nc bnc" id="L258" title="All 2 branches missed.">        if (profile.getProfileClass() != ICC_Profile.CLASS_DISPLAY)</span>
+        {
+<span class="nc" id="L260">            byte[] profileData = profile.getData(); // Need to clone entire profile, due to a OpenJDK bug</span>
+
+<span class="nc bnc" id="L262" title="All 2 branches missed.">            if (profileData[ICC_Profile.icHdrRenderingIntent] == ICC_Profile.icPerceptual)</span>
+            {
+<span class="nc" id="L264">                LOG.warn(&quot;ICC profile is Perceptual, ignoring, treating as Display class&quot;);</span>
+<span class="nc" id="L265">                intToBigEndian(ICC_Profile.icSigDisplayClass, profileData, ICC_Profile.icHdrDeviceClass);</span>
+<span class="nc" id="L266">                return ICC_Profile.getInstance(profileData);</span>
+            }
+        }
+<span class="nc" id="L269">        return profile;</span>
+    }
+
+    private static void intToBigEndian(int value, byte[] array, int index)
+    {
+<span class="nc" id="L274">        array[index] = (byte) (value &gt;&gt; 24);</span>
+<span class="nc" id="L275">        array[index + 1] = (byte) (value &gt;&gt; 16);</span>
+<span class="nc" id="L276">        array[index + 2] = (byte) (value &gt;&gt; 8);</span>
+<span class="nc" id="L277">        array[index + 3] = (byte) (value);</span>
+<span class="nc" id="L278">    }</span>
+
+    @Override
+    public float[] toRGB(float[] value) throws IOException
+    {
+<span class="nc bnc" id="L283" title="All 2 branches missed.">        if (isRGB)</span>
+        {
+<span class="nc" id="L285">            return value;</span>
+        }
+<span class="nc bnc" id="L287" title="All 2 branches missed.">        if (awtColorSpace != null)</span>
+        {
+            // PDFBOX-2142: clamp bad values
+            // WARNING: toRGB is very slow when used with LUT-based ICC profiles
+<span class="nc" id="L291">            return awtColorSpace.toRGB(clampColors(awtColorSpace, value));</span>
+        }
+        else
+        {
+<span class="nc" id="L295">            return alternateColorSpace.toRGB(value);</span>
+        }
+    }
+
+    private float[] clampColors(ICC_ColorSpace cs, float[] value)
+    {
+<span class="nc" id="L301">        float[] result = new float[value.length];</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">        for (int i = 0; i &lt; value.length; ++i)</span>
+        {
+<span class="nc" id="L304">            float minValue = cs.getMinValue(i);</span>
+<span class="nc" id="L305">            float maxValue = cs.getMaxValue(i);</span>
+<span class="nc bnc" id="L306" title="All 4 branches missed.">            result[i] = value[i] &lt; minValue ? minValue : (value[i] &gt; maxValue ? maxValue : value[i]);</span>
+        }
+<span class="nc" id="L308">        return result;</span>
+    }
+
+    @Override
+    public BufferedImage toRGBImage(WritableRaster raster) throws IOException
+    {
+<span class="nc bnc" id="L314" title="All 2 branches missed.">        if (awtColorSpace != null)</span>
+        {
+<span class="nc" id="L316">            return toRGBImageAWT(raster, awtColorSpace);</span>
+        }
+        else
+        {
+<span class="nc" id="L320">            return alternateColorSpace.toRGBImage(raster);</span>
+        }
+    }
+
+    @Override
+    public BufferedImage toRawImage(WritableRaster raster) throws IOException
+    {
+<span class="nc bnc" id="L327" title="All 2 branches missed.">        if(awtColorSpace == null)</span>
+        {
+<span class="nc" id="L329">            return alternateColorSpace.toRawImage(raster);</span>
+        }
+<span class="nc" id="L331">        return toRawImage(raster, awtColorSpace);</span>
+    }
+
+    @Override
+    public int getNumberOfComponents()
+    {
+<span class="nc bnc" id="L337" title="All 2 branches missed.">        if (numberOfComponents &lt; 0)</span>
+        {
+<span class="nc" id="L339">            numberOfComponents = stream.getCOSObject().getInt(COSName.N);</span>
+
+            // PDFBOX-4801 correct wrong /N values
+<span class="nc bnc" id="L342" title="All 2 branches missed.">            if (iccProfile != null)</span>
+            {
+<span class="nc" id="L344">                int numIccComponents = iccProfile.getNumComponents();</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">                if (numIccComponents != numberOfComponents)</span>
+                {
+<span class="nc" id="L347">                    LOG.warn(</span>
+                            &quot;Using {} components from ICC profile info instead of {} components from /N entry&quot;,
+<span class="nc" id="L349">                            numIccComponents, numberOfComponents);</span>
+<span class="nc" id="L350">                    numberOfComponents = numIccComponents;</span>
+                }
+            }
+        }
+<span class="nc" id="L354">        return numberOfComponents;</span>
+    }
+
+    @Override
+    public float[] getDefaultDecode(int bitsPerComponent)
+    {
+<span class="nc bnc" id="L360" title="All 2 branches missed.">        if (awtColorSpace != null)</span>
+        {
+<span class="nc" id="L362">            int n = getNumberOfComponents();</span>
+<span class="nc" id="L363">            float[] decode = new float[n * 2];</span>
+<span class="nc bnc" id="L364" title="All 2 branches missed.">            for (int i = 0; i &lt; n; i++)</span>
+            {
+<span class="nc" id="L366">                decode[i * 2] = awtColorSpace.getMinValue(i);</span>
+<span class="nc" id="L367">                decode[i * 2 + 1] = awtColorSpace.getMaxValue(i);</span>
+            }
+<span class="nc" id="L369">            return decode;</span>
+        }
+        else
+        {
+<span class="nc" id="L373">            return alternateColorSpace.getDefaultDecode(bitsPerComponent);</span>
+        }
+    }
+
+    @Override
+    public PDColor getInitialColor()
+    {
+<span class="nc" id="L380">        return initialColor;</span>
+    }
+
+    /**
+     * Returns a list of alternate color spaces for non-conforming readers.
+     * WARNING: Do not use the information in a conforming reader.
+     * @return A list of alternateColorSpace color spaces.
+     * @throws IOException If there is an error getting the alternateColorSpace color spaces.
+     */
+    public PDColorSpace getAlternateColorSpace() throws IOException
+    {
+<span class="nc" id="L391">        COSBase alternate = stream.getCOSObject().getDictionaryObject(COSName.ALTERNATE);</span>
+        COSArray alternateArray;
+<span class="nc bnc" id="L393" title="All 2 branches missed.">        if(alternate == null)</span>
+        {
+<span class="nc" id="L395">            alternateArray = new COSArray();</span>
+<span class="nc" id="L396">            int numComponents = getNumberOfComponents();</span>
+            COSName csName;
+<span class="nc bnc" id="L398" title="All 4 branches missed.">            switch (numComponents)</span>
+            {
+                case 1:
+<span class="nc" id="L401">                    csName = COSName.DEVICEGRAY;</span>
+<span class="nc" id="L402">                    break;</span>
+                case 3:
+<span class="nc" id="L404">                    csName = COSName.DEVICERGB;</span>
+<span class="nc" id="L405">                    break;</span>
+                case 4:
+<span class="nc" id="L407">                    csName = COSName.DEVICECMYK;</span>
+<span class="nc" id="L408">                    break;</span>
+                default:
+<span class="nc" id="L410">                    throw new IOException(&quot;Unknown color space number of components:&quot; + numComponents);</span>
+            }
+<span class="nc" id="L412">            alternateArray.add(csName);</span>
+<span class="nc" id="L413">        }</span>
+        else
+        {
+<span class="nc bnc" id="L416" title="All 2 branches missed.">            if(alternate instanceof COSArray)</span>
+            {
+<span class="nc" id="L418">                alternateArray = (COSArray)alternate;</span>
+            }
+<span class="nc bnc" id="L420" title="All 2 branches missed.">            else if(alternate instanceof COSName)</span>
+            {
+<span class="nc" id="L422">                alternateArray = new COSArray();</span>
+<span class="nc" id="L423">                alternateArray.add(alternate);</span>
+            }
+            else
+            {
+<span class="nc" id="L427">                throw new IOException(&quot;Error: expected COSArray or COSName and not &quot; +</span>
+<span class="nc" id="L428">                    alternate.getClass().getName());</span>
+            }
+        }
+<span class="nc" id="L431">        return PDColorSpace.create(alternateArray);</span>
+    }
+
+    /**
+     * Returns the range for a certain component number.
+     * This will never return null.
+     * If it is not present then the range 0..1 will be returned.
+     * @param n the component number to get the range for
+     * @return the range for this component
+     */
+    public PDRange getRangeForComponent(int n)
+    {
+<span class="nc" id="L443">        COSArray rangeArray = stream.getCOSObject().getCOSArray(COSName.RANGE);</span>
+<span class="nc bnc" id="L444" title="All 4 branches missed.">        if (rangeArray == null || rangeArray.size() &lt; getNumberOfComponents() * 2)</span>
+        {
+<span class="nc" id="L446">            return new PDRange(); // 0..1</span>
+        }
+<span class="nc" id="L448">        return new PDRange(rangeArray, n);</span>
+    }
+
+    /**
+     * Returns the metadata stream for this object, or null if there is no metadata stream.
+     * @return the metadata stream, or null if there is none
+     */
+    public COSStream getMetadata()
+    {
+<span class="nc" id="L457">        return stream.getCOSObject().getCOSStream(COSName.METADATA);</span>
+    }
+
+    /**
+     * Returns the type of the color space in the ICC profile. If the ICC profile is invalid, the
+     * type of the alternate colorspace is returned, which will be one of
+     * {@link ColorSpace#TYPE_GRAY TYPE_GRAY}, {@link ColorSpace#TYPE_RGB TYPE_RGB},
+     * {@link ColorSpace#TYPE_CMYK TYPE_CMYK}, or -1 if that one is invalid.
+     *
+     * @return an ICC color space type. See {@link ColorSpace#getType()} and the static values of
+     * {@link ColorSpace} for more details.
+     */
+    public int getColorSpaceType()
+    {
+<span class="nc bnc" id="L471" title="All 2 branches missed.">        if (iccProfile != null)</span>
+        {
+<span class="nc" id="L473">            return iccProfile.getColorSpaceType();</span>
+        }
+
+        // if the ICC Profile could not be read
+<span class="nc bnc" id="L477" title="All 4 branches missed.">        switch (alternateColorSpace.getNumberOfComponents())</span>
+        {
+            case 1:
+<span class="nc" id="L480">                return ColorSpace.TYPE_GRAY;</span>
+            case 3:
+<span class="nc" id="L482">                return ColorSpace.TYPE_RGB;</span>
+            case 4:
+<span class="nc" id="L484">                return ColorSpace.TYPE_CMYK;</span>
+            default:
+                // should not happen as all ICC color spaces in PDF must have 1,3, or 4 components
+<span class="nc" id="L487">                return -1;</span>
+        }
+    }
+
+    /**
+     * Sets the list of alternateColorSpace color spaces.
+     *
+     * @param list the list of color space objects
+     */
+    public void setAlternateColorSpaces(List&lt;PDColorSpace&gt; list)
+    {
+<span class="nc" id="L498">        COSArray altArray = null;</span>
+<span class="nc bnc" id="L499" title="All 2 branches missed.">        if(list != null)</span>
+        {
+<span class="nc" id="L501">            altArray = new COSArray(list);</span>
+        }
+<span class="nc" id="L503">        stream.getCOSObject().setItem(COSName.ALTERNATE, altArray);</span>
+<span class="nc" id="L504">    }</span>
+
+    /**
+     * Sets the range for this color space.
+     * @param range the new range for the component
+     * @param n the component to set the range for
+     */
+    public void setRangeForComponent(PDRange range, int n)
+    {
+<span class="nc" id="L513">        COSArray rangeArray = stream.getCOSObject().getCOSArray(COSName.RANGE);</span>
+<span class="nc bnc" id="L514" title="All 2 branches missed.">        if (rangeArray == null)</span>
+        {
+<span class="nc" id="L516">            rangeArray = new COSArray();</span>
+<span class="nc" id="L517">            stream.getCOSObject().setItem(COSName.RANGE, rangeArray);</span>
+        }
+        // extend range array with default values if needed
+<span class="nc bnc" id="L520" title="All 2 branches missed.">        while (rangeArray.size() &lt; (n + 1) * 2)</span>
+        {
+<span class="nc" id="L522">            rangeArray.add(COSFloat.ZERO);</span>
+<span class="nc" id="L523">            rangeArray.add(COSFloat.ONE);</span>
+        }
+<span class="nc" id="L525">        rangeArray.set(n*2, new COSFloat(range.getMin()));</span>
+<span class="nc" id="L526">        rangeArray.set(n*2+1, new COSFloat(range.getMax()));</span>
+<span class="nc" id="L527">    }</span>
+    
+    /**
+     * Sets the metadata stream that is associated with this color space.
+     * @param metadata the new metadata stream
+     */
+    public void setMetadata(COSStream metadata)
+    {
+<span class="nc" id="L535">        stream.getCOSObject().setItem(COSName.METADATA, metadata);</span>
+<span class="nc" id="L536">    }</span>
+
+    /**
+     * Internal accessor to support indexed raw images.
+     * @return true if this colorspace is sRGB.
+     */
+    boolean isSRGB()
+    {
+<span class="nc" id="L544">        return isRGB;</span>
+    }
+
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L550">        return getName() + &quot;{numberOfComponents: &quot; + getNumberOfComponents() + &quot;}&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

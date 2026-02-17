@@ -1,0 +1,758 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FontMapperImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font</a> &gt; <span class="el_source">FontMapperImpl.java</span></div><h1>FontMapperImpl.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.font;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Set;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.fontbox.FontBoxFont;
+import org.apache.fontbox.ttf.OpenTypeFont;
+import org.apache.fontbox.ttf.TTFParser;
+import org.apache.fontbox.ttf.TrueTypeFont;
+import org.apache.fontbox.type1.Type1Font;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName;
+
+/**
+ * Font mapper, locates non-embedded fonts via a pluggable FontProvider.
+ *
+ * @author John Hewson
+ */
+final class FontMapperImpl implements FontMapper
+{
+<span class="nc" id="L49">    private static final Logger LOG = LogManager.getLogger(FontMapperImpl.class);</span>
+
+<span class="nc" id="L51">    private static final FontCache fontCache = new FontCache(); // todo: static cache isn't ideal</span>
+    private FontProvider fontProvider;
+    private Map&lt;String, FontInfo&gt; fontInfoByName;
+    private final TrueTypeFont lastResortFont;
+
+    /** Map of PostScript name substitutes, in priority order. */
+<span class="nc" id="L57">    private final Map&lt;String, List&lt;String&gt;&gt; substitutes = new HashMap&lt;&gt;();</span>
+
+    FontMapperImpl()
+<span class="nc" id="L60">    {</span>
+        // substitutes for standard 14 fonts
+<span class="nc" id="L62">        addSubstitutes(&quot;Courier&quot;,</span>
+<span class="nc" id="L63">                new ArrayList&lt;&gt;(Arrays.asList(&quot;CourierNew&quot;, &quot;CourierNewPSMT&quot;, &quot;LiberationMono&quot;,</span>
+                        &quot;NimbusMonL-Regu&quot;)));
+<span class="nc" id="L65">        addSubstitutes(&quot;Courier-Bold&quot;,</span>
+<span class="nc" id="L66">                new ArrayList&lt;&gt;(Arrays.asList(&quot;CourierNewPS-BoldMT&quot;, &quot;CourierNew-Bold&quot;,</span>
+                        &quot;LiberationMono-Bold&quot;, &quot;NimbusMonL-Bold&quot;)));
+<span class="nc" id="L68">        addSubstitutes(&quot;Courier-Oblique&quot;,</span>
+<span class="nc" id="L69">                new ArrayList&lt;&gt;(Arrays.asList(&quot;CourierNewPS-ItalicMT&quot;,&quot;CourierNew-Italic&quot;,</span>
+                        &quot;LiberationMono-Italic&quot;, &quot;NimbusMonL-ReguObli&quot;)));
+<span class="nc" id="L71">        addSubstitutes(&quot;Courier-BoldOblique&quot;,</span>
+<span class="nc" id="L72">                new ArrayList&lt;&gt;(Arrays.asList(&quot;CourierNewPS-BoldItalicMT&quot;,&quot;CourierNew-BoldItalic&quot;,</span>
+                        &quot;LiberationMono-BoldItalic&quot;, &quot;NimbusMonL-BoldObli&quot;)));
+<span class="nc" id="L74">        addSubstitutes(&quot;Helvetica&quot;,</span>
+<span class="nc" id="L75">                new ArrayList&lt;&gt;(Arrays.asList(&quot;ArialMT&quot;, &quot;Arial&quot;, &quot;LiberationSans&quot;, &quot;NimbusSanL-Regu&quot;)));</span>
+<span class="nc" id="L76">        addSubstitutes(&quot;Helvetica-Bold&quot;,</span>
+<span class="nc" id="L77">                new ArrayList&lt;&gt;(Arrays.asList(&quot;Arial-BoldMT&quot;, &quot;Arial-Bold&quot;, &quot;LiberationSans-Bold&quot;,</span>
+                        &quot;NimbusSanL-Bold&quot;)));
+<span class="nc" id="L79">        addSubstitutes(&quot;Helvetica-Oblique&quot;,</span>
+<span class="nc" id="L80">                new ArrayList&lt;&gt;(Arrays.asList(&quot;Arial-ItalicMT&quot;, &quot;Arial-Italic&quot;, &quot;Helvetica-Italic&quot;,</span>
+                        &quot;LiberationSans-Italic&quot;, &quot;NimbusSanL-ReguItal&quot;)));
+<span class="nc" id="L82">        addSubstitutes(&quot;Helvetica-BoldOblique&quot;,</span>
+<span class="nc" id="L83">                new ArrayList&lt;&gt;(Arrays.asList(&quot;Arial-BoldItalicMT&quot;, &quot;Helvetica-BoldItalic&quot;,</span>
+                        &quot;LiberationSans-BoldItalic&quot;, &quot;NimbusSanL-BoldItal&quot;)));
+<span class="nc" id="L85">        addSubstitutes(&quot;Times-Roman&quot;,</span>
+<span class="nc" id="L86">                new ArrayList&lt;&gt;(Arrays.asList(&quot;TimesNewRomanPSMT&quot;, &quot;TimesNewRoman&quot;, &quot;TimesNewRomanPS&quot;,</span>
+                        &quot;LiberationSerif&quot;, &quot;NimbusRomNo9L-Regu&quot;)));
+<span class="nc" id="L88">        addSubstitutes(&quot;Times-Bold&quot;,</span>
+<span class="nc" id="L89">                new ArrayList&lt;&gt;(Arrays.asList(&quot;TimesNewRomanPS-BoldMT&quot;, &quot;TimesNewRomanPS-Bold&quot;,</span>
+                        &quot;TimesNewRoman-Bold&quot;, &quot;LiberationSerif-Bold&quot;,
+                        &quot;NimbusRomNo9L-Medi&quot;)));
+<span class="nc" id="L92">        addSubstitutes(&quot;Times-Italic&quot;,</span>
+<span class="nc" id="L93">                new ArrayList&lt;&gt;(Arrays.asList(&quot;TimesNewRomanPS-ItalicMT&quot;, &quot;TimesNewRomanPS-Italic&quot;,</span>
+                        &quot;TimesNewRoman-Italic&quot;, &quot;LiberationSerif-Italic&quot;,
+                        &quot;NimbusRomNo9L-ReguItal&quot;)));
+<span class="nc" id="L96">        addSubstitutes(&quot;Times-BoldItalic&quot;,</span>
+<span class="nc" id="L97">                new ArrayList&lt;&gt;(Arrays.asList(&quot;TimesNewRomanPS-BoldItalicMT&quot;, &quot;TimesNewRomanPS-BoldItalic&quot;,</span>
+                        &quot;TimesNewRoman-BoldItalic&quot;, &quot;LiberationSerif-BoldItalic&quot;,
+                        &quot;NimbusRomNo9L-MediItal&quot;)));
+<span class="nc" id="L100">        addSubstitutes(&quot;Symbol&quot;, new ArrayList&lt;&gt;(Arrays.asList(&quot;Symbol&quot;, &quot;SymbolMT&quot;, &quot;StandardSymL&quot;)));</span>
+<span class="nc" id="L101">        addSubstitutes(&quot;ZapfDingbats&quot;, new ArrayList&lt;&gt;(Arrays.asList(&quot;ZapfDingbatsITCbyBT-Regular&quot;, </span>
+                        &quot;ZapfDingbatsITC&quot;, &quot;Dingbats&quot;, &quot;MS-Gothic&quot;, &quot;DejaVuSans&quot;)));
+
+        // Acrobat also uses alternative names for Standard 14 fonts, which we map to those above
+        // these include names such as &quot;Arial&quot; and &quot;TimesNewRoman&quot;
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        for (String baseName : Standard14Fonts.getNames())</span>
+        {
+<span class="nc bnc" id="L108" title="All 2 branches missed.">            if (getSubstitutes(baseName).isEmpty())</span>
+            {
+<span class="nc" id="L110">                FontName mappedName = Standard14Fonts.getMappedFontName(baseName);</span>
+<span class="nc" id="L111">                addSubstitutes(baseName, new ArrayList&lt;&gt;(getSubstitutes(mappedName.getName())));</span>
+            }
+<span class="nc" id="L113">        }</span>
+
+        // -------------------------
+
+        try
+        {
+<span class="nc" id="L119">            String resourceName = &quot;/org/apache/pdfbox/resources/ttf/LiberationSans-Regular.ttf&quot;;</span>
+<span class="nc" id="L120">            InputStream resourceAsStream = FontMapper.class.getResourceAsStream(resourceName);</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">            if (resourceAsStream == null)</span>
+            {
+<span class="nc" id="L123">                throw new IOException(&quot;resource '&quot; + resourceName + &quot;' not found&quot;);</span>
+            }
+<span class="nc" id="L125">            RandomAccessReadBuffer randomAccessReadBuffer = RandomAccessReadBuffer</span>
+<span class="nc" id="L126">                    .createBufferFromStream(resourceAsStream);</span>
+<span class="nc" id="L127">            TTFParser ttfParser = new TTFParser();</span>
+<span class="nc" id="L128">            lastResortFont = ttfParser.parse(randomAccessReadBuffer);</span>
+        }
+<span class="nc" id="L130">        catch (IOException e)</span>
+        {
+<span class="nc" id="L132">            throw new RuntimeException(e);</span>
+<span class="nc" id="L133">        }</span>
+<span class="nc" id="L134">    }</span>
+
+    // lazy thread safe singleton
+    private static class DefaultFontProvider
+    {
+<span class="nc" id="L139">        private static final FontProvider INSTANCE = new FileSystemFontProvider(fontCache);</span>
+    }
+
+    /**
+     * Sets the font service provider.
+     */
+    public synchronized void setProvider(FontProvider fontProvider)
+    {
+<span class="nc" id="L147">        fontInfoByName = createFontInfoByName(fontProvider.getFontInfo());</span>
+<span class="nc" id="L148">        this.fontProvider = fontProvider;</span>
+<span class="nc" id="L149">    }</span>
+
+    /**
+     * Returns the font service provider. Defaults to using FileSystemFontProvider.
+     */
+    public synchronized FontProvider getProvider()
+    {
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (fontProvider == null)</span>
+        {
+<span class="nc" id="L158">            setProvider(DefaultFontProvider.INSTANCE);</span>
+        }
+<span class="nc" id="L160">        return fontProvider;</span>
+    }
+
+    /**
+     * Returns the font cache associated with this FontMapper. This method is needed by
+     * FontProvider subclasses.
+     */
+    public FontCache getFontCache()
+    {
+<span class="nc" id="L169">        return fontCache;</span>
+    }
+    
+    private Map&lt;String, FontInfo&gt; createFontInfoByName(List&lt;? extends FontInfo&gt; fontInfoList)
+    {
+<span class="nc" id="L174">        Map&lt;String, FontInfo&gt; map = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">        for (FontInfo info : fontInfoList)</span>
+        {
+<span class="nc bnc" id="L177" title="All 2 branches missed.">            for (String name : getPostScriptNames(info.getPostScriptName()))</span>
+            {
+<span class="nc" id="L179">                map.put(name.toLowerCase(Locale.ENGLISH), info);</span>
+<span class="nc" id="L180">            }</span>
+<span class="nc" id="L181">        }</span>
+<span class="nc" id="L182">        return map;</span>
+    }
+
+    /**
+     * Gets alternative names, as seen in some PDFs, e.g. PDFBOX-142.
+     */
+    private Set&lt;String&gt; getPostScriptNames(String postScriptName)
+    {
+<span class="nc" id="L190">        Set&lt;String&gt; names = new HashSet&lt;&gt;(2);</span>
+    
+        // built-in PostScript name
+<span class="nc" id="L193">        names.add(postScriptName);</span>
+     
+        // remove hyphens (e.g. Arial-Black -&gt; ArialBlack)
+<span class="nc" id="L196">        names.add(postScriptName.replace(&quot;-&quot;, &quot;&quot;));</span>
+     
+<span class="nc" id="L198">        return names;</span>
+    }
+
+    /**
+     * Adds a top-priority substitute for the given font.
+     *
+     * @param match PostScript name of the font to match
+     * @param replace PostScript name of the font to use as a replacement
+     */
+    public void addSubstitute(String match, String replace)
+    {
+<span class="nc" id="L209">        String lowerCaseMatch = match.toLowerCase(Locale.ENGLISH);</span>
+<span class="nc" id="L210">        substitutes.computeIfAbsent(lowerCaseMatch, key -&gt; new ArrayList&lt;&gt;()).add(replace);</span>
+<span class="nc" id="L211">    }</span>
+
+    private void addSubstitutes(String match, List&lt;String&gt; replacements)
+    {
+<span class="nc" id="L215">        substitutes.put(match.toLowerCase(Locale.ENGLISH), replacements);</span>
+<span class="nc" id="L216">    }</span>
+
+    /**
+     * Returns the substitutes for a given font.
+     */
+    private List&lt;String&gt; getSubstitutes(String postScriptName)
+    {
+<span class="nc" id="L223">        return substitutes.getOrDefault(</span>
+<span class="nc" id="L224">                postScriptName.replace(&quot; &quot;, &quot;&quot;).toLowerCase(Locale.ENGLISH), </span>
+<span class="nc" id="L225">                Collections.emptyList());</span>
+    }
+
+    /**
+     * Attempts to find a good fallback based on the font descriptor.
+     */
+    private String getFallbackFontName(PDFontDescriptor fontDescriptor)
+    {
+        String fontName;
+<span class="nc bnc" id="L234" title="All 2 branches missed.">        if (fontDescriptor != null)</span>
+        {
+            // heuristic detection of bold
+<span class="nc" id="L237">            boolean isBold = false;</span>
+<span class="nc" id="L238">            String name = fontDescriptor.getFontName();</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">            if (name != null)</span>
+            {
+<span class="nc" id="L241">                String lower = fontDescriptor.getFontName().toLowerCase();</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">                isBold = lower.contains(&quot;bold&quot;) ||</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">                         lower.contains(&quot;black&quot;) ||</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">                         lower.contains(&quot;heavy&quot;);</span>
+            }
+
+            // font descriptor flags should describe the style
+<span class="nc bnc" id="L248" title="All 2 branches missed.">            if (fontDescriptor.isFixedPitch())</span>
+            {
+<span class="nc" id="L250">                fontName = &quot;Courier&quot;;</span>
+<span class="nc bnc" id="L251" title="All 4 branches missed.">                if (isBold &amp;&amp; fontDescriptor.isItalic())</span>
+                {
+<span class="nc" id="L253">                    fontName += &quot;-BoldOblique&quot;;</span>
+                }
+<span class="nc bnc" id="L255" title="All 2 branches missed.">                else if (isBold)</span>
+                {
+<span class="nc" id="L257">                    fontName += &quot;-Bold&quot;;</span>
+                }
+<span class="nc bnc" id="L259" title="All 2 branches missed.">                else if (fontDescriptor.isItalic())</span>
+                {
+<span class="nc" id="L261">                    fontName += &quot;-Oblique&quot;;</span>
+                }
+            }
+<span class="nc bnc" id="L264" title="All 2 branches missed.">            else if (fontDescriptor.isSerif())</span>
+            {
+<span class="nc" id="L266">                fontName = &quot;Times&quot;;</span>
+<span class="nc bnc" id="L267" title="All 4 branches missed.">                if (isBold &amp;&amp; fontDescriptor.isItalic())</span>
+                {
+<span class="nc" id="L269">                    fontName += &quot;-BoldItalic&quot;;</span>
+                }
+<span class="nc bnc" id="L271" title="All 2 branches missed.">                else if (isBold)</span>
+                {
+<span class="nc" id="L273">                    fontName += &quot;-Bold&quot;;</span>
+                }
+<span class="nc bnc" id="L275" title="All 2 branches missed.">                else if (fontDescriptor.isItalic())</span>
+                {
+<span class="nc" id="L277">                    fontName += &quot;-Italic&quot;;</span>
+                }
+                else
+                {
+<span class="nc" id="L281">                    fontName += &quot;-Roman&quot;;</span>
+                }
+            }
+            else
+            {
+<span class="nc" id="L286">                fontName = &quot;Helvetica&quot;;</span>
+<span class="nc bnc" id="L287" title="All 4 branches missed.">                if (isBold &amp;&amp; fontDescriptor.isItalic())</span>
+                {
+<span class="nc" id="L289">                    fontName += &quot;-BoldOblique&quot;;</span>
+                }
+<span class="nc bnc" id="L291" title="All 2 branches missed.">                else if (isBold)</span>
+                {
+<span class="nc" id="L293">                    fontName += &quot;-Bold&quot;;</span>
+                }
+<span class="nc bnc" id="L295" title="All 2 branches missed.">                else if (fontDescriptor.isItalic())</span>
+                {
+<span class="nc" id="L297">                    fontName += &quot;-Oblique&quot;;</span>
+                }
+            }
+<span class="nc" id="L300">        }</span>
+        else
+        {
+            // if there is no FontDescriptor then we just fall back to Times Roman
+<span class="nc" id="L304">            fontName = &quot;Times-Roman&quot;;</span>
+        }
+<span class="nc" id="L306">        return fontName;</span>
+    }
+
+    /**
+     * Finds a TrueType font with the given PostScript name, or a suitable substitute, or null.
+     *
+     * @param fontDescriptor FontDescriptor
+     */
+    @Override
+    public FontMapping&lt;TrueTypeFont&gt; getTrueTypeFont(String baseFont,
+                                                            PDFontDescriptor fontDescriptor)
+    {
+<span class="nc" id="L318">        TrueTypeFont ttf = (TrueTypeFont)findFont(FontFormat.TTF, baseFont);</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">        if (ttf != null)</span>
+        {
+<span class="nc" id="L321">            return new FontMapping&lt;&gt;(ttf, false);</span>
+        }
+        else
+        {
+            // fallback - todo: i.e. fuzzy match
+<span class="nc" id="L326">            String fontName = getFallbackFontName(fontDescriptor);</span>
+<span class="nc" id="L327">            ttf = (TrueTypeFont) findFont(FontFormat.TTF, fontName);</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">            if (ttf == null)</span>
+            {
+                // we have to return something here as TTFs aren't strictly required on the system
+<span class="nc" id="L331">                ttf = lastResortFont;</span>
+            }
+<span class="nc" id="L333">            return new FontMapping&lt;&gt;(ttf, true);</span>
+        }
+    }
+
+    /**
+     * Finds a font with the given PostScript name, or a suitable substitute, or null. This allows
+     * any font to be substituted with a PFB, TTF or OTF.
+     *
+     * @param fontDescriptor the FontDescriptor of the font to find
+     */
+    @Override
+    public FontMapping&lt;FontBoxFont&gt; getFontBoxFont(String baseFont,
+                                                          PDFontDescriptor fontDescriptor)
+    {
+<span class="nc" id="L347">        FontBoxFont font = findFontBoxFont(baseFont);</span>
+<span class="nc bnc" id="L348" title="All 2 branches missed.">        if (font != null)</span>
+        {
+<span class="nc" id="L350">            return new FontMapping&lt;&gt;(font, false);</span>
+        }
+        else
+        {
+            // fallback - todo: i.e. fuzzy match
+<span class="nc" id="L355">            String fallbackName = getFallbackFontName(fontDescriptor);</span>
+<span class="nc" id="L356">            font = findFontBoxFont(fallbackName);</span>
+<span class="nc bnc" id="L357" title="All 2 branches missed.">            if (font == null)</span>
+            {
+                // we have to return something here as TTFs aren't strictly required on the system
+<span class="nc" id="L360">                font = lastResortFont;</span>
+            }
+<span class="nc" id="L362">            return new FontMapping&lt;&gt;(font, true);</span>
+        }
+    }
+
+    /**
+     * Finds a font with the given PostScript name, or a suitable substitute, or null.
+     *
+     * @param postScriptName PostScript font name
+     */
+    private FontBoxFont findFontBoxFont(String postScriptName)
+    {
+<span class="nc" id="L373">        Type1Font t1 = (Type1Font)findFont(FontFormat.PFB, postScriptName);</span>
+<span class="nc bnc" id="L374" title="All 2 branches missed.">        if (t1 != null)</span>
+        {
+<span class="nc" id="L376">            return t1;</span>
+        }
+
+<span class="nc" id="L379">        TrueTypeFont ttf = (TrueTypeFont)findFont(FontFormat.TTF, postScriptName);</span>
+<span class="nc bnc" id="L380" title="All 2 branches missed.">        if (ttf != null)</span>
+        {
+<span class="nc" id="L382">            return ttf;</span>
+        }
+
+<span class="nc" id="L385">        OpenTypeFont otf = (OpenTypeFont) findFont(FontFormat.OTF, postScriptName);</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">        if (otf != null)</span>
+        {
+<span class="nc" id="L388">            return otf;</span>
+        }
+
+<span class="nc" id="L391">        return null;</span>
+    }
+
+    /**
+     * Finds a font with the given PostScript name, or a suitable substitute, or null.
+     *
+     * @param postScriptName PostScript font name
+     */
+    private FontBoxFont findFont(FontFormat format, String postScriptName)
+    {
+        // handle damaged PDFs, see PDFBOX-2884
+<span class="nc bnc" id="L402" title="All 2 branches missed.">        if (postScriptName == null)</span>
+        {
+<span class="nc" id="L404">            return null;</span>
+        }
+        
+        // make sure the font provider is initialized
+<span class="nc" id="L408">        getProvider();</span>
+
+        // first try to match the PostScript name
+<span class="nc" id="L411">        FontInfo info = getFont(format, postScriptName);</span>
+<span class="nc bnc" id="L412" title="All 2 branches missed.">        if (info != null)</span>
+        {
+<span class="nc" id="L414">            return info.getFont();</span>
+        }
+
+        // remove hyphens (e.g. Arial-Black -&gt; ArialBlack)
+<span class="nc" id="L418">        info = getFont(format, postScriptName.replace(&quot;-&quot;, &quot;&quot;));</span>
+<span class="nc bnc" id="L419" title="All 2 branches missed.">        if (info != null)</span>
+        {
+<span class="nc" id="L421">            return info.getFont();</span>
+        }
+
+        // then try named substitutes
+<span class="nc bnc" id="L425" title="All 2 branches missed.">        for (String substituteName : getSubstitutes(postScriptName))</span>
+        {
+<span class="nc" id="L427">            info = getFont(format, substituteName);</span>
+<span class="nc bnc" id="L428" title="All 2 branches missed.">            if (info != null)</span>
+            {
+<span class="nc" id="L430">                return info.getFont();</span>
+            }
+<span class="nc" id="L432">        }</span>
+
+        // then try converting Windows names e.g. (ArialNarrow,Bold) -&gt; (ArialNarrow-Bold)
+<span class="nc" id="L435">        info = getFont(format, postScriptName.replace(&quot;,&quot;, &quot;-&quot;));</span>
+<span class="nc bnc" id="L436" title="All 2 branches missed.">        if (info != null)</span>
+        {
+<span class="nc" id="L438">            return info.getFont();</span>
+        }
+
+<span class="nc bnc" id="L441" title="All 2 branches missed.">        if (postScriptName.contains(&quot;,&quot;))</span>
+        {
+<span class="nc" id="L443">            postScriptName = postScriptName.substring(0, postScriptName.indexOf(&quot;,&quot;));</span>
+            // PDFBOX-5806: try cutting font style and getting the basefont
+            // eg. for &quot;Wingdings,Bolt&quot; to &quot;Wingding-Regular&quot; (including the following step)
+<span class="nc" id="L446">            info = getFont(format, postScriptName);</span>
+<span class="nc bnc" id="L447" title="All 2 branches missed.">            if (info != null)</span>
+            {
+<span class="nc" id="L449">                return info.getFont();</span>
+            }
+        }
+
+        // try appending &quot;-Regular&quot;, works for Wingdings on windows
+<span class="nc" id="L454">        info = getFont(format, postScriptName + &quot;-Regular&quot;);</span>
+<span class="nc bnc" id="L455" title="All 2 branches missed.">        if (info != null)</span>
+        {
+<span class="nc" id="L457">            return info.getFont();</span>
+        }
+        // no matches
+<span class="nc" id="L460">        return null;</span>
+    }
+
+    /**
+     * Finds the named font with the given format.
+     */
+    private FontInfo getFont(FontFormat format, String postScriptName)
+    {
+<span class="nc" id="L468">        int index = postScriptName.indexOf('+');</span>
+        // strip subset tag (happens when we substitute a corrupt embedded font, see PDFBOX-2642)
+<span class="nc bnc" id="L470" title="All 2 branches missed.">        if (index &gt; -1)</span>
+        {
+<span class="nc" id="L472">            postScriptName = postScriptName.substring(index + 1);</span>
+        }
+        
+        // look up the PostScript name
+<span class="nc" id="L476">        FontInfo info = fontInfoByName.get(postScriptName.toLowerCase(Locale.ENGLISH));</span>
+<span class="nc bnc" id="L477" title="All 4 branches missed.">        if (info != null &amp;&amp; info.getFormat() == format)</span>
+        {
+<span class="nc" id="L479">            LOG.debug(String.format(&quot;getFont('%s','%s') returns %s&quot;, format, postScriptName, info));</span>
+<span class="nc" id="L480">            return info;</span>
+        }
+<span class="nc" id="L482">        return null;</span>
+    }
+
+    /**
+     * Finds a CFF CID-Keyed font with the given PostScript name, or a suitable substitute, or null.
+     * This method can also map CJK fonts via their CIDSystemInfo (ROS).
+     * 
+     * @param fontDescriptor FontDescriptor
+     * @param cidSystemInfo the CID system info, e.g. &quot;Adobe-Japan1&quot;, if any.
+     */
+    @Override
+    public CIDFontMapping getCIDFont(String baseFont, PDFontDescriptor fontDescriptor,
+                                            PDCIDSystemInfo cidSystemInfo)
+    {
+        // try name match or substitute with OTF
+<span class="nc" id="L497">        OpenTypeFont otf1 = (OpenTypeFont)findFont(FontFormat.OTF, baseFont);</span>
+<span class="nc bnc" id="L498" title="All 2 branches missed.">        if (otf1 != null)</span>
+        {
+<span class="nc" id="L500">            return new CIDFontMapping(otf1, null, false);</span>
+        }
+
+        // try name match or substitute with TTF
+<span class="nc" id="L504">        TrueTypeFont ttf = (TrueTypeFont)findFont(FontFormat.TTF, baseFont);</span>
+<span class="nc bnc" id="L505" title="All 2 branches missed.">        if (ttf != null)</span>
+        {
+<span class="nc" id="L507">            return new CIDFontMapping(null, ttf, false);</span>
+        }
+
+<span class="nc bnc" id="L510" title="All 4 branches missed.">        if (cidSystemInfo != null &amp;&amp; fontDescriptor != null)</span>
+        {
+            // &quot;In Acrobat 3.0.1 and later, Type 0 fonts that use a CMap whose CIDSystemInfo
+            // dictionary defines the Adobe-GB1, Adobe-CNS1 Adobe-Japan1, or Adobe-Korea1 character
+            // collection can also be substituted.&quot; - Adobe Supplement to the ISO 32000
+
+<span class="nc" id="L516">            String collection = cidSystemInfo.getRegistry() + &quot;-&quot; + cidSystemInfo.getOrdering();</span>
+            
+<span class="nc bnc" id="L518" title="All 4 branches missed.">            if (collection.equals(&quot;Adobe-GB1&quot;) || collection.equals(&quot;Adobe-CNS1&quot;) ||</span>
+<span class="nc bnc" id="L519" title="All 4 branches missed.">                collection.equals(&quot;Adobe-Japan1&quot;) || collection.equals(&quot;Adobe-Korea1&quot;))</span>
+            {
+                // try automatic substitutes via character collection
+<span class="nc" id="L522">                PriorityQueue&lt;FontMatch&gt; queue = getFontMatches(fontDescriptor, cidSystemInfo);</span>
+<span class="nc" id="L523">                FontMatch bestMatch = queue.poll();</span>
+<span class="nc bnc" id="L524" title="All 2 branches missed.">                if (bestMatch != null)</span>
+                {
+<span class="nc" id="L526">                    LOG.debug(&quot;Best match for '{}': {}&quot;, baseFont, bestMatch.info);</span>
+<span class="nc" id="L527">                    FontBoxFont font = bestMatch.info.getFont();</span>
+<span class="nc bnc" id="L528" title="All 2 branches missed.">                    if (font instanceof OpenTypeFont)</span>
+                    {
+<span class="nc" id="L530">                        return new CIDFontMapping((OpenTypeFont)font, null, true);</span>
+                    }
+<span class="nc bnc" id="L532" title="All 2 branches missed.">                    else if (font != null)</span>
+                    {
+<span class="nc" id="L534">                        return new CIDFontMapping(null, font, true);</span>
+                    }  
+                }
+            }
+        }
+
+        // last-resort fallback
+<span class="nc" id="L541">        return new CIDFontMapping(null, lastResortFont, true);</span>
+    }
+
+    /**
+     * Returns a list of matching fonts, scored by suitability. Positive scores indicate matches
+     * for certain attributes, while negative scores indicate mismatches. Zero scores are neutral.
+     * 
+     * @param fontDescriptor FontDescriptor, always present.
+     * @param cidSystemInfo Font's CIDSystemInfo, may be null.
+     */
+    private PriorityQueue&lt;FontMatch&gt; getFontMatches(PDFontDescriptor fontDescriptor,
+                                                           PDCIDSystemInfo cidSystemInfo)
+    {
+        // make sure the font provider is initialized
+<span class="nc" id="L555">        getProvider();</span>
+
+<span class="nc" id="L557">        PriorityQueue&lt;FontMatch&gt; queue = new PriorityQueue&lt;&gt;(20);</span>
+        
+<span class="nc bnc" id="L559" title="All 2 branches missed.">        for (FontInfo info : fontInfoByName.values())</span>
+        {
+            // filter by CIDSystemInfo, if given
+<span class="nc bnc" id="L562" title="All 4 branches missed.">            if (cidSystemInfo != null &amp;&amp; !isCharSetMatch(cidSystemInfo, info))</span>
+            {
+<span class="nc" id="L564">                continue;</span>
+            }
+
+<span class="nc" id="L567">            FontMatch match = new FontMatch(info);</span>
+
+            // Panose is the most reliable
+<span class="nc bnc" id="L570" title="All 4 branches missed.">            if (fontDescriptor.getPanose() != null &amp;&amp; info.getPanose() != null)</span>
+            {
+<span class="nc" id="L572">                PDPanoseClassification panose = fontDescriptor.getPanose().getPanose();</span>
+<span class="nc bnc" id="L573" title="All 2 branches missed.">                if (panose.getFamilyKind() == info.getPanose().getFamilyKind())</span>
+                {
+<span class="nc bnc" id="L575" title="All 2 branches missed.">                    if (panose.getFamilyKind() == 0 &amp;&amp; </span>
+<span class="nc bnc" id="L576" title="All 2 branches missed.">                        (info.getPostScriptName().toLowerCase().contains(&quot;barcode&quot;) ||</span>
+<span class="nc bnc" id="L577" title="All 2 branches missed.">                         info.getPostScriptName().startsWith(&quot;Code&quot;)) &amp;&amp; </span>
+<span class="nc bnc" id="L578" title="All 2 branches missed.">                        !probablyBarcodeFont(fontDescriptor))</span>
+                    {
+                        // PDFBOX-4268: ignore barcode font if we aren't searching for one.
+<span class="nc" id="L581">                        continue;</span>
+                    }
+                    // serifs
+<span class="nc bnc" id="L584" title="All 2 branches missed.">                    if (panose.getSerifStyle() == info.getPanose().getSerifStyle())</span>
+                    {
+                        // exact match
+<span class="nc" id="L587">                        match.score += 2;</span>
+                    }
+<span class="nc bnc" id="L589" title="All 4 branches missed.">                    else if (panose.getSerifStyle() &gt;= 2 &amp;&amp; panose.getSerifStyle() &lt;= 5 &amp;&amp;</span>
+<span class="nc bnc" id="L590" title="All 2 branches missed.">                             info.getPanose().getSerifStyle() &gt;= 2 &amp;&amp;</span>
+<span class="nc bnc" id="L591" title="All 2 branches missed.">                             info.getPanose().getSerifStyle() &lt;= 5)</span>
+                    {
+                        // cove (serif)
+<span class="nc" id="L594">                        match.score += 1;</span>
+                    }
+<span class="nc bnc" id="L596" title="All 4 branches missed.">                    else if (panose.getSerifStyle() &gt;= 11 &amp;&amp; panose.getSerifStyle() &lt;= 13 &amp;&amp;</span>
+<span class="nc bnc" id="L597" title="All 2 branches missed.">                             info.getPanose().getSerifStyle() &gt;= 11 &amp;&amp;</span>
+<span class="nc bnc" id="L598" title="All 2 branches missed.">                             info.getPanose().getSerifStyle() &lt;= 13)</span>
+                    {
+                        // sans-serif
+<span class="nc" id="L601">                        match.score += 1;</span>
+                    }
+<span class="nc bnc" id="L603" title="All 4 branches missed.">                    else if (panose.getSerifStyle() != 0 &amp;&amp; info.getPanose().getSerifStyle() != 0)</span>
+                    {
+                        // mismatch
+<span class="nc" id="L606">                        match.score -= 1;</span>
+                    }
+                    
+                    // weight
+<span class="nc" id="L610">                    int weight = info.getPanose().getWeight();</span>
+<span class="nc" id="L611">                    int weightClass = info.getWeightClassAsPanose();</span>
+<span class="nc bnc" id="L612" title="All 2 branches missed.">                    if (Math.abs(weight - weightClass) &gt; 2)</span>
+                    {
+                        // inconsistent data in system font, usWeightClass wins
+<span class="nc" id="L615">                        weight = weightClass;</span>
+                    }
+                    
+<span class="nc bnc" id="L618" title="All 2 branches missed.">                    if (panose.getWeight() == weight)</span>
+                    {
+                        // exact match
+<span class="nc" id="L621">                        match.score += 2;</span>
+                    }
+<span class="nc bnc" id="L623" title="All 4 branches missed.">                    else if (panose.getWeight() &gt; 1 &amp;&amp; weight &gt; 1)</span>
+                    {
+<span class="nc" id="L625">                        float dist = Math.abs(panose.getWeight() - weight);</span>
+<span class="nc" id="L626">                        match.score += 1 - dist * 0.5;</span>
+                    }
+                    
+                    // todo: italic
+                    // ...
+                }
+<span class="nc" id="L632">            }</span>
+<span class="nc bnc" id="L633" title="All 4 branches missed.">            else if (fontDescriptor.getFontWeight() &gt; 0 &amp;&amp; info.getWeightClass() &gt; 0)</span>
+            {
+                // usWeightClass is pretty reliable
+<span class="nc" id="L636">                float dist = Math.abs(fontDescriptor.getFontWeight() - info.getWeightClass());</span>
+<span class="nc" id="L637">                match.score += 1 - (dist / 100) * 0.5;</span>
+            }
+            // todo: italic
+            // ...
+
+<span class="nc" id="L642">            queue.add(match);</span>
+<span class="nc" id="L643">        }</span>
+<span class="nc" id="L644">        return queue;</span>
+    }
+
+    private boolean probablyBarcodeFont(PDFontDescriptor fontDescriptor)
+    {
+<span class="nc" id="L649">        String ff = fontDescriptor.getFontFamily();</span>
+<span class="nc bnc" id="L650" title="All 2 branches missed.">        if (ff == null)</span>
+        {
+<span class="nc" id="L652">            ff = &quot;&quot;;</span>
+        }
+<span class="nc" id="L654">        String fn = fontDescriptor.getFontName();</span>
+<span class="nc bnc" id="L655" title="All 2 branches missed.">        if (fn == null)</span>
+        {
+<span class="nc" id="L657">            fn = &quot;&quot;;</span>
+        }
+<span class="nc bnc" id="L659" title="All 4 branches missed.">        return ff.startsWith(&quot;Code&quot;) || ff.toLowerCase().contains(&quot;barcode&quot;) ||</span>
+<span class="nc bnc" id="L660" title="All 4 branches missed.">               fn.startsWith(&quot;Code&quot;) || fn.toLowerCase().contains(&quot;barcode&quot;);</span>
+    }
+
+    /**
+     * Returns true if the character set described by CIDSystemInfo is present in the given font.
+     * Only applies to Adobe-GB1, Adobe-CNS1, Adobe-Japan1, Adobe-Korea1, as per the PDF spec.
+     */
+    private boolean isCharSetMatch(PDCIDSystemInfo cidSystemInfo, FontInfo info)
+    {
+<span class="nc" id="L669">        String ordering = cidSystemInfo.getOrdering();</span>
+<span class="nc bnc" id="L670" title="All 2 branches missed.">        if (ordering == null)</span>
+        {
+<span class="nc" id="L672">            return false;</span>
+        }
+<span class="nc bnc" id="L674" title="All 2 branches missed.">        if (info.getCIDSystemInfo() != null)</span>
+        {
+<span class="nc bnc" id="L676" title="All 2 branches missed.">            return info.getCIDSystemInfo().getRegistry().equals(cidSystemInfo.getRegistry()) &amp;&amp;</span>
+<span class="nc bnc" id="L677" title="All 2 branches missed.">                   info.getCIDSystemInfo().getOrdering().equals(ordering);</span>
+        }
+        else
+        {
+<span class="nc" id="L681">            long codePageRange = info.getCodePageRange();</span>
+            
+<span class="nc" id="L683">            long JIS_JAPAN = 1 &lt;&lt; 17;</span>
+<span class="nc" id="L684">            long CHINESE_SIMPLIFIED = 1 &lt;&lt; 18;</span>
+<span class="nc" id="L685">            long KOREAN_WANSUNG = 1 &lt;&lt; 19;</span>
+<span class="nc" id="L686">            long CHINESE_TRADITIONAL = 1 &lt;&lt; 20;</span>
+<span class="nc" id="L687">            long KOREAN_JOHAB = 1 &lt;&lt; 21;</span>
+            
+<span class="nc bnc" id="L689" title="All 2 branches missed.">            if (&quot;MalgunGothic-Semilight&quot;.equals(info.getPostScriptName()))</span>
+            {
+                // PDFBOX-4793 and PDF.js 10699: This font has only Korean, but has bits 17-21 set.
+<span class="nc" id="L692">                codePageRange &amp;= ~(JIS_JAPAN | CHINESE_SIMPLIFIED | CHINESE_TRADITIONAL);</span>
+            }
+<span class="nc bnc" id="L694" title="All 4 branches missed.">            if (ordering.equals(&quot;GB1&quot;) &amp;&amp;</span>
+                    (codePageRange &amp; CHINESE_SIMPLIFIED) == CHINESE_SIMPLIFIED)
+            {
+<span class="nc" id="L697">                return true;</span>
+            }
+<span class="nc bnc" id="L699" title="All 4 branches missed.">            else if (ordering.equals(&quot;CNS1&quot;) &amp;&amp;</span>
+                    (codePageRange &amp; CHINESE_TRADITIONAL) == CHINESE_TRADITIONAL)
+            {
+<span class="nc" id="L702">                return true;</span>
+            }
+<span class="nc bnc" id="L704" title="All 4 branches missed.">            else if (ordering.equals(&quot;Japan1&quot;) &amp;&amp;</span>
+                    (codePageRange &amp; JIS_JAPAN) == JIS_JAPAN)
+            {
+<span class="nc" id="L707">                return true;</span>
+            }
+            else
+            {
+<span class="nc bnc" id="L711" title="All 6 branches missed.">                return ordering.equals(&quot;Korea1&quot;) &amp;&amp;</span>
+                        ((codePageRange &amp; KOREAN_WANSUNG) == KOREAN_WANSUNG ||
+                         (codePageRange &amp; KOREAN_JOHAB) == KOREAN_JOHAB);
+            }
+        }
+    }
+
+    /**
+     * A potential match for a font substitution.
+     */
+    private static class FontMatch implements Comparable&lt;FontMatch&gt;
+    {
+        double score;
+        final FontInfo info;
+        
+        FontMatch(FontInfo info)
+<span class="nc" id="L727">        {</span>
+<span class="nc" id="L728">            this.info = info;</span>
+<span class="nc" id="L729">        }</span>
+
+        @Override
+        public int compareTo(FontMatch match)
+        {
+<span class="nc" id="L734">            return Double.compare(match.score, this.score);</span>
+        }
+    }
+
+    /**
+     * For debugging. Prints all matches and returns the best match.
+     */
+    private FontMatch printMatches(PriorityQueue&lt;FontMatch&gt; queue)
+    {
+<span class="nc" id="L743">        FontMatch bestMatch = queue.peek();</span>
+<span class="nc" id="L744">        System.out.println(&quot;-------&quot;);</span>
+<span class="nc bnc" id="L745" title="All 2 branches missed.">        while (!queue.isEmpty())</span>
+        {
+<span class="nc" id="L747">            FontMatch match = queue.poll();</span>
+<span class="nc" id="L748">            FontInfo info = match.info;</span>
+<span class="nc" id="L749">            System.out.println(match.score + &quot; | &quot; + info.getMacStyle() + &quot; &quot; +</span>
+<span class="nc" id="L750">                               info.getFamilyClass() + &quot; &quot; + info.getPanose() + &quot; &quot; +</span>
+<span class="nc" id="L751">                               info.getCIDSystemInfo() + &quot; &quot; + info.getPostScriptName() + &quot; &quot; +</span>
+<span class="nc" id="L752">                               info.getFormat());</span>
+<span class="nc" id="L753">        }</span>
+<span class="nc" id="L754">        System.out.println(&quot;-------&quot;);</span>
+<span class="nc" id="L755">        return bestMatch;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

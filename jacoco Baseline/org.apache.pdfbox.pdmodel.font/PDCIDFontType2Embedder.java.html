@@ -1,0 +1,678 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDCIDFontType2Embedder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font</a> &gt; <span class="el_source">PDCIDFontType2Embedder.java</span></div><h1>PDCIDFontType2Embedder.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.font;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.fontbox.ttf.GlyphData;
+import org.apache.fontbox.ttf.GlyphTable;
+import org.apache.fontbox.ttf.HorizontalMetricsTable;
+import org.apache.fontbox.ttf.TrueTypeFont;
+import org.apache.fontbox.ttf.VerticalHeaderTable;
+import org.apache.fontbox.ttf.VerticalMetricsTable;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+
+/**
+ * Embedded PDCIDFontType2 builder. Helper class to populate a PDCIDFontType2 and its parent
+ * PDType0Font from a TTF.
+ *
+ * @author Keiji Suzuki
+ * @author John Hewson
+ */
+final class PDCIDFontType2Embedder extends TrueTypeEmbedder
+{
+
+<span class="nc" id="L54">    private static final Logger LOG = LogManager.getLogger(PDCIDFontType2Embedder.class);</span>
+
+    private final PDDocument document;
+    private final PDType0Font parent;
+    private final COSDictionary dict;
+    private final COSDictionary cidFont;
+    private final boolean vertical;
+
+    /**
+     * Creates a new TrueType font embedder for the given TTF as a PDCIDFontType2.
+     *
+     * @param document parent document
+     * @param dict font dictionary
+     * @param ttf True Type Font
+     * @param parent parent Type 0 font
+     * @throws IOException if the TTF could not be read
+     */
+    PDCIDFontType2Embedder(PDDocument document, COSDictionary dict, TrueTypeFont ttf,
+            boolean embedSubset, PDType0Font parent, boolean vertical) throws IOException
+    {
+<span class="nc" id="L74">        super(document, dict, ttf, embedSubset);</span>
+<span class="nc" id="L75">        this.document = document;</span>
+<span class="nc" id="L76">        this.dict = dict;</span>
+<span class="nc" id="L77">        this.parent = parent;</span>
+<span class="nc" id="L78">        this.vertical = vertical;</span>
+
+        // parent Type 0 font
+<span class="nc" id="L81">        dict.setItem(COSName.SUBTYPE, COSName.TYPE0);</span>
+<span class="nc" id="L82">        dict.setName(COSName.BASE_FONT, fontDescriptor.getFontName());</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        dict.setItem(COSName.ENCODING, vertical ? COSName.IDENTITY_V : COSName.IDENTITY_H); // CID = GID</span>
+
+        // descendant CIDFont
+<span class="nc" id="L86">        cidFont = createCIDFont();</span>
+<span class="nc" id="L87">        COSArray descendantFonts = new COSArray();</span>
+<span class="nc" id="L88">        descendantFonts.add(cidFont);</span>
+<span class="nc" id="L89">        dict.setItem(COSName.DESCENDANT_FONTS, descendantFonts);</span>
+
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        if (!embedSubset)</span>
+        {
+            // build GID -&gt; Unicode map
+<span class="nc" id="L94">            buildToUnicodeCMap(null);</span>
+        }
+<span class="nc" id="L96">    }</span>
+
+    /**
+     * Rebuild a font subset.
+     */
+    @Override
+    protected void buildSubset(InputStream ttfSubset, String tag, Map&lt;Integer, Integer&gt; gidToCid)
+            throws IOException
+    {
+        // build CID2GIDMap, because the content stream has been written with the old GIDs
+<span class="nc" id="L106">        TreeMap&lt;Integer, Integer&gt; cidToGid = new TreeMap&lt;&gt;();</span>
+<span class="nc" id="L107">        gidToCid.forEach((newGID, oldGID) -&gt; cidToGid.put(oldGID, newGID));</span>
+        
+        // build unicode mapping before subsetting as the subsetted font won't have a cmap
+<span class="nc" id="L110">        buildToUnicodeCMap(gidToCid);</span>
+        // build vertical metrics before subsetting as the subsetted font won't have vhea, vmtx
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        if (vertical)</span>
+        {
+<span class="nc" id="L114">            buildVerticalMetrics(cidToGid);</span>
+        }
+        // rebuild the relevant part of the font
+<span class="nc" id="L117">        buildFontFile2(ttfSubset);</span>
+<span class="nc" id="L118">        addNameTag(tag);</span>
+<span class="nc" id="L119">        buildWidths(cidToGid);</span>
+<span class="nc" id="L120">        buildCIDToGIDMap(cidToGid);</span>
+<span class="nc" id="L121">        buildCIDSet(cidToGid);</span>
+<span class="nc" id="L122">    }</span>
+
+    private void buildToUnicodeCMap(Map&lt;Integer, Integer&gt; newGIDToOldCID) throws IOException
+    {
+<span class="nc" id="L126">        ToUnicodeWriter toUniWriter = new ToUnicodeWriter();</span>
+<span class="nc" id="L127">        boolean hasSurrogates = false;</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        for (int gid = 1, max = ttf.getMaximumProfile().getNumGlyphs(); gid &lt;= max; gid++)</span>
+        {
+            // optional CID2GIDMap for subsetting
+            int cid;
+<span class="nc bnc" id="L132" title="All 2 branches missed.">            if (newGIDToOldCID != null)</span>
+            {
+<span class="nc bnc" id="L134" title="All 2 branches missed.">                if (!newGIDToOldCID.containsKey(gid))</span>
+                {
+<span class="nc" id="L136">                    continue;</span>
+                }
+                else
+                {
+<span class="nc" id="L140">                    cid = newGIDToOldCID.get(gid);</span>
+                }
+            }
+            else
+            {
+<span class="nc" id="L145">                cid = gid;</span>
+            }
+
+            // skip composite glyph components that have no code point
+<span class="nc" id="L149">            List&lt;Integer&gt; codes = cmapLookup.getCharCodes(cid); // old GID -&gt; Unicode</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">            if (codes != null)</span>
+            {
+                // use the first entry even for ambiguous mappings
+<span class="nc" id="L153">                int codePoint = codes.get(0);</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">                if (codePoint &gt; 0xFFFF)</span>
+                {
+<span class="nc" id="L156">                    hasSurrogates = true;</span>
+                }
+<span class="nc" id="L158">                toUniWriter.add(cid, new String(new int[]{ codePoint }, 0, 1));</span>
+            }
+        }
+
+<span class="nc" id="L162">        ByteArrayOutputStream out = new ByteArrayOutputStream();</span>
+<span class="nc" id="L163">        toUniWriter.writeTo(out);</span>
+<span class="nc" id="L164">        InputStream cMapStream = new ByteArrayInputStream(out.toByteArray());</span>
+
+<span class="nc" id="L166">        PDStream stream = new PDStream(document, cMapStream, COSName.FLATE_DECODE);</span>
+
+        // surrogate code points, requires PDF 1.5
+<span class="nc bnc" id="L169" title="All 2 branches missed.">        if (hasSurrogates)</span>
+        {
+<span class="nc" id="L171">            float version = document.getVersion();</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">            if (version &lt; 1.5)</span>
+            {
+<span class="nc" id="L174">                document.setVersion(1.5f);</span>
+            }
+        }
+
+<span class="nc" id="L178">        dict.setItem(COSName.TO_UNICODE, stream);</span>
+<span class="nc" id="L179">    }</span>
+
+    private COSDictionary toCIDSystemInfo(String registry, String ordering, int supplement)
+    {
+<span class="nc" id="L183">        COSDictionary info = new COSDictionary();</span>
+<span class="nc" id="L184">        info.setString(COSName.REGISTRY, registry);</span>
+<span class="nc" id="L185">        info.setString(COSName.ORDERING, ordering);</span>
+<span class="nc" id="L186">        info.setInt(COSName.SUPPLEMENT, supplement);</span>
+<span class="nc" id="L187">        return info;</span>
+    }
+
+    private COSDictionary createCIDFont() throws IOException
+    {
+<span class="nc" id="L192">        COSDictionary cidFont = new COSDictionary();</span>
+
+        // Type, Subtype
+<span class="nc" id="L195">        cidFont.setItem(COSName.TYPE, COSName.FONT);</span>
+<span class="nc" id="L196">        cidFont.setItem(COSName.SUBTYPE, COSName.CID_FONT_TYPE2);</span>
+
+        // BaseFont
+<span class="nc" id="L199">        cidFont.setName(COSName.BASE_FONT, fontDescriptor.getFontName());</span>
+
+        // CIDSystemInfo
+<span class="nc" id="L202">        COSDictionary info = toCIDSystemInfo(&quot;Adobe&quot;, &quot;Identity&quot;, 0);</span>
+<span class="nc" id="L203">        cidFont.setItem(COSName.CIDSYSTEMINFO, info);</span>
+
+        // FontDescriptor
+<span class="nc" id="L206">        cidFont.setItem(COSName.FONT_DESC, fontDescriptor.getCOSObject());</span>
+
+        // W - widths
+<span class="nc" id="L209">        buildWidths(cidFont);</span>
+
+        // Vertical metrics
+<span class="nc bnc" id="L212" title="All 2 branches missed.">        if (vertical)</span>
+        {
+<span class="nc" id="L214">            buildVerticalMetrics(cidFont);</span>
+        }
+
+        // CIDToGIDMap
+<span class="nc" id="L218">        cidFont.setItem(COSName.CID_TO_GID_MAP, COSName.IDENTITY);</span>
+
+<span class="nc" id="L220">        return cidFont;</span>
+    }
+
+    private void addNameTag(String tag)
+    {
+<span class="nc" id="L225">        String name = fontDescriptor.getFontName();</span>
+<span class="nc" id="L226">        String newName = tag + name;</span>
+
+<span class="nc" id="L228">        dict.setName(COSName.BASE_FONT, newName);</span>
+<span class="nc" id="L229">        fontDescriptor.setFontName(newName);</span>
+<span class="nc" id="L230">        cidFont.setName(COSName.BASE_FONT, newName);</span>
+<span class="nc" id="L231">    }</span>
+
+    private void buildCIDToGIDMap(TreeMap&lt;Integer, Integer&gt; cidToGid) throws IOException
+    {
+<span class="nc" id="L235">        int cidMax = cidToGid.lastKey();</span>
+<span class="nc" id="L236">        byte[] buffer = new byte[cidMax * 2 + 2];</span>
+<span class="nc" id="L237">        int bi = 0;</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">        for (int i = 0; i &lt;= cidMax; i++)</span>
+        {
+<span class="nc" id="L240">            Integer gid = cidToGid.get(i);</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">            if (gid != null)</span>
+            {
+<span class="nc" id="L243">                buffer[bi]   = (byte) (gid &gt;&gt; 8 &amp; 0xff);</span>
+<span class="nc" id="L244">                buffer[bi+1] = (byte) (gid &amp; 0xff);</span>
+            }
+            // else keep 0 initialization
+<span class="nc" id="L247">            bi += 2;</span>
+        }
+
+<span class="nc" id="L250">        InputStream input = new ByteArrayInputStream(buffer);</span>
+<span class="nc" id="L251">        PDStream stream = new PDStream(document, input, COSName.FLATE_DECODE);</span>
+
+<span class="nc" id="L253">        cidFont.setItem(COSName.CID_TO_GID_MAP, stream);</span>
+<span class="nc" id="L254">    }</span>
+
+    /**
+     * Builds the CIDSet entry, required by PDF/A. This lists all CIDs in the font, including those
+     * that don't have a GID.
+     */
+    private void buildCIDSet(TreeMap&lt;Integer, Integer&gt; cidToGid) throws IOException
+    {
+<span class="nc" id="L262">        int cidMax = cidToGid.lastKey();</span>
+<span class="nc" id="L263">        byte[] bytes = new byte[cidMax / 8 + 1];</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        for (int cid = 0; cid &lt;= cidMax; cid++)</span>
+        {
+<span class="nc" id="L266">            int mask = 1 &lt;&lt; 7 - cid % 8;</span>
+<span class="nc" id="L267">            bytes[cid / 8] |= mask;</span>
+        }
+
+<span class="nc" id="L270">        InputStream input = new ByteArrayInputStream(bytes);</span>
+<span class="nc" id="L271">        PDStream stream = new PDStream(document, input, COSName.FLATE_DECODE);</span>
+
+<span class="nc" id="L273">        fontDescriptor.setCIDSet(stream);</span>
+<span class="nc" id="L274">    }</span>
+
+    /**
+     * Builds widths with a custom CIDToGIDMap (for embedding font subset).
+     */
+    private void buildWidths(TreeMap&lt;Integer, Integer&gt; cidToGid) throws IOException
+    {
+<span class="nc" id="L281">        float scaling = 1000f / ttf.getHeader().getUnitsPerEm();</span>
+
+<span class="nc" id="L283">        COSArray widths = new COSArray();</span>
+<span class="nc" id="L284">        COSArray ws = new COSArray();</span>
+<span class="nc" id="L285">        int prev = Integer.MIN_VALUE;</span>
+        // Use a sorted list to get an optimal width array  
+<span class="nc" id="L287">        HorizontalMetricsTable horizontalMetricsTable = ttf.getHorizontalMetrics();</span>
+<span class="nc bnc" id="L288" title="All 2 branches missed.">        for (Map.Entry&lt;Integer, Integer&gt; entry : cidToGid.entrySet())</span>
+        {
+<span class="nc" id="L290">            int cid = entry.getKey();</span>
+<span class="nc" id="L291">            int gid = entry.getValue();</span>
+<span class="nc" id="L292">            long width = Math.round(horizontalMetricsTable.getAdvanceWidth(gid) * scaling);</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">            if (width == 1000)</span>
+            {
+                // skip default width
+<span class="nc" id="L296">                continue;</span>
+            }
+            // c [w1 w2 ... wn]
+<span class="nc bnc" id="L299" title="All 2 branches missed.">            if (prev != cid - 1)</span>
+            {
+<span class="nc" id="L301">                ws = new COSArray();</span>
+<span class="nc" id="L302">                widths.add(COSInteger.get(cid)); // c</span>
+<span class="nc" id="L303">                widths.add(ws);</span>
+            }
+<span class="nc" id="L305">            ws.add(COSInteger.get(width)); // wi</span>
+<span class="nc" id="L306">            prev = cid;</span>
+<span class="nc" id="L307">        }</span>
+<span class="nc" id="L308">        cidFont.setItem(COSName.W, widths);</span>
+<span class="nc" id="L309">    }</span>
+
+    private boolean buildVerticalHeader(COSDictionary cidFont) throws IOException
+    {
+<span class="nc" id="L313">        VerticalHeaderTable vhea = ttf.getVerticalHeader();</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">        if (vhea == null)</span>
+        {
+<span class="nc" id="L316">            LOG.warn(&quot;Font to be subset is set to vertical, but has no 'vhea' table&quot;);</span>
+<span class="nc" id="L317">            return false;</span>
+        }
+
+<span class="nc" id="L320">        float scaling = 1000f / ttf.getHeader().getUnitsPerEm();</span>
+
+<span class="nc" id="L322">        long v = Math.round(vhea.getAscender() * scaling);</span>
+<span class="nc" id="L323">        long w1 = Math.round(-vhea.getAdvanceHeightMax() * scaling);</span>
+<span class="nc bnc" id="L324" title="All 4 branches missed.">        if (v != 880 || w1 != -1000)</span>
+        {
+<span class="nc" id="L326">            COSArray cosDw2 = new COSArray();</span>
+<span class="nc" id="L327">            cosDw2.add(COSInteger.get(v));</span>
+<span class="nc" id="L328">            cosDw2.add(COSInteger.get(w1));</span>
+<span class="nc" id="L329">            cidFont.setItem(COSName.DW2, cosDw2);</span>
+        }
+<span class="nc" id="L331">        return true;</span>
+    }
+
+    /**
+     * Builds vertical metrics with a custom CIDToGIDMap (for embedding font subset).
+     */
+    private void buildVerticalMetrics(TreeMap&lt;Integer, Integer&gt; cidToGid) throws IOException
+    {
+        // The &quot;vhea&quot; and &quot;vmtx&quot; tables that specify vertical metrics shall never be used by a conforming
+        // reader. The only way to specify vertical metrics in PDF shall be by means of the DW2 and W2
+        // entries in a CIDFont dictionary.
+
+<span class="nc bnc" id="L343" title="All 2 branches missed.">        if (!buildVerticalHeader(cidFont))</span>
+        {
+<span class="nc" id="L345">            return;</span>
+        }
+
+<span class="nc" id="L348">        float scaling = 1000f / ttf.getHeader().getUnitsPerEm();</span>
+
+<span class="nc" id="L350">        VerticalHeaderTable vhea = ttf.getVerticalHeader();</span>
+<span class="nc" id="L351">        VerticalMetricsTable vmtx = ttf.getVerticalMetrics();</span>
+<span class="nc" id="L352">        GlyphTable glyf = ttf.getGlyph();</span>
+<span class="nc" id="L353">        HorizontalMetricsTable hmtx = ttf.getHorizontalMetrics();</span>
+
+<span class="nc" id="L355">        long v_y = Math.round(vhea.getAscender() * scaling);</span>
+<span class="nc" id="L356">        long w1 = Math.round(-vhea.getAdvanceHeightMax() * scaling);</span>
+
+<span class="nc" id="L358">        COSArray heights = new COSArray();</span>
+<span class="nc" id="L359">        COSArray w2 = new COSArray();</span>
+<span class="nc" id="L360">        int prev = Integer.MIN_VALUE;</span>
+        // Use a sorted list to get an optimal width array
+<span class="nc" id="L362">        Set&lt;Integer&gt; keys = cidToGid.keySet();</span>
+<span class="nc bnc" id="L363" title="All 2 branches missed.">        for (int cid : keys)</span>
+        {
+            // Unlike buildWidths, we look up with cid (not gid) here because this is
+            // the original TTF, not the rebuilt one.
+<span class="nc" id="L367">            GlyphData glyph = glyf.getGlyph(cid);</span>
+<span class="nc bnc" id="L368" title="All 2 branches missed.">            if (glyph == null)</span>
+            {
+<span class="nc" id="L370">                continue;</span>
+            }
+<span class="nc" id="L372">            long height = Math.round((glyph.getYMaximum() + vmtx.getTopSideBearing(cid)) * scaling);</span>
+<span class="nc" id="L373">            long advance = Math.round(-vmtx.getAdvanceHeight(cid) * scaling);</span>
+<span class="nc bnc" id="L374" title="All 4 branches missed.">            if (height == v_y &amp;&amp; advance == w1)</span>
+            {
+                // skip default metrics
+<span class="nc" id="L377">                continue;</span>
+            }
+            // c [w1_1y v_1x v_1y w1_2y v_2x v_2y ... w1_ny v_nx v_ny]
+<span class="nc bnc" id="L380" title="All 2 branches missed.">            if (prev != cid - 1)</span>
+            {
+<span class="nc" id="L382">                w2 = new COSArray();</span>
+<span class="nc" id="L383">                heights.add(COSInteger.get(cid)); // c</span>
+<span class="nc" id="L384">                heights.add(w2);</span>
+            }
+<span class="nc" id="L386">            w2.add(COSInteger.get(advance)); // w1_iy</span>
+<span class="nc" id="L387">            long width = Math.round(hmtx.getAdvanceWidth(cid) * scaling);</span>
+<span class="nc" id="L388">            w2.add(COSInteger.get(width / 2)); // v_ix</span>
+<span class="nc" id="L389">            w2.add(COSInteger.get(height)); // v_iy</span>
+<span class="nc" id="L390">            prev = cid;</span>
+<span class="nc" id="L391">        }</span>
+<span class="nc" id="L392">        cidFont.setItem(COSName.W2, heights);</span>
+<span class="nc" id="L393">    }</span>
+
+    /**
+     * Build widths with Identity CIDToGIDMap (for embedding full font).
+     */
+    private void buildWidths(COSDictionary cidFont) throws IOException
+    {
+<span class="nc" id="L400">        int cidMax = ttf.getNumberOfGlyphs();</span>
+<span class="nc" id="L401">        int[] gidwidths = new int[cidMax * 2];</span>
+<span class="nc" id="L402">        HorizontalMetricsTable horizontalMetricsTable = ttf.getHorizontalMetrics();</span>
+<span class="nc bnc" id="L403" title="All 2 branches missed.">        for (int cid = 0; cid &lt; cidMax; cid++)</span>
+        {
+<span class="nc" id="L405">            gidwidths[cid * 2] = cid;</span>
+<span class="nc" id="L406">            gidwidths[cid * 2 + 1] = horizontalMetricsTable.getAdvanceWidth(cid);</span>
+        }
+
+<span class="nc" id="L409">        cidFont.setItem(COSName.W, getWidths(gidwidths));</span>
+<span class="nc" id="L410">    }</span>
+    
+<span class="nc" id="L412">    enum State</span>
+    {
+<span class="nc" id="L414">        FIRST, BRACKET, SERIAL</span>
+    }
+
+    private COSArray getWidths(int[] widths) throws IOException
+    {
+<span class="nc bnc" id="L419" title="All 2 branches missed.">        if (widths.length &lt; 2)</span>
+        {
+<span class="nc" id="L421">            throw new IllegalArgumentException(&quot;length of widths must be &gt;= 2&quot;);</span>
+        }
+
+<span class="nc" id="L424">        float scaling = 1000f / ttf.getHeader().getUnitsPerEm();</span>
+
+<span class="nc" id="L426">        long lastCid = widths[0];</span>
+<span class="nc" id="L427">        long lastValue = Math.round(widths[1] * scaling);</span>
+
+<span class="nc" id="L429">        COSArray inner = new COSArray();</span>
+<span class="nc" id="L430">        COSArray outer = new COSArray();</span>
+<span class="nc" id="L431">        outer.add(COSInteger.get(lastCid));</span>
+
+<span class="nc" id="L433">        State state = State.FIRST;</span>
+
+<span class="nc bnc" id="L435" title="All 2 branches missed.">        for (int i = 2; i &lt; widths.length - 1; i += 2)</span>
+        {
+<span class="nc" id="L437">            long cid   = widths[i];</span>
+<span class="nc" id="L438">            long value = Math.round(widths[i + 1] * scaling);</span>
+
+<span class="nc bnc" id="L440" title="All 4 branches missed.">            switch (state)</span>
+            {
+                case FIRST:
+<span class="nc bnc" id="L443" title="All 4 branches missed.">                    if (cid == lastCid + 1 &amp;&amp; value == lastValue)</span>
+                    {
+<span class="nc" id="L445">                        state = State.SERIAL;</span>
+                    }
+<span class="nc bnc" id="L447" title="All 2 branches missed.">                    else if (cid == lastCid + 1)</span>
+                    {
+<span class="nc" id="L449">                        state = State.BRACKET;</span>
+<span class="nc" id="L450">                        inner = new COSArray();</span>
+<span class="nc" id="L451">                        inner.add(COSInteger.get(lastValue));</span>
+                    }
+                    else
+                    {
+<span class="nc" id="L455">                        inner = new COSArray();</span>
+<span class="nc" id="L456">                        inner.add(COSInteger.get(lastValue));</span>
+<span class="nc" id="L457">                        outer.add(inner);</span>
+<span class="nc" id="L458">                        outer.add(COSInteger.get(cid));</span>
+                    }
+<span class="nc" id="L460">                    break;</span>
+                case BRACKET:
+<span class="nc bnc" id="L462" title="All 4 branches missed.">                    if (cid == lastCid + 1 &amp;&amp; value == lastValue)</span>
+                    {
+<span class="nc" id="L464">                        state = State.SERIAL;</span>
+<span class="nc" id="L465">                        outer.add(inner);</span>
+<span class="nc" id="L466">                        outer.add(COSInteger.get(lastCid));</span>
+                    }
+<span class="nc bnc" id="L468" title="All 2 branches missed.">                    else if (cid == lastCid + 1)</span>
+                    {
+<span class="nc" id="L470">                        inner.add(COSInteger.get(lastValue));</span>
+                    }
+                    else
+                    {
+<span class="nc" id="L474">                        state = State.FIRST;</span>
+<span class="nc" id="L475">                        inner.add(COSInteger.get(lastValue));</span>
+<span class="nc" id="L476">                        outer.add(inner);</span>
+<span class="nc" id="L477">                        outer.add(COSInteger.get(cid));</span>
+                    }
+<span class="nc" id="L479">                    break;</span>
+                case SERIAL:
+<span class="nc bnc" id="L481" title="All 4 branches missed.">                    if (cid != lastCid + 1 || value != lastValue)</span>
+                    {
+<span class="nc" id="L483">                        outer.add(COSInteger.get(lastCid));</span>
+<span class="nc" id="L484">                        outer.add(COSInteger.get(lastValue));</span>
+<span class="nc" id="L485">                        outer.add(COSInteger.get(cid));</span>
+<span class="nc" id="L486">                        state = State.FIRST;</span>
+                    }
+                    break;
+            }
+<span class="nc" id="L490">            lastValue = value;</span>
+<span class="nc" id="L491">            lastCid = cid;</span>
+        }
+
+<span class="nc bnc" id="L494" title="All 4 branches missed.">        switch (state)</span>
+        {
+            case FIRST:
+<span class="nc" id="L497">                inner = new COSArray();</span>
+<span class="nc" id="L498">                inner.add(COSInteger.get(lastValue));</span>
+<span class="nc" id="L499">                outer.add(inner);</span>
+<span class="nc" id="L500">                break;</span>
+            case BRACKET:
+<span class="nc" id="L502">                inner.add(COSInteger.get(lastValue));</span>
+<span class="nc" id="L503">                outer.add(inner);</span>
+<span class="nc" id="L504">                break;</span>
+            case SERIAL:
+<span class="nc" id="L506">                outer.add(COSInteger.get(lastCid));</span>
+<span class="nc" id="L507">                outer.add(COSInteger.get(lastValue));</span>
+                break;
+        }
+<span class="nc" id="L510">        return outer;</span>
+    }
+
+    /**
+     * Build vertical metrics with Identity CIDToGIDMap (for embedding full font).
+     */
+    private void buildVerticalMetrics(COSDictionary cidFont) throws IOException
+    {
+<span class="nc bnc" id="L518" title="All 2 branches missed.">        if (!buildVerticalHeader(cidFont))</span>
+        {
+<span class="nc" id="L520">            return;</span>
+        }
+
+<span class="nc" id="L523">        int cidMax = ttf.getNumberOfGlyphs();</span>
+<span class="nc" id="L524">        int[] gidMetrics = new int[cidMax * 4];</span>
+<span class="nc" id="L525">        GlyphTable glyphTable = ttf.getGlyph();</span>
+<span class="nc" id="L526">        VerticalMetricsTable verticalMetricsTable = ttf.getVerticalMetrics();</span>
+<span class="nc" id="L527">        HorizontalMetricsTable htable = ttf.getHorizontalMetrics();</span>
+<span class="nc bnc" id="L528" title="All 2 branches missed.">        for (int cid = 0; cid &lt; cidMax; cid++)</span>
+        {
+<span class="nc" id="L530">            GlyphData glyph = glyphTable.getGlyph(cid);</span>
+<span class="nc bnc" id="L531" title="All 2 branches missed.">            if (glyph == null)</span>
+            {
+<span class="nc" id="L533">                gidMetrics[cid * 4] = Integer.MIN_VALUE;</span>
+            }
+            else
+            {
+<span class="nc" id="L537">                gidMetrics[cid * 4] = cid;</span>
+<span class="nc" id="L538">                gidMetrics[cid * 4 + 1] = verticalMetricsTable.getAdvanceHeight(cid);</span>
+<span class="nc" id="L539">                gidMetrics[cid * 4 + 2] = htable.getAdvanceWidth(cid);</span>
+<span class="nc" id="L540">                gidMetrics[cid * 4 + 3] = glyph.getYMaximum() + verticalMetricsTable.getTopSideBearing(cid);</span>
+            }
+        }
+
+<span class="nc" id="L544">        cidFont.setItem(COSName.W2, getVerticalMetrics(gidMetrics));</span>
+<span class="nc" id="L545">    }</span>
+
+    private COSArray getVerticalMetrics(int[] values) throws IOException
+    {
+<span class="nc bnc" id="L549" title="All 2 branches missed.">        if (values.length &lt; 4)</span>
+        {
+<span class="nc" id="L551">            throw new IllegalArgumentException(&quot;length of values must be at least 4&quot;);</span>
+        }
+
+<span class="nc" id="L554">        float scaling = 1000f / ttf.getHeader().getUnitsPerEm();</span>
+
+<span class="nc" id="L556">        long lastCid = values[0];</span>
+<span class="nc" id="L557">        long lastW1Value = Math.round(-values[1] * scaling);</span>
+<span class="nc" id="L558">        long lastVxValue = Math.round(values[2] * scaling / 2f);</span>
+<span class="nc" id="L559">        long lastVyValue = Math.round(values[3] * scaling);</span>
+
+<span class="nc" id="L561">        COSArray inner = new COSArray();</span>
+<span class="nc" id="L562">        COSArray outer = new COSArray();</span>
+<span class="nc" id="L563">        outer.add(COSInteger.get(lastCid));</span>
+
+<span class="nc" id="L565">        State state = State.FIRST;</span>
+
+<span class="nc bnc" id="L567" title="All 2 branches missed.">        for (int i = 4; i &lt; values.length - 3; i += 4)</span>
+        {
+<span class="nc" id="L569">            long cid = values[i];</span>
+<span class="nc bnc" id="L570" title="All 2 branches missed.">            if (cid == Integer.MIN_VALUE)</span>
+            {
+                // no glyph for this cid
+<span class="nc" id="L573">                continue;</span>
+            }
+<span class="nc" id="L575">            long w1Value = Math.round(-values[i + 1] * scaling);</span>
+<span class="nc" id="L576">            long vxValue = Math.round(values[i + 2] * scaling / 2);</span>
+<span class="nc" id="L577">            long vyValue = Math.round(values[i + 3] * scaling);</span>
+
+<span class="nc bnc" id="L579" title="All 4 branches missed.">            switch (state)</span>
+            {
+            case FIRST:
+<span class="nc bnc" id="L582" title="All 8 branches missed.">                if (cid == lastCid + 1 &amp;&amp; w1Value == lastW1Value &amp;&amp; vxValue == lastVxValue &amp;&amp; vyValue == lastVyValue)</span>
+                {
+<span class="nc" id="L584">                    state = State.SERIAL;</span>
+                }
+<span class="nc bnc" id="L586" title="All 2 branches missed.">                else if (cid == lastCid + 1)</span>
+                {
+<span class="nc" id="L588">                    state = State.BRACKET;</span>
+<span class="nc" id="L589">                    inner = new COSArray();</span>
+<span class="nc" id="L590">                    inner.add(COSInteger.get(lastW1Value));</span>
+<span class="nc" id="L591">                    inner.add(COSInteger.get(lastVxValue));</span>
+<span class="nc" id="L592">                    inner.add(COSInteger.get(lastVyValue));</span>
+                }
+                else
+                {
+<span class="nc" id="L596">                    inner = new COSArray();</span>
+<span class="nc" id="L597">                    inner.add(COSInteger.get(lastW1Value));</span>
+<span class="nc" id="L598">                    inner.add(COSInteger.get(lastVxValue));</span>
+<span class="nc" id="L599">                    inner.add(COSInteger.get(lastVyValue));</span>
+<span class="nc" id="L600">                    outer.add(inner);</span>
+<span class="nc" id="L601">                    outer.add(COSInteger.get(cid));</span>
+                }
+<span class="nc" id="L603">                break;</span>
+            case BRACKET:
+<span class="nc bnc" id="L605" title="All 8 branches missed.">                if (cid == lastCid + 1 &amp;&amp; w1Value == lastW1Value &amp;&amp; vxValue == lastVxValue &amp;&amp; vyValue == lastVyValue)</span>
+                {
+<span class="nc" id="L607">                    state = State.SERIAL;</span>
+<span class="nc" id="L608">                    outer.add(inner);</span>
+<span class="nc" id="L609">                    outer.add(COSInteger.get(lastCid));</span>
+                }
+<span class="nc bnc" id="L611" title="All 2 branches missed.">                else if (cid == lastCid + 1)</span>
+                {
+<span class="nc" id="L613">                    inner.add(COSInteger.get(lastW1Value));</span>
+<span class="nc" id="L614">                    inner.add(COSInteger.get(lastVxValue));</span>
+<span class="nc" id="L615">                    inner.add(COSInteger.get(lastVyValue));</span>
+                }
+                else
+                {
+<span class="nc" id="L619">                    state = State.FIRST;</span>
+<span class="nc" id="L620">                    inner.add(COSInteger.get(lastW1Value));</span>
+<span class="nc" id="L621">                    inner.add(COSInteger.get(lastVxValue));</span>
+<span class="nc" id="L622">                    inner.add(COSInteger.get(lastVyValue));</span>
+<span class="nc" id="L623">                    outer.add(inner);</span>
+<span class="nc" id="L624">                    outer.add(COSInteger.get(cid));</span>
+                }
+<span class="nc" id="L626">                break;</span>
+            case SERIAL:
+<span class="nc bnc" id="L628" title="All 8 branches missed.">                if (cid != lastCid + 1 || w1Value != lastW1Value || vxValue != lastVxValue || vyValue != lastVyValue)</span>
+                {
+<span class="nc" id="L630">                    outer.add(COSInteger.get(lastCid));</span>
+<span class="nc" id="L631">                    outer.add(COSInteger.get(lastW1Value));</span>
+<span class="nc" id="L632">                    outer.add(COSInteger.get(lastVxValue));</span>
+<span class="nc" id="L633">                    outer.add(COSInteger.get(lastVyValue));</span>
+<span class="nc" id="L634">                    outer.add(COSInteger.get(cid));</span>
+<span class="nc" id="L635">                    state = State.FIRST;</span>
+                }
+                break;
+            }
+<span class="nc" id="L639">            lastW1Value = w1Value;</span>
+<span class="nc" id="L640">            lastVxValue = vxValue;</span>
+<span class="nc" id="L641">            lastVyValue = vyValue;</span>
+<span class="nc" id="L642">            lastCid = cid;</span>
+        }
+
+<span class="nc bnc" id="L645" title="All 4 branches missed.">        switch (state)</span>
+        {
+        case FIRST:
+<span class="nc" id="L648">            inner = new COSArray();</span>
+<span class="nc" id="L649">            inner.add(COSInteger.get(lastW1Value));</span>
+<span class="nc" id="L650">            inner.add(COSInteger.get(lastVxValue));</span>
+<span class="nc" id="L651">            inner.add(COSInteger.get(lastVyValue));</span>
+<span class="nc" id="L652">            outer.add(inner);</span>
+<span class="nc" id="L653">            break;</span>
+        case BRACKET:
+<span class="nc" id="L655">            inner.add(COSInteger.get(lastW1Value));</span>
+<span class="nc" id="L656">            inner.add(COSInteger.get(lastVxValue));</span>
+<span class="nc" id="L657">            inner.add(COSInteger.get(lastVyValue));</span>
+<span class="nc" id="L658">            outer.add(inner);</span>
+<span class="nc" id="L659">            break;</span>
+        case SERIAL:
+<span class="nc" id="L661">            outer.add(COSInteger.get(lastCid));</span>
+<span class="nc" id="L662">            outer.add(COSInteger.get(lastW1Value));</span>
+<span class="nc" id="L663">            outer.add(COSInteger.get(lastVxValue));</span>
+<span class="nc" id="L664">            outer.add(COSInteger.get(lastVyValue));</span>
+            break;
+        }
+<span class="nc" id="L667">        return outer;</span>
+    }
+
+    /**
+     * Returns the descendant CIDFont.
+     */
+    public PDCIDFont getCIDFont() throws IOException
+    {
+<span class="nc" id="L675">        return new PDCIDFontType2(cidFont, parent, ttf);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

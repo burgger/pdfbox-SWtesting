@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Filter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.filter</a> &gt; <span class="el_source">Filter.java</span></div><h1>Filter.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.filter;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.zip.Deflater;
+
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.io.IOUtils;
+import org.apache.pdfbox.io.RandomAccessInputStream;
+import org.apache.pdfbox.io.RandomAccessOutputStream;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.apache.pdfbox.io.RandomAccessReadWriteBuffer;
+
+/**
+ * A filter for stream data.
+ *
+ * @author Ben Litchfield
+ * @author John Hewson
+ */
+public abstract class Filter
+{
+<span class="nc" id="L53">    private static final Logger LOG = LogManager.getLogger(Filter.class);</span>
+
+    /**
+     * Compression Level System Property. Set this to a value from 0 to 9 to change the zlib deflate
+     * compression level used to compress /Flate streams. The default value is -1 which is
+     * {@link Deflater#DEFAULT_COMPRESSION}. To set maximum compression, use
+     * {@code System.setProperty(Filter.SYSPROP_DEFLATELEVEL, &quot;9&quot;);}
+     */
+    public static final String SYSPROP_DEFLATELEVEL = &quot;org.apache.pdfbox.filter.deflatelevel&quot;;
+
+    /**
+     * Constructor.
+     */
+    protected Filter()
+<span class="nc" id="L67">    {</span>
+<span class="nc" id="L68">    }</span>
+
+    /**
+     * Decodes data, producing the original non-encoded data.
+     * @param encoded the encoded byte stream
+     * @param decoded the stream where decoded data will be written
+     * @param parameters the parameters used for decoding
+     * @param index the index to the filter being decoded
+     * @return repaired parameters dictionary, or the original parameters dictionary
+     * @throws IOException if the stream cannot be decoded
+     */
+    public abstract DecodeResult decode(InputStream encoded, OutputStream decoded, COSDictionary parameters,
+                            int index) throws IOException;
+
+    /**
+     * Decodes data, with optional DecodeOptions. Not all filters support all options, and so
+     * callers should check the options' &lt;code&gt;honored&lt;/code&gt; flag to test if they were applied.
+     *
+     * @param encoded the encoded byte stream
+     * @param decoded the stream where decoded data will be written
+     * @param parameters the parameters used for decoding
+     * @param index the index to the filter being decoded
+     * @param options additional options for decoding
+     * @return repaired parameters dictionary, or the original parameters dictionary
+     * @throws IOException if the stream cannot be decoded
+     */
+    public DecodeResult decode(InputStream encoded, OutputStream decoded, COSDictionary parameters,
+                               int index, DecodeOptions options) throws IOException
+    {
+<span class="nc" id="L97">        return decode(encoded, decoded, parameters, index);</span>
+    }
+
+    /**
+     * Encodes data.
+     * @param input the byte stream to encode
+     * @param encoded the stream where encoded data will be written
+     * @param parameters the parameters used for encoding
+     * @param index the index to the filter being encoded
+     * @throws IOException if the stream cannot be encoded
+     */
+    public final void encode(InputStream input, OutputStream encoded, COSDictionary parameters,
+                            int index) throws IOException
+    {
+<span class="nc" id="L111">        encode(input, encoded, parameters.asUnmodifiableDictionary());</span>
+<span class="nc" id="L112">    }</span>
+
+    // implemented in subclasses
+    protected abstract void encode(InputStream input, OutputStream encoded,
+                                   COSDictionary parameters) throws IOException;
+
+    // gets the decode params for a specific filter index, this is used to
+    // normalise the DecodeParams entry so that it is always a dictionary
+    protected COSDictionary getDecodeParams(COSDictionary dictionary, int index)
+    {
+<span class="nc" id="L122">        COSBase filter = dictionary.getDictionaryObject(COSName.F, COSName.FILTER);</span>
+<span class="nc" id="L123">        COSBase obj = dictionary.getDictionaryObject(COSName.DP, COSName.DECODE_PARMS);</span>
+<span class="nc bnc" id="L124" title="All 4 branches missed.">        if (filter instanceof COSName &amp;&amp; obj instanceof COSDictionary)</span>
+        {
+            // PDFBOX-3932: The PDF specification requires &quot;If there is only one filter and that 
+            // filter has parameters, DecodeParms shall be set to the filter’s parameter dictionary&quot; 
+            // but tests show that Adobe means &quot;one filter name object&quot;.
+<span class="nc" id="L129">            return (COSDictionary)obj;</span>
+        }
+<span class="nc bnc" id="L131" title="All 4 branches missed.">        else if (filter instanceof COSArray &amp;&amp; obj instanceof COSArray)</span>
+        {
+<span class="nc" id="L133">            COSArray array = (COSArray)obj;</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">            if (index &lt; array.size())</span>
+            {
+<span class="nc" id="L136">                COSBase objAtIndex = array.getObject(index);</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">                if (objAtIndex instanceof COSDictionary)</span>
+                {
+<span class="nc" id="L139">                    return (COSDictionary) objAtIndex;</span>
+                }
+            }
+<span class="nc" id="L142">        }</span>
+<span class="nc bnc" id="L143" title="All 6 branches missed.">        else if (obj != null &amp;&amp; !(filter instanceof COSArray || obj instanceof COSArray))</span>
+        {
+<span class="nc" id="L145">            LOG.error(&quot;Expected DecodeParams to be an Array or Dictionary but found {}&quot;,</span>
+<span class="nc" id="L146">                    obj.getClass().getName());</span>
+        }
+<span class="nc" id="L148">        return new COSDictionary();</span>
+    }
+
+    /**
+     * Finds a suitable image reader for an image format.
+     *
+     * @param formatName The image format to search for.
+     * @param errorCause The probably cause if something goes wrong.
+     * @return The image reader for the format.
+     * @throws MissingImageReaderException if no image reader is found.
+     */
+    public static ImageReader findImageReader(String formatName, String errorCause)
+            throws MissingImageReaderException
+    {
+<span class="nc" id="L162">        Iterator&lt;ImageReader&gt; readers = ImageIO.getImageReadersByFormatName(formatName);</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        while (readers.hasNext())</span>
+        {
+<span class="nc" id="L165">            ImageReader reader = readers.next();</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">            if (reader != null)</span>
+            {
+<span class="nc" id="L168">                return reader;</span>
+            }
+<span class="nc" id="L170">        }</span>
+<span class="nc" id="L171">        throw new MissingImageReaderException(&quot;Cannot read &quot; + formatName + &quot; image: &quot; + errorCause);</span>
+    }
+
+    /**
+     * Finds a suitable image raster reader for an image format.
+     *
+     * @param formatName The image format to search for.
+     * @param errorCause The probably cause if something goes wrong.
+     * @return The image reader for the format.
+     * @throws MissingImageReaderException if no image reader is found.
+     */
+    public static ImageReader findRasterReader(String formatName, String errorCause)
+            throws MissingImageReaderException
+    {
+<span class="nc" id="L185">        Iterator&lt;ImageReader&gt; readers = ImageIO.getImageReadersByFormatName(formatName);</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">        while (readers.hasNext())</span>
+        {
+<span class="nc" id="L188">            ImageReader reader = readers.next();</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">            if (reader != null)</span>
+            {
+<span class="nc bnc" id="L191" title="All 2 branches missed.">                if (reader.canReadRaster())</span>
+                {
+<span class="nc" id="L193">                    return reader;</span>
+                }
+<span class="nc" id="L195">                reader.dispose();</span>
+            }
+<span class="nc" id="L197">        }</span>
+<span class="nc" id="L198">        throw new MissingImageReaderException(&quot;Cannot read &quot; + formatName + &quot; image: &quot; + errorCause);</span>
+    }
+
+    /**
+     * @return the ZIP compression level configured for PDFBox
+     */
+    public static int getCompressionLevel()
+    {
+<span class="nc" id="L206">        int compressionLevel = Deflater.DEFAULT_COMPRESSION;</span>
+        try
+        {
+<span class="nc" id="L209">            compressionLevel = Integer.parseInt(System.getProperty(Filter.SYSPROP_DEFLATELEVEL, &quot;-1&quot;));</span>
+        }
+<span class="nc" id="L211">        catch (NumberFormatException ex)</span>
+        {
+<span class="nc" id="L213">            LOG.warn(ex.getMessage(), ex);</span>
+<span class="nc" id="L214">        }</span>
+<span class="nc" id="L215">        return Math.max(-1, Math.min(Deflater.BEST_COMPRESSION, compressionLevel));</span>
+    }
+
+    /**
+     * Decodes data, with optional DecodeOptions. Not all filters support all options, and so callers should check the
+     * options' &lt;code&gt;honored&lt;/code&gt; flag to test if they were applied.
+     *
+     * @param encoded the input stream holding the encoded data
+     * @param filterList list of filters to be used for decoding
+     * @param parameters the parameters used for decoding
+     * @param options additional options for decoding
+     * @param results list of optional decoding results for each filter
+     * @return the decoded stream data
+     * @throws IOException if the stream cannot be decoded
+     * @throws IllegalArgumentException if filterList is empty
+     */
+    public static RandomAccessRead decode(InputStream encoded, List&lt;Filter&gt; filterList,
+            COSDictionary parameters, DecodeOptions options, List&lt;DecodeResult&gt; results)
+            throws IOException
+    {
+<span class="nc" id="L235">        long length = parameters.getLong(COSName.LENGTH,</span>
+                RandomAccessReadBuffer.DEFAULT_CHUNK_SIZE_4KB);
+<span class="nc bnc" id="L237" title="All 2 branches missed.">        if (filterList.isEmpty())</span>
+        {
+<span class="nc" id="L239">            throw new IllegalArgumentException(&quot;Empty filterList&quot;);</span>
+        }
+<span class="nc bnc" id="L241" title="All 2 branches missed.">        if (filterList.size() &gt; 1)</span>
+        {
+<span class="nc" id="L243">            Set&lt;Filter&gt; filterSet = new HashSet&lt;&gt;(filterList);</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">            if (filterSet.size() != filterList.size())</span>
+            {
+<span class="nc" id="L246">                List&lt;Filter&gt; reducedFilterList = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">                for (Filter filter : filterList)</span>
+                {
+<span class="nc bnc" id="L249" title="All 2 branches missed.">                    if (!reducedFilterList.contains(filter))</span>
+                    {
+<span class="nc" id="L251">                        reducedFilterList.add(filter);</span>
+                    }
+<span class="nc" id="L253">                }</span>
+                // replace origin list with the reduced one
+<span class="nc" id="L255">                filterList = reducedFilterList;</span>
+<span class="nc" id="L256">                LOG.warn(&quot;Removed duplicated filter entries&quot;);</span>
+            }
+        }
+<span class="nc" id="L259">        InputStream input = encoded;</span>
+<span class="nc" id="L260">        RandomAccessReadWriteBuffer randomAccessWriteBuffer = null;</span>
+<span class="nc" id="L261">        OutputStream output = null;</span>
+        // apply filters
+<span class="nc bnc" id="L263" title="All 2 branches missed.">        for (int i = 0; i &lt; filterList.size(); i++)</span>
+        {
+<span class="nc bnc" id="L265" title="All 2 branches missed.">            if (i &gt; 0)</span>
+            {
+<span class="nc" id="L267">                randomAccessWriteBuffer.seek(0);</span>
+<span class="nc" id="L268">                input = new RandomAccessInputStream(randomAccessWriteBuffer);</span>
+<span class="nc" id="L269">                length = randomAccessWriteBuffer.length();</span>
+            }
+            // we don't know the size of the decoded stream, just estimate a 4 times bigger size than the encoded stream
+            // use the estimated stream size as chunk size, use the default chunk size as limit to avoid to big values
+<span class="nc bnc" id="L273" title="All 4 branches missed.">            if (length &lt;= 0 || length &gt;= RandomAccessReadBuffer.DEFAULT_CHUNK_SIZE_4KB / 4)</span>
+            {
+<span class="nc" id="L275">                length = RandomAccessReadBuffer.DEFAULT_CHUNK_SIZE_4KB;</span>
+            }
+            else
+            {
+<span class="nc" id="L279">                length = length * 4;</span>
+            }
+<span class="nc" id="L281">            randomAccessWriteBuffer = new RandomAccessReadWriteBuffer((int) length);</span>
+<span class="nc" id="L282">            output = new RandomAccessOutputStream(randomAccessWriteBuffer);</span>
+            try
+            {
+<span class="nc" id="L285">                DecodeResult result = filterList.get(i).decode(input, output, parameters, i,</span>
+                        options);
+<span class="nc bnc" id="L287" title="All 2 branches missed.">                if (results != null)</span>
+                {
+<span class="nc" id="L289">                    results.add(result);</span>
+                }
+            }
+            finally
+            {
+<span class="nc" id="L294">                IOUtils.closeQuietly(input);</span>
+            }
+        }
+<span class="nc" id="L297">        randomAccessWriteBuffer.seek(0);</span>
+<span class="nc" id="L298">        return randomAccessWriteBuffer;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

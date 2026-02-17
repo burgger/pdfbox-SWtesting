@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDUserAttributeObject.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure</a> &gt; <span class="el_source">PDUserAttributeObject.java</span></div><h1>PDUserAttributeObject.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+
+/**
+ * A User attribute object.
+ * 
+ * @author Johannes Koch
+ */
+public class PDUserAttributeObject extends PDAttributeObject
+{
+
+    /**
+     * Attribute owner for user properties
+     */
+    public static final String OWNER_USER_PROPERTIES = &quot;UserProperties&quot;;
+
+
+    /**
+     * Default constructor
+     */
+    public PDUserAttributeObject()
+<span class="nc" id="L44">    {</span>
+<span class="nc" id="L45">        this.setOwner(OWNER_USER_PROPERTIES);</span>
+<span class="nc" id="L46">    }</span>
+
+    /**
+     * Constructor
+     * 
+     * @param dictionary the dictionary
+     */
+    public PDUserAttributeObject(COSDictionary dictionary)
+    {
+<span class="nc" id="L55">        super(dictionary);</span>
+<span class="nc" id="L56">    }</span>
+
+
+    /**
+     * Returns the user properties.
+     * 
+     * @return the user properties
+     */
+    public List&lt;PDUserProperty&gt; getOwnerUserProperties()
+    {
+<span class="nc" id="L66">        COSArray p = getCOSObject().getCOSArray(COSName.P);</span>
+<span class="nc" id="L67">        List&lt;PDUserProperty&gt; properties = new ArrayList&lt;&gt;(p.size());</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        for (int i = 0; i &lt; p.size(); i++)</span>
+        {
+<span class="nc" id="L70">            properties.add(</span>
+<span class="nc" id="L71">                new PDUserProperty((COSDictionary) p.getObject(i), this));</span>
+        }
+<span class="nc" id="L73">        return properties;</span>
+    }
+
+    /**
+     * Sets the user properties.
+     * 
+     * @param userProperties the user properties
+     */
+    public void setUserProperties(List&lt;PDUserProperty&gt; userProperties)
+    {
+<span class="nc" id="L83">        COSArray p = new COSArray(userProperties);</span>
+<span class="nc" id="L84">        this.getCOSObject().setItem(COSName.P, p);</span>
+<span class="nc" id="L85">    }</span>
+
+    /**
+     * Adds a user property.
+     * 
+     * @param userProperty the user property
+     */
+    public void addUserProperty(PDUserProperty userProperty)
+    {
+<span class="nc" id="L94">        COSArray p = getCOSObject().getCOSArray(COSName.P);</span>
+<span class="nc" id="L95">        p.add(userProperty);</span>
+<span class="nc" id="L96">        this.notifyChanged();</span>
+<span class="nc" id="L97">    }</span>
+
+    /**
+     * Removes a user property.
+     * 
+     * @param userProperty the user property
+     */
+    public void removeUserProperty(PDUserProperty userProperty)
+    {
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        if (userProperty == null)</span>
+        {
+<span class="nc" id="L108">            return;</span>
+        }
+<span class="nc" id="L110">        COSArray p = getCOSObject().getCOSArray(COSName.P);</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">        if (p.remove(userProperty.getCOSObject()))</span>
+        {
+<span class="nc" id="L113">            this.notifyChanged();</span>
+        }
+<span class="nc" id="L115">    }</span>
+
+    /**
+     * Notify a possible change of user properties.
+     * 
+     * @param userProperty the user property which might have be changed
+     */
+    public void userPropertyChanged(PDUserProperty userProperty)
+    {
+        
+<span class="nc" id="L125">    }</span>
+
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L130">        return super.toString() + &quot;, userProperties=&quot; + this.getOwnerUserProperties();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

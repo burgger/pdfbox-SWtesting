@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFourColours.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.documentinterchange.taggedpdf</a> &gt; <span class="el_source">PDFourColours.java</span></div><h1>PDFourColours.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.documentinterchange.taggedpdf;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSNull;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.graphics.color.PDGamma;
+
+import java.util.List;
+
+/**
+ * An object for four colours.
+ *
+ * @author Johannes Koch
+ */
+public class PDFourColours implements COSObjectable
+{
+
+    private final COSArray array;
+
+    public PDFourColours()
+<span class="nc" id="L38">    {</span>
+<span class="nc" id="L39">        this.array = new COSArray(List.of(</span>
+            COSNull.NULL,
+            COSNull.NULL,
+            COSNull.NULL,
+            COSNull.NULL
+        ));
+<span class="nc" id="L45">    }</span>
+
+    public PDFourColours(COSArray array)
+<span class="nc" id="L48">    {</span>
+<span class="nc" id="L49">        this.array = array;</span>
+        // ensure that array has 4 items
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        if (this.array.size() &lt; 4)</span>
+        {
+<span class="nc bnc" id="L53" title="All 2 branches missed.">            for (int i = (this.array.size() - 1); i &lt; 4; i++)</span>
+            {
+<span class="nc" id="L55">                this.array.add(COSNull.NULL);</span>
+            }
+        }
+<span class="nc" id="L58">    }</span>
+
+
+    /**
+     * Gets the colour for the before edge.
+     * 
+     * @return the colour for the before edge
+     */
+    public PDGamma getBeforeColour()
+    {
+<span class="nc" id="L68">        return this.getColourByIndex(0);</span>
+    }
+
+    /**
+     * Sets the colour for the before edge.
+     * 
+     * @param colour the colour for the before edge
+     */
+    public void setBeforeColour(PDGamma colour)
+    {
+<span class="nc" id="L78">        this.setColourByIndex(0, colour);</span>
+<span class="nc" id="L79">    }</span>
+
+    /**
+     * Gets the colour for the after edge.
+     * 
+     * @return the colour for the after edge
+     */
+    public PDGamma getAfterColour()
+    {
+<span class="nc" id="L88">        return this.getColourByIndex(1);</span>
+    }
+
+    /**
+     * Sets the colour for the after edge.
+     * 
+     * @param colour the colour for the after edge
+     */
+    public void setAfterColour(PDGamma colour)
+    {
+<span class="nc" id="L98">        this.setColourByIndex(1, colour);</span>
+<span class="nc" id="L99">    }</span>
+
+    /**
+     * Gets the colour for the start edge.
+     * 
+     * @return the colour for the start edge
+     */
+    public PDGamma getStartColour()
+    {
+<span class="nc" id="L108">        return this.getColourByIndex(2);</span>
+    }
+
+    /**
+     * Sets the colour for the start edge.
+     * 
+     * @param colour the colour for the start edge
+     */
+    public void setStartColour(PDGamma colour)
+    {
+<span class="nc" id="L118">        this.setColourByIndex(2, colour);</span>
+<span class="nc" id="L119">    }</span>
+
+    /**
+     * Gets the colour for the end edge.
+     * 
+     * @return the colour for the end edge
+     */
+    public PDGamma getEndColour()
+    {
+<span class="nc" id="L128">        return this.getColourByIndex(3);</span>
+    }
+
+    /**
+     * Sets the colour for the end edge.
+     * 
+     * @param colour the colour for the end edge
+     */
+    public void setEndColour(PDGamma colour)
+    {
+<span class="nc" id="L138">        this.setColourByIndex(3, colour);</span>
+<span class="nc" id="L139">    }</span>
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public COSBase getCOSObject()
+    {
+<span class="nc" id="L148">        return this.array;</span>
+    }
+
+
+    /**
+     * Gets the colour by edge index.
+     * 
+     * @param index edge index
+     * @return the colour
+     */
+    private PDGamma getColourByIndex(int index)
+    {
+<span class="nc" id="L160">        PDGamma retval = null;</span>
+<span class="nc" id="L161">        COSBase item = this.array.getObject(index);</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        if (item instanceof COSArray)</span>
+        {
+<span class="nc" id="L164">            retval = new PDGamma((COSArray) item);</span>
+        }
+<span class="nc" id="L166">        return retval;</span>
+    }
+
+    /**
+     * Sets the colour by edge index.
+     * 
+     * @param index the edge index
+     * @param colour the colour
+     */
+    private void setColourByIndex(int index, PDGamma colour)
+    {
+        COSBase base;
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        if (colour == null)</span>
+        {
+<span class="nc" id="L180">            base = COSNull.NULL;</span>
+        }
+        else
+        {
+<span class="nc" id="L184">            base = colour.getCOSArray();</span>
+        }
+<span class="nc" id="L186">        this.array.set(index, base);</span>
+<span class="nc" id="L187">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

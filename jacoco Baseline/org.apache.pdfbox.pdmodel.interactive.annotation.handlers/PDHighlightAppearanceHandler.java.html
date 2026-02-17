@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDHighlightAppearanceHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation.handlers</a> &gt; <span class="el_source">PDHighlightAppearanceHandler.java</span></div><h1>PDHighlightAppearanceHandler.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2018 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.interactive.annotation.handlers;
+
+import java.io.IOException;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.pdmodel.PDFormContentStream;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.blend.BlendMode;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
+import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationHighlight;
+import org.apache.pdfbox.pdmodel.PDAppearanceContentStream;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.graphics.form.PDTransparencyGroupAttributes;
+
+/**
+ * 
+ * @author Tilman Hausherr
+ */
+public class PDHighlightAppearanceHandler extends PDAbstractAppearanceHandler
+{
+<span class="nc" id="L41">    private static final Logger LOG = LogManager.getLogger(PDHighlightAppearanceHandler.class);</span>
+
+    public PDHighlightAppearanceHandler(PDAnnotation annotation)
+    {
+<span class="nc" id="L45">        super(annotation);</span>
+<span class="nc" id="L46">    }</span>
+
+    public PDHighlightAppearanceHandler(PDAnnotation annotation, PDDocument document)
+    {
+<span class="nc" id="L50">        super(annotation, document);</span>
+<span class="nc" id="L51">    }</span>
+
+    @Override
+    public void generateNormalAppearance()
+    {
+<span class="nc" id="L56">        PDAnnotationHighlight annotation = (PDAnnotationHighlight) getAnnotation();</span>
+        
+<span class="nc" id="L58">        float[] pathsArray = annotation.getQuadPoints();</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        if (pathsArray == null)</span>
+        {
+<span class="nc" id="L61">            return;</span>
+        }
+<span class="nc" id="L63">        PDColor color = annotation.getColor();</span>
+<span class="nc bnc" id="L64" title="All 4 branches missed.">        if (color == null || color.getComponents().length == 0)</span>
+        {
+<span class="nc" id="L66">            return;</span>
+        }
+<span class="nc" id="L68">        PDRectangle rect = annotation.getRectangle();</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        if (rect == null)</span>
+        {
+<span class="nc" id="L71">            return;</span>
+        }
+<span class="nc" id="L73">        AnnotationBorder ab = AnnotationBorder.getAnnotationBorder(annotation, annotation.getBorderStyle());</span>
+
+        // Adjust rectangle even if not empty, see PLPDF.com-MarkupAnnotations.pdf
+        //TODO in a class structure this should be overridable
+        // this is similar to polyline but different data type
+        //TODO padding should consider the curves too; needs to know in advance where the curve is
+<span class="nc" id="L79">        float minX = Float.MAX_VALUE;</span>
+<span class="nc" id="L80">        float minY = Float.MAX_VALUE;</span>
+<span class="nc" id="L81">        float maxX = Float.MIN_VALUE;</span>
+<span class="nc" id="L82">        float maxY = Float.MIN_VALUE;</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        for (int i = 0; i &lt; pathsArray.length / 2; ++i)</span>
+        {
+<span class="nc" id="L85">            float x = pathsArray[i * 2];</span>
+<span class="nc" id="L86">            float y = pathsArray[i * 2 + 1];</span>
+<span class="nc" id="L87">            minX = Math.min(minX, x);</span>
+<span class="nc" id="L88">            minY = Math.min(minY, y);</span>
+<span class="nc" id="L89">            maxX = Math.max(maxX, x);</span>
+<span class="nc" id="L90">            maxY = Math.max(maxY, y);</span>
+        }
+
+        // get the delta used for curves and use it for padding
+<span class="nc" id="L94">        float maxDelta = 0;</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        for (int i = 0; i &lt; pathsArray.length / 8; ++i)</span>
+        {
+            // one of the two is 0, depending whether the rectangle is 
+            // horizontal or vertical
+            // if it is diagonal then... uh...
+<span class="nc" id="L100">            float delta = Math.max((pathsArray[i + 0] - pathsArray[i + 4]) / 4, </span>
+                                   (pathsArray[i + 1] - pathsArray[i + 5]) / 4);
+<span class="nc" id="L102">            maxDelta = Math.max(delta, maxDelta);</span>
+        }
+
+<span class="nc" id="L105">        rect.setLowerLeftX(Math.min(minX - ab.width / 2 - maxDelta, rect.getLowerLeftX()));</span>
+<span class="nc" id="L106">        rect.setLowerLeftY(Math.min(minY - ab.width / 2 - maxDelta, rect.getLowerLeftY()));</span>
+<span class="nc" id="L107">        rect.setUpperRightX(Math.max(maxX + ab.width + maxDelta, rect.getUpperRightX()));</span>
+<span class="nc" id="L108">        rect.setUpperRightY(Math.max(maxY + ab.width + maxDelta, rect.getUpperRightY()));</span>
+<span class="nc" id="L109">        annotation.setRectangle(rect);</span>
+
+<span class="nc" id="L111">        try (PDAppearanceContentStream cs = getNormalAppearanceAsContentStream())</span>
+        {
+<span class="nc" id="L113">            PDExtendedGraphicsState r0 = new PDExtendedGraphicsState();</span>
+<span class="nc" id="L114">            PDExtendedGraphicsState r1 = new PDExtendedGraphicsState();</span>
+<span class="nc" id="L115">            r0.setAlphaSourceFlag(false);</span>
+<span class="nc" id="L116">            r0.setStrokingAlphaConstant(annotation.getConstantOpacity());</span>
+<span class="nc" id="L117">            r0.setNonStrokingAlphaConstant(annotation.getConstantOpacity());</span>
+<span class="nc" id="L118">            r1.setAlphaSourceFlag(false);</span>
+<span class="nc" id="L119">            r1.setBlendMode(BlendMode.MULTIPLY);</span>
+<span class="nc" id="L120">            cs.setGraphicsStateParameters(r0);</span>
+<span class="nc" id="L121">            cs.setGraphicsStateParameters(r1);</span>
+<span class="nc" id="L122">            PDFormXObject frm1 = new PDFormXObject(createCOSStream());</span>
+<span class="nc" id="L123">            PDFormXObject frm2 = new PDFormXObject(createCOSStream());</span>
+<span class="nc" id="L124">            frm1.setResources(new PDResources());</span>
+<span class="nc" id="L125">            try (PDFormContentStream mwfofrmCS = new PDFormContentStream(frm1))</span>
+            {
+<span class="nc" id="L127">                mwfofrmCS.drawForm(frm2);</span>
+            }
+<span class="nc" id="L129">            frm1.setBBox(annotation.getRectangle());</span>
+<span class="nc" id="L130">            frm1.setGroup(new PDTransparencyGroupAttributes());</span>
+<span class="nc" id="L131">            cs.drawForm(frm1);</span>
+<span class="nc" id="L132">            frm2.setBBox(annotation.getRectangle());</span>
+<span class="nc" id="L133">            try (PDFormContentStream frm2CS = new PDFormContentStream(frm2))</span>
+            {
+<span class="nc" id="L135">                frm2CS.setNonStrokingColor(color);</span>
+<span class="nc" id="L136">                int of = 0;</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">                while (of + 7 &lt; pathsArray.length)</span>
+                {
+                    // quadpoints spec sequence is incorrect, correct one is (4,5 0,1 2,3 6,7)
+                    // https://stackoverflow.com/questions/9855814/pdf-spec-vs-acrobat-creation-quadpoints
+
+                    // for &quot;curvy&quot; highlighting, two Bézier control points are used that seem to have a
+                    // distance of about 1/4 of the height.
+                    // note that curves won't appear if outside of the rectangle
+<span class="nc" id="L145">                    float delta = 0;</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">                    if (Float.compare(pathsArray[of + 0], pathsArray[of + 4]) == 0 &amp;&amp;</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">                        Float.compare(pathsArray[of + 1], pathsArray[of + 3]) == 0 &amp;&amp;</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">                        Float.compare(pathsArray[of + 2], pathsArray[of + 6]) == 0 &amp;&amp;</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">                        Float.compare(pathsArray[of + 5], pathsArray[of + 7]) == 0)</span>
+                    {
+                        // horizontal highlight
+<span class="nc" id="L152">                        delta = (pathsArray[of + 1] - pathsArray[of + 5]) / 4;</span>
+                    }
+<span class="nc bnc" id="L154" title="All 2 branches missed.">                    else if (Float.compare(pathsArray[of + 1], pathsArray[of + 5]) == 0 &amp;&amp;</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">                             Float.compare(pathsArray[of + 0], pathsArray[of + 2]) == 0 &amp;&amp;</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">                             Float.compare(pathsArray[of + 3], pathsArray[of + 7]) == 0 &amp;&amp;</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">                             Float.compare(pathsArray[of + 4], pathsArray[of + 6]) == 0)</span>
+                    {
+                        // vertical highlight
+<span class="nc" id="L160">                        delta = (pathsArray[of + 0] - pathsArray[of + 4]) / 4;</span>
+                    }
+
+<span class="nc" id="L163">                    frm2CS.moveTo(pathsArray[of + 4], pathsArray[of + 5]);</span>
+
+<span class="nc bnc" id="L165" title="All 2 branches missed.">                    if (Float.compare(pathsArray[of + 0], pathsArray[of + 4]) == 0)</span>
+                    {
+                        // horizontal highlight
+<span class="nc" id="L168">                        frm2CS.curveTo(pathsArray[of + 4] - delta, pathsArray[of + 5] + delta,</span>
+                                       pathsArray[of + 0] - delta, pathsArray[of + 1] - delta,
+                                       pathsArray[of + 0], pathsArray[of + 1]);
+                    }
+<span class="nc bnc" id="L172" title="All 2 branches missed.">                    else if (Float.compare(pathsArray[of + 5], pathsArray[of + 1]) == 0)</span>
+                    {
+                        // vertical highlight
+<span class="nc" id="L175">                        frm2CS.curveTo(pathsArray[of + 4] + delta, pathsArray[of + 5] + delta,</span>
+                                       pathsArray[of + 0] - delta, pathsArray[of + 1] + delta,
+                                       pathsArray[of + 0], pathsArray[of + 1]);
+                    }
+                    else
+                    {
+<span class="nc" id="L181">                        frm2CS.lineTo(pathsArray[of + 0], pathsArray[of + 1]);</span>
+                    }
+<span class="nc" id="L183">                    frm2CS.lineTo(pathsArray[of + 2], pathsArray[of + 3]);</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">                    if (Float.compare(pathsArray[of + 2], pathsArray[of + 6]) == 0)</span>
+                    {
+                        // horizontal highlight
+<span class="nc" id="L187">                        frm2CS.curveTo(pathsArray[of + 2] + delta, pathsArray[of + 3] - delta,</span>
+                                       pathsArray[of + 6] + delta, pathsArray[of + 7] + delta,
+                                       pathsArray[of + 6], pathsArray[of + 7]);
+                    }
+<span class="nc bnc" id="L191" title="All 2 branches missed.">                    else if (Float.compare(pathsArray[of + 3], pathsArray[of + 7]) == 0)</span>
+                    {
+                        // vertical highlight
+<span class="nc" id="L194">                        frm2CS.curveTo(pathsArray[of + 2] - delta, pathsArray[of + 3] - delta,</span>
+                                       pathsArray[of + 6] + delta, pathsArray[of + 7] - delta,
+                                       pathsArray[of + 6], pathsArray[of + 7]);
+                    }
+                    else
+                    {
+<span class="nc" id="L200">                        frm2CS.lineTo(pathsArray[of + 6], pathsArray[of + 7]);</span>
+                    }
+
+<span class="nc" id="L203">                    frm2CS.fill();</span>
+<span class="nc" id="L204">                    of += 8;</span>
+<span class="nc" id="L205">                }</span>
+            }
+        }
+<span class="nc" id="L208">        catch (IOException ex)</span>
+        {
+<span class="nc" id="L210">            LOG.error(ex);</span>
+<span class="nc" id="L211">        }</span>
+<span class="nc" id="L212">    }</span>
+
+    @Override
+    public void generateRolloverAppearance()
+    {
+        // No rollover appearance generated
+<span class="nc" id="L218">    }</span>
+
+    @Override
+    public void generateDownAppearance()
+    {
+        // No down appearance generated
+<span class="nc" id="L224">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -308,7 +308,7 @@ implicit usage rules, the document lifecycle is well suited to be abstracted
 as a finite state machine. This abstraction captures the allowed transitions
 between stages and provides a structured representation of the feature’s behavior.
 
-### 4.3 
+### 4.3 FSM
 
 We model the PDF document session lifecycle in PDFBox as a finite state machine (FSM), 
 where each node represents an abstract document state and each directed edge represents
@@ -358,6 +358,7 @@ a clear structure for systematic testing based on states and transitions.
 
 ### 4.4 Testing
 run```mvn -pl pdfbox -Dtest=TestPDDocumentLifecycleFSM test```
+src is in <https://github.com/burgger/pdfbox-SWtesting/blob/trunk/pdfbox/src/test/java/org/apache/pdfbox/pdmodel/TestPDDocumentLifecycleFSM.java>
 
 Test cases:
 
@@ -380,3 +381,67 @@ reload-and-page-count checks as the oracle. For invalid
 usage after `close()`, we verified that post-close operations
 cannot successfully produce a valid saved PDF. Outputs
 are written to `target/test-output/fsm-test`.
+
+## 5 Structural Testing
+
+### 5.1 What & Why
+Structural testing, also known as white-box testing, evaluates a test suite by
+looking at the internal structure of the program rather than only its external
+specification. 
+Instead of focusing only on the specification, it examines
+the code itself. Functional testing is based on intended behavior,
+while structural testing is based on how the program is actually implemented (Code).
+
+Structural testing relies on the Control Flow Graph (CFG). In a CFG, nodes represent
+basic blocks, and edges represent possible control flow between them. Using
+this model, we can see which parts of the code are executed by our tests.
+
+Two common coverage criteria are statement coverage and branch coverage.
+Statement coverage requires that every executable statement be executed 
+at least once. Branch coverage requires that every branch be taken at least once.
+
+And to measure coverage we use instrumentation. Instrumentation inserts probes into
+the program and records whether statements or branches are executed.For our 
+PDFBox project, structural testing is practical because PDF handling code has many internal
+branches. A PDF file can be valid or invalid. It can use different encode methods, filters,
+and object types. PDFBox often chooses different running paths based on these cases.
+Branch coverage can show which of these paths never run in our current tests.
+This tells us what is missing. Then we can add the missing tests, such as tests
+that trigger error-handling branches (malformed input), uncommon parsing branches,
+or early-exit/exception exits in methods. This is hard to see from the API
+behavior alone, but it becomes clear when we look at CFG
+branches and coverage results.
+
+### 5.2 Baseline Structural Coverage
+
+We measured structural coverage of the current PDFBox test suite using JaCoCo,
+a coverage tool that instruments the program and records which statements and
+branches are executed during test runs.
+
+**Overall coverage**
+
+From the Baseline JaCoCo report (<>), the baseline coverage of
+the existing test suite is very low:
+
+- Line coverage: 4% (missed 36,763 of 39,064 executable lines).
+- Branch coverage: 3% (missed 15,751 of 16,363 branches).
+- Method coverage (additional measure): missed 6,700 of 7,058 methods.
+- Class coverage (additional measure): missed 654 of 697 classes.
+
+These results indicate that only a small portion of the implementation is exercised by the current tests.
+
+**Coverage distribution across packages**
+
+Some of the packages show non-trivial coverage, while many packages remain completely uncovered:
+
+- `org.apache.pdfbox.pdfwriter`: 48% line coverage and 40% branch coverage.
+- `org.apache.pdfbox.cos`: 45% line coverage and 20% branch coverage.
+- `org.apache.pdfbox.pdfparser`: 30% line coverage and 20% branch coverage.
+- `org.apache.pdfbox.pdmodel`: 5% line coverage and 2% branch coverage.
+
+### 5.3 Structural Testing on pdfparser
+
+We choose `org.apache.pdfbox.pdfparser`(<>) as the target feature for coverage improvement
+because it represents core PDF parsing behavior and contains many control-flow branches.
+Its current coverage is moderate (30% line, 20% branch), so adding focused tests can
+meaningfully exercise currently missed branches and increase overall coverage.

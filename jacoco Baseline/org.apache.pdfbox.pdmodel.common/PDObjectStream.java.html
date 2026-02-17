@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDObjectStream.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.common</a> &gt; <span class="el_source">PDObjectStream.java</span></div><h1>PDObjectStream.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.common;
+
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+
+import org.apache.pdfbox.pdmodel.PDDocument;
+
+
+
+/**
+ * A PDStream represents a stream in a PDF document.  Streams are tied to a single
+ * PDF document.
+ *
+ * @author Ben Litchfield
+ */
+public class PDObjectStream extends PDStream
+{
+
+    /**
+     * Constructor.
+     *
+     * @param str The stream parameter.
+     */
+    public PDObjectStream( COSStream str )
+    {
+<span class="nc" id="L42">        super( str );</span>
+<span class="nc" id="L43">    }</span>
+
+    /**
+     * This will create a new PDObjectStream object.
+     *
+     * @param document The document that the stream will be part of.
+     * @return A new stream object.
+     */
+    public static PDObjectStream createStream( PDDocument document )
+    {
+<span class="nc" id="L53">        COSStream cosStream = document.getDocument().createCOSStream();</span>
+<span class="nc" id="L54">        PDObjectStream strm = new PDObjectStream( cosStream );</span>
+<span class="nc" id="L55">        strm.getCOSObject().setItem( COSName.TYPE, COSName.OBJ_STM );</span>
+<span class="nc" id="L56">        return strm;</span>
+    }
+
+    /**
+     * Get the type of this object, should always return &quot;ObjStm&quot;.
+     *
+     * @return The type of this object.
+     */
+    public String getType()
+    {
+<span class="nc" id="L66">        return getCOSObject().getNameAsString( COSName.TYPE );</span>
+    }
+
+    /**
+     * Get the number of compressed object.
+     *
+     * @return The number of compressed objects.
+     */
+    public int getNumberOfObjects()
+    {
+<span class="nc" id="L76">        return getCOSObject().getInt( COSName.N, 0 );</span>
+    }
+
+    /**
+     * Set the number of objects.
+     *
+     * @param n The new number of objects.
+     */
+    public void setNumberOfObjects( int n )
+    {
+<span class="nc" id="L86">        getCOSObject().setInt( COSName.N, n );</span>
+<span class="nc" id="L87">    }</span>
+
+    /**
+     * The byte offset (in the decoded stream) of the first compressed object.
+     *
+     * @return The byte offset to the first object.
+     */
+    public int getFirstByteOffset()
+    {
+<span class="nc" id="L96">        return getCOSObject().getInt( COSName.FIRST, 0 );</span>
+    }
+
+    /**
+     * The byte offset (in the decoded stream) of the first compressed object.
+     *
+     * @param n The byte offset to the first object.
+     */
+    public void setFirstByteOffset( int n )
+    {
+<span class="nc" id="L106">        getCOSObject().setInt( COSName.FIRST, n );</span>
+<span class="nc" id="L107">    }</span>
+
+    /**
+     * A reference to an object stream, of which the current object stream is
+     * considered an extension.
+     *
+     * @return The object that this stream is an extension.
+     */
+    public PDObjectStream getExtends()
+    {
+<span class="nc" id="L117">        COSStream stream = getCOSObject().getCOSStream(COSName.EXTENDS);</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        return stream != null ? new PDObjectStream(stream) : null;</span>
+    }
+
+    /**
+     * A reference to an object stream, of which the current object stream is
+     * considered an extension.
+     *
+     * @param stream The object stream extension.
+     */
+    public void setExtends( PDObjectStream stream )
+    {
+<span class="nc" id="L129">        getCOSObject().setItem( COSName.EXTENDS, stream );</span>
+<span class="nc" id="L130">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

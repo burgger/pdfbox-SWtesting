@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NumberFormatUtil.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.util</a> &gt; <span class="el_source">NumberFormatUtil.java</span></div><h1>NumberFormatUtil.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2016 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.util;
+
+/**
+ * This class contains methods to format numbers.
+ *
+ * @author Michael Doswald
+ */
+public class NumberFormatUtil
+{
+    /**
+     * Maximum number of fraction digits supported by the format methods
+     */
+    private static final int MAX_FRACTION_DIGITS = 5;
+
+    /**
+     * Contains the power of ten values for fast lookup in the format methods
+     */
+    private static final long[] POWER_OF_TENS;
+    private static final int[] POWER_OF_TENS_INT;
+
+    static
+    {
+<span class="nc" id="L38">        POWER_OF_TENS = new long[19];</span>
+<span class="nc" id="L39">        POWER_OF_TENS[0] = 1;</span>
+
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        for (int exp = 1; exp &lt; POWER_OF_TENS.length; exp++)</span>
+        {
+<span class="nc" id="L43">            POWER_OF_TENS[exp] = POWER_OF_TENS[exp - 1] * 10;</span>
+        }
+
+<span class="nc" id="L46">        POWER_OF_TENS_INT = new int[10];</span>
+<span class="nc" id="L47">        POWER_OF_TENS_INT[0] = 1;</span>
+
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        for (int exp = 1; exp &lt; POWER_OF_TENS_INT.length; exp++)</span>
+        {
+<span class="nc" id="L51">            POWER_OF_TENS_INT[exp] = POWER_OF_TENS_INT[exp - 1] * 10;</span>
+        }
+<span class="nc" id="L53">    }</span>
+
+    private NumberFormatUtil()
+    {
+    }
+
+    /**
+     * Fast variant to format a floating point value to a ASCII-string. The format will fail if the
+     * value is greater than {@link Long#MAX_VALUE}, smaller or equal to {@link Long#MIN_VALUE}, is
+     * {@link Float#NaN}, infinite or the number of requested fraction digits is greater than
+     * {@link #MAX_FRACTION_DIGITS}.
+     * 
+     * When the number contains more fractional digits than {@code maxFractionDigits} the value will
+     * be rounded. Rounding is done to the nearest possible value, with the tie breaking rule of 
+     * rounding away from zero.
+     * 
+     * @param value The float value to format
+     * @param maxFractionDigits The maximum number of fraction digits used
+     * @param asciiBuffer The output buffer to write the formatted value to
+     *
+     * @return The number of bytes used in the buffer or {@code -1} if formatting failed
+     */
+    public static int formatFloatFast(float value, int maxFractionDigits, byte[] asciiBuffer)
+    {
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        if (Float.isNaN(value) ||</span>
+<span class="nc bnc" id="L78" title="All 8 branches missed.">                Float.isInfinite(value) ||</span>
+                value &gt; Long.MAX_VALUE ||
+                value &lt;= Long.MIN_VALUE ||
+                maxFractionDigits &gt; MAX_FRACTION_DIGITS)
+        {
+<span class="nc" id="L83">            return -1;</span>
+        }
+
+<span class="nc" id="L86">        int offset = 0;</span>
+<span class="nc" id="L87">        long integerPart = (long) value;</span>
+
+        //handle sign
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        if (value &lt; 0)</span>
+        {
+<span class="nc" id="L92">            asciiBuffer[offset++] = '-';</span>
+<span class="nc" id="L93">            integerPart = -integerPart;</span>
+        }
+        
+        //extract fraction part 
+<span class="nc" id="L97">        long fractionPart = (long) ((Math.abs((double)value) - integerPart) * POWER_OF_TENS[maxFractionDigits] + 0.5d);</span>
+        
+        //Check for rounding to next integer
+<span class="nc bnc" id="L100" title="All 2 branches missed.">        if (fractionPart &gt;= POWER_OF_TENS[maxFractionDigits]) {</span>
+<span class="nc" id="L101">            integerPart++;</span>
+<span class="nc" id="L102">            fractionPart -= POWER_OF_TENS[maxFractionDigits];</span>
+        }
+
+        //format integer part
+<span class="nc" id="L106">        offset = formatPositiveNumber(integerPart, getExponent(integerPart), false, asciiBuffer, offset);</span>
+        
+<span class="nc bnc" id="L108" title="All 4 branches missed.">        if (fractionPart &gt; 0 &amp;&amp; maxFractionDigits &gt; 0)</span>
+        {
+<span class="nc" id="L110">            asciiBuffer[offset++] = '.';</span>
+<span class="nc" id="L111">            offset = formatPositiveNumber(fractionPart, maxFractionDigits - 1, true, asciiBuffer, offset);</span>
+        }
+
+<span class="nc" id="L114">        return offset;</span>
+    }
+
+    /**
+     * Formats a positive integer number starting with the digit at {@code 10^exp}.
+     *
+     * @param number The number to format
+     * @param exp The start digit
+     * @param omitTrailingZeros Whether the formatting should stop if only trailing zeros are left.
+     * This is needed e.g. when formatting fractions of a number.
+     * @param asciiBuffer The buffer to write the ASCII digits to
+     * @param startOffset The start offset into the buffer to start writing
+     *
+     * @return The offset into the buffer which contains the first byte that was not filled by the
+     * method
+     */
+    private static int formatPositiveNumber(long number, int exp, boolean omitTrailingZeros, byte[] asciiBuffer, int startOffset)
+    {
+<span class="nc" id="L132">        int offset = startOffset;</span>
+<span class="nc" id="L133">        long remaining = number;</span>
+
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        while (remaining &gt; Integer.MAX_VALUE)</span>
+        {
+<span class="nc" id="L137">            long digit = remaining / POWER_OF_TENS[exp];</span>
+<span class="nc" id="L138">            remaining -= (digit * POWER_OF_TENS[exp]);</span>
+
+<span class="nc" id="L140">            asciiBuffer[offset++] = (byte) ('0' + digit);</span>
+<span class="nc" id="L141">            exp--;</span>
+<span class="nc" id="L142">        }</span>
+
+        //If the remaining fits into an integer, use int arithmetic as it is faster
+<span class="nc" id="L145">        int remainingInt = (int) remaining;</span>
+<span class="nc bnc" id="L146" title="All 6 branches missed.">        while (exp &gt;= 0 &amp;&amp; (!omitTrailingZeros || remainingInt &gt; 0))</span>
+        {
+<span class="nc" id="L148">            int digit = remainingInt / POWER_OF_TENS_INT[exp];</span>
+<span class="nc" id="L149">            remainingInt -= (digit * POWER_OF_TENS_INT[exp]);</span>
+
+<span class="nc" id="L151">            asciiBuffer[offset++] = (byte) ('0' + digit);</span>
+<span class="nc" id="L152">            exp--;</span>
+<span class="nc" id="L153">        }</span>
+
+<span class="nc" id="L155">        return offset;</span>
+    }
+
+    /**
+     * Returns the highest exponent of 10 where {@code 10^exp &lt; number} for numbers &gt; 0
+     */
+    private static int getExponent(long number)
+    {
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        for (int exp = 0; exp &lt; (POWER_OF_TENS.length - 1); exp++)</span>
+        {
+<span class="nc bnc" id="L165" title="All 2 branches missed.">            if (number &lt; POWER_OF_TENS[exp + 1])</span>
+            {
+<span class="nc" id="L167">                return exp;</span>
+            }
+        }
+
+<span class="nc" id="L171">        return POWER_OF_TENS.length - 1;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDIndexed.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.color</a> &gt; <span class="el_source">PDIndexed.java</span></div><h1>PDIndexed.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.color;
+
+import java.awt.Point;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.DataBuffer;
+import java.awt.image.IndexColorModel;
+import java.awt.image.Raster;
+import java.awt.image.WritableRaster;
+import java.io.IOException;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+
+/**
+ * An Indexed colour space specifies that an area is to be painted using a colour table
+ * of arbitrary colours from another color space.
+ * 
+ * @author John Hewson
+ * @author Ben Litchfield
+ */
+public final class PDIndexed extends PDSpecialColorSpace
+{
+<span class="nc" id="L46">    private final PDColor initialColor = new PDColor(new float[] { 0 }, this);</span>
+
+<span class="nc" id="L48">    private PDColorSpace baseColorSpace = null;</span>
+
+    // cached lookup data
+    private byte[] lookupData;
+    private float[][] colorTable;
+    private int actualMaxIndex;
+    private int[][] rgbColorTable;
+
+    /**
+     * Creates a new indexed color space from the given PDF array.
+     * 
+     * @param indexedArray the array containing the indexed parameters
+     * @throws IOException if the colorspace could not be created
+     */
+    public PDIndexed(COSArray indexedArray) throws IOException
+    {
+<span class="nc" id="L64">        this(indexedArray, null);</span>
+<span class="nc" id="L65">    }</span>
+
+    /**
+     * Creates a new indexed color space from the given PDF array.
+     * 
+     * @param indexedArray the array containing the indexed parameters
+     * @param resources the resources, can be null. Allows to use its cache for the colorspace.
+     * @throws IOException if the colorspace could not be created
+     */
+    public PDIndexed(COSArray indexedArray, PDResources resources) throws IOException
+<span class="nc" id="L75">    {</span>
+<span class="nc" id="L76">        array = indexedArray;</span>
+        // don't call getObject(1), we want to pass a reference if possible
+        // to profit from caching (PDFBOX-4149)
+<span class="nc" id="L79">        baseColorSpace = PDColorSpace.create(array.get(1), resources);</span>
+<span class="nc" id="L80">        readColorTable();</span>
+<span class="nc" id="L81">        initRgbColorTable();</span>
+<span class="nc" id="L82">    }</span>
+
+    @Override
+    public String getName()
+    {
+<span class="nc" id="L87">        return COSName.INDEXED.getName();</span>
+    }
+
+    @Override
+    public int getNumberOfComponents()
+    {
+<span class="nc" id="L93">        return 1;</span>
+    }
+
+    @Override
+    public float[] getDefaultDecode(int bitsPerComponent)
+    {
+<span class="nc" id="L99">        return new float[] { 0, (float)Math.pow(2, bitsPerComponent) - 1 };</span>
+    }
+
+    @Override
+    public PDColor getInitialColor()
+    {
+<span class="nc" id="L105">        return initialColor;</span>
+    }
+
+    //
+    // WARNING: this method is performance sensitive, modify with care!
+    //
+    private void initRgbColorTable() throws IOException
+    {
+<span class="nc" id="L113">        int numBaseComponents = baseColorSpace.getNumberOfComponents();</span>
+
+        // convert the color table into a 1-row BufferedImage in the base color space,
+        // using a writable raster for high performance
+        WritableRaster baseRaster;
+        try
+        {
+<span class="nc" id="L120">            baseRaster = Raster.createBandedRaster(DataBuffer.TYPE_BYTE,</span>
+                    actualMaxIndex + 1, 1, numBaseComponents, new Point(0, 0));
+        }
+<span class="nc" id="L123">        catch (IllegalArgumentException ex)</span>
+        {
+            // PDFBOX-4503: when stream is empty or null
+<span class="nc" id="L126">            throw new IOException(ex);</span>
+<span class="nc" id="L127">        }</span>
+
+<span class="nc" id="L129">        int[] base = new int[numBaseComponents];</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">        for (int i = 0, n = actualMaxIndex; i &lt;= n; i++)</span>
+        {
+<span class="nc bnc" id="L132" title="All 2 branches missed.">            for (int c = 0; c &lt; numBaseComponents; c++)</span>
+            {
+<span class="nc" id="L134">                base[c] = (int)(colorTable[i][c] * 255f);</span>
+            }
+<span class="nc" id="L136">            baseRaster.setPixel(i, 0, base);</span>
+        }
+
+        // convert the base image to RGB
+<span class="nc" id="L140">        BufferedImage rgbImage = baseColorSpace.toRGBImage(baseRaster);</span>
+<span class="nc" id="L141">        WritableRaster rgbRaster = rgbImage.getRaster();</span>
+
+        // build an RGB lookup table from the raster
+<span class="nc" id="L144">        rgbColorTable = new int[actualMaxIndex + 1][3];</span>
+<span class="nc" id="L145">        int[] nil = null;</span>
+
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        for (int i = 0, n = actualMaxIndex; i &lt;= n; i++)</span>
+        {
+<span class="nc" id="L149">            rgbColorTable[i] = rgbRaster.getPixel(i, 0, nil);</span>
+        }
+<span class="nc" id="L151">    }</span>
+
+    //
+    // WARNING: this method is performance sensitive, modify with care!
+    //
+    @Override
+    public float[] toRGB(float[] value)
+    {
+<span class="nc bnc" id="L159" title="All 2 branches missed.">        if (value.length != 1)</span>
+        {
+<span class="nc" id="L161">            throw new IllegalArgumentException(&quot;Indexed color spaces must have one color value&quot;);</span>
+        }
+        
+        // scale and clamp input value
+<span class="nc" id="L165">        int index = Math.round(value[0]);</span>
+<span class="nc" id="L166">        index = Math.max(index, 0);</span>
+<span class="nc" id="L167">        index = Math.min(index, actualMaxIndex);</span>
+
+        // lookup rgb
+<span class="nc" id="L170">        int[] rgb = rgbColorTable[index];</span>
+<span class="nc" id="L171">        return new float[] { rgb[0] / 255f, rgb[1] / 255f, rgb[2] / 255f };</span>
+    }
+
+    //
+    // WARNING: this method is performance sensitive, modify with care!
+    //
+    @Override
+    public BufferedImage toRGBImage(WritableRaster raster) throws IOException
+    {
+        // use lookup table
+<span class="nc" id="L181">        int width = raster.getWidth();</span>
+<span class="nc" id="L182">        int height = raster.getHeight();</span>
+
+<span class="nc" id="L184">        BufferedImage rgbImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);</span>
+<span class="nc" id="L185">        WritableRaster rgbRaster = rgbImage.getRaster();</span>
+
+<span class="nc" id="L187">        int[] src = new int[width];</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">        for (int y = 0; y &lt; height; y++)</span>
+        {
+<span class="nc" id="L190">            raster.getPixels(0, y, width, 1, src);</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">            for (int x = 0; x &lt; width; x++)</span>
+            {
+                // lookup
+<span class="nc" id="L194">                int index = Math.min(src[x], actualMaxIndex);</span>
+<span class="nc" id="L195">                rgbRaster.setPixel(x, y, rgbColorTable[index]);</span>
+            }
+        }
+
+<span class="nc" id="L199">        return rgbImage;</span>
+    }
+
+    @Override
+    public BufferedImage toRawImage(WritableRaster raster)
+    {
+        // We can only convert sRGB index colorspaces, depending on the base colorspace
+<span class="nc bnc" id="L206" title="All 4 branches missed.">        if (baseColorSpace instanceof PDICCBased &amp;&amp; ((PDICCBased) baseColorSpace).isSRGB())</span>
+        {
+<span class="nc" id="L208">            byte[] r = new byte[colorTable.length];</span>
+<span class="nc" id="L209">            byte[] g = new byte[colorTable.length];</span>
+<span class="nc" id="L210">            byte[] b = new byte[colorTable.length];</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">            for (int i = 0; i &lt; colorTable.length; i++)</span>
+            {
+<span class="nc" id="L213">                r[i] = (byte) ((int) (colorTable[i][0] * 255) &amp; 0xFF);</span>
+<span class="nc" id="L214">                g[i] = (byte) ((int) (colorTable[i][1] * 255) &amp; 0xFF);</span>
+<span class="nc" id="L215">                b[i] = (byte) ((int) (colorTable[i][2] * 255) &amp; 0xFF);</span>
+            }
+<span class="nc" id="L217">            ColorModel colorModel = new IndexColorModel(8, colorTable.length, r, g, b);</span>
+<span class="nc" id="L218">            return new BufferedImage(colorModel, raster, false, null);</span>
+        }
+
+        // We can't handle all other cases at the moment.
+<span class="nc" id="L222">        return null;</span>
+    }
+
+    /**
+     * Returns the base color space.
+     * @return the base color space.
+     */
+    public PDColorSpace getBaseColorSpace()
+    {
+<span class="nc" id="L231">        return baseColorSpace;</span>
+    }
+
+    // returns &quot;hival&quot; array element
+    private int getHival()
+    {
+<span class="nc" id="L237">        return ((COSNumber) array.getObject(2)).intValue();</span>
+    }
+
+    // reads the lookup table data from the array
+    private void readLookupData() throws IOException
+    {
+<span class="nc bnc" id="L243" title="All 2 branches missed.">        if (lookupData == null)</span>
+        {
+<span class="nc" id="L245">            COSBase lookupTable = array.getObject(3);</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">            if (lookupTable instanceof COSString)</span>
+            {
+<span class="nc" id="L248">                lookupData = ((COSString) lookupTable).getBytes();</span>
+            }
+<span class="nc bnc" id="L250" title="All 2 branches missed.">            else if (lookupTable instanceof COSStream)</span>
+            {
+<span class="nc" id="L252">                lookupData = new PDStream((COSStream)lookupTable).toByteArray();</span>
+            }
+<span class="nc bnc" id="L254" title="All 2 branches missed.">            else if (lookupTable == null)</span>
+            {
+<span class="nc" id="L256">                lookupData = new byte[0];</span>
+            }
+            else
+            {
+<span class="nc" id="L260">                throw new IOException(&quot;Error: Unknown type for lookup table &quot; + lookupTable);</span>
+            }
+        }
+<span class="nc" id="L263">    }</span>
+
+    //
+    // WARNING: this method is performance sensitive, modify with care!
+    //
+    private void readColorTable() throws IOException
+    {
+<span class="nc" id="L270">        readLookupData();</span>
+
+<span class="nc" id="L272">        int maxIndex = Math.min(getHival(), 255);</span>
+<span class="nc" id="L273">        int numComponents = baseColorSpace.getNumberOfComponents();</span>
+
+        // some tables are too short
+<span class="nc bnc" id="L276" title="All 2 branches missed.">        if (lookupData.length / numComponents &lt; maxIndex + 1)</span>
+        {
+<span class="nc" id="L278">            maxIndex = lookupData.length / numComponents - 1;</span>
+        }
+<span class="nc" id="L280">        actualMaxIndex = maxIndex;  // TODO &quot;actual&quot; is ugly, tidy this up</span>
+
+<span class="nc" id="L282">        colorTable = new float[maxIndex + 1][numComponents];</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">        for (int i = 0, offset = 0; i &lt;= maxIndex; i++)</span>
+        {
+<span class="nc bnc" id="L285" title="All 2 branches missed.">            for (int c = 0; c &lt; numComponents; c++)</span>
+            {
+<span class="nc" id="L287">                colorTable[i][c] = (lookupData[offset] &amp; 0xff) / 255f;</span>
+<span class="nc" id="L288">                offset++;</span>
+            }
+        }
+<span class="nc" id="L291">    }</span>
+
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L296">        return &quot;Indexed{base:&quot; + baseColorSpace + &quot; &quot; +</span>
+<span class="nc" id="L297">                &quot;hival:&quot; + getHival() + &quot; &quot; +</span>
+                &quot;lookup:(&quot; + colorTable.length + &quot; entries)}&quot;;
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

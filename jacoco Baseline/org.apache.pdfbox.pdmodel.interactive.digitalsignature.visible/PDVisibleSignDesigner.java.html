@@ -1,0 +1,570 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDVisibleSignDesigner.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible</a> &gt; <span class="el_source">PDVisibleSignDesigner.java</span></div><h1>PDVisibleSignDesigner.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible;
+
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+import javax.imageio.ImageIO;
+
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+
+/**
+ * Class for visible signature design properties. Setters use param() instead of setParam() to allow
+ * chaining.
+ *
+ * @author Vakhtang Koroghlishvili
+ */
+public class PDVisibleSignDesigner
+{
+    private Float imageWidth;
+    private Float imageHeight;
+    private float xAxis;
+    private float yAxis;
+    private float pageHeight;
+    private float pageWidth;
+    private BufferedImage image;
+<span class="nc" id="L51">    private String signatureFieldName = &quot;sig&quot;;</span>
+<span class="nc" id="L52">    private int[] formatterRectangleParameters = { 0, 0, 100, 50 };</span>
+<span class="nc" id="L53">    private AffineTransform affineTransform = new AffineTransform();</span>
+    private float imageSizeInPercents;
+<span class="nc" id="L55">    private int rotation = 0;</span>
+
+    /**
+     * Constructor.
+     *
+     * @param filename Path of the PDF file
+     * @param imageStream image as a stream
+     * @param page The 1-based page number for which the page size should be calculated.
+     * @throws IOException if the new instance of PDVisibleSignDesigner could not be created
+     */
+    public PDVisibleSignDesigner(String filename, InputStream imageStream, int page)
+            throws IOException
+<span class="nc" id="L67">    {</span>
+        // set visible signature image Input stream
+<span class="nc" id="L69">        readImageStream(imageStream);</span>
+
+        // calculate height and width of document page
+<span class="nc" id="L72">        calculatePageSizeFromFile(filename, page);</span>
+<span class="nc" id="L73">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param documentSource Original PDF document as RandomAccessRead
+     * @param imageStream Image as a stream
+     * @param page The 1-based page number for which the page size should be calculated.
+     * @throws IOException if the new instance of PDVisibleSignDesigner could not be created
+     */
+    public PDVisibleSignDesigner(RandomAccessRead documentSource, InputStream imageStream, int page)
+            throws IOException
+<span class="nc" id="L85">    {</span>
+        // set visible signature image Input stream
+<span class="nc" id="L87">        readImageStream(imageStream);</span>
+
+        // calculate height and width of document page
+<span class="nc" id="L90">        calculatePageSizeFromRandomAccessRead(documentSource, page);</span>
+<span class="nc" id="L91">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param document Already created PDDocument of your PDF document.
+     * @param imageStream Image as a stream.
+     * @param page The 1-based page number for which the page size should be calculated.
+     * @throws IOException If we can't read, flush, or can't close stream.
+     */
+    public PDVisibleSignDesigner(PDDocument document, InputStream imageStream, int page) throws IOException
+<span class="nc" id="L102">    {</span>
+<span class="nc" id="L103">        readImageStream(imageStream);</span>
+<span class="nc" id="L104">        calculatePageSize(document, page);</span>
+<span class="nc" id="L105">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param filename Path of the PDF file
+     * @param image the image to be used for the visible signature
+     * @param page The 1-based page number for which the page size should be calculated.
+     * @throws IOException if the new instance of PDVisibleSignDesigner could not be created
+     */
+    public PDVisibleSignDesigner(String filename, BufferedImage image, int page)
+            throws IOException
+<span class="nc" id="L117">    {</span>
+        // set visible signature image
+<span class="nc" id="L119">        setImage(image);</span>
+
+        // calculate height and width of document page
+<span class="nc" id="L122">        calculatePageSizeFromFile(filename, page);</span>
+<span class="nc" id="L123">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param documentSource Original PDF document as RandomAccessRead
+     * @param image the image to be used for the visible signature
+     * @param page The 1-based page number for which the page size should be calculated.
+     * @throws IOException if the new instance of PDVisibleSignDesigner could not be created
+     */
+    public PDVisibleSignDesigner(RandomAccessRead documentSource, BufferedImage image, int page)
+            throws IOException
+<span class="nc" id="L135">    {</span>
+        // set visible signature image
+<span class="nc" id="L137">        setImage(image);</span>
+
+        // calculate height and width of document page
+<span class="nc" id="L140">        calculatePageSizeFromRandomAccessRead(documentSource, page);</span>
+<span class="nc" id="L141">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param document Already created PDDocument of your PDF document.
+     * @param image the image to be used for the visible signature
+     * @param page The 1-based page number for which the page size should be calculated.
+     */
+    public PDVisibleSignDesigner(PDDocument document, BufferedImage image, int page)
+<span class="nc" id="L151">    {</span>
+<span class="nc" id="L152">        setImage(image);</span>
+<span class="nc" id="L153">        calculatePageSize(document, page);</span>
+<span class="nc" id="L154">    }</span>
+
+    /**
+     * Constructor usable for signing existing signature fields.
+     *
+     * @param imageStream image as a stream
+     * @throws IOException if the new instance of PDVisibleSignDesigner could not be created
+     */
+    public PDVisibleSignDesigner(InputStream imageStream) throws IOException
+<span class="nc" id="L163">    {</span>
+        // set visible signature image Input stream
+<span class="nc" id="L165">        readImageStream(imageStream);</span>
+<span class="nc" id="L166">    }</span>
+
+    private void calculatePageSizeFromFile(String filename, int page) throws IOException
+    {
+<span class="nc" id="L170">        try (PDDocument document = Loader.loadPDF(new File(filename)))</span>
+        {
+            // calculate height and width of document page
+<span class="nc" id="L173">            calculatePageSize(document, page);</span>
+        }
+<span class="nc" id="L175">    }</span>
+
+    private void calculatePageSizeFromRandomAccessRead(RandomAccessRead documentSource, int page)
+            throws IOException
+    {
+<span class="nc" id="L180">        try (PDDocument document = Loader.loadPDF(documentSource))</span>
+        {
+            // calculate height and width of document page
+<span class="nc" id="L183">            calculatePageSize(document, page);</span>
+        }
+<span class="nc" id="L185">    }</span>
+
+    /**
+     * Each page of document can be different sizes. This method calculates the page size based on
+     * the page media box.
+     * 
+     * @param document
+     * @param page The 1-based page number for which the page size should be calculated.
+     * @throws IllegalArgumentException if the page argument is lower than 0.
+     */
+    private void calculatePageSize(PDDocument document, int page)
+    {
+<span class="nc bnc" id="L197" title="All 2 branches missed.">        if (page &lt; 1)</span>
+        {
+<span class="nc" id="L199">            throw new IllegalArgumentException(&quot;First page of pdf is 1, not &quot; + page);</span>
+        }
+
+<span class="nc" id="L202">        PDPage firstPage = document.getPage(page - 1);</span>
+<span class="nc" id="L203">        PDRectangle mediaBox = firstPage.getMediaBox();</span>
+<span class="nc" id="L204">        pageHeight(mediaBox.getHeight());</span>
+<span class="nc" id="L205">        pageWidth = mediaBox.getWidth();</span>
+<span class="nc" id="L206">        imageSizeInPercents = 100;</span>
+<span class="nc" id="L207">        rotation = firstPage.getRotation() % 360;</span>
+<span class="nc" id="L208">    }</span>
+
+    /**
+     * Adjust signature for page rotation. This is optional, call this after all x and y coordinates
+     * have been set if you want the signature to be positioned regardless of page orientation.
+     *
+     * @return Visible Signature Configuration Object
+     */
+    public PDVisibleSignDesigner adjustForRotation()
+    {
+<span class="nc bnc" id="L218" title="All 4 branches missed.">        switch (rotation)</span>
+        {
+            case 90:
+                // https://stackoverflow.com/a/34359956/535646
+<span class="nc" id="L222">                float temp = yAxis;</span>
+<span class="nc" id="L223">                yAxis = pageHeight - xAxis - imageWidth;</span>
+<span class="nc" id="L224">                xAxis = temp;</span>
+
+<span class="nc" id="L226">                affineTransform = new AffineTransform(</span>
+<span class="nc" id="L227">                        0, imageHeight / imageWidth, -imageWidth / imageHeight, 0, imageWidth, 0);</span>
+
+<span class="nc" id="L229">                temp = imageHeight;</span>
+<span class="nc" id="L230">                imageHeight = imageWidth;</span>
+<span class="nc" id="L231">                imageWidth = temp;</span>
+<span class="nc" id="L232">                break;</span>
+
+            case 180:
+<span class="nc" id="L235">                float newX = pageWidth - xAxis - imageWidth;</span>
+<span class="nc" id="L236">                float newY = pageHeight - yAxis - imageHeight;</span>
+<span class="nc" id="L237">                xAxis = newX;</span>
+<span class="nc" id="L238">                yAxis = newY;</span>
+
+<span class="nc" id="L240">                affineTransform = new AffineTransform(-1, 0, 0, -1, imageWidth, imageHeight);</span>
+<span class="nc" id="L241">                break;</span>
+
+            case 270:
+<span class="nc" id="L244">                temp = xAxis;</span>
+<span class="nc" id="L245">                xAxis = pageWidth - yAxis - imageHeight;</span>
+<span class="nc" id="L246">                yAxis = temp;</span>
+
+<span class="nc" id="L248">                affineTransform = new AffineTransform(</span>
+<span class="nc" id="L249">                        0, -imageHeight / imageWidth, imageWidth / imageHeight, 0, 0, imageHeight);</span>
+
+<span class="nc" id="L251">                temp = imageHeight;</span>
+<span class="nc" id="L252">                imageHeight = imageWidth;</span>
+<span class="nc" id="L253">                imageWidth = temp;</span>
+<span class="nc" id="L254">                break;</span>
+
+            case 0:
+            default:
+                break;
+        }
+<span class="nc" id="L260">        return this;</span>
+    }
+
+    /**
+     * Set the image for the signature.
+     *
+     * @param path Path of the image file.
+     * @return Visible Signature Configuration Object
+     * @throws IOException if the image for the signature could not be set
+     */
+    public PDVisibleSignDesigner signatureImage(String path) throws IOException
+    {
+<span class="nc" id="L272">        try (InputStream in = new BufferedInputStream(new FileInputStream(path)))</span>
+        {
+<span class="nc" id="L274">            readImageStream(in);</span>
+        }
+<span class="nc" id="L276">        return this;</span>
+    }
+
+    /**
+     * Zoom signature image with some percent.
+     * 
+     * @param percent increase (positive value) or decrease (negative value) image with x percent.
+     * @return Visible Signature Configuration Object
+     */
+    public PDVisibleSignDesigner zoom(float percent)
+    {
+<span class="nc" id="L287">        imageHeight += (imageHeight * percent) / 100;</span>
+<span class="nc" id="L288">        imageWidth += (imageWidth * percent) / 100;</span>
+<span class="nc" id="L289">        formatterRectangleParameters[2] = (int) imageWidth.floatValue();</span>
+<span class="nc" id="L290">        formatterRectangleParameters[3] = (int) imageHeight.floatValue();</span>
+<span class="nc" id="L291">        return this;</span>
+    }
+
+    /**
+     *
+     * @param x - x coordinate
+     * @param y - y coordinate
+     * @return Visible Signature Configuration Object
+     */
+    public PDVisibleSignDesigner coordinates(float x, float y)
+    {
+<span class="nc" id="L302">        xAxis(x);</span>
+<span class="nc" id="L303">        yAxis(y);</span>
+<span class="nc" id="L304">        return this;</span>
+    }
+
+    /**
+     * 
+     * @return xAxis - gets x coordinates
+     */
+    public float getxAxis()
+    {
+<span class="nc" id="L313">        return xAxis;</span>
+    }
+
+    /**
+     *
+     * @param xAxis  - x coordinate 
+     * @return Visible Signature Configuration Object
+     */
+    public PDVisibleSignDesigner xAxis(float xAxis)
+    {
+<span class="nc" id="L323">        this.xAxis = xAxis;</span>
+<span class="nc" id="L324">        return this;</span>
+    }
+
+    /**
+     *
+     * @return yAxis
+     */
+    public float getyAxis()
+    {
+<span class="nc" id="L333">        return yAxis;</span>
+    }
+
+    /**
+     *
+     * @param yAxis y coordinate
+     * @return Visible Signature Configuration Object
+     */
+    public PDVisibleSignDesigner yAxis(float yAxis)
+    {
+<span class="nc" id="L343">        this.yAxis = yAxis;</span>
+<span class="nc" id="L344">        return this;</span>
+    }
+
+    /**
+     * 
+     * @return signature image width
+     */
+    public float getWidth()
+    {
+<span class="nc" id="L353">        return imageWidth;</span>
+    }
+
+    /**
+     * 
+     * @param width signature image width
+     * @return Visible Signature Configuration Object
+     */
+    public PDVisibleSignDesigner width(float width)
+    {
+<span class="nc" id="L363">        this.imageWidth = width;</span>
+<span class="nc" id="L364">        this.formatterRectangleParameters[2] = (int) width;</span>
+<span class="nc" id="L365">        return this;</span>
+    }
+
+    /**
+     * 
+     * @return signature image height
+     */
+    public float getHeight()
+    {
+<span class="nc" id="L374">        return imageHeight;</span>
+    }
+
+    /**
+     * 
+     * @param height signature image height
+     * @return Visible Signature Configuration Object
+     */
+    public PDVisibleSignDesigner height(float height)
+    {
+<span class="nc" id="L384">        this.imageHeight = height;</span>
+<span class="nc" id="L385">        this.formatterRectangleParameters[3] = (int) height;</span>
+<span class="nc" id="L386">        return this;</span>
+    }
+
+    /**
+     * 
+     * @return template height
+     */
+    protected float getTemplateHeight()
+    {
+<span class="nc" id="L395">        return getPageHeight();</span>
+    }
+
+    /**
+     * 
+     * @param templateHeight
+     * @return Visible Signature Configuration Object
+     */
+    private PDVisibleSignDesigner pageHeight(float templateHeight)
+    {
+<span class="nc" id="L405">        this.pageHeight = templateHeight;</span>
+<span class="nc" id="L406">        return this;</span>
+    }
+
+    /**
+     * 
+     * @return signature field name
+     */
+    public String getSignatureFieldName()
+    {
+<span class="nc" id="L415">        return signatureFieldName;</span>
+    }
+
+    /**
+     * 
+     * @param signatureFieldName the name of the signature field
+     * @return Visible Signature Configuration Object
+     */
+    public PDVisibleSignDesigner signatureFieldName(String signatureFieldName)
+    {
+<span class="nc" id="L425">        this.signatureFieldName = signatureFieldName;</span>
+<span class="nc" id="L426">        return this;</span>
+    }
+
+    /**
+     * 
+     * @return image Image
+     */
+    public BufferedImage getImage()
+    {
+<span class="nc" id="L435">        return image;</span>
+    }
+
+    /**
+     * Read the image stream of the signature and set height and width.
+     *
+     * @param stream stream of your visible signature image
+     * @throws IOException If we can't read, flush, or close stream of image
+     */
+    private void readImageStream(InputStream stream) throws IOException
+    {
+<span class="nc" id="L446">        ImageIO.setUseCache(false);</span>
+<span class="nc" id="L447">        setImage(ImageIO.read(stream));</span>
+<span class="nc" id="L448">    }</span>
+
+    /**
+     * Set image and its height and width.
+     *
+     * @param image
+     */
+    private void setImage(BufferedImage image)
+    {
+<span class="nc" id="L457">        this.image = image;</span>
+<span class="nc" id="L458">        imageHeight = (float) image.getHeight();</span>
+<span class="nc" id="L459">        imageWidth = (float) image.getWidth();</span>
+<span class="nc" id="L460">        formatterRectangleParameters[2] = image.getWidth();</span>
+<span class="nc" id="L461">        formatterRectangleParameters[3] = image.getHeight();</span>
+<span class="nc" id="L462">    }</span>
+
+    /**
+     * @return Affine Transform parameters for PDF Matrix
+     */
+    public AffineTransform getTransform()
+    {
+<span class="nc" id="L469">        return affineTransform;</span>
+    }
+
+    /**
+     * 
+     * @param affineTransform the affine transformation
+     * @return Visible Signature Configuration Object
+     */
+    public PDVisibleSignDesigner transform(AffineTransform affineTransform)
+    {
+<span class="nc" id="L479">        this.affineTransform = new AffineTransform(affineTransform);</span>
+<span class="nc" id="L480">        return this;</span>
+    }
+
+    /**
+     * 
+     * @return formatter PDRectangle parameters
+     */
+    public int[] getFormatterRectangleParameters()
+    {
+<span class="nc" id="L489">        return formatterRectangleParameters;</span>
+    }
+
+    /**
+     * Sets formatter PDRectangle
+     * 
+     * @param formatterRectangleParameters rectangle parameter of the formatter
+     * @return Visible Signature Configuration Object
+     */
+    public PDVisibleSignDesigner formatterRectangleParameters(int[] formatterRectangleParameters)
+    {
+<span class="nc" id="L500">        this.formatterRectangleParameters = formatterRectangleParameters;</span>
+<span class="nc" id="L501">        return this;</span>
+    }
+
+    /**
+     * 
+     * @return page width
+     */
+    public float getPageWidth()
+    {
+<span class="nc" id="L510">        return pageWidth;</span>
+    }
+
+    /**
+     * 
+     * @param pageWidth pageWidth
+     * @return Visible Signature Configuration Object
+     */
+    public PDVisibleSignDesigner pageWidth(float pageWidth)
+    {
+<span class="nc" id="L520">        this.pageWidth = pageWidth;</span>
+<span class="nc" id="L521">        return this;</span>
+    }
+
+    /**
+     * 
+     * @return page height
+     */
+    public float getPageHeight()
+    {
+<span class="nc" id="L530">        return pageHeight;</span>
+    }
+
+    /**
+     * get image size in percents
+     * @return the image size in percent
+     */
+    public float getImageSizeInPercents()
+    {
+<span class="nc" id="L539">        return imageSizeInPercents;</span>
+    }
+
+   /**
+    * 
+    * @param imageSizeInPercents image size in percents
+    */
+    public void imageSizeInPercents(float imageSizeInPercents)
+    {
+<span class="nc" id="L548">        this.imageSizeInPercents = imageSizeInPercents;</span>
+<span class="nc" id="L549">    }</span>
+
+    /**
+     * returns visible signature text
+     * @return the visible signature's text
+     */
+    public String getSignatureText()
+    {
+<span class="nc" id="L557">        throw new UnsupportedOperationException(&quot;That method is not yet implemented&quot;);</span>
+    }
+
+    /**
+     * 
+     * @param signatureText - adds the text on visible signature
+     * @return the signature design
+     */
+    public PDVisibleSignDesigner signatureText(String signatureText)
+    {
+<span class="nc" id="L567">        throw new UnsupportedOperationException(&quot;That method is not yet implemented&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

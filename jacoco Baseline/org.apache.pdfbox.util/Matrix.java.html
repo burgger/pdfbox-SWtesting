@@ -1,0 +1,614 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Matrix.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.util</a> &gt; <span class="el_source">Matrix.java</span></div><h1>Matrix.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.util;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSNumber;
+
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Point2D;
+import java.util.Arrays;
+import org.apache.pdfbox.cos.COSBase;
+
+/**
+ * This class will be used for matrix manipulation.
+ *
+ * @author Ben Litchfield
+ */
+public final class Matrix implements Cloneable
+{
+    public static final int SIZE = 9;
+    private float[] single;
+
+    /**
+     * Constructor. This produces an identity matrix.
+     */
+    public Matrix()
+<span class="nc" id="L42">    {</span>
+        // a b 0
+        // c d 0
+        // tx ty 1
+        // note: hx and hy are reversed vs.the PDF spec as we use AffineTransform's definition x and y shear
+        // sx hy 0
+        // hx sy 0
+        // tx ty 1
+<span class="nc" id="L50">        single = new float[] { 1, 0, 0, 0, 1, 0, 0, 0, 1 };</span>
+<span class="nc" id="L51">    }</span>
+
+    /**
+     * Constructor. This produces a matrix with the given array as data.
+     * The source array is not copied or cloned.
+     */
+    private Matrix(float[] src)
+<span class="nc" id="L58">    {</span>
+<span class="nc" id="L59">        single = src;</span>
+<span class="nc" id="L60">    }</span>
+
+    /**
+     * Creates a matrix from a 6-element (a b c d e f) COS array.
+     *
+     * @param array source array, elements must be or extend COSNumber
+     */
+    private Matrix(COSArray array)
+<span class="nc" id="L68">    {</span>
+<span class="nc" id="L69">        single = new float[SIZE];</span>
+<span class="nc" id="L70">        single[0] = ((COSNumber)array.getObject(0)).floatValue();</span>
+<span class="nc" id="L71">        single[1] = ((COSNumber)array.getObject(1)).floatValue();</span>
+<span class="nc" id="L72">        single[3] = ((COSNumber)array.getObject(2)).floatValue();</span>
+<span class="nc" id="L73">        single[4] = ((COSNumber)array.getObject(3)).floatValue();</span>
+<span class="nc" id="L74">        single[6] = ((COSNumber)array.getObject(4)).floatValue();</span>
+<span class="nc" id="L75">        single[7] = ((COSNumber)array.getObject(5)).floatValue();</span>
+<span class="nc" id="L76">        single[8] = 1;</span>
+<span class="nc" id="L77">    }</span>
+
+    /**
+     * Creates a transformation matrix with the given 6 elements. Transformation matrices are
+     * discussed in 8.3.3, &quot;Common Transformations&quot; and 8.3.4, &quot;Transformation Matrices&quot; of the PDF
+     * specification. For simple purposes (rotate, scale, translate) it is recommended to use the
+     * static methods below.
+     *
+     * Produces the following matrix:
+     * a b 0
+     * c d 0
+     * e f 1
+     *
+     * @see Matrix#getRotateInstance(double, float, float)
+     * @see Matrix#getScaleInstance(float, float)
+     * @see Matrix#getTranslateInstance(float, float)
+     *
+     * @param a the X coordinate scaling element (m00) of the 3x3 matrix
+     * @param b the Y coordinate shearing element (m10) of the 3x3 matrix
+     * @param c the X coordinate shearing element (m01) of the 3x3 matrix
+     * @param d the Y coordinate scaling element (m11) of the 3x3 matrix
+     * @param e the X coordinate translation element (m02) of the 3x3 matrix
+     * @param f the Y coordinate translation element (m12) of the 3x3 matrix
+     */
+    public Matrix(float a, float b, float c, float d, float e, float f)
+<span class="nc" id="L102">    {</span>
+<span class="nc" id="L103">        single = new float[SIZE];</span>
+<span class="nc" id="L104">        single[0] = a;</span>
+<span class="nc" id="L105">        single[1] = b;</span>
+<span class="nc" id="L106">        single[3] = c;</span>
+<span class="nc" id="L107">        single[4] = d;</span>
+<span class="nc" id="L108">        single[6] = e;</span>
+<span class="nc" id="L109">        single[7] = f;</span>
+<span class="nc" id="L110">        single[8] = 1;</span>
+<span class="nc" id="L111">    }</span>
+
+    /**
+     * Creates a matrix with the same elements as the given AffineTransform.
+     * @param at matrix elements will be initialize with the values from this affine transformation, as follows:
+     *
+     *           scaleX shearY 0
+     *           shearX scaleY 0
+     *           transX transY 1
+     *
+     */
+    public Matrix(AffineTransform at)
+<span class="nc" id="L123">    {</span>
+<span class="nc" id="L124">        single = new float[SIZE];</span>
+<span class="nc" id="L125">        single[0] = (float)at.getScaleX();</span>
+<span class="nc" id="L126">        single[1] = (float)at.getShearY();</span>
+<span class="nc" id="L127">        single[3] = (float)at.getShearX();</span>
+<span class="nc" id="L128">        single[4] = (float)at.getScaleY();</span>
+<span class="nc" id="L129">        single[6] = (float)at.getTranslateX();</span>
+<span class="nc" id="L130">        single[7] = (float)at.getTranslateY();</span>
+<span class="nc" id="L131">        single[8] = 1;</span>
+<span class="nc" id="L132">    }</span>
+
+    /**
+     * Convenience method to be used when creating a matrix from unverified data. If the parameter
+     * is a COSArray with at least six numbers, a Matrix object is created from the first six
+     * numbers and returned. If not, then the identity Matrix is returned.
+     *
+     * @param base a COS object, preferably a COSArray with six numbers.
+     *
+     * @return a Matrix object.
+     */
+    public static Matrix createMatrix(COSBase base)
+    {
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        if (!(base instanceof COSArray))</span>
+        {
+<span class="nc" id="L147">            return new Matrix();</span>
+        }
+<span class="nc" id="L149">        COSArray array = (COSArray) base;</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        if (array.size() &lt; 6)</span>
+        {
+<span class="nc" id="L152">            return new Matrix();</span>
+        }
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        for (int i = 0; i &lt; 6; ++i)</span>
+        {
+<span class="nc bnc" id="L156" title="All 2 branches missed.">            if (!(array.getObject(i) instanceof COSNumber))</span>
+            {
+<span class="nc" id="L158">                return new Matrix();</span>
+            }
+        }
+<span class="nc" id="L161">        return new Matrix(array);</span>
+    }
+
+    /**
+     * Create an affine transform from this matrix's values.
+     *
+     * @return An affine transform with this matrix's values.
+     */
+    public AffineTransform createAffineTransform()
+    {
+<span class="nc" id="L171">        return new AffineTransform(</span>
+            single[0], single[1],   // m00 m10 = scaleX shearY
+            single[3], single[4],   // m01 m11 = shearX scaleY
+            single[6], single[7] ); // m02 m12 = tx ty
+    }
+
+    /**
+     * This will get a matrix value at some point.
+     *
+     * @param row The row to get the value from.
+     * @param column The column to get the value from.
+     *
+     * @return The value at the row/column position.
+     */
+    public float getValue( int row, int column )
+    {
+<span class="nc" id="L187">        return single[row*3+column];</span>
+    }
+
+    /**
+     * This will set a value at a position.
+     *
+     * @param row The row to set the value at.
+     * @param column the column to set the value at.
+     * @param value The value to set at the position.
+     */
+    public void setValue( int row, int column, float value )
+    {
+<span class="nc" id="L199">        single[row*3+column] = value;</span>
+<span class="nc" id="L200">    }</span>
+
+    /**
+     * Return a single dimension array of all values in the matrix.
+     *
+     * @return The values of this matrix.
+     */
+    public float[][] getValues()
+    {
+<span class="nc" id="L209">        float[][] retval = new float[3][3];</span>
+<span class="nc" id="L210">        retval[0][0] = single[0];</span>
+<span class="nc" id="L211">        retval[0][1] = single[1];</span>
+<span class="nc" id="L212">        retval[0][2] = single[2];</span>
+<span class="nc" id="L213">        retval[1][0] = single[3];</span>
+<span class="nc" id="L214">        retval[1][1] = single[4];</span>
+<span class="nc" id="L215">        retval[1][2] = single[5];</span>
+<span class="nc" id="L216">        retval[2][0] = single[6];</span>
+<span class="nc" id="L217">        retval[2][1] = single[7];</span>
+<span class="nc" id="L218">        retval[2][2] = single[8];</span>
+<span class="nc" id="L219">        return retval;</span>
+    }
+
+    /**
+     * Concatenates (premultiplies) the given matrix to this matrix.
+     *
+     * @param matrix The matrix to concatenate.
+     */
+    public void concatenate(Matrix matrix)
+    {
+<span class="nc" id="L229">        single = checkFloatValues(multiplyArrays(matrix.single, single));</span>
+<span class="nc" id="L230">    }</span>
+
+    /**
+     * Translates this matrix by the given vector.
+     *
+     * @param vector 2D vector
+     */
+    public void translate(Vector vector)
+    {
+<span class="nc" id="L239">        translate(vector.getX(), vector.getY());</span>
+<span class="nc" id="L240">    }</span>
+
+    /**
+     * Translates this matrix by the given amount.
+     *
+     * @param tx x-translation
+     * @param ty y-translation
+     */
+    public void translate(float tx, float ty)
+    {
+<span class="nc" id="L250">        single[6] += tx * single[0] + ty * single[3];</span>
+<span class="nc" id="L251">        single[7] += tx * single[1] + ty * single[4];</span>
+<span class="nc" id="L252">        single[8] += tx * single[2] + ty * single[5];</span>
+<span class="nc" id="L253">        checkFloatValues(single);</span>
+<span class="nc" id="L254">    }</span>
+
+    /**
+     * Scales this matrix by the given factors.
+     *
+     * @param sx x-scale
+     * @param sy y-scale
+     */
+    public void scale(float sx, float sy)
+    {
+<span class="nc" id="L264">        single[0] *= sx;</span>
+<span class="nc" id="L265">        single[1] *= sx;</span>
+<span class="nc" id="L266">        single[2] *= sx;</span>
+<span class="nc" id="L267">        single[3] *= sy;</span>
+<span class="nc" id="L268">        single[4] *= sy;</span>
+<span class="nc" id="L269">        single[5] *= sy;</span>
+<span class="nc" id="L270">        checkFloatValues(single);</span>
+<span class="nc" id="L271">    }</span>
+
+    /**
+     * Rotates this matrix by the given factors.
+     *
+     * @param theta The angle of rotation measured in radians
+     */
+    public void rotate(double theta)
+    {
+<span class="nc" id="L280">        concatenate(Matrix.getRotateInstance(theta, 0, 0));</span>
+<span class="nc" id="L281">    }</span>
+
+    /**
+     * This method multiplies this Matrix with the specified other Matrix, storing the product in a 
+     * new instance. It is allowed to have (other == this).
+     *
+     * @param other the second operand Matrix in the multiplication; required
+     * @return the product of the two matrices.
+     */
+    public Matrix multiply(Matrix other)
+    {
+<span class="nc" id="L292">        return new Matrix(checkFloatValues(multiplyArrays(single, other.single)));</span>
+    }
+
+    private float[] checkFloatValues(float[] values)
+    {
+<span class="nc bnc" id="L297" title="All 6 branches missed.">        if (!Float.isFinite(values[0]) || !Float.isFinite(values[1]) || !Float.isFinite(values[2])</span>
+<span class="nc bnc" id="L298" title="All 6 branches missed.">                || !Float.isFinite(values[3]) || !Float.isFinite(values[4]) || !Float.isFinite(values[5])</span>
+<span class="nc bnc" id="L299" title="All 6 branches missed.">                || !Float.isFinite(values[6]) || !Float.isFinite(values[7]) || !Float.isFinite(values[8]))</span>
+<span class="nc" id="L300">            throw new IllegalArgumentException(&quot;Multiplying two matrices produces illegal values&quot;);</span>
+<span class="nc" id="L301">        return values;</span>
+    }
+
+    private float[] multiplyArrays(float[] a, float[] b)
+    {
+<span class="nc" id="L306">        float[] c = new float[SIZE];</span>
+<span class="nc" id="L307">        c[0] = a[0] * b[0] + a[1] * b[3] + a[2] * b[6];</span>
+<span class="nc" id="L308">        c[1] = a[0] * b[1] + a[1] * b[4] + a[2] * b[7];</span>
+<span class="nc" id="L309">        c[2] = a[0] * b[2] + a[1] * b[5] + a[2] * b[8];</span>
+<span class="nc" id="L310">        c[3] = a[3] * b[0] + a[4] * b[3] + a[5] * b[6];</span>
+<span class="nc" id="L311">        c[4] = a[3] * b[1] + a[4] * b[4] + a[5] * b[7];</span>
+<span class="nc" id="L312">        c[5] = a[3] * b[2] + a[4] * b[5] + a[5] * b[8];</span>
+<span class="nc" id="L313">        c[6] = a[6] * b[0] + a[7] * b[3] + a[8] * b[6];</span>
+<span class="nc" id="L314">        c[7] = a[6] * b[1] + a[7] * b[4] + a[8] * b[7];</span>
+<span class="nc" id="L315">        c[8] = a[6] * b[2] + a[7] * b[5] + a[8] * b[8];</span>
+<span class="nc" id="L316">        return c;</span>
+    }
+
+    /**
+     * Transforms the given point by this matrix.
+     *
+     * @param point point to transform
+     */
+    public void transform(Point2D point)
+    {
+<span class="nc" id="L326">        float x = (float)point.getX();</span>
+<span class="nc" id="L327">        float y = (float)point.getY();</span>
+<span class="nc" id="L328">        float a = single[0];</span>
+<span class="nc" id="L329">        float b = single[1];</span>
+<span class="nc" id="L330">        float c = single[3];</span>
+<span class="nc" id="L331">        float d = single[4];</span>
+<span class="nc" id="L332">        float e = single[6];</span>
+<span class="nc" id="L333">        float f = single[7];</span>
+<span class="nc" id="L334">        point.setLocation(x * a + y * c + e, x * b + y * d + f);</span>
+<span class="nc" id="L335">    }</span>
+
+    /**
+     * Transforms the given point by this matrix.
+     *
+     * @param x x-coordinate
+     * @param y y-coordinate
+     *
+     * @return the transformed point.
+     */
+    public Point2D.Float transformPoint(float x, float y)
+    {
+<span class="nc" id="L347">        float a = single[0];</span>
+<span class="nc" id="L348">        float b = single[1];</span>
+<span class="nc" id="L349">        float c = single[3];</span>
+<span class="nc" id="L350">        float d = single[4];</span>
+<span class="nc" id="L351">        float e = single[6];</span>
+<span class="nc" id="L352">        float f = single[7];</span>
+<span class="nc" id="L353">        return new Point2D.Float(x * a + y * c + e, x * b + y * d + f);</span>
+    }
+
+    /**
+     * Transforms the given vector by this matrix.
+     *
+     * @param vector 2D vector
+     *
+     * @return the transformed vector.
+     */
+    public Vector transform(Vector vector)
+    {
+<span class="nc" id="L365">        float a = single[0];</span>
+<span class="nc" id="L366">        float b = single[1];</span>
+<span class="nc" id="L367">        float c = single[3];</span>
+<span class="nc" id="L368">        float d = single[4];</span>
+<span class="nc" id="L369">        float e = single[6];</span>
+<span class="nc" id="L370">        float f = single[7];</span>
+<span class="nc" id="L371">        float x = vector.getX();</span>
+<span class="nc" id="L372">        float y = vector.getY();</span>
+<span class="nc" id="L373">        return new Vector(x * a + y * c + e, x * b + y * d + f);</span>
+    }
+
+    /**
+     * Convenience method to create a scaled instance.
+     *
+     * Produces the following matrix:
+     * x 0 0
+     * 0 y 0
+     * 0 0 1
+     *
+     * @param x The x-scale operator.
+     * @param y The y-scale operator.
+     * @return A new matrix with just the x/y scaling
+     */
+    public static Matrix getScaleInstance(float x, float y)
+    {
+<span class="nc" id="L390">        return new Matrix(x, 0, 0, y, 0, 0);</span>
+    }
+
+    /**
+     * Convenience method to create a translating instance.
+     *
+     * Produces the following matrix:
+     * 1 0 0
+     * 0 1 0
+     * x y 1
+     *
+     * @param x The x translating operator.
+     * @param y The y translating operator.
+     * @return A new matrix with just the x/y translating.
+     */
+    public static Matrix getTranslateInstance(float x, float y)
+    {
+<span class="nc" id="L407">        return new Matrix(1, 0, 0, 1, x, y);</span>
+    }
+
+    /**
+     * Convenience method to create a rotated instance.
+     *
+     * @param theta The angle of rotation measured in radians
+     * @param tx The x translation.
+     * @param ty The y translation.
+     * @return A new matrix with the rotation and the x/y translating.
+     */
+    public static Matrix getRotateInstance(double theta, float tx, float ty)
+    {
+<span class="nc" id="L420">        float cosTheta = (float)Math.cos(theta);</span>
+<span class="nc" id="L421">        float sinTheta = (float)Math.sin(theta);</span>
+
+<span class="nc" id="L423">        return new Matrix(cosTheta, sinTheta, -sinTheta, cosTheta, tx, ty);</span>
+    }
+
+    /**
+     * Produces a copy of the first matrix, with the second matrix concatenated.
+     *
+     * @param a The matrix to copy.
+     * @param b The matrix to concatenate.
+     * 
+     * @return a copy of the first matrix with the second matrix concatenated
+     */
+    public static Matrix concatenate(Matrix a, Matrix b)
+    {
+<span class="nc" id="L436">        return b.multiply(a);</span>
+    }
+
+    /**
+     * Clones this object.
+     * @return cloned matrix as an object.
+     */
+    @Override
+    public Matrix clone()
+    {
+<span class="nc" id="L446">        return new Matrix(single.clone());</span>
+    }
+
+    /**
+     * Returns the x-scaling factor of this matrix. This is calculated from the scale and shear.
+     *
+     * @return The x-scaling factor.
+     */
+    public float getScalingFactorX()
+    {
+        /*
+         * BM: if the trm is rotated, the calculation is a little more complicated
+         *
+         * The rotation matrix multiplied with the scaling matrix is:
+         * (   x   0   0)    ( cos  sin  0)    ( x*cos x*sin   0)
+         * (   0   y   0) *  (-sin  cos  0)  = (-y*sin y*cos   0)
+         * (   0   0   1)    (   0    0  1)    (     0     0   1)
+         *
+         * So, if you want to deduce x from the matrix you take
+         * M(0,0) = x*cos and M(0,1) = x*sin and use the theorem of Pythagoras
+         *
+         * sqrt(M(0,0)^2+M(0,1)^2) =
+         * sqrt(x2*cos2+x2*sin2) =
+         * sqrt(x2*(cos2+sin2)) = &lt;- here is the trick cos2+sin2 is one
+         * sqrt(x2) =
+         * abs(x)
+         */
+<span class="nc bnc" id="L473" title="All 2 branches missed.">        if (Float.compare(single[1], 0.0f) != 0)</span>
+        {
+<span class="nc" id="L475">            return (float) Math.sqrt(Math.pow(single[0], 2) +</span>
+<span class="nc" id="L476">                                      Math.pow(single[1], 2));</span>
+        }
+<span class="nc" id="L478">        return single[0];</span>
+    }
+
+    /**
+     * Returns the y-scaling factor of this matrix. This is calculated from the scale and shear.
+     *
+     * @return The y-scaling factor.
+     */
+    public float getScalingFactorY()
+    {
+<span class="nc bnc" id="L488" title="All 2 branches missed.">        if (Float.compare(single[3], 0.0f) != 0)</span>
+        {
+<span class="nc" id="L490">            return (float) Math.sqrt(Math.pow(single[3], 2) +</span>
+<span class="nc" id="L491">                                      Math.pow(single[4], 2));</span>
+        }
+<span class="nc" id="L493">        return single[4];</span>
+    }
+
+    /**
+     * Returns the x-scaling element of this matrix.
+     * 
+     * @see #getScalingFactorX()
+     * 
+     * @return the x-scaling element of the matrix
+     */
+    public float getScaleX()
+    {
+<span class="nc" id="L505">        return single[0];</span>
+    }
+
+    /**
+     * Returns the y-shear element of this matrix.
+     * 
+     * @return the y-shear element of the matrix
+     */
+    public float getShearY()
+    {
+<span class="nc" id="L515">        return single[1];</span>
+    }
+
+    /**
+     * Returns the x-shear element of this matrix.
+     * 
+     * @return the x-shear element of the matrix
+     */
+    public float getShearX()
+    {
+<span class="nc" id="L525">        return single[3];</span>
+    }
+
+    /**
+     * Returns the y-scaling element of this matrix.
+     *
+     * @see #getScalingFactorY()
+     * 
+     * @return the y-scaling element of the matrix
+     */
+    public float getScaleY()
+    {
+<span class="nc" id="L537">        return single[4];</span>
+    }
+
+    /**
+     * Returns the x-translation element of this matrix.
+     * 
+     * @return the x-translation element of the matrix
+     */
+    public float getTranslateX()
+    {
+<span class="nc" id="L547">        return single[6];</span>
+    }
+
+    /**
+     * Returns the y-translation element of this matrix.
+     * 
+     * @return the y-translation element of the matrix
+     */
+    public float getTranslateY()
+    {
+<span class="nc" id="L557">        return single[7];</span>
+    }
+
+    /**
+     * Returns a COS array which represent the geometric relevant components of the matrix. The last column of the
+     * matrix is ignored, only the first two columns are returned. This is analog to the Matrix(COSArray) constructor.
+     * 
+     * @return a COSArray representing the geometric relevant components of the matrix
+     */
+    public COSArray toCOSArray()
+    {
+<span class="nc" id="L568">        COSArray array = new COSArray();</span>
+<span class="nc" id="L569">        array.add(new COSFloat(single[0]));</span>
+<span class="nc" id="L570">        array.add(new COSFloat(single[1]));</span>
+<span class="nc" id="L571">        array.add(new COSFloat(single[3]));</span>
+<span class="nc" id="L572">        array.add(new COSFloat(single[4]));</span>
+<span class="nc" id="L573">        array.add(new COSFloat(single[6]));</span>
+<span class="nc" id="L574">        array.add(new COSFloat(single[7]));</span>
+<span class="nc" id="L575">        return array;</span>
+    }
+
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L581">        return &quot;[&quot; +</span>
+            single[0] + &quot;,&quot; +
+            single[1] + &quot;,&quot; +
+            single[3] + &quot;,&quot; +
+            single[4] + &quot;,&quot; +
+            single[6] + &quot;,&quot; +
+            single[7] + &quot;]&quot;;
+    }
+
+    @Override
+    public int hashCode()
+    {
+<span class="nc" id="L593">        return Arrays.hashCode(single);</span>
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+<span class="nc bnc" id="L599" title="All 2 branches missed.">        if (this == obj)</span>
+        {
+<span class="nc" id="L601">            return true;</span>
+        }
+<span class="nc bnc" id="L603" title="All 2 branches missed.">        if (obj == null)</span>
+        {
+<span class="nc" id="L605">            return false;</span>
+        }
+<span class="nc bnc" id="L607" title="All 2 branches missed.">        if (getClass() != obj.getClass())</span>
+        {
+<span class="nc" id="L609">            return false;</span>
+        }
+<span class="nc" id="L611">        return Arrays.equals(this.single, ((Matrix) obj).single);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Hex.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.util</a> &gt; <span class="el_source">Hex.java</span></div><h1>Hex.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.util;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Base64;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+/**
+ * Utility functions for hex encoding.
+ *
+ * @author John Hewson
+ */
+public final class Hex
+{
+<span class="fc" id="L34">    private static final Logger LOG = LogManager.getLogger(Hex.class);</span>
+
+    /**
+     * for hex conversion.
+     * 
+     * https://stackoverflow.com/questions/2817752/java-code-to-convert-byte-to-hexadecimal
+     *
+     */
+<span class="fc" id="L42">    private static final byte[] HEX_BYTES = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};</span>
+<span class="fc" id="L43">    private static final char[] HEX_CHARS = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};</span>
+
+    private Hex() {}
+
+    /**
+     * Returns a hex string of the given byte.
+     * 
+     * @param b the byte to be converted
+     * @return the hex string representing the given byte
+     */
+    public static String getString(byte b)
+    {
+<span class="nc" id="L55">        char[] chars = {HEX_CHARS[getHighNibble(b)], HEX_CHARS[getLowNibble(b)]};</span>
+<span class="nc" id="L56">        return new String(chars);</span>
+    }
+
+    /**
+     * Returns a hex string of the given byte array.
+     * 
+     * @param bytes the bytes to be converted
+     * @return the hex string representing the given bytes
+     */
+    public static String getString(byte[] bytes)
+    {
+<span class="nc" id="L67">        StringBuilder string = new StringBuilder(bytes.length * 2);</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        for (byte b : bytes)</span>
+        {
+<span class="nc" id="L70">            string.append(HEX_CHARS[getHighNibble(b)]).append(HEX_CHARS[getLowNibble(b)]);</span>
+        }
+<span class="nc" id="L72">        return string.toString();</span>
+    }
+
+    /**
+     * Returns the bytes corresponding to the ASCII hex encoding of the given byte.
+     * 
+     * @param b the byte to be converted
+     * @return the ASCII hex encoding of the given byte
+     */
+    public static byte[] getBytes(byte b)
+    {
+<span class="nc" id="L83">        return new byte[]{HEX_BYTES[getHighNibble(b)], HEX_BYTES[getLowNibble(b)]};</span>
+    }
+    
+    /**
+     * Returns the bytes corresponding to the ASCII hex encoding of the given bytes.
+     * 
+     * @param bytes the bytes to be converted
+     * @return the ASCII hex encoding of the given bytes
+     */
+    public static byte[] getBytes(byte[] bytes)
+    {
+<span class="nc" id="L94">        byte[] asciiBytes = new byte[bytes.length*2];</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        for(int i=0; i&lt; bytes.length; i++)</span>
+        {
+<span class="nc" id="L97">            asciiBytes[i*2] = HEX_BYTES[getHighNibble(bytes[i])];</span>
+<span class="nc" id="L98">            asciiBytes[i*2+1] = HEX_BYTES[getLowNibble(bytes[i])];</span>
+        }
+<span class="nc" id="L100">        return asciiBytes;</span>
+    }
+
+    /**
+     * Returns the characters corresponding to the ASCII hex encoding of the given short.
+     * 
+     * @param num the short value to be converted
+     * @return the ASCII hex encoding of the given short value
+     */
+    public static char[] getChars(short num)
+    {
+<span class="nc" id="L111">        char[] hex = new char[4];</span>
+<span class="nc" id="L112">        hex[0] = HEX_CHARS[(num &gt;&gt; 12) &amp; 0x0F];</span>
+<span class="nc" id="L113">        hex[1] = HEX_CHARS[(num &gt;&gt; 8) &amp; 0x0F];</span>
+<span class="nc" id="L114">        hex[2] = HEX_CHARS[(num &gt;&gt; 4) &amp; 0x0F];</span>
+<span class="nc" id="L115">        hex[3] = HEX_CHARS[num &amp; 0x0F];</span>
+<span class="nc" id="L116">        return hex;</span>
+    }
+
+    /**
+     * Takes the characters in the given string, convert it to bytes in UTF16-BE format
+     * and build a char array that corresponds to the ASCII hex encoding of the resulting
+     * bytes.
+     *
+     * Example:
+     * &lt;pre&gt;
+     *   getCharsUTF16BE(&quot;ab&quot;) == new char[]{'0','0','6','1','0','0','6','2'}
+     * &lt;/pre&gt;
+     *
+     * @param text The string to convert
+     * @return The string converted to hex
+     */
+    public static char[] getCharsUTF16BE(String text)
+    {
+        // Note that the internal representation of string in Java is already UTF-16. Therefore
+        // we do not need to use an encoder to convert the string to its byte representation.
+<span class="nc" id="L136">        char[] hex = new char[text.length()*4];</span>
+
+<span class="nc bnc" id="L138" title="All 2 branches missed.">        for (int stringIdx = 0, charIdx = 0; stringIdx &lt; text.length(); stringIdx++)</span>
+        {
+<span class="nc" id="L140">            char c = text.charAt(stringIdx);</span>
+<span class="nc" id="L141">            hex[charIdx++] = HEX_CHARS[(c &gt;&gt; 12) &amp; 0x0F];</span>
+<span class="nc" id="L142">            hex[charIdx++] = HEX_CHARS[(c &gt;&gt; 8) &amp; 0x0F];</span>
+<span class="nc" id="L143">            hex[charIdx++] = HEX_CHARS[(c &gt;&gt; 4) &amp; 0x0F];</span>
+<span class="nc" id="L144">            hex[charIdx++] = HEX_CHARS[c &amp; 0x0F];</span>
+        }
+
+<span class="nc" id="L147">        return hex;</span>
+    }
+
+    /**
+     * Writes the given byte as hex value to the given output stream.
+     * @param b the byte to be written
+     * @param output the output stream to be written to
+     * @throws IOException exception if anything went wrong
+     */
+    public static void writeHexByte(byte b, OutputStream output) throws IOException
+    {
+<span class="fc" id="L158">        output.write(HEX_BYTES[getHighNibble(b)]);</span>
+<span class="fc" id="L159">        output.write(HEX_BYTES[getLowNibble(b)]);</span>
+<span class="fc" id="L160">    }</span>
+
+    /** 
+     * Writes the given byte array as hex value to the given output stream.
+     * @param bytes the byte array to be written
+     * @param output the output stream to be written to
+     * @throws IOException exception if anything went wrong
+     */
+    public static void writeHexBytes(byte[] bytes, OutputStream output) throws IOException
+    {
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        for (byte b : bytes)</span>
+        {
+<span class="fc" id="L172">            writeHexByte(b, output);</span>
+        }
+<span class="fc" id="L174">    }</span>
+    
+    /**
+     * Get the high nibble of the given byte.
+     * 
+     * @param b the given byte
+     * @return the high nibble
+     */
+    private static int getHighNibble(byte b)
+    {
+<span class="fc" id="L184">        return (b &amp; 0xF0) &gt;&gt; 4;</span>
+    }
+
+    /**
+     * Get the low nibble of the given byte.
+     * 
+     * @param b the given byte
+     * @return the low nibble
+     */
+    private static int getLowNibble(byte b)
+    {
+<span class="fc" id="L195">        return b &amp; 0x0F;</span>
+    }
+
+    /**
+     * Decode a base64 String.
+     *
+     * @param base64Value a base64 encoded String.
+     *
+     * @return the decoded String as a byte array.
+     *
+     * @throws IllegalArgumentException if this isn't a base64 encoded string.
+     */
+    public static byte[] decodeBase64(String base64Value)
+    {
+<span class="nc" id="L209">        return Base64.getDecoder().</span>
+<span class="nc" id="L210">                decode(StringUtil.PATTERN_SPACE.matcher(base64Value).replaceAll(&quot;&quot;));</span>
+    }
+
+    /**
+     * Decodes a hex String into a byte array.
+     *
+     * @param s A String with ASCII hex.
+     * @return decoded byte array.
+     */
+    public static byte[] decodeHex(String s)
+    {
+<span class="nc" id="L221">        ByteArrayOutputStream baos = new ByteArrayOutputStream((s.length() + 1) / 2);</span>
+<span class="nc" id="L222">        int i = 0;</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        while (i &lt; s.length() - 1)</span>
+        {
+<span class="nc bnc" id="L225" title="All 4 branches missed.">            if (s.charAt(i) == '\n' || s.charAt(i) == '\r')</span>
+            {
+<span class="nc" id="L227">                ++i;</span>
+            }
+            else
+            {
+<span class="nc" id="L231">                int value = 16 * getHexValue(s.charAt(i)) + getHexValue(s.charAt(i + 1));</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">                if (value &gt;= 0)</span>
+                {
+<span class="nc" id="L234">                    baos.write(value);</span>
+                }
+                else
+                {
+<span class="nc" id="L238">                    String hexByte = s.substring(i, i + 2);</span>
+<span class="nc" id="L239">                    LOG.error(&quot;Can't parse {}, aborting decode&quot;, hexByte);</span>
+                }
+<span class="nc" id="L241">                i += 2;</span>
+<span class="nc" id="L242">            }</span>
+        }
+<span class="nc" id="L244">        return baos.toByteArray();</span>
+    }
+
+    /**
+     * Converts a given character to its corresponding hexadecimal value. Valid characters are '0'-'9', 'A'-'F', or
+     * 'a'-'f'. Returns -256 for invalid characters.
+     * &lt;p&gt;
+     * The value of -256 is chosen so that to hex digits can be combined before checking for an invalid hex string
+     *
+     * @param c the character to be converted to a hexadecimal value
+     * @return the hexadecimal value of the character, or -256 if the character is invalid
+     */
+    public static int getHexValue(char c)
+    {
+<span class="pc bpc" id="L258" title="1 of 4 branches missed.">        if (c &gt;= '0' &amp;&amp; c &lt;= '9')</span>
+        {
+<span class="fc" id="L260">            return c - '0';</span>
+        }
+<span class="pc bpc" id="L262" title="1 of 4 branches missed.">        else if (c &gt;= 'A' &amp;&amp; c &lt;= 'F')</span>
+        {
+<span class="fc" id="L264">            return c - 'A' + 10;</span>
+        }
+<span class="pc bpc" id="L266" title="2 of 4 branches missed.">        else if (c &gt;= 'a' &amp;&amp; c &lt;= 'f')</span>
+        {
+<span class="fc" id="L268">            return c - 'a' + 10;</span>
+        }
+<span class="nc" id="L270">        return -256;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

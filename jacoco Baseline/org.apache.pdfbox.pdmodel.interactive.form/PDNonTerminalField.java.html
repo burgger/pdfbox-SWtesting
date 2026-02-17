@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDNonTerminalField.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.form</a> &gt; <span class="el_source">PDNonTerminalField.java</span></div><h1>PDNonTerminalField.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.form;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.fdf.FDFField;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+
+/**
+ * A non terminal field in an interactive form.
+ * 
+ * A non terminal field is a node in the fields tree node whose descendants
+ * are fields. 
+ * 
+ * The attributes such as FT (field type) or V (field value) do not logically
+ * belong to the non terminal field but are inheritable attributes
+ * for descendant terminal fields.
+ */
+public class PDNonTerminalField extends PDField
+{
+<span class="nc" id="L44">    private static final Logger LOG = LogManager.getLogger(PDNonTerminalField.class);</span>
+
+    /**
+     * Constructor.
+     * 
+     * @param acroForm The form that this field is part of.
+     */
+    public PDNonTerminalField(PDAcroForm acroForm)
+    {
+<span class="nc" id="L53">        super(acroForm);</span>
+<span class="nc" id="L54">    }</span>
+
+    /**
+     * Constructor.
+     * 
+     * @param acroForm The form that this field is part of.
+     * @param field the PDF object to represent as a field.
+     * @param parent the parent node of the node to be created
+     */
+    PDNonTerminalField(PDAcroForm acroForm, COSDictionary field, PDNonTerminalField parent)
+    {
+<span class="nc" id="L65">        super(acroForm, field, parent);</span>
+<span class="nc" id="L66">    }</span>
+    
+    @Override
+    public int getFieldFlags()
+    {
+        // There is no need to look up the parent hierarchy within a non terminal field
+<span class="nc" id="L72">        return getCOSObject().getInt(COSName.FF, 0);</span>
+    }
+
+    @Override
+    void importFDF(FDFField fdfField) throws IOException
+    {
+<span class="nc" id="L78">        super.importFDF(fdfField);</span>
+        
+<span class="nc" id="L80">        List&lt;FDFField&gt; fdfKids = fdfField.getKids();</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        if (fdfKids == null)</span>
+        {
+<span class="nc" id="L83">            return;</span>
+        }
+<span class="nc" id="L85">        List&lt;PDField&gt; children = getChildren();</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        for (int i = 0; i &lt; fdfKids.size(); i++)</span>
+        {
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            for (PDField pdChild : children)</span>
+            {
+<span class="nc" id="L90">                FDFField fdfChild = fdfKids.get(i);</span>
+<span class="nc" id="L91">                String fdfName = fdfChild.getPartialFieldName();</span>
+<span class="nc bnc" id="L92" title="All 4 branches missed.">                if (fdfName != null &amp;&amp; fdfName.equals(pdChild.getPartialName()))</span>
+                {
+<span class="nc" id="L94">                    pdChild.importFDF(fdfChild);</span>
+                }
+<span class="nc" id="L96">            }</span>
+        }
+<span class="nc" id="L98">    }</span>
+    
+    @Override
+    FDFField exportFDF() throws IOException
+    {
+<span class="nc" id="L103">        FDFField fdfField = new FDFField();</span>
+<span class="nc" id="L104">        fdfField.setPartialFieldName(getPartialName());</span>
+<span class="nc" id="L105">        fdfField.setValue(getValue());</span>
+
+<span class="nc" id="L107">        List&lt;PDField&gt; children = getChildren();</span>
+<span class="nc" id="L108">        List&lt;FDFField&gt; fdfChildren = new ArrayList&lt;&gt;(children.size());</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        for (PDField child : children)</span>
+        {
+<span class="nc" id="L111">            fdfChildren.add(child.exportFDF());</span>
+<span class="nc" id="L112">        }</span>
+<span class="nc" id="L113">        fdfField.setKids(fdfChildren);</span>
+        
+<span class="nc" id="L115">        return fdfField;</span>
+    }
+    
+    /**
+     * Returns this field's children. These may be either terminal or non-terminal fields.
+     *
+     * @return the list of child fields. Be aware that this list is &lt;i&gt;not&lt;/i&gt; backed by the
+     * children of the field, so adding or deleting has no effect on the PDF document until you call
+     * {@link #setChildren(java.util.List) setChildren()} with the modified list.
+     */
+    public List&lt;PDField&gt; getChildren()
+    {
+        //TODO: why not return a COSArrayList like in PDPage.getAnnotations() ?
+ 
+<span class="nc" id="L129">        List&lt;PDField&gt; children = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L130">        COSArray kids = getCOSObject().getCOSArray(COSName.KIDS);</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">        if (kids == null)</span>
+        {
+<span class="nc" id="L133">            return children;</span>
+        }
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        for (int i = 0; i &lt; kids.size(); i++)</span>
+        {
+<span class="nc" id="L137">            COSBase kid = kids.getObject(i);</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">            if (kid instanceof COSDictionary)</span>
+            {
+<span class="nc bnc" id="L140" title="All 2 branches missed.">                if (kid.getCOSObject() == this.getCOSObject())</span>
+                {
+<span class="nc" id="L142">                    LOG.warn(&quot;Child field is same object as parent&quot;);</span>
+<span class="nc" id="L143">                    continue;</span>
+                }
+<span class="nc" id="L145">                PDField field = PDField.fromDictionary(getAcroForm(), (COSDictionary) kid, this);</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">                if (field != null)</span>
+                {
+<span class="nc" id="L148">                    children.add(field);</span>
+                }
+            }
+        }
+<span class="nc" id="L152">        return children;</span>
+    }
+    
+    /**
+     * Sets the child fields.
+     *
+     * @param children The list of child fields.
+     */
+    public void setChildren(List&lt;PDField&gt; children)
+    {
+<span class="nc" id="L162">        COSArray kidsArray = new COSArray(children);</span>
+<span class="nc" id="L163">        getCOSObject().setItem(COSName.KIDS, kidsArray);</span>
+<span class="nc" id="L164">    }</span>
+
+    /**
+     * {@inheritDoc}
+     *
+     * &lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; while non-terminal fields &lt;b&gt;do&lt;/b&gt; inherit field values, this method returns
+     * the local value, without inheritance.
+     */
+    @Override
+    public String getFieldType()
+    {
+<span class="nc" id="L175">        return getCOSObject().getNameAsString(COSName.FT);</span>
+    }
+
+    /**
+     * Returns the COSBase value of the &quot;V&quot; entry.
+     *
+     * &lt;p&gt;
+     * &lt;b&gt;Note:&lt;/b&gt; while non-terminal fields &lt;b&gt;do&lt;/b&gt; inherit field values, this method returns the local value,
+     * without inheritance.
+     * 
+     * @return the COSBase value of the &quot;V&quot; entry
+     */
+    public COSBase getValue()
+    {
+<span class="nc" id="L189">        return getCOSObject().getDictionaryObject(COSName.V);</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * &lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; while non-terminal fields &lt;b&gt;do&lt;/b&gt; inherit field values, this method returns
+     * the local value, without inheritance.
+     */
+    @Override
+    public String getValueAsString()
+    {
+<span class="nc" id="L201">        COSBase fieldValue = getCOSObject().getDictionaryObject(COSName.V);</span>
+<span class="nc bnc" id="L202" title="All 2 branches missed.">        return fieldValue != null ? fieldValue.toString() : &quot;&quot;;</span>
+    }
+
+    /**
+     * Sets the value of this field. This may be of any kind which is valid for this field's children.
+     *
+     * &lt;p&gt;
+     * &lt;b&gt;Note:&lt;/b&gt; while non-terminal fields &lt;b&gt;do&lt;/b&gt; inherit field values, this method returns the local value,
+     * without inheritance.
+     * 
+     * @param object the new value
+     */
+    public void setValue(COSBase object)
+    {
+<span class="nc" id="L216">        getCOSObject().setItem(COSName.V, object);</span>
+        // todo: propagate change event to children?
+        // todo: construct appearances of children?
+<span class="nc" id="L219">    }</span>
+    
+   /**
+     * Sets the plain text value of this field.
+     * 
+     * @param value Plain text
+     * @throws IOException if the value could not be set
+     */
+    @Override
+    public void setValue(String value) throws IOException
+    {
+<span class="nc" id="L230">        getCOSObject().setString(COSName.V, value);</span>
+        // todo: propagate change event to children?
+        // todo: construct appearances of children?
+<span class="nc" id="L233">    }</span>
+
+    /**
+     * Returns the default value of this field. This may be of any kind which is valid for this field's children.
+     *
+     * &lt;p&gt;
+     * &lt;b&gt;Note:&lt;/b&gt; while non-terminal fields &lt;b&gt;do&lt;/b&gt; inherit field values, this method returns the local value,
+     * without inheritance.
+     * 
+     * @return the new default value
+     */
+    public COSBase getDefaultValue()
+    {
+<span class="nc" id="L246">        return getCOSObject().getDictionaryObject(COSName.DV);</span>
+    }
+
+    /**
+     * Sets the default of this field. This may be of any kind which is valid for this field's children.
+     *
+     * &lt;p&gt;
+     * &lt;b&gt;Note:&lt;/b&gt; while non-terminal fields &lt;b&gt;do&lt;/b&gt; inherit field values, this method returns the local value,
+     * without inheritance.
+     * 
+     * @param value the default value
+     */
+    public void setDefaultValue(COSBase value)
+    {
+<span class="nc" id="L260">        getCOSObject().setItem(COSName.DV, value);</span>
+<span class="nc" id="L261">    }</span>
+    
+    @Override
+    public List&lt;PDAnnotationWidget&gt; getWidgets()
+    {
+<span class="nc" id="L266">        return Collections.emptyList();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

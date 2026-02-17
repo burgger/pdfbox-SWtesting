@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FDFTemplate.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.fdf</a> &gt; <span class="el_source">FDFTemplate.java</span></div><h1>FDFTemplate.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.fdf;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.COSArrayList;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * This represents an FDF template that is part of the FDF page.
+ *
+ * @author Ben Litchfield
+ */
+public class FDFTemplate implements COSObjectable
+{
+    private final COSDictionary template;
+
+    /**
+     * Default constructor.
+     */
+    public FDFTemplate()
+<span class="nc" id="L41">    {</span>
+<span class="nc" id="L42">        template = new COSDictionary();</span>
+<span class="nc" id="L43">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param t The FDF page template.
+     */
+    public FDFTemplate(COSDictionary t)
+<span class="nc" id="L51">    {</span>
+<span class="nc" id="L52">        template = t;</span>
+<span class="nc" id="L53">    }</span>
+
+    /**
+     * Convert this standard java object to a COS object.
+     *
+     * @return The cos object that matches this Java object.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L63">        return template;</span>
+    }
+
+    /**
+     * This is the template reference.
+     *
+     * @return The template reference.
+     */
+    public FDFNamedPageReference getTemplateReference()
+    {
+<span class="nc" id="L73">        COSDictionary dict = template.getCOSDictionary(COSName.TREF);</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        return dict != null ? new FDFNamedPageReference(dict) : null;</span>
+    }
+
+    /**
+     * This will set the template reference.
+     *
+     * @param tRef The template reference.
+     */
+    public void setTemplateReference(FDFNamedPageReference tRef)
+    {
+<span class="nc" id="L84">        template.setItem(COSName.TREF, tRef);</span>
+<span class="nc" id="L85">    }</span>
+
+    /**
+     * This will get a list of fields that are part of this template.
+     *
+     * @return A list of fields.
+     */
+    public List&lt;FDFField&gt; getFields()
+    {
+<span class="nc" id="L94">        COSArray array = template.getCOSArray(COSName.FIELDS);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (array != null)</span>
+        {
+<span class="nc" id="L97">            List&lt;FDFField&gt; fields = new ArrayList&lt;&gt;(array.size());</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">            for (int i = 0; i &lt; array.size(); i++)</span>
+            {
+<span class="nc" id="L100">                fields.add(new FDFField((COSDictionary) array.getObject(i)));</span>
+            }
+<span class="nc" id="L102">            return new COSArrayList&lt;&gt;(fields, array);</span>
+        }
+<span class="nc" id="L104">        return null;</span>
+    }
+
+    /**
+     * This will set a list of fields for this template.
+     *
+     * @param fields The list of fields to set for this template.
+     */
+    public void setFields(List&lt;FDFField&gt; fields)
+    {
+<span class="nc" id="L114">        template.setItem(COSName.FIELDS, new COSArray(fields));</span>
+<span class="nc" id="L115">    }</span>
+
+    /**
+     * A flag telling if the fields imported from the template may be renamed if there are conflicts.
+     *
+     * @return A flag telling if the fields can be renamed.
+     */
+    public boolean shouldRename()
+    {
+<span class="nc" id="L124">        return template.getBoolean(COSName.RENAME, false);</span>
+    }
+
+    /**
+     * This will set if the fields can be renamed.
+     *
+     * @param value The flag value.
+     */
+    public void setRename(boolean value)
+    {
+<span class="nc" id="L134">        template.setBoolean(COSName.RENAME, value);</span>
+<span class="nc" id="L135">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DCTFilter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.filter</a> &gt; <span class="el_source">DCTFilter.java</span></div><h1>DCTFilter.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.filter;
+
+import java.awt.color.CMMException;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.awt.image.Raster;
+import java.awt.image.WritableRaster;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.stream.ImageInputStream;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+import org.apache.pdfbox.cos.COSDictionary;
+
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+
+/**
+ * Decompresses data encoded using a DCT (discrete cosine transform)
+ * technique based on the JPEG standard.
+ *
+ * @author John Hewson
+ */
+<span class="nc" id="L51">final class DCTFilter extends Filter</span>
+{
+<span class="nc" id="L53">    private static final Logger LOG = LogManager.getLogger(DCTFilter.class);</span>
+
+    private static final int POS_TRANSFORM = 11;
+    private static final String ADOBE = &quot;Adobe&quot;;
+
+    @Override
+    public DecodeResult decode(InputStream encoded, OutputStream decoded, COSDictionary
+            parameters, int index, DecodeOptions options) throws IOException
+    {
+<span class="nc" id="L62">        ImageReader reader = findRasterReader(&quot;JPEG&quot;, &quot;a suitable JAI I/O image filter is not installed&quot;);</span>
+<span class="nc" id="L63">        try (ImageInputStream iis = ImageIO.createImageInputStream(encoded))</span>
+        {
+
+            // skip one LF if there
+<span class="nc bnc" id="L67" title="All 2 branches missed.">            if (iis.read() != 0x0A)</span>
+            {
+<span class="nc" id="L69">                iis.seek(0);</span>
+            }
+
+<span class="nc" id="L72">            reader.setInput(iis);</span>
+<span class="nc" id="L73">            ImageReadParam irp = reader.getDefaultReadParam();</span>
+<span class="nc" id="L74">            irp.setSourceSubsampling(options.getSubsamplingX(), options.getSubsamplingY(),</span>
+<span class="nc" id="L75">                    options.getSubsamplingOffsetX(), options.getSubsamplingOffsetY());</span>
+<span class="nc" id="L76">            irp.setSourceRegion(options.getSourceRegion());</span>
+<span class="nc" id="L77">            options.setFilterSubsampled(true);</span>
+
+<span class="nc" id="L79">            Raster raster = readImageRaster(reader, irp);</span>
+
+            // special handling for 4-component images
+<span class="nc bnc" id="L82" title="All 2 branches missed.">            if (raster.getNumBands() == 4)</span>
+            {
+                // get APP14 marker
+                int colorTransform;
+                try
+                {
+<span class="nc" id="L88">                    colorTransform = getAdobeTransform(reader.getImageMetadata(0));</span>
+                }
+<span class="nc" id="L90">                catch (IIOException | NegativeArraySizeException e)</span>
+                {
+                    // we really tried asking nicely, now we're using brute force.
+<span class="nc" id="L93">                    LOG.debug(&quot;Couldn't read usíng getAdobeTransform() - using getAdobeTransformByBruteForce() as fallback&quot;, e);</span>
+<span class="nc" id="L94">                    colorTransform = getAdobeTransformByBruteForce(iis);</span>
+<span class="nc" id="L95">                }</span>
+
+                // 0 = Unknown (RGB or CMYK), 1 = YCbCr, 2 = YCCK
+                // https://exiftool.org/TagNames/JPEG.html#Adobe
+<span class="nc bnc" id="L99" title="All 4 branches missed.">                switch (colorTransform)</span>
+                {
+                    case 0:
+                        // already CMYK
+<span class="nc" id="L103">                        break;</span>
+                    case 1:
+<span class="nc" id="L105">                        LOG.warn(&quot;There is no 4 channel YCbCr, using YCCK&quot;);</span>
+                        // fallthrough
+                    case 2:
+<span class="nc" id="L108">                        raster = fromYCCKtoCMYK(raster);</span>
+<span class="nc" id="L109">                        break;</span>
+                    default:
+<span class="nc" id="L111">                        throw new IllegalArgumentException(&quot;Unknown colorTransform&quot;);</span>
+                }
+<span class="nc" id="L113">            }</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">            else if (raster.getNumBands() == 3)</span>
+            {
+                // BGR to RGB
+<span class="nc" id="L117">                raster = fromBGRtoRGB(raster);</span>
+            }
+
+<span class="nc" id="L120">            DataBufferByte dataBuffer = (DataBufferByte)raster.getDataBuffer();</span>
+<span class="nc" id="L121">            decoded.write(dataBuffer.getData());</span>
+        }
+<span class="nc" id="L123">        catch (CMMException ex)</span>
+        {
+            // PDFBOX-5732
+<span class="nc" id="L126">            throw new IOException(ex);</span>
+        }
+        finally
+        {
+<span class="nc" id="L130">            reader.dispose();</span>
+        }
+<span class="nc" id="L132">        return new DecodeResult(parameters);</span>
+    }
+
+    private Raster readImageRaster(ImageReader reader, ImageReadParam irp) throws IOException
+    {
+<span class="nc" id="L137">        String numChannels = getNumChannels(reader);</span>
+        // get the raster using horrible JAI workarounds
+<span class="nc" id="L139">        ImageIO.setUseCache(false);</span>
+        Raster raster;
+        // Strategy: use read() for RGB or &quot;can't get metadata&quot;
+        // use readRaster() for CMYK and gray and as fallback if read() fails
+        // after &quot;can't get metadata&quot; because &quot;no meta&quot; file was CMYK
+<span class="nc bnc" id="L144" title="All 4 branches missed.">        if (&quot;3&quot;.equals(numChannels) || numChannels.isEmpty())</span>
+        {
+            try
+            {
+                // I'd like to use ImageReader#readRaster but it is buggy and can't read RGB correctly
+<span class="nc" id="L149">                BufferedImage image = reader.read(0, irp);</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">                if (image.getColorModel().getNumColorComponents() == 4)</span>
+                {
+<span class="nc" id="L152">                    throw new IIOException(&quot;CMYK image&quot;);</span>
+                }
+<span class="nc" id="L154">                raster = image.getRaster();</span>
+            }
+<span class="nc" id="L156">            catch (IIOException e)</span>
+            {
+                // JAI can't read CMYK JPEGs using ImageReader#read or ImageIO.read but
+                // fortunately ImageReader#readRaster isn't buggy when reading 4-channel files
+<span class="nc" id="L160">                LOG.debug(&quot;Couldn't read use read() for RGB image - using readRaster() as fallback&quot;, e);</span>
+<span class="nc" id="L161">                raster = reader.readRaster(0, irp);</span>
+<span class="nc" id="L162">            }</span>
+        }
+        else
+        {
+            // JAI can't read CMYK JPEGs using ImageReader#read or ImageIO.read but
+            // fortunately ImageReader#readRaster isn't buggy when reading 4-channel files
+<span class="nc" id="L168">            raster = reader.readRaster(0, irp);</span>
+        }
+<span class="nc" id="L170">        return raster;</span>
+    }
+
+    @Override
+    public DecodeResult decode(InputStream encoded, OutputStream decoded,
+                               COSDictionary parameters, int index) throws IOException
+    {
+<span class="nc" id="L177">        return decode(encoded, decoded, parameters, index, DecodeOptions.DEFAULT);</span>
+    }
+
+    // reads the APP14 Adobe transform tag and returns its value, or 0 if unknown
+    private Integer getAdobeTransform(IIOMetadata metadata)
+    {
+<span class="nc" id="L183">        Element tree = (Element)metadata.getAsTree(&quot;javax_imageio_jpeg_image_1.0&quot;);</span>
+<span class="nc" id="L184">        Element markerSequence = (Element)tree.getElementsByTagName(&quot;markerSequence&quot;).item(0);</span>
+<span class="nc" id="L185">        NodeList app14AdobeNodeList = markerSequence.getElementsByTagName(&quot;app14Adobe&quot;);</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">        if (app14AdobeNodeList != null)</span>
+        {
+<span class="nc" id="L188">            int app14AdobeNodeListLength = app14AdobeNodeList.getLength();</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">            if (app14AdobeNodeListLength &gt; 0)</span>
+            {
+<span class="nc bnc" id="L191" title="All 2 branches missed.">                if (app14AdobeNodeListLength &gt; 1)</span>
+                {
+<span class="nc" id="L193">                    LOG.warn(&quot;app14Adobe entry appears several times, using the last one&quot;);</span>
+                }
+<span class="nc" id="L195">                Element adobe = (Element) app14AdobeNodeList.item(app14AdobeNodeListLength - 1);</span>
+<span class="nc" id="L196">                return Integer.valueOf(adobe.getAttribute(&quot;transform&quot;));</span>
+            }
+        }
+<span class="nc" id="L199">        return 0;</span>
+    }
+        
+    // See in https://github.com/haraldk/TwelveMonkeys
+    // com.twelvemonkeys.imageio.plugins.jpeg.AdobeDCT class for structure of APP14 segment
+    private int getAdobeTransformByBruteForce(ImageInputStream iis) throws IOException
+    {
+<span class="nc" id="L206">        int a = 0;</span>
+<span class="nc" id="L207">        iis.seek(0);</span>
+        int by;
+<span class="nc bnc" id="L209" title="All 2 branches missed.">        while ((by = iis.read()) != -1)</span>
+        {
+<span class="nc bnc" id="L211" title="All 2 branches missed.">            if (ADOBE.charAt(a) == by)</span>
+            {
+<span class="nc" id="L213">                ++a;</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">                if (a != ADOBE.length())</span>
+                {
+<span class="nc" id="L216">                    continue;</span>
+                }
+                // match
+<span class="nc" id="L219">                a = 0;</span>
+<span class="nc" id="L220">                long afterAdobePos = iis.getStreamPosition();</span>
+<span class="nc" id="L221">                iis.seek(afterAdobePos - 9);</span>
+<span class="nc" id="L222">                int tag = iis.readUnsignedShort();</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">                if (tag != 0xFFEE)</span>
+                {
+<span class="nc" id="L225">                    iis.seek(afterAdobePos);</span>
+<span class="nc" id="L226">                    continue;</span>
+                }
+<span class="nc" id="L228">                int len = iis.readUnsignedShort();</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">                if (len &gt;= POS_TRANSFORM + 1)</span>
+                {
+<span class="nc" id="L231">                    byte[] app14 = new byte[Math.max(len, POS_TRANSFORM + 1)];</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">                    if (iis.read(app14) &gt;= POS_TRANSFORM + 1)</span>
+                    {
+<span class="nc" id="L234">                        return app14[POS_TRANSFORM];</span>
+                    }
+                }
+<span class="nc" id="L237">            }</span>
+            else
+            {
+<span class="nc" id="L240">                a = 0;</span>
+            }
+        }
+<span class="nc" id="L243">        return 0;</span>
+    }
+
+    // converts YCCK image to CMYK. YCCK is an equivalent encoding for
+    // CMYK data, so no color management code is needed here, nor does the
+    // PDF color space have to be consulted
+    private WritableRaster fromYCCKtoCMYK(Raster raster)
+    {
+<span class="nc" id="L251">        WritableRaster writableRaster = raster.createCompatibleWritableRaster();</span>
+
+<span class="nc" id="L253">        int[] value = new int[4];</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">        for (int y = 0, height = raster.getHeight(); y &lt; height; y++)</span>
+        {
+<span class="nc bnc" id="L256" title="All 2 branches missed.">            for (int x = 0, width = raster.getWidth(); x &lt; width; x++)</span>
+            {
+<span class="nc" id="L258">                raster.getPixel(x, y, value);</span>
+
+                // 4-channels 0..255
+<span class="nc" id="L261">                float Y = value[0];</span>
+<span class="nc" id="L262">                float Cb = value[1];</span>
+<span class="nc" id="L263">                float Cr = value[2];</span>
+<span class="nc" id="L264">                float K = value[3];</span>
+
+                // YCCK to RGB, see http://software.intel.com/en-us/node/442744
+<span class="nc" id="L267">                int r = clamp(Y + 1.402f * Cr - 179.456f);</span>
+<span class="nc" id="L268">                int g = clamp(Y - 0.34414f * Cb - 0.71414f * Cr + 135.45984f);</span>
+<span class="nc" id="L269">                int b = clamp(Y + 1.772f * Cb - 226.816f);</span>
+
+                // naive RGB to CMYK
+<span class="nc" id="L272">                int cyan = 255 - r;</span>
+<span class="nc" id="L273">                int magenta = 255 - g;</span>
+<span class="nc" id="L274">                int yellow = 255 - b;</span>
+
+                // update new raster
+<span class="nc" id="L277">                value[0] = cyan;</span>
+<span class="nc" id="L278">                value[1] = magenta;</span>
+<span class="nc" id="L279">                value[2] = yellow;</span>
+<span class="nc" id="L280">                value[3] = (int)K;</span>
+<span class="nc" id="L281">                writableRaster.setPixel(x, y, value);</span>
+            }
+        }
+<span class="nc" id="L284">        return writableRaster;</span>
+    }
+
+    // converts from BGR to RGB
+    private WritableRaster fromBGRtoRGB(Raster raster)
+    {
+<span class="nc" id="L290">        WritableRaster writableRaster = raster.createCompatibleWritableRaster();</span>
+
+<span class="nc" id="L292">        int width = raster.getWidth();</span>
+<span class="nc" id="L293">        int height = raster.getHeight();</span>
+<span class="nc" id="L294">        int w3 = width * 3;</span>
+<span class="nc" id="L295">        int[] tab = new int[w3];</span>
+        //BEWARE: handling the full image at a time is slower than one line at a time        
+<span class="nc bnc" id="L297" title="All 2 branches missed.">        for (int y = 0; y &lt; height; y++)</span>
+        {
+<span class="nc" id="L299">            raster.getPixels(0, y, width, 1, tab);</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">            for (int off = 0; off &lt; w3; off += 3)</span>
+            {
+<span class="nc" id="L302">                int tmp = tab[off];</span>
+<span class="nc" id="L303">                tab[off] = tab[off + 2];</span>
+<span class="nc" id="L304">                tab[off + 2] = tmp;</span>
+            }
+<span class="nc" id="L306">            writableRaster.setPixels(0, y, width, 1, tab);</span>
+        }
+<span class="nc" id="L308">        return writableRaster;</span>
+    }
+    
+    // returns the number of channels as a string, or an empty string if there is an error getting the meta data
+    private String getNumChannels(ImageReader reader)
+    {
+        try
+        {
+<span class="nc" id="L316">            IIOMetadata imageMetadata = reader.getImageMetadata(0);</span>
+<span class="nc bnc" id="L317" title="All 2 branches missed.">            if (imageMetadata == null)</span>
+            {
+<span class="nc" id="L319">                return &quot;&quot;;</span>
+            }
+<span class="nc" id="L321">            IIOMetadataNode metaTree = (IIOMetadataNode) imageMetadata.getAsTree(&quot;javax_imageio_1.0&quot;);</span>
+<span class="nc" id="L322">            Element numChannelsItem = (Element) metaTree.getElementsByTagName(&quot;NumChannels&quot;).item(0);</span>
+<span class="nc bnc" id="L323" title="All 2 branches missed.">            if (numChannelsItem == null)</span>
+            {
+<span class="nc" id="L325">                return &quot;&quot;;</span>
+            }
+<span class="nc" id="L327">            return numChannelsItem.getAttribute(&quot;value&quot;);</span>
+        }
+<span class="nc" id="L329">        catch (IOException | NegativeArraySizeException e)</span>
+        {
+<span class="nc" id="L331">            LOG.debug(&quot;Couldn't read metadata - returning empty string&quot;, e);</span>
+<span class="nc" id="L332">            return &quot;&quot;;</span>
+        }
+    }    
+
+    // clamps value to 0-255 range
+    private int clamp(float value)
+    {
+<span class="nc bnc" id="L339" title="All 4 branches missed.">        return (int)((value &lt; 0) ? 0 : ((value &gt; 255) ? 255 : value));</span>
+    }
+
+    @Override
+    protected void encode(InputStream input, OutputStream encoded, COSDictionary parameters)
+            throws IOException
+    {
+<span class="nc" id="L346">        throw new UnsupportedOperationException(&quot;DCTFilter encoding not implemented, use the JPEGFactory methods instead&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

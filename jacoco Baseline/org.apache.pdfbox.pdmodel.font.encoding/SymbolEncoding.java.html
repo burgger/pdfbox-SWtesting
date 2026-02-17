@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SymbolEncoding.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font.encoding</a> &gt; <span class="el_source">SymbolEncoding.java</span></div><h1>SymbolEncoding.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.font.encoding;
+
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSName;
+
+/**
+ * This is an interface to a text encoder.
+ */
+public class SymbolEncoding extends Encoding
+{
+    /**
+     * Table of octal character codes and their corresponding names.
+     */
+<span class="nc" id="L30">    private static final Object[][] SYMBOL_ENCODING_TABLE = {</span>
+<span class="nc" id="L31">        {0101, &quot;Alpha&quot;},</span>
+<span class="nc" id="L32">        {0102, &quot;Beta&quot;},</span>
+<span class="nc" id="L33">        {0103, &quot;Chi&quot;},</span>
+<span class="nc" id="L34">        {0104, &quot;Delta&quot;},</span>
+<span class="nc" id="L35">        {0105, &quot;Epsilon&quot;},</span>
+<span class="nc" id="L36">        {0110, &quot;Eta&quot;},</span>
+<span class="nc" id="L37">        {0240, &quot;Euro&quot;},</span>
+<span class="nc" id="L38">        {0107, &quot;Gamma&quot;},</span>
+<span class="nc" id="L39">        {0301, &quot;Ifraktur&quot;},</span>
+<span class="nc" id="L40">        {0111, &quot;Iota&quot;},</span>
+<span class="nc" id="L41">        {0113, &quot;Kappa&quot;},</span>
+<span class="nc" id="L42">        {0114, &quot;Lambda&quot;},</span>
+<span class="nc" id="L43">        {0115, &quot;Mu&quot;},</span>
+<span class="nc" id="L44">        {0116, &quot;Nu&quot;},</span>
+<span class="nc" id="L45">        {0127, &quot;Omega&quot;},</span>
+<span class="nc" id="L46">        {0117, &quot;Omicron&quot;},</span>
+<span class="nc" id="L47">        {0106, &quot;Phi&quot;},</span>
+<span class="nc" id="L48">        {0120, &quot;Pi&quot;},</span>
+<span class="nc" id="L49">        {0131, &quot;Psi&quot;},</span>
+<span class="nc" id="L50">        {0302, &quot;Rfraktur&quot;},</span>
+<span class="nc" id="L51">        {0122, &quot;Rho&quot;},</span>
+<span class="nc" id="L52">        {0123, &quot;Sigma&quot;},</span>
+<span class="nc" id="L53">        {0124, &quot;Tau&quot;},</span>
+<span class="nc" id="L54">        {0121, &quot;Theta&quot;},</span>
+<span class="nc" id="L55">        {0125, &quot;Upsilon&quot;},</span>
+<span class="nc" id="L56">        {0241, &quot;Upsilon1&quot;},</span>
+<span class="nc" id="L57">        {0130, &quot;Xi&quot;},</span>
+<span class="nc" id="L58">        {0132, &quot;Zeta&quot;},</span>
+<span class="nc" id="L59">        {0300, &quot;aleph&quot;},</span>
+<span class="nc" id="L60">        {0141, &quot;alpha&quot;},</span>
+<span class="nc" id="L61">        {0046, &quot;ampersand&quot;},</span>
+<span class="nc" id="L62">        {0320, &quot;angle&quot;},</span>
+<span class="nc" id="L63">        {0341, &quot;angleleft&quot;},</span>
+<span class="nc" id="L64">        {0361, &quot;angleright&quot;},</span>
+<span class="nc" id="L65">        {0273, &quot;approxequal&quot;},</span>
+<span class="nc" id="L66">        {0253, &quot;arrowboth&quot;},</span>
+<span class="nc" id="L67">        {0333, &quot;arrowdblboth&quot;},</span>
+<span class="nc" id="L68">        {0337, &quot;arrowdbldown&quot;},</span>
+<span class="nc" id="L69">        {0334, &quot;arrowdblleft&quot;},</span>
+<span class="nc" id="L70">        {0336, &quot;arrowdblright&quot;},</span>
+<span class="nc" id="L71">        {0335, &quot;arrowdblup&quot;},</span>
+<span class="nc" id="L72">        {0257, &quot;arrowdown&quot;},</span>
+<span class="nc" id="L73">        {0276, &quot;arrowhorizex&quot;},</span>
+<span class="nc" id="L74">        {0254, &quot;arrowleft&quot;},</span>
+<span class="nc" id="L75">        {0256, &quot;arrowright&quot;},</span>
+<span class="nc" id="L76">        {0255, &quot;arrowup&quot;},</span>
+<span class="nc" id="L77">        {0275, &quot;arrowvertex&quot;},</span>
+<span class="nc" id="L78">        {0052, &quot;asteriskmath&quot;},</span>
+<span class="nc" id="L79">        {0174, &quot;bar&quot;},</span>
+<span class="nc" id="L80">        {0142, &quot;beta&quot;},</span>
+<span class="nc" id="L81">        {0173, &quot;braceleft&quot;},</span>
+<span class="nc" id="L82">        {0175, &quot;braceright&quot;},</span>
+<span class="nc" id="L83">        {0354, &quot;bracelefttp&quot;},</span>
+<span class="nc" id="L84">        {0355, &quot;braceleftmid&quot;},</span>
+<span class="nc" id="L85">        {0356, &quot;braceleftbt&quot;},</span>
+<span class="nc" id="L86">        {0374, &quot;bracerighttp&quot;},</span>
+<span class="nc" id="L87">        {0375, &quot;bracerightmid&quot;},</span>
+<span class="nc" id="L88">        {0376, &quot;bracerightbt&quot;},</span>
+<span class="nc" id="L89">        {0357, &quot;braceex&quot;},</span>
+<span class="nc" id="L90">        {0133, &quot;bracketleft&quot;},</span>
+<span class="nc" id="L91">        {0135, &quot;bracketright&quot;},</span>
+<span class="nc" id="L92">        {0351, &quot;bracketlefttp&quot;},</span>
+<span class="nc" id="L93">        {0352, &quot;bracketleftex&quot;},</span>
+<span class="nc" id="L94">        {0353, &quot;bracketleftbt&quot;},</span>
+<span class="nc" id="L95">        {0371, &quot;bracketrighttp&quot;},</span>
+<span class="nc" id="L96">        {0372, &quot;bracketrightex&quot;},</span>
+<span class="nc" id="L97">        {0373, &quot;bracketrightbt&quot;},</span>
+<span class="nc" id="L98">        {0267, &quot;bullet&quot;},</span>
+<span class="nc" id="L99">        {0277, &quot;carriagereturn&quot;},</span>
+<span class="nc" id="L100">        {0143, &quot;chi&quot;},</span>
+<span class="nc" id="L101">        {0304, &quot;circlemultiply&quot;},</span>
+<span class="nc" id="L102">        {0305, &quot;circleplus&quot;},</span>
+<span class="nc" id="L103">        {0247, &quot;club&quot;},</span>
+<span class="nc" id="L104">        {0072, &quot;colon&quot;},</span>
+<span class="nc" id="L105">        {0054, &quot;comma&quot;},</span>
+<span class="nc" id="L106">        {0100, &quot;congruent&quot;},</span>
+<span class="nc" id="L107">        {0343, &quot;copyrightsans&quot;},</span>
+<span class="nc" id="L108">        {0323, &quot;copyrightserif&quot;},</span>
+<span class="nc" id="L109">        {0260, &quot;degree&quot;},</span>
+<span class="nc" id="L110">        {0144, &quot;delta&quot;},</span>
+<span class="nc" id="L111">        {0250, &quot;diamond&quot;},</span>
+<span class="nc" id="L112">        {0270, &quot;divide&quot;},</span>
+<span class="nc" id="L113">        {0327, &quot;dotmath&quot;},</span>
+<span class="nc" id="L114">        {0070, &quot;eight&quot;},</span>
+<span class="nc" id="L115">        {0316, &quot;element&quot;},</span>
+<span class="nc" id="L116">        {0274, &quot;ellipsis&quot;},</span>
+<span class="nc" id="L117">        {0306, &quot;emptyset&quot;},</span>
+<span class="nc" id="L118">        {0145, &quot;epsilon&quot;},</span>
+<span class="nc" id="L119">        {0075, &quot;equal&quot;},</span>
+<span class="nc" id="L120">        {0272, &quot;equivalence&quot;},</span>
+<span class="nc" id="L121">        {0150, &quot;eta&quot;},</span>
+<span class="nc" id="L122">        {0041, &quot;exclam&quot;},</span>
+<span class="nc" id="L123">        {0044, &quot;existential&quot;},</span>
+<span class="nc" id="L124">        {0065, &quot;five&quot;},</span>
+<span class="nc" id="L125">        {0246, &quot;florin&quot;},</span>
+<span class="nc" id="L126">        {0064, &quot;four&quot;},</span>
+<span class="nc" id="L127">        {0244, &quot;fraction&quot;},</span>
+<span class="nc" id="L128">        {0147, &quot;gamma&quot;},</span>
+<span class="nc" id="L129">        {0321, &quot;gradient&quot;},</span>
+<span class="nc" id="L130">        {0076, &quot;greater&quot;},</span>
+<span class="nc" id="L131">        {0263, &quot;greaterequal&quot;},</span>
+<span class="nc" id="L132">        {0251, &quot;heart&quot;},</span>
+<span class="nc" id="L133">        {0245, &quot;infinity&quot;},</span>
+<span class="nc" id="L134">        {0362, &quot;integral&quot;},</span>
+<span class="nc" id="L135">        {0363, &quot;integraltp&quot;},</span>
+<span class="nc" id="L136">        {0364, &quot;integralex&quot;},</span>
+<span class="nc" id="L137">        {0365, &quot;integralbt&quot;},</span>
+<span class="nc" id="L138">        {0307, &quot;intersection&quot;},</span>
+<span class="nc" id="L139">        {0151, &quot;iota&quot;},</span>
+<span class="nc" id="L140">        {0153, &quot;kappa&quot;},</span>
+<span class="nc" id="L141">        {0154, &quot;lambda&quot;},</span>
+<span class="nc" id="L142">        {0074, &quot;less&quot;},</span>
+<span class="nc" id="L143">        {0243, &quot;lessequal&quot;},</span>
+<span class="nc" id="L144">        {0331, &quot;logicaland&quot;},</span>
+<span class="nc" id="L145">        {0330, &quot;logicalnot&quot;},</span>
+<span class="nc" id="L146">        {0332, &quot;logicalor&quot;},</span>
+<span class="nc" id="L147">        {0340, &quot;lozenge&quot;},</span>
+<span class="nc" id="L148">        {0055, &quot;minus&quot;},</span>
+<span class="nc" id="L149">        {0242, &quot;minute&quot;},</span>
+<span class="nc" id="L150">        {0155, &quot;mu&quot;},</span>
+<span class="nc" id="L151">        {0264, &quot;multiply&quot;},</span>
+<span class="nc" id="L152">        {0071, &quot;nine&quot;},</span>
+<span class="nc" id="L153">        {0317, &quot;notelement&quot;},</span>
+<span class="nc" id="L154">        {0271, &quot;notequal&quot;},</span>
+<span class="nc" id="L155">        {0313, &quot;notsubset&quot;},</span>
+<span class="nc" id="L156">        {0156, &quot;nu&quot;},</span>
+<span class="nc" id="L157">        {0043, &quot;numbersign&quot;},</span>
+<span class="nc" id="L158">        {0167, &quot;omega&quot;},</span>
+<span class="nc" id="L159">        {0166, &quot;omega1&quot;},</span>
+<span class="nc" id="L160">        {0157, &quot;omicron&quot;},</span>
+<span class="nc" id="L161">        {0061, &quot;one&quot;},</span>
+<span class="nc" id="L162">        {0050, &quot;parenleft&quot;},</span>
+<span class="nc" id="L163">        {0051, &quot;parenright&quot;},</span>
+<span class="nc" id="L164">        {0346, &quot;parenlefttp&quot;},</span>
+<span class="nc" id="L165">        {0347, &quot;parenleftex&quot;},</span>
+<span class="nc" id="L166">        {0350, &quot;parenleftbt&quot;},</span>
+<span class="nc" id="L167">        {0366, &quot;parenrighttp&quot;},</span>
+<span class="nc" id="L168">        {0367, &quot;parenrightex&quot;},</span>
+<span class="nc" id="L169">        {0370, &quot;parenrightbt&quot;},</span>
+<span class="nc" id="L170">        {0266, &quot;partialdiff&quot;},</span>
+<span class="nc" id="L171">        {0045, &quot;percent&quot;},</span>
+<span class="nc" id="L172">        {0056, &quot;period&quot;},</span>
+<span class="nc" id="L173">        {0136, &quot;perpendicular&quot;},</span>
+<span class="nc" id="L174">        {0146, &quot;phi&quot;},</span>
+<span class="nc" id="L175">        {0152, &quot;phi1&quot;},</span>
+<span class="nc" id="L176">        {0160, &quot;pi&quot;},</span>
+<span class="nc" id="L177">        {0053, &quot;plus&quot;},</span>
+<span class="nc" id="L178">        {0261, &quot;plusminus&quot;},</span>
+<span class="nc" id="L179">        {0325, &quot;product&quot;},</span>
+<span class="nc" id="L180">        {0314, &quot;propersubset&quot;},</span>
+<span class="nc" id="L181">        {0311, &quot;propersuperset&quot;},</span>
+<span class="nc" id="L182">        {0265, &quot;proportional&quot;},</span>
+<span class="nc" id="L183">        {0171, &quot;psi&quot;},</span>
+<span class="nc" id="L184">        {0077, &quot;question&quot;},</span>
+<span class="nc" id="L185">        {0326, &quot;radical&quot;},</span>
+<span class="nc" id="L186">        {0140, &quot;radicalex&quot;},</span>
+<span class="nc" id="L187">        {0315, &quot;reflexsubset&quot;},</span>
+<span class="nc" id="L188">        {0312, &quot;reflexsuperset&quot;},</span>
+<span class="nc" id="L189">        {0342, &quot;registersans&quot;},</span>
+<span class="nc" id="L190">        {0322, &quot;registerserif&quot;},</span>
+<span class="nc" id="L191">        {0162, &quot;rho&quot;},</span>
+<span class="nc" id="L192">        {0262, &quot;second&quot;},</span>
+<span class="nc" id="L193">        {0073, &quot;semicolon&quot;},</span>
+<span class="nc" id="L194">        {0067, &quot;seven&quot;},</span>
+<span class="nc" id="L195">        {0163, &quot;sigma&quot;},</span>
+<span class="nc" id="L196">        {0126, &quot;sigma1&quot;},</span>
+<span class="nc" id="L197">        {0176, &quot;similar&quot;},</span>
+<span class="nc" id="L198">        {0066, &quot;six&quot;},</span>
+<span class="nc" id="L199">        {0057, &quot;slash&quot;},</span>
+<span class="nc" id="L200">        {0040, &quot;space&quot;},</span>
+<span class="nc" id="L201">        {0252, &quot;spade&quot;},</span>
+<span class="nc" id="L202">        {0047, &quot;suchthat&quot;},</span>
+<span class="nc" id="L203">        {0345, &quot;summation&quot;},</span>
+<span class="nc" id="L204">        {0164, &quot;tau&quot;},</span>
+<span class="nc" id="L205">        {0134, &quot;therefore&quot;},</span>
+<span class="nc" id="L206">        {0161, &quot;theta&quot;},</span>
+<span class="nc" id="L207">        {0112, &quot;theta1&quot;},</span>
+<span class="nc" id="L208">        {0063, &quot;three&quot;},</span>
+<span class="nc" id="L209">        {0344, &quot;trademarksans&quot;},</span>
+<span class="nc" id="L210">        {0324, &quot;trademarkserif&quot;},</span>
+<span class="nc" id="L211">        {0062, &quot;two&quot;},</span>
+<span class="nc" id="L212">        {0137, &quot;underscore&quot;},</span>
+<span class="nc" id="L213">        {0310, &quot;union&quot;},</span>
+<span class="nc" id="L214">        {0042, &quot;universal&quot;},</span>
+<span class="nc" id="L215">        {0165, &quot;upsilon&quot;},</span>
+<span class="nc" id="L216">        {0303, &quot;weierstrass&quot;},</span>
+<span class="nc" id="L217">        {0170, &quot;xi&quot;},</span>
+<span class="nc" id="L218">        {0060, &quot;zero&quot;},</span>
+<span class="nc" id="L219">        {0172, &quot;zeta&quot;}       </span>
+    };
+    
+    /**
+     * Singleton instance of this class.
+     */
+<span class="nc" id="L225">    public static final SymbolEncoding INSTANCE = new SymbolEncoding();</span>
+
+    /**
+     * Constructor.
+     */
+    private SymbolEncoding()
+<span class="nc" id="L231">    {</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">        for (Object[] encodingEntry : SYMBOL_ENCODING_TABLE)</span>
+        {
+<span class="nc" id="L234">            add((Integer) encodingEntry[CHAR_CODE], encodingEntry[CHAR_NAME].toString());</span>
+        }
+<span class="nc" id="L236">    }</span>
+    
+    @Override
+    public COSBase getCOSObject()
+    {
+<span class="nc" id="L241">        return COSName.getPDFName(&quot;SymbolEncoding&quot;);</span>
+    }
+
+    @Override
+    public String getEncodingName()
+    {
+<span class="nc" id="L247">        return &quot;SymbolEncoding&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

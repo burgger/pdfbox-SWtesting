@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDCircleAppearanceHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation.handlers</a> &gt; <span class="el_source">PDCircleAppearanceHandler.java</span></div><h1>PDCircleAppearanceHandler.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.interactive.annotation.handlers;
+
+import java.io.IOException;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationCircle;
+import org.apache.pdfbox.pdmodel.PDAppearanceContentStream;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationMarkup;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceStream;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictionary;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDBorderEffectDictionary;
+
+/**
+ * Handler to generate the circle annotations appearance.
+ *
+ */
+public class PDCircleAppearanceHandler extends PDAbstractAppearanceHandler
+{
+<span class="nc" id="L42">    private static final Logger LOG = LogManager.getLogger(PDCircleAppearanceHandler.class);</span>
+    
+    public PDCircleAppearanceHandler(PDAnnotation annotation)
+    {
+<span class="nc" id="L46">        super(annotation);</span>
+<span class="nc" id="L47">    }</span>
+
+    public PDCircleAppearanceHandler(PDAnnotation annotation, PDDocument document)
+    {
+<span class="nc" id="L51">        super(annotation, document);</span>
+<span class="nc" id="L52">    }</span>
+
+    @Override
+    public void generateNormalAppearance()
+    {
+<span class="nc" id="L57">        float lineWidth = getLineWidth();</span>
+<span class="nc" id="L58">        PDAnnotationCircle annotation = (PDAnnotationCircle) getAnnotation();</span>
+<span class="nc" id="L59">        try (PDAppearanceContentStream contentStream = getNormalAppearanceAsContentStream())</span>
+        {
+<span class="nc" id="L61">            boolean hasStroke = contentStream.setStrokingColorOnDemand(getColor());</span>
+<span class="nc" id="L62">            boolean hasBackground = contentStream</span>
+<span class="nc" id="L63">                    .setNonStrokingColorOnDemand(annotation.getInteriorColor());</span>
+
+<span class="nc" id="L65">            setOpacity(contentStream, annotation.getConstantOpacity());</span>
+
+<span class="nc" id="L67">            contentStream.setBorderLine(lineWidth, annotation.getBorderStyle(), annotation.getBorder());</span>
+<span class="nc" id="L68">            PDBorderEffectDictionary borderEffect = annotation.getBorderEffect();</span>
+
+<span class="nc bnc" id="L70" title="All 4 branches missed.">            if (borderEffect != null &amp;&amp; borderEffect.getStyle().equals(PDBorderEffectDictionary.STYLE_CLOUDY))</span>
+            {
+<span class="nc" id="L72">                CloudyBorder cloudyBorder = new CloudyBorder(contentStream,</span>
+<span class="nc" id="L73">                    borderEffect.getIntensity(), lineWidth, getRectangle());</span>
+<span class="nc" id="L74">                cloudyBorder.createCloudyEllipse(annotation.getRectDifference());</span>
+<span class="nc" id="L75">                annotation.setRectangle(cloudyBorder.getRectangle());</span>
+<span class="nc" id="L76">                annotation.setRectDifference(cloudyBorder.getRectDifference());</span>
+<span class="nc" id="L77">                PDAppearanceStream appearanceStream = annotation.getNormalAppearanceStream();</span>
+<span class="nc" id="L78">                appearanceStream.setBBox(cloudyBorder.getBBox());</span>
+<span class="nc" id="L79">                appearanceStream.setMatrix(cloudyBorder.getMatrix());</span>
+<span class="nc" id="L80">            }</span>
+            else
+            {
+                // Acrobat applies a padding to each side of the bbox so the line is completely within
+                // the bbox.
+
+<span class="nc" id="L86">                PDRectangle borderBox = handleBorderBox(annotation, lineWidth);</span>
+
+                // lower left corner
+<span class="nc" id="L89">                float x0 = borderBox.getLowerLeftX();</span>
+<span class="nc" id="L90">                float y0 = borderBox.getLowerLeftY();</span>
+                // upper right corner
+<span class="nc" id="L92">                float x1 = borderBox.getUpperRightX();</span>
+<span class="nc" id="L93">                float y1 = borderBox.getUpperRightY();</span>
+                // mid points
+<span class="nc" id="L95">                float xm = x0 + borderBox.getWidth() / 2;</span>
+<span class="nc" id="L96">                float ym = y0 + borderBox.getHeight() / 2;</span>
+                // see http://spencermortensen.com/articles/bezier-circle/
+                // the below number was calculated from sampling content streams
+                // generated using Adobe Reader
+<span class="nc" id="L100">                float magic = 0.55555417f;</span>
+                // control point offsets
+<span class="nc" id="L102">                float vOffset = borderBox.getHeight() / 2 * magic;</span>
+<span class="nc" id="L103">                float hOffset = borderBox.getWidth() / 2 * magic;</span>
+
+<span class="nc" id="L105">                contentStream.moveTo(xm, y1);</span>
+<span class="nc" id="L106">                contentStream.curveTo((xm + hOffset), y1, x1, (ym + vOffset), x1, ym);</span>
+<span class="nc" id="L107">                contentStream.curveTo(x1, (ym - vOffset), (xm + hOffset), y0, xm, y0);</span>
+<span class="nc" id="L108">                contentStream.curveTo((xm - hOffset), y0, x0, (ym - vOffset), x0, ym);</span>
+<span class="nc" id="L109">                contentStream.curveTo(x0, (ym + vOffset), (xm - hOffset), y1, xm, y1);</span>
+<span class="nc" id="L110">                contentStream.closePath();</span>
+            }
+
+<span class="nc" id="L113">            contentStream.drawShape(lineWidth, hasStroke, hasBackground);</span>
+        }
+<span class="nc" id="L115">        catch (IOException e)</span>
+        {
+<span class="nc" id="L117">            LOG.error(e);</span>
+<span class="nc" id="L118">        }</span>
+<span class="nc" id="L119">    }</span>
+
+    @Override
+    public void generateRolloverAppearance()
+    {
+        // TODO to be implemented
+<span class="nc" id="L125">    }</span>
+
+    @Override
+    public void generateDownAppearance()
+    {
+        // TODO to be implemented
+<span class="nc" id="L131">    }</span>
+
+    /**
+     * Get the line with of the border.
+     * 
+     * Get the width of the line used to draw a border around the annotation.
+     * This may either be specified by the annotation dictionaries Border
+     * setting or by the W entry in the BS border style dictionary. If both are
+     * missing the default width is 1.
+     * 
+     * @return the line width
+     */
+    // TODO: according to the PDF spec the use of the BS entry is annotation
+    // specific
+    // so we will leave that to be implemented by individual handlers.
+    // If at the end all annotations support the BS entry this can be handled
+    // here and removed from the individual handlers.
+    float getLineWidth()
+    {
+<span class="nc" id="L150">        PDAnnotationMarkup annotation = (PDAnnotationMarkup) getAnnotation();</span>
+
+<span class="nc" id="L152">        PDBorderStyleDictionary bs = annotation.getBorderStyle();</span>
+
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        if (bs != null)</span>
+        {
+<span class="nc" id="L156">            return bs.getWidth();</span>
+        }
+
+<span class="nc" id="L159">        COSArray borderCharacteristics = annotation.getBorder();</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">        if (borderCharacteristics.size() &gt;= 3)</span>
+        {
+<span class="nc" id="L162">            COSBase base = borderCharacteristics.getObject(2);</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">            if (base instanceof COSNumber)</span>
+            {
+<span class="nc" id="L165">                return ((COSNumber) base).floatValue();</span>
+            }
+        }
+
+<span class="nc" id="L169">        return 1;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

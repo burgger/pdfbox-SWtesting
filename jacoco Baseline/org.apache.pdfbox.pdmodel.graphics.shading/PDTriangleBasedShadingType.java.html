@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDTriangleBasedShadingType.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.shading</a> &gt; <span class="el_source">PDTriangleBasedShadingType.java</span></div><h1>PDTriangleBasedShadingType.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2014 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.shading;
+
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+import java.io.IOException;
+import java.util.List;
+
+import javax.imageio.stream.ImageInputStream;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.PDRange;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * Common resources for shading types 4,5,6 and 7
+ */
+abstract class PDTriangleBasedShadingType extends PDShading
+{
+    // an array of 2^n numbers specifying the linear mapping of sample values
+    // into the range appropriate for the function's output values. Default
+    // value: same as the value of Range
+<span class="nc" id="L42">    private COSArray decode = null;</span>
+
+<span class="nc" id="L44">    private static final Logger LOG = LogManager.getLogger(PDTriangleBasedShadingType.class);</span>
+
+<span class="nc" id="L46">    private int bitsPerCoordinate = -1;</span>
+<span class="nc" id="L47">    private int bitsPerColorComponent = -1;</span>
+<span class="nc" id="L48">    private int numberOfColorComponents = -1;</span>
+
+    PDTriangleBasedShadingType(COSDictionary shadingDictionary)
+    {
+<span class="nc" id="L52">        super(shadingDictionary);</span>
+<span class="nc" id="L53">    }</span>
+
+    /**
+     * The bits per component of this shading. This will return -1 if one has not been set.
+     *
+     * @return the number of bits per component
+     */
+    public int getBitsPerComponent()
+    {
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        if (bitsPerColorComponent == -1)</span>
+        {
+<span class="nc" id="L64">            bitsPerColorComponent = getCOSObject().getInt(COSName.BITS_PER_COMPONENT, -1);</span>
+<span class="nc" id="L65">            LOG.debug(&quot;bitsPerColorComponent: {}&quot;, bitsPerColorComponent);</span>
+        }
+<span class="nc" id="L67">        return bitsPerColorComponent;</span>
+    }
+
+    /**
+     * Set the number of bits per component.
+     *
+     * @param bitsPerComponent the number of bits per component
+     */
+    public void setBitsPerComponent(int bitsPerComponent)
+    {
+<span class="nc" id="L77">        getCOSObject().setInt(COSName.BITS_PER_COMPONENT, bitsPerComponent);</span>
+<span class="nc" id="L78">        bitsPerColorComponent = bitsPerComponent;</span>
+<span class="nc" id="L79">    }</span>
+
+    /**
+     * The bits per coordinate of this shading. This will return -1 if one has
+     * not been set.
+     *
+     * @return the number of bits per coordinate
+     */
+    public int getBitsPerCoordinate()
+    {
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (bitsPerCoordinate == -1)</span>
+        {
+<span class="nc" id="L91">            bitsPerCoordinate = getCOSObject().getInt(COSName.BITS_PER_COORDINATE, -1);</span>
+<span class="nc" id="L92">            LOG.debug(&quot;bitsPerCoordinate: {}&quot;, Math.pow(2, bitsPerCoordinate) - 1);</span>
+        }
+<span class="nc" id="L94">        return bitsPerCoordinate;</span>
+    }
+
+    /**
+     * Set the number of bits per coordinate.
+     *
+     * @param bitsPerCoordinate the number of bits per coordinate
+     */
+    public void setBitsPerCoordinate(int bitsPerCoordinate)
+    {
+<span class="nc" id="L104">        getCOSObject().setInt(COSName.BITS_PER_COORDINATE, bitsPerCoordinate);</span>
+<span class="nc" id="L105">        this.bitsPerCoordinate = bitsPerCoordinate;</span>
+<span class="nc" id="L106">    }</span>
+    
+    /**
+     * The number of color components of this shading.
+     *
+     * @return number of color components of this shading
+     * 
+     * @throws IOException if the data could not be read
+     */
+    public int getNumberOfColorComponents() throws IOException
+    {
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (numberOfColorComponents == -1)</span>
+        {
+<span class="nc bnc" id="L119" title="All 2 branches missed.">            numberOfColorComponents = getFunction() != null ? 1</span>
+<span class="nc" id="L120">                    : getColorSpace().getNumberOfComponents();</span>
+<span class="nc" id="L121">            LOG.debug(&quot;numberOfColorComponents: {}&quot;, numberOfColorComponents);</span>
+        }
+<span class="nc" id="L123">        return numberOfColorComponents;</span>
+    }
+
+    /**
+     * Returns all decode values as COSArray.
+     *
+     * @return the decode array
+     */
+    private COSArray getDecodeValues()
+    {
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (decode == null)</span>
+        {
+<span class="nc" id="L135">            decode = getCOSObject().getCOSArray(COSName.DECODE);</span>
+        }
+<span class="nc" id="L137">        return decode;</span>
+    }
+
+    /**
+     * This will set the decode values.
+     *
+     * @param decodeValues the new decode values
+     */
+    public void setDecodeValues(COSArray decodeValues)
+    {
+<span class="nc" id="L147">        decode = decodeValues;</span>
+<span class="nc" id="L148">        getCOSObject().setItem(COSName.DECODE, decodeValues);</span>
+<span class="nc" id="L149">    }</span>
+
+    /**
+     * Get the decode for the input parameter.
+     *
+     * @param paramNum the function parameter number
+     * @return the decode parameter range or null if none is set
+     */
+    public PDRange getDecodeForParameter(int paramNum)
+    {
+<span class="nc" id="L159">        PDRange retval = null;</span>
+<span class="nc" id="L160">        COSArray decodeValues = getDecodeValues();</span>
+<span class="nc bnc" id="L161" title="All 4 branches missed.">        if (decodeValues != null &amp;&amp; decodeValues.size() &gt;= paramNum * 2 + 1)</span>
+        {
+<span class="nc" id="L163">            retval = new PDRange(decodeValues, paramNum);</span>
+        }
+<span class="nc" id="L165">        return retval;</span>
+    }
+    
+    /**
+     * Calculate the interpolation, see p.345 pdf spec 1.7.
+     *
+     * @param src src value
+     * @param srcMax max src value (2^bits-1)
+     * @param dstMin min dst value
+     * @param dstMax max dst value
+     * @return interpolated value
+     */
+    protected float interpolate(float src, long srcMax, float dstMin, float dstMax)
+    {
+<span class="nc" id="L179">        return dstMin + (src * (dstMax - dstMin) / srcMax);</span>
+    }
+    
+    /**
+     * Read a vertex from the bit input stream performs interpolations.
+     *
+     * @param input bit input stream
+     * @param maxSrcCoord max value for source coordinate (2^bits-1)
+     * @param maxSrcColor max value for source color (2^bits-1)
+     * @param rangeX dest range for X
+     * @param rangeY dest range for Y
+     * @param colRangeTab dest range array for colors
+     * @param matrix the pattern matrix concatenated with that of the parent content stream
+     * @param xform the affine transformation
+     * @return a new vertex with the flag and the interpolated values
+     * @throws IOException if something went wrong
+     */
+    protected Vertex readVertex(ImageInputStream input, long maxSrcCoord, long maxSrcColor,
+                                PDRange rangeX, PDRange rangeY, PDRange[] colRangeTab,
+                                Matrix matrix, AffineTransform xform) throws IOException
+    {
+<span class="nc bnc" id="L200" title="All 6 branches missed.">        if (bitsPerCoordinate &lt;= 0 || numberOfColorComponents &lt;= 0 || bitsPerColorComponent &lt;= 0)</span>
+        {
+<span class="nc" id="L202">            throw new IOException(&quot;nothing to read, check bitsPerCoordinate, numberOfColorComponents and bitsPerColorComponent&quot;);</span>
+        }
+<span class="nc" id="L204">        float[] colorComponentTab = new float[numberOfColorComponents];</span>
+<span class="nc" id="L205">        long x = input.readBits(bitsPerCoordinate);</span>
+<span class="nc" id="L206">        long y = input.readBits(bitsPerCoordinate);</span>
+<span class="nc" id="L207">        float dstX = interpolate(x, maxSrcCoord, rangeX.getMin(), rangeX.getMax());</span>
+<span class="nc" id="L208">        float dstY = interpolate(y, maxSrcCoord, rangeY.getMin(), rangeY.getMax());</span>
+<span class="nc" id="L209">        LOG.debug(&quot;coord: {}&quot;, () -&gt; String.format(&quot;[%06X,%06X] -&gt; [%f,%f]&quot;, x, y, dstX, dstY));</span>
+<span class="nc" id="L210">        Point2D p = matrix.transformPoint(dstX, dstY);</span>
+<span class="nc" id="L211">        xform.transform(p, p);</span>
+
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        for (int n = 0; n &lt; numberOfColorComponents; ++n)</span>
+        {
+<span class="nc" id="L215">            int color = (int) input.readBits(bitsPerColorComponent);</span>
+<span class="nc" id="L216">            colorComponentTab[n] = interpolate(color, maxSrcColor, colRangeTab[n].getMin(),</span>
+<span class="nc" id="L217">                    colRangeTab[n].getMax());</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">            if (LOG.isDebugEnabled())</span>
+            {
+<span class="nc" id="L220">                LOG.debug(&quot;color[{}]: {}/{}-&gt; color[{}]: {}&quot;, n, color,</span>
+<span class="nc" id="L221">                        String.format(&quot;%02x&quot;, color), n,</span>
+<span class="nc" id="L222">                        colorComponentTab[n]);</span>
+            }
+        }
+
+        // &quot;Each set of vertex data shall occupy a whole number of bytes.
+        // If the total number of bits required is not divisible by 8, the last data byte
+        // for each vertex is padded at the end with extra bits, which shall be ignored.&quot;
+<span class="nc" id="L229">        int bitOffset = input.getBitOffset();</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">        if (bitOffset != 0)</span>
+        {
+<span class="nc" id="L232">            input.readBits(8 - bitOffset);</span>
+        }
+
+<span class="nc" id="L235">        return new Vertex(p, colorComponentTab);</span>
+    }
+
+    abstract List&lt;ShadedTriangle&gt; collectTriangles(AffineTransform xform, Matrix matrix) throws IOException;
+    
+    @Override
+    public Rectangle2D getBounds(AffineTransform xform, Matrix matrix) throws IOException
+    {
+<span class="nc" id="L243">        Rectangle2D bounds = null;</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">        for (ShadedTriangle shadedTriangle : collectTriangles(xform, matrix))</span>
+        {
+<span class="nc bnc" id="L246" title="All 2 branches missed.">            if (bounds == null)</span>
+            {
+<span class="nc" id="L248">                bounds = new Rectangle2D.Double(shadedTriangle.corner[0].getX(),</span>
+<span class="nc" id="L249">                        shadedTriangle.corner[0].getY(), 0, 0);</span>
+            }
+<span class="nc" id="L251">            bounds.add(shadedTriangle.corner[0]);</span>
+<span class="nc" id="L252">            bounds.add(shadedTriangle.corner[1]);</span>
+<span class="nc" id="L253">            bounds.add(shadedTriangle.corner[2]);</span>
+<span class="nc" id="L254">        }</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">        if (bounds == null)</span>
+        {
+            // Speeds up files where triangles are empty, e.g. ghostscript file 690425
+<span class="nc" id="L258">            return new Rectangle2D.Float();</span>
+        }
+<span class="nc" id="L260">        return bounds;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

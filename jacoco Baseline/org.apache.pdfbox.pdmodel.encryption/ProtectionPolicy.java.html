@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProtectionPolicy.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.encryption</a> &gt; <span class="el_source">ProtectionPolicy.java</span></div><h1>ProtectionPolicy.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.encryption;
+
+/**
+ * This class represents the protection policy to apply to a document.
+ *
+ * Objects implementing this abstract class can be passed to the protect method of PDDocument
+ * to protect a document.
+ *
+ * @see org.apache.pdfbox.pdmodel.PDDocument#protect(ProtectionPolicy)
+ *
+ * @author Benoit Guillon (benoit.guillon@snv.jussieu.fr)
+ */
+<span class="nc" id="L30">public abstract class ProtectionPolicy</span>
+{
+
+    private static final short DEFAULT_KEY_LENGTH = 40;
+
+<span class="nc" id="L35">    private short encryptionKeyLength = DEFAULT_KEY_LENGTH;</span>
+<span class="nc" id="L36">    private boolean preferAES = false;</span>
+
+    /**
+     * set the length in (bits) of the secret key that will be
+     * used to encrypt document data.
+     * The default value is 40 bits, which provides a low security level
+     * but is compatible with old versions of Acrobat Reader.
+     *
+     * @param l the length in bits (must be 40, 128 or 256)
+     */
+    public void setEncryptionKeyLength(int l)
+    {
+<span class="nc bnc" id="L48" title="All 6 branches missed.">        if(l!=40 &amp;&amp; l!=128 &amp;&amp; l!=256)</span>
+        {
+<span class="nc" id="L50">            throw new IllegalArgumentException(&quot;Invalid key length '&quot; + l + &quot;' value must be 40, 128 or 256!&quot;);</span>
+        }
+<span class="nc" id="L52">        encryptionKeyLength = (short) l;</span>
+<span class="nc" id="L53">    }</span>
+
+    /**
+     * Get the length of the secrete key that will be used to encrypt
+     * document data.
+     *
+     * @return The length (in bits) of the encryption key.
+     */
+    public int getEncryptionKeyLength()
+    {
+<span class="nc" id="L63">        return encryptionKeyLength;</span>
+    }
+
+    /**
+     * Tell whether AES encryption is preferred when several encryption methods are available for
+     * the chosen key length. The default is false. This setting is only relevant if the key length
+     * is 128 bits.
+     *
+     * @return true if AES encryption is preferred
+     */
+    public boolean isPreferAES()
+    {
+<span class="nc" id="L75">        return this.preferAES;</span>
+    }
+
+    /**
+     * Set whether AES encryption is preferred when several encryption methods are available for the chosen key length.
+     * The default is false. This setting is only relevant if the key length is 128 bits.
+     *
+     * @param preferAES indicates whether AES encryption is preferred or not
+     */
+    public void setPreferAES(boolean preferAES)
+    {
+<span class="nc" id="L86">        this.preferAES = preferAES;</span>
+<span class="nc" id="L87">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

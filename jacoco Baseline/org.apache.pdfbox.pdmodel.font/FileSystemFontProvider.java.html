@@ -1,0 +1,866 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FileSystemFontProvider.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font</a> &gt; <span class="el_source">FileSystemFontProvider.java</span></div><h1>FileSystemFontProvider.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.font;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.security.AccessControlException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.zip.CRC32;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.fontbox.FontBoxFont;
+import org.apache.fontbox.ttf.FontHeaders;
+import org.apache.fontbox.ttf.OS2WindowsMetricsTable;
+import org.apache.fontbox.ttf.OTFParser;
+import org.apache.fontbox.ttf.OpenTypeFont;
+import org.apache.fontbox.ttf.TTFParser;
+import org.apache.fontbox.ttf.TrueTypeCollection;
+import org.apache.fontbox.ttf.TrueTypeFont;
+import org.apache.fontbox.type1.Type1Font;
+import org.apache.fontbox.util.autodetect.FontFileFinder;
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
+
+/**
+ * A FontProvider which searches for fonts on the local filesystem.
+ *
+ * @author John Hewson
+ */
+final class FileSystemFontProvider extends FontProvider
+{
+<span class="nc" id="L58">    private static final Logger LOG = LogManager.getLogger(FileSystemFontProvider.class);</span>
+    
+    /**
+     * This option changes publicly visible behaviour: &quot;.pdfbox.cache&quot; file will have hash=&quot;-&quot; for all files.
+     * After implementing {@link FontHeaders}, parsing font headers is faster than checksumming anyway.
+     */
+<span class="nc" id="L64">    private static final boolean SKIP_CHECKSUMS = &quot;true&quot;.equals(System.getProperty(&quot;pdfbox.fontcache.skipchecksums&quot;));</span>
+    private static final String CHECKSUM_PLACEHOLDER = &quot;-&quot;;
+
+<span class="nc" id="L67">    private final List&lt;FSFontInfo&gt; fontInfoList = new ArrayList&lt;&gt;();</span>
+    private final FontCache cache;
+
+    private static class FSFontInfo extends FontInfo
+    {
+        private final String postScriptName;
+        private final FontFormat format;
+        private final CIDSystemInfo cidSystemInfo;
+        private final int usWeightClass;
+        private final int sFamilyClass;
+        private final int ulCodePageRange1;
+        private final int ulCodePageRange2;
+        private final int macStyle;
+        private final PDPanoseClassification panose;
+        private final File file;
+        private final FileSystemFontProvider parent;
+        private final String hash;
+        private final long lastModified;
+
+        private FSFontInfo(File file, FontFormat format, String postScriptName,
+                           CIDSystemInfo cidSystemInfo, int usWeightClass, int sFamilyClass,
+                           int ulCodePageRange1, int ulCodePageRange2, int macStyle, byte[] panose,
+                           FileSystemFontProvider parent, String hash, long lastModified)
+<span class="nc" id="L90">        {</span>
+<span class="nc" id="L91">            this.file = file;</span>
+<span class="nc" id="L92">            this.format = format;</span>
+<span class="nc" id="L93">            this.postScriptName = postScriptName;</span>
+<span class="nc" id="L94">            this.cidSystemInfo = cidSystemInfo;</span>
+<span class="nc" id="L95">            this.usWeightClass = usWeightClass;</span>
+<span class="nc" id="L96">            this.sFamilyClass = sFamilyClass;</span>
+<span class="nc" id="L97">            this.ulCodePageRange1 = ulCodePageRange1;</span>
+<span class="nc" id="L98">            this.ulCodePageRange2 = ulCodePageRange2;</span>
+<span class="nc" id="L99">            this.macStyle = macStyle;</span>
+<span class="nc bnc" id="L100" title="All 4 branches missed.">            this.panose = panose != null &amp;&amp; panose.length &gt;= PDPanoseClassification.LENGTH ?</span>
+<span class="nc" id="L101">                    new PDPanoseClassification(panose) : null;</span>
+<span class="nc" id="L102">            this.parent = parent;</span>
+<span class="nc" id="L103">            this.hash = hash;</span>
+<span class="nc" id="L104">            this.lastModified = lastModified;</span>
+<span class="nc" id="L105">        }</span>
+
+        @Override
+        public String getPostScriptName()
+        {
+<span class="nc" id="L110">            return postScriptName;</span>
+        }
+
+        @Override
+        public FontFormat getFormat()
+        {
+<span class="nc" id="L116">            return format;</span>
+        }
+
+        @Override
+        public CIDSystemInfo getCIDSystemInfo()
+        {
+<span class="nc" id="L122">            return cidSystemInfo;</span>
+        }
+
+        /**
+         * {@inheritDoc}
+         * &lt;p&gt;
+         * The method returns null if there was an error opening the font.
+         * 
+         */
+        @Override
+        public synchronized FontBoxFont getFont()
+        {
+            // synchronized to avoid race condition on cache access,
+            // which could result in an unreferenced but open font
+<span class="nc" id="L136">            FontBoxFont cached = parent.cache.getFont(this);</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">            if (cached != null)</span>
+            {
+<span class="nc" id="L139">                return cached;</span>
+            }
+            else
+            {
+                FontBoxFont font;
+<span class="nc bnc" id="L144" title="All 4 branches missed.">                switch (format)</span>
+                {
+<span class="nc" id="L146">                    case PFB: font = getType1Font(postScriptName, file); break;</span>
+<span class="nc" id="L147">                    case TTF: font = getTrueTypeFont(postScriptName, file); break;</span>
+<span class="nc" id="L148">                    case OTF: font = getOTFFont(postScriptName, file); break;</span>
+<span class="nc" id="L149">                    default: throw new RuntimeException(&quot;can't happen&quot;);</span>
+                }
+<span class="nc bnc" id="L151" title="All 2 branches missed.">                if (font != null)</span>
+                {
+<span class="nc" id="L153">                    parent.cache.addFont(this, font);</span>
+                }
+<span class="nc" id="L155">                return font;</span>
+            }
+        }
+
+        @Override
+        public int getFamilyClass()
+        {
+<span class="nc" id="L162">            return sFamilyClass;</span>
+        }
+
+        @Override
+        public int getWeightClass()
+        {
+<span class="nc" id="L168">            return usWeightClass;</span>
+        }
+
+        @Override
+        public int getCodePageRange1()
+        {
+<span class="nc" id="L174">            return ulCodePageRange1;</span>
+        }
+
+        @Override
+        public int getCodePageRange2()
+        {
+<span class="nc" id="L180">            return ulCodePageRange2;</span>
+        }
+
+        @Override
+        public int getMacStyle()
+        {
+<span class="nc" id="L186">            return macStyle;</span>
+        }
+
+        @Override
+        public PDPanoseClassification getPanose()
+        {
+<span class="nc" id="L192">            return panose;</span>
+        }
+
+        @Override
+        public String toString()
+        {
+<span class="nc" id="L198">            return super.toString() + &quot; &quot; + file + &quot; &quot; + hash + &quot; &quot; + lastModified;</span>
+        }
+
+        private TrueTypeFont getTrueTypeFont(String postScriptName, File file)
+        {
+            try
+            {
+<span class="nc" id="L205">                TrueTypeFont ttf = readTrueTypeFont(postScriptName, file);</span>
+<span class="nc" id="L206">                LOG.debug(&quot;Loaded {} from {}&quot;, postScriptName, file);</span>
+<span class="nc" id="L207">                return ttf;</span>
+            }
+<span class="nc" id="L209">            catch (IOException e)</span>
+            {
+<span class="nc" id="L211">                LOG.warn(() -&gt; &quot;Could not load font file: &quot; + file, e);</span>
+            }
+<span class="nc" id="L213">            return null;</span>
+        }
+
+        private TrueTypeFont readTrueTypeFont(String postScriptName, File file) throws IOException
+        {
+<span class="nc bnc" id="L218" title="All 2 branches missed.">            if (file.getName().toLowerCase().endsWith(&quot;.ttc&quot;))</span>
+            {
+                @SuppressWarnings(&quot;squid:S2095&quot;)
+                // ttc not closed here because it is needed later when ttf is accessed,
+                // e.g. rendering PDF with non-embedded font which is in ttc file in our font directory
+<span class="nc" id="L223">                TrueTypeCollection ttc = new TrueTypeCollection(file);</span>
+                TrueTypeFont ttf;
+                try
+                {
+<span class="nc" id="L227">                    ttf = ttc.getFontByName(postScriptName);</span>
+                }
+<span class="nc" id="L229">                catch (IOException ex)</span>
+                {
+<span class="nc" id="L231">                    ttc.close();</span>
+<span class="nc" id="L232">                    throw ex;</span>
+<span class="nc" id="L233">                }</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">                if (ttf == null)</span>
+                {
+<span class="nc" id="L236">                    ttc.close();</span>
+<span class="nc" id="L237">                    throw new IOException(&quot;Font &quot; + postScriptName + &quot; not found in &quot; + file);</span>
+                }
+<span class="nc" id="L239">                return ttf;</span>
+            }
+            else
+            {
+<span class="nc" id="L243">                TTFParser ttfParser = new TTFParser(false);</span>
+<span class="nc" id="L244">                return ttfParser.parse(new RandomAccessReadBufferedFile(file));</span>
+            }
+        }
+
+        private OpenTypeFont getOTFFont(String postScriptName, File file)
+        {
+            try
+            {
+<span class="nc bnc" id="L252" title="All 2 branches missed.">                if (file.getName().toLowerCase().endsWith(&quot;.ttc&quot;))</span>
+                {
+                    @SuppressWarnings(&quot;squid:S2095&quot;)
+                    // ttc not closed here because it is needed later when ttf is accessed,
+                    // e.g. rendering PDF with non-embedded font which is in ttc file in our font directory
+<span class="nc" id="L257">                    TrueTypeCollection ttc = new TrueTypeCollection(file);</span>
+                    TrueTypeFont ttf;
+                    try
+                    {
+<span class="nc" id="L261">                        ttf = ttc.getFontByName(postScriptName);</span>
+                    }
+<span class="nc" id="L263">                    catch (IOException ex)</span>
+                    {
+<span class="nc" id="L265">                        LOG.error(ex.getMessage(), ex);</span>
+<span class="nc" id="L266">                        ttc.close();</span>
+<span class="nc" id="L267">                        return null;</span>
+<span class="nc" id="L268">                    }</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">                    if (ttf == null)</span>
+                    {
+<span class="nc" id="L271">                        ttc.close();</span>
+<span class="nc" id="L272">                        throw new IOException(&quot;Font &quot; + postScriptName + &quot; not found in &quot; + file);</span>
+                    }
+<span class="nc" id="L274">                    return (OpenTypeFont) ttf;</span>
+                }
+
+<span class="nc" id="L277">                OTFParser parser = new OTFParser(false);</span>
+<span class="nc" id="L278">                OpenTypeFont otf = parser.parse(new RandomAccessReadBufferedFile(file));</span>
+
+<span class="nc" id="L280">                LOG.debug(&quot;Loaded {} from {}&quot;, postScriptName, file);</span>
+<span class="nc" id="L281">                return otf;</span>
+            }
+<span class="nc" id="L283">            catch (IOException e)</span>
+            {
+<span class="nc" id="L285">                LOG.warn(() -&gt; &quot;Could not load font file: &quot; + file, e);</span>
+            }
+<span class="nc" id="L287">            return null;</span>
+        }
+
+        private Type1Font getType1Font(String postScriptName, File file)
+        {
+<span class="nc" id="L292">            try (InputStream input = new FileInputStream(file))</span>
+            {
+<span class="nc" id="L294">                Type1Font type1 = Type1Font.createWithPFB(input);</span>
+<span class="nc" id="L295">                LOG.debug(&quot;Loaded {} from {}&quot;, postScriptName, file);</span>
+<span class="nc" id="L296">                return type1;</span>
+            }
+<span class="nc" id="L298">            catch (IOException e)</span>
+            {
+<span class="nc" id="L300">                LOG.warn(() -&gt; &quot;Could not load font file: &quot; + file, e);</span>
+            }
+<span class="nc" id="L302">            return null;</span>
+        }
+    }
+
+    private FSFontInfo createFSIgnored(File file, FontFormat format, String postScriptName)
+    {
+        String hash;
+        try
+        {
+<span class="nc bnc" id="L311" title="All 2 branches missed.">            hash = SKIP_CHECKSUMS ? CHECKSUM_PLACEHOLDER : computeHash(Files.newInputStream(file.toPath()));</span>
+        }
+<span class="nc" id="L313">        catch (IOException ex)</span>
+        {
+<span class="nc" id="L315">            hash = &quot;&quot;;</span>
+<span class="nc" id="L316">        }</span>
+<span class="nc" id="L317">        return new FSFontInfo(file, format, postScriptName, null, 0, 0, 0, 0, 0, null, null, hash, file.lastModified());</span>
+    }
+
+    /**
+     * Constructor.
+     */
+    FileSystemFontProvider(FontCache cache)
+<span class="nc" id="L324">    {</span>
+<span class="nc" id="L325">        this.cache = cache;</span>
+        try
+        {
+<span class="nc" id="L328">            LOG.trace(&quot;Will search the local system for fonts&quot;);</span>
+
+            // scan the local system for font files
+<span class="nc" id="L331">            FontFileFinder fontFileFinder = new FontFileFinder();</span>
+<span class="nc" id="L332">            List&lt;URI&gt; fonts = fontFileFinder.find();</span>
+<span class="nc" id="L333">            List&lt;File&gt; files = new ArrayList&lt;&gt;(fonts.size());</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">            for (URI font : fonts)</span>
+            {
+<span class="nc" id="L336">                files.add(new File(font));</span>
+<span class="nc" id="L337">            }</span>
+
+<span class="nc" id="L339">            LOG.trace(&quot;Found {} fonts on the local system&quot;, files.size());</span>
+
+<span class="nc bnc" id="L341" title="All 2 branches missed.">            if (!files.isEmpty())</span>
+            {
+                // load cached FontInfo objects
+<span class="nc" id="L344">                List&lt;FSFontInfo&gt; cachedInfos = loadDiskCache(files);</span>
+<span class="nc bnc" id="L345" title="All 4 branches missed.">                if (cachedInfos != null &amp;&amp; !cachedInfos.isEmpty())</span>
+                {
+<span class="nc" id="L347">                    fontInfoList.addAll(cachedInfos);</span>
+                }
+                else
+                {
+<span class="nc" id="L351">                    LOG.info(&quot;Building on-disk font cache, this may take a while&quot;);</span>
+<span class="nc" id="L352">                    scanFonts(files);</span>
+<span class="nc" id="L353">                    saveDiskCache();</span>
+<span class="nc" id="L354">                    LOG.info(&quot;Finished building on-disk font cache, found {} fonts&quot;,</span>
+<span class="nc" id="L355">                            fontInfoList.size());</span>
+                }
+            }
+        }
+<span class="nc" id="L359">        catch (AccessControlException e)</span>
+        {
+<span class="nc" id="L361">            LOG.error(&quot;Error accessing the file system&quot;, e);</span>
+<span class="nc" id="L362">        }</span>
+<span class="nc" id="L363">    }</span>
+    
+    private void scanFonts(List&lt;File&gt; files)
+    {
+        // to force a specific font for debug, add code like this here:
+        // files = Collections.singletonList(new File(&quot;font filename&quot;))
+
+<span class="nc bnc" id="L370" title="All 2 branches missed.">        for (File file : files)</span>
+        {
+<span class="nc" id="L372">            String filePath = file.getPath().toLowerCase();</span>
+<span class="nc bnc" id="L373" title="All 4 branches missed.">            if (filePath.endsWith(&quot;.ttf&quot;) || filePath.endsWith(&quot;.otf&quot;))</span>
+            {
+<span class="nc" id="L375">                addTrueTypeFont(file);</span>
+            }
+<span class="nc bnc" id="L377" title="All 4 branches missed.">            else if (filePath.endsWith(&quot;.ttc&quot;) || filePath.endsWith(&quot;.otc&quot;))</span>
+            {
+<span class="nc" id="L379">                addTrueTypeCollection(file);</span>
+            }
+<span class="nc bnc" id="L381" title="All 2 branches missed.">            else if (filePath.endsWith(&quot;.pfb&quot;))</span>
+            {
+<span class="nc" id="L383">                addType1Font(file);</span>
+            }
+<span class="nc" id="L385">        }</span>
+<span class="nc" id="L386">    }</span>
+
+    private File getDiskCacheFile()
+    {
+<span class="nc" id="L390">        String path = System.getProperty(&quot;pdfbox.fontcache&quot;);</span>
+<span class="nc bnc" id="L391" title="All 2 branches missed.">        if (isBadPath(path))</span>
+        {
+<span class="nc" id="L393">            path = System.getProperty(&quot;user.home&quot;);</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">            if (isBadPath(path))</span>
+            {
+<span class="nc" id="L396">                path = System.getProperty(&quot;java.io.tmpdir&quot;);</span>
+            }
+        }
+<span class="nc" id="L399">        return new File(path, &quot;.pdfbox.cache&quot;);</span>
+    }
+
+    private static boolean isBadPath(String path)
+    {
+<span class="nc bnc" id="L404" title="All 6 branches missed.">        return path == null || !new File(path).isDirectory() || !new File(path).canWrite();</span>
+    }
+
+    /**
+     * Saves the font metadata cache to disk.
+     */
+    private void saveDiskCache()
+    {
+        try
+        {
+<span class="nc" id="L414">            File file = getDiskCacheFile();</span>
+
+<span class="nc" id="L416">            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, StandardCharsets.UTF_8)))</span>
+            {
+<span class="nc bnc" id="L418" title="All 2 branches missed.">                for (FSFontInfo fontInfo : fontInfoList)</span>
+                {
+<span class="nc" id="L420">                    writeFontInfo(writer, fontInfo);</span>
+<span class="nc" id="L421">                }</span>
+            }
+<span class="nc" id="L423">            catch (IOException e)</span>
+            {
+<span class="nc" id="L425">                LOG.warn(&quot;Could not write to font cache&quot;, e);</span>
+<span class="nc" id="L426">                LOG.warn(&quot;Installed fonts information will have to be reloaded for each start&quot;);</span>
+<span class="nc" id="L427">                LOG.warn(&quot;You can assign a directory to the 'pdfbox.fontcache' property&quot;);</span>
+<span class="nc" id="L428">            }</span>
+        }
+<span class="nc" id="L430">        catch (SecurityException e)</span>
+        {
+<span class="nc" id="L432">            LOG.debug(&quot;Couldn't create writer for font cache file&quot;, e);</span>
+<span class="nc" id="L433">        }</span>
+<span class="nc" id="L434">    }</span>
+
+    private void writeFontInfo(BufferedWriter writer, FSFontInfo fontInfo) throws IOException
+    {
+<span class="nc" id="L438">        writer.write(fontInfo.postScriptName.trim());</span>
+<span class="nc" id="L439">        writer.write(&quot;|&quot;);</span>
+<span class="nc" id="L440">        writer.write(fontInfo.format.toString());</span>
+<span class="nc" id="L441">        writer.write(&quot;|&quot;);</span>
+<span class="nc bnc" id="L442" title="All 2 branches missed.">        if (fontInfo.cidSystemInfo != null)</span>
+        {
+<span class="nc" id="L444">            writer.write(fontInfo.cidSystemInfo.getRegistry() + '-' +</span>
+<span class="nc" id="L445">                         fontInfo.cidSystemInfo.getOrdering() + '-' +</span>
+<span class="nc" id="L446">                         fontInfo.cidSystemInfo.getSupplement());</span>
+        }
+<span class="nc" id="L448">        writer.write(&quot;|&quot;);</span>
+<span class="nc bnc" id="L449" title="All 2 branches missed.">        if (fontInfo.usWeightClass &gt; -1)</span>
+        {
+<span class="nc" id="L451">            writer.write(Integer.toHexString(fontInfo.usWeightClass));</span>
+        }
+<span class="nc" id="L453">        writer.write(&quot;|&quot;);</span>
+<span class="nc bnc" id="L454" title="All 2 branches missed.">        if (fontInfo.sFamilyClass &gt; -1)</span>
+        {
+<span class="nc" id="L456">            writer.write(Integer.toHexString(fontInfo.sFamilyClass));</span>
+        }
+<span class="nc" id="L458">        writer.write(&quot;|&quot;);</span>
+<span class="nc" id="L459">        writer.write(Integer.toHexString(fontInfo.ulCodePageRange1));</span>
+<span class="nc" id="L460">        writer.write(&quot;|&quot;);</span>
+<span class="nc" id="L461">        writer.write(Integer.toHexString(fontInfo.ulCodePageRange2));</span>
+<span class="nc" id="L462">        writer.write(&quot;|&quot;);</span>
+<span class="nc bnc" id="L463" title="All 2 branches missed.">        if (fontInfo.macStyle &gt; -1)</span>
+        {
+<span class="nc" id="L465">            writer.write(Integer.toHexString(fontInfo.macStyle));</span>
+        }
+<span class="nc" id="L467">        writer.write(&quot;|&quot;);</span>
+<span class="nc bnc" id="L468" title="All 2 branches missed.">        if (fontInfo.panose != null)</span>
+        {
+<span class="nc" id="L470">            byte[] bytes = fontInfo.panose.getBytes();</span>
+<span class="nc bnc" id="L471" title="All 2 branches missed.">            for (int i = 0; i &lt; 10; i ++)</span>
+            {
+<span class="nc" id="L473">                String str = Integer.toHexString(bytes[i]);</span>
+<span class="nc bnc" id="L474" title="All 2 branches missed.">                if (str.length() == 1)</span>
+                {
+<span class="nc" id="L476">                    writer.write('0');</span>
+                }
+<span class="nc" id="L478">                writer.write(str);</span>
+            }
+        }
+<span class="nc" id="L481">        writer.write(&quot;|&quot;);</span>
+<span class="nc" id="L482">        writer.write(fontInfo.file.getAbsolutePath());</span>
+<span class="nc" id="L483">        writer.write(&quot;|&quot;);</span>
+<span class="nc" id="L484">        writer.write(fontInfo.hash);</span>
+<span class="nc" id="L485">        writer.write(&quot;|&quot;);</span>
+<span class="nc" id="L486">        writer.write(Long.toString(fontInfo.file.lastModified()));</span>
+<span class="nc" id="L487">        writer.newLine();</span>
+<span class="nc" id="L488">    }</span>
+
+    /**
+     * Loads the font metadata cache from disk.
+     */
+    private List&lt;FSFontInfo&gt; loadDiskCache(List&lt;File&gt; files)
+    {
+<span class="nc" id="L495">        Set&lt;String&gt; pending = new HashSet&lt;&gt;(files.size());</span>
+<span class="nc bnc" id="L496" title="All 2 branches missed.">        for (File file : files)</span>
+        {
+<span class="nc" id="L498">            pending.add(file.getAbsolutePath());</span>
+<span class="nc" id="L499">        }</span>
+        
+<span class="nc" id="L501">        List&lt;FSFontInfo&gt; results = new ArrayList&lt;&gt;();</span>
+        
+        // Get the disk cache
+<span class="nc" id="L504">        File diskCacheFile = null;</span>
+<span class="nc" id="L505">        boolean fileExists = false;</span>
+        try
+        {
+<span class="nc" id="L508">            diskCacheFile = getDiskCacheFile();</span>
+<span class="nc" id="L509">            fileExists = diskCacheFile.exists();</span>
+        }
+<span class="nc" id="L511">        catch (SecurityException e)</span>
+        {
+<span class="nc" id="L513">            LOG.debug(&quot;Error checking for file existence&quot;, e);</span>
+<span class="nc" id="L514">        }</span>
+
+<span class="nc bnc" id="L516" title="All 2 branches missed.">        if (fileExists)</span>
+        {
+<span class="nc" id="L518">            try (BufferedReader reader = new BufferedReader(new FileReader(diskCacheFile, StandardCharsets.UTF_8)))</span>
+            {
+                // consequent lines usually share the same font file (e.g. &quot;Courier&quot;, &quot;Courier-Bold&quot;, &quot;Courier-Oblique&quot;).
+                // unused if SKIP_CHECKSUMS
+<span class="nc" id="L522">                File lastFile = null;</span>
+<span class="nc" id="L523">                String lastHash = null;</span>
+                //
+                String line;
+<span class="nc bnc" id="L526" title="All 2 branches missed.">                while ((line = reader.readLine()) != null)</span>
+                {
+<span class="nc" id="L528">                    String[] parts = line.split(&quot;\\|&quot;, 12);</span>
+<span class="nc bnc" id="L529" title="All 2 branches missed.">                    if (parts.length &lt; 10)</span>
+                    {
+<span class="nc" id="L531">                        LOG.warn(&quot;Incorrect line '{}' in font disk cache is skipped&quot;, line);</span>
+<span class="nc" id="L532">                        continue;</span>
+                    }
+
+                    String postScriptName;
+                    FontFormat format;
+<span class="nc" id="L537">                    CIDSystemInfo cidSystemInfo = null;</span>
+<span class="nc" id="L538">                    int usWeightClass = -1;</span>
+<span class="nc" id="L539">                    int sFamilyClass = -1;</span>
+                    int ulCodePageRange1;
+                    int ulCodePageRange2;
+<span class="nc" id="L542">                    int macStyle = -1;</span>
+<span class="nc" id="L543">                    byte[] panose = null;</span>
+                    File fontFile;
+<span class="nc" id="L545">                    String hash = &quot;&quot;;</span>
+<span class="nc" id="L546">                    long lastModified = 0;</span>
+                    
+<span class="nc" id="L548">                    postScriptName = parts[0];</span>
+<span class="nc" id="L549">                    format = FontFormat.valueOf(parts[1]);</span>
+<span class="nc bnc" id="L550" title="All 2 branches missed.">                    if (!parts[2].isEmpty())</span>
+                    {
+<span class="nc" id="L552">                        String[] ros = parts[2].split(&quot;-&quot;);</span>
+<span class="nc" id="L553">                        cidSystemInfo = new CIDSystemInfo(ros[0], ros[1], Integer.parseInt(ros[2]));</span>
+                    }
+<span class="nc bnc" id="L555" title="All 2 branches missed.">                    if (!parts[3].isEmpty())</span>
+                    {
+<span class="nc" id="L557">                        usWeightClass = (int)Long.parseLong(parts[3], 16);</span>
+                    }
+<span class="nc bnc" id="L559" title="All 2 branches missed.">                    if (!parts[4].isEmpty())</span>
+                    {
+<span class="nc" id="L561">                        sFamilyClass = (int)Long.parseLong(parts[4], 16);</span>
+                    }
+<span class="nc" id="L563">                    ulCodePageRange1 = (int)Long.parseLong(parts[5], 16);</span>
+<span class="nc" id="L564">                    ulCodePageRange2 = (int)Long.parseLong(parts[6], 16);</span>
+<span class="nc bnc" id="L565" title="All 2 branches missed.">                    if (!parts[7].isEmpty())</span>
+                    {
+<span class="nc" id="L567">                        macStyle = (int)Long.parseLong(parts[7], 16);</span>
+                    }
+<span class="nc bnc" id="L569" title="All 2 branches missed.">                    if (!parts[8].isEmpty())</span>
+                    {
+<span class="nc" id="L571">                        panose = new byte[10];</span>
+<span class="nc bnc" id="L572" title="All 2 branches missed.">                        for (int i = 0; i &lt; 10; i ++)</span>
+                        {
+<span class="nc" id="L574">                            String str = parts[8].substring(i * 2, i * 2 + 2);</span>
+<span class="nc" id="L575">                            int b = Integer.parseInt(str, 16);</span>
+<span class="nc" id="L576">                            panose[i] = (byte)(b &amp; 0xff);</span>
+                        }
+                    }
+<span class="nc" id="L579">                    fontFile = new File(parts[9]);</span>
+<span class="nc bnc" id="L580" title="All 6 branches missed.">                    if (parts.length &gt;= 12 &amp;&amp; !parts[10].isEmpty() &amp;&amp; !parts[11].isEmpty())</span>
+                    {
+<span class="nc" id="L582">                        hash = parts[10];</span>
+<span class="nc" id="L583">                        lastModified = Long.parseLong(parts[11]);</span>
+                    }
+<span class="nc bnc" id="L585" title="All 2 branches missed.">                    if (fontFile.exists())</span>
+                    {
+                        // if the file exists, find out whether it's the same file.
+                        // first check whether time is different and if yes, whether hash is different
+<span class="nc bnc" id="L589" title="All 2 branches missed.">                        boolean keep = fontFile.lastModified() == lastModified;</span>
+<span class="nc bnc" id="L590" title="All 4 branches missed.">                        if (!keep &amp;&amp; !SKIP_CHECKSUMS)</span>
+                        {
+                            String newHash;
+<span class="nc bnc" id="L593" title="All 4 branches missed.">                            if (hash.equals(lastHash) &amp;&amp; fontFile.equals(lastFile))</span>
+                            {
+<span class="nc" id="L595">                                newHash = lastHash; // already computed</span>
+                            }
+                            else
+                            {
+                                try
+                                {
+<span class="nc" id="L601">                                    newHash = computeHash(Files.newInputStream(fontFile.toPath()));</span>
+<span class="nc" id="L602">                                    lastFile = fontFile;</span>
+<span class="nc" id="L603">                                    lastHash = newHash;</span>
+                                }
+<span class="nc" id="L605">                                catch (IOException ex)</span>
+                                {
+<span class="nc" id="L607">                                    LOG.debug(() -&gt; &quot;Error reading font file &quot; + fontFile.getAbsolutePath(), ex);</span>
+<span class="nc" id="L608">                                    newHash = &quot;&lt;err&gt;&quot;;</span>
+<span class="nc" id="L609">                                }</span>
+                            }
+<span class="nc bnc" id="L611" title="All 2 branches missed.">                            if (hash.equals(newHash))</span>
+                            {
+<span class="nc" id="L613">                                keep = true;</span>
+<span class="nc" id="L614">                                lastModified = fontFile.lastModified();</span>
+                            }
+                        }
+<span class="nc bnc" id="L617" title="All 2 branches missed.">                        if (keep)</span>
+                        {
+<span class="nc" id="L619">                            FSFontInfo info = new FSFontInfo(fontFile, format, postScriptName,</span>
+                                    cidSystemInfo, usWeightClass, sFamilyClass, ulCodePageRange1,
+                                    ulCodePageRange2, macStyle, panose, this, hash, lastModified);
+<span class="nc" id="L622">                            results.add(info);</span>
+<span class="nc" id="L623">                        }</span>
+                        else
+                        {
+<span class="nc" id="L626">                            LOG.debug(&quot;Font file {} is different&quot;, fontFile.getAbsolutePath());</span>
+<span class="nc" id="L627">                            continue; // don't remove from &quot;pending&quot;</span>
+                        }
+<span class="nc" id="L629">                    }</span>
+                    else
+                    {
+<span class="nc" id="L632">                        LOG.debug(&quot;Font file {} not found, skipped&quot;, fontFile.getAbsolutePath());</span>
+                    }
+<span class="nc" id="L634">                    pending.remove(fontFile.getAbsolutePath());</span>
+<span class="nc" id="L635">                }</span>
+            }
+<span class="nc" id="L637">            catch (IOException e)</span>
+            {
+<span class="nc" id="L639">                LOG.warn(&quot;Error loading font cache, will be re-built&quot;, e);</span>
+<span class="nc" id="L640">                return null;</span>
+<span class="nc" id="L641">            }</span>
+        }
+        
+<span class="nc bnc" id="L644" title="All 2 branches missed.">        if (!pending.isEmpty())</span>
+        {
+            // re-build the entire cache if we encounter un-cached fonts (could be optimised)
+<span class="nc" id="L647">            LOG.info(&quot;{} new font files found, font cache will be re-built&quot;, pending.size());</span>
+<span class="nc" id="L648">            return null;</span>
+        }
+        
+<span class="nc" id="L651">        return results;</span>
+    }
+
+    /**
+     * Adds a TTC or OTC to the file cache. To reduce memory, the parsed font is not cached.
+     */
+    private void addTrueTypeCollection(final File ttcFile)
+    {
+        try
+        {
+<span class="nc bnc" id="L661" title="All 2 branches missed.">            String hash = SKIP_CHECKSUMS ? CHECKSUM_PLACEHOLDER : computeHash(Files.newInputStream(ttcFile.toPath()));</span>
+<span class="nc" id="L662">            TrueTypeCollection.processAllFontHeaders(ttcFile,</span>
+<span class="nc" id="L663">                    fontHeaders -&gt; addTrueTypeFontImpl(fontHeaders, ttcFile, hash));</span>
+        }
+<span class="nc" id="L665">        catch (IOException e)</span>
+        {
+<span class="nc" id="L667">            LOG.warn(() -&gt; &quot;Could not load font file: &quot; + ttcFile, e);</span>
+<span class="nc" id="L668">            fontInfoList.add(createFSIgnored(ttcFile, FontFormat.TTF, &quot;*skipexception*&quot;));</span>
+<span class="nc" id="L669">        }</span>
+<span class="nc" id="L670">    }</span>
+
+    /**
+     * Adds an OTF or TTF font to the file cache. To reduce memory, the parsed font is not cached.
+     */
+    private void addTrueTypeFont(File ttfFile)
+    {
+<span class="nc" id="L677">        FontFormat fontFormat = null;</span>
+        try
+        {
+            TTFParser parser;
+<span class="nc bnc" id="L681" title="All 2 branches missed.">            if (ttfFile.getPath().toLowerCase().endsWith(&quot;.otf&quot;))</span>
+            {
+<span class="nc" id="L683">                fontFormat = FontFormat.OTF;</span>
+<span class="nc" id="L684">                parser = new OTFParser(false);</span>
+            }
+            else
+            {
+<span class="nc" id="L688">                fontFormat = FontFormat.TTF;</span>
+<span class="nc" id="L689">                parser = new TTFParser(false);</span>
+            }
+<span class="nc" id="L691">            FontHeaders fontHeaders = parser.parseTableHeaders(new RandomAccessReadBufferedFile(ttfFile));</span>
+<span class="nc" id="L692">            addTrueTypeFontImpl(fontHeaders, ttfFile,</span>
+<span class="nc bnc" id="L693" title="All 2 branches missed.">                    SKIP_CHECKSUMS ? CHECKSUM_PLACEHOLDER : computeHash(Files.newInputStream(ttfFile.toPath())));</span>
+        }
+<span class="nc" id="L695">        catch (IOException e)</span>
+        {
+<span class="nc" id="L697">            LOG.warn(() -&gt; &quot;Could not load font file: &quot;+ ttfFile, e);</span>
+<span class="nc" id="L698">            fontInfoList.add(createFSIgnored(ttfFile, fontFormat, &quot;*skipexception*&quot;));</span>
+<span class="nc" id="L699">        }</span>
+<span class="nc" id="L700">    }</span>
+
+    /**
+     * Adds an OTF or TTF font to the file cache. To reduce memory, the parsed font is not cached.
+     */
+    private void addTrueTypeFontImpl(FontHeaders fontHeaders, File file, String hash)
+    {
+<span class="nc" id="L707">        final String error = fontHeaders.getError();</span>
+<span class="nc bnc" id="L708" title="All 2 branches missed.">        if (error == null)</span>
+        {
+            // read PostScript name, if any
+<span class="nc" id="L711">            final String name = fontHeaders.getName();</span>
+<span class="nc bnc" id="L712" title="All 4 branches missed.">            if (name != null &amp;&amp; name.contains(&quot;|&quot;))</span>
+            {
+<span class="nc" id="L714">                fontInfoList.add(createFSIgnored(file, FontFormat.TTF, &quot;*skippipeinname*&quot;));</span>
+<span class="nc" id="L715">                LOG.warn(&quot;Skipping font with '|' in name {} in file {}&quot;, name, file);</span>
+            }
+<span class="nc bnc" id="L717" title="All 2 branches missed.">            else if (name != null)</span>
+            {
+                // ignore bitmap fonts
+<span class="nc" id="L720">                Integer macStyle = fontHeaders.getHeaderMacStyle();</span>
+<span class="nc bnc" id="L721" title="All 2 branches missed.">                if (macStyle == null)</span>
+                {
+<span class="nc" id="L723">                    fontInfoList.add(createFSIgnored(file, FontFormat.TTF, name));</span>
+<span class="nc" id="L724">                    return;</span>
+                }
+
+<span class="nc" id="L727">                int sFamilyClass = -1;</span>
+<span class="nc" id="L728">                int usWeightClass = -1;</span>
+<span class="nc" id="L729">                int ulCodePageRange1 = 0;</span>
+<span class="nc" id="L730">                int ulCodePageRange2 = 0;</span>
+<span class="nc" id="L731">                byte[] panose = null;</span>
+<span class="nc" id="L732">                OS2WindowsMetricsTable os2WindowsMetricsTable = fontHeaders.getOS2Windows();</span>
+                // Apple's AAT fonts don't have an OS/2 table
+<span class="nc bnc" id="L734" title="All 2 branches missed.">                if (os2WindowsMetricsTable != null)</span>
+                {
+<span class="nc" id="L736">                    sFamilyClass = os2WindowsMetricsTable.getFamilyClass();</span>
+<span class="nc" id="L737">                    usWeightClass = os2WindowsMetricsTable.getWeightClass();</span>
+<span class="nc" id="L738">                    ulCodePageRange1 = (int) os2WindowsMetricsTable.getCodePageRange1();</span>
+<span class="nc" id="L739">                    ulCodePageRange2 = (int) os2WindowsMetricsTable.getCodePageRange2();</span>
+<span class="nc" id="L740">                    panose = os2WindowsMetricsTable.getPanose();</span>
+                }
+
+                FontFormat format;
+<span class="nc" id="L744">                CIDSystemInfo ros = null;</span>
+<span class="nc bnc" id="L745" title="All 2 branches missed.">                if (fontHeaders.isOpenTypePostScript())</span>
+                {
+<span class="nc" id="L747">                    format = FontFormat.OTF;</span>
+<span class="nc" id="L748">                    String registry = fontHeaders.getOtfRegistry();</span>
+<span class="nc" id="L749">                    String ordering = fontHeaders.getOtfOrdering();</span>
+<span class="nc bnc" id="L750" title="All 4 branches missed.">                    if (registry != null || ordering != null)</span>
+                    {
+<span class="nc" id="L752">                        ros = new CIDSystemInfo(registry, ordering, fontHeaders.getOtfSupplement());</span>
+                    }
+<span class="nc" id="L754">                }</span>
+                else
+                {
+<span class="nc" id="L757">                    byte[] bytes = fontHeaders.getNonOtfTableGCID142();</span>
+<span class="nc bnc" id="L758" title="All 2 branches missed.">                    if (bytes != null)</span>
+                    {
+                        // Apple's AAT fonts have a &quot;gcid&quot; table with CID info
+<span class="nc" id="L761">                        String reg = new String(bytes, 10, 64, StandardCharsets.US_ASCII);</span>
+<span class="nc" id="L762">                        String registryName = reg.substring(0, reg.indexOf('\0'));</span>
+<span class="nc" id="L763">                        String ord = new String(bytes, 76, 64, StandardCharsets.US_ASCII);</span>
+<span class="nc" id="L764">                        String orderName = ord.substring(0, ord.indexOf('\0'));</span>
+<span class="nc" id="L765">                        int supplementVersion = bytes[140] &lt;&lt; 8 &amp; (bytes[141] &amp; 0xFF);</span>
+<span class="nc" id="L766">                        ros = new CIDSystemInfo(registryName, orderName, supplementVersion);</span>
+                    }
+<span class="nc" id="L768">                    format = FontFormat.TTF;</span>
+                }
+<span class="nc" id="L770">                fontInfoList.add(new FSFontInfo(file, format, name, ros,</span>
+                        usWeightClass, sFamilyClass, ulCodePageRange1, ulCodePageRange2,
+<span class="nc" id="L772">                        macStyle, panose, this, hash, file.lastModified()));</span>
+
+<span class="nc" id="L774">                LOG.trace(&quot;{}: '{}' / '{}' / '{}'&quot;, format::name, () -&gt; name,</span>
+<span class="nc" id="L775">                        fontHeaders::getFontFamily, fontHeaders::getFontSubFamily);</span>
+<span class="nc" id="L776">            }</span>
+            else
+            {
+<span class="nc" id="L779">                fontInfoList.add(createFSIgnored(file, FontFormat.TTF, &quot;*skipnoname*&quot;));</span>
+<span class="nc" id="L780">                LOG.warn(&quot;Missing 'name' entry for PostScript name in font {}&quot;, file);</span>
+            }
+<span class="nc" id="L782">        }</span>
+        else
+        {
+<span class="nc" id="L785">            fontInfoList.add(createFSIgnored(file, FontFormat.TTF, &quot;*skipexception*&quot;));</span>
+<span class="nc" id="L786">            LOG.warn(&quot;Could not load font file '{}': {}&quot;, file, error);</span>
+        }
+<span class="nc" id="L788">    }</span>
+
+    /**
+     * Adds a Type 1 font to the file cache. To reduce memory, the parsed font is not cached.
+     */
+    private void addType1Font(File pfbFile)
+    {
+<span class="nc" id="L795">        try (InputStream input = new FileInputStream(pfbFile))</span>
+        {
+<span class="nc" id="L797">            Type1Font type1 = Type1Font.createWithPFB(input);</span>
+<span class="nc bnc" id="L798" title="All 2 branches missed.">            if (type1.getName() == null)</span>
+            {
+<span class="nc" id="L800">                fontInfoList.add(createFSIgnored(pfbFile, FontFormat.PFB, &quot;*skipnoname*&quot;));</span>
+<span class="nc" id="L801">                LOG.warn(&quot;Missing 'name' entry for PostScript name in font {}&quot;, pfbFile);</span>
+<span class="nc" id="L802">                return;</span>
+            }
+<span class="nc bnc" id="L804" title="All 2 branches missed.">            if (type1.getName().contains(&quot;|&quot;))</span>
+            {
+<span class="nc" id="L806">                fontInfoList.add(createFSIgnored(pfbFile, FontFormat.PFB, &quot;*skippipeinname*&quot;));</span>
+<span class="nc" id="L807">                LOG.warn(&quot;Skipping font with '|' in name {} in file {}&quot;, type1.getName(), pfbFile);</span>
+<span class="nc" id="L808">                return;</span>
+            }
+<span class="nc bnc" id="L810" title="All 2 branches missed.">            String hash = SKIP_CHECKSUMS ? CHECKSUM_PLACEHOLDER : computeHash(Files.newInputStream(pfbFile.toPath()));</span>
+<span class="nc" id="L811">            fontInfoList.add(new FSFontInfo(pfbFile, FontFormat.PFB, type1.getName(),</span>
+<span class="nc" id="L812">                                            null, -1, -1, 0, 0, -1, null, this, hash, pfbFile.lastModified()));</span>
+
+<span class="nc" id="L814">            LOG.trace(&quot;PFB: '{}' / '{}' / '{}'&quot;, type1.getName(), type1.getFamilyName(),</span>
+<span class="nc" id="L815">                    type1.getWeight());</span>
+<span class="nc" id="L816">        }</span>
+<span class="nc" id="L817">        catch (IOException e)</span>
+        {
+<span class="nc" id="L819">            fontInfoList.add(createFSIgnored(pfbFile, FontFormat.PFB, &quot;*skipexception*&quot;));</span>
+<span class="nc" id="L820">            LOG.warn(() -&gt; &quot;Could not load font file: &quot; + pfbFile, e);</span>
+<span class="nc" id="L821">        }</span>
+<span class="nc" id="L822">    }</span>
+
+    @Override
+    public String toDebugString()
+    {
+<span class="nc" id="L827">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L828" title="All 2 branches missed.">        for (FSFontInfo info : fontInfoList)</span>
+        {
+<span class="nc" id="L830">            sb.append(info.getFormat());</span>
+<span class="nc" id="L831">            sb.append(&quot;: &quot;);</span>
+<span class="nc" id="L832">            sb.append(info.getPostScriptName());</span>
+<span class="nc" id="L833">            sb.append(&quot;: &quot;);</span>
+<span class="nc" id="L834">            sb.append(info.file.getPath());</span>
+<span class="nc" id="L835">            sb.append('\n');</span>
+<span class="nc" id="L836">        }</span>
+<span class="nc" id="L837">        return sb.toString();</span>
+    }
+
+    @Override
+    public List&lt;? extends FontInfo&gt; getFontInfo()
+    {
+<span class="nc" id="L843">        return fontInfoList;</span>
+    }
+
+    // closes the input
+    // doesn't use readAllBytes() because some fonts are huge (PDFBOX-5781)
+    private static String computeHash(InputStream is) throws IOException
+    {
+<span class="nc" id="L850">        CRC32 crc = new CRC32();</span>
+
+<span class="nc" id="L852">        try (is)</span>
+        {
+<span class="nc" id="L854">            byte[] buffer = new byte[4096];</span>
+            int readBytes;
+<span class="nc bnc" id="L856" title="All 2 branches missed.">            while ((readBytes = is.read(buffer)) != -1)</span>
+            {
+<span class="nc" id="L858">                crc.update(buffer, 0, readBytes);</span>
+            }
+
+<span class="nc" id="L861">            long hash = crc.getValue();</span>
+<span class="nc" id="L862">            return Long.toHexString(hash);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

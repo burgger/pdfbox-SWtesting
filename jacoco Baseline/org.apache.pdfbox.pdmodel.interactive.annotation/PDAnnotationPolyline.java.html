@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDAnnotationPolyline.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation</a> &gt; <span class="el_source">PDAnnotationPolyline.java</span></div><h1>PDAnnotationPolyline.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2018 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.annotation;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+import org.apache.pdfbox.pdmodel.interactive.annotation.handlers.PDAppearanceHandler;
+import org.apache.pdfbox.pdmodel.interactive.annotation.handlers.PDPolylineAppearanceHandler;
+
+/**
+ *
+ * @author Paul King
+ */
+public class PDAnnotationPolyline extends PDAnnotationMarkup
+{
+    /**
+     * The type of annotation.
+     */
+    public static final String SUB_TYPE = &quot;PolyLine&quot;;
+
+    private PDAppearanceHandler customAppearanceHandler;
+    
+    /**
+     * Constructor.
+     */
+    public PDAnnotationPolyline()
+<span class="nc" id="L43">    {</span>
+<span class="nc" id="L44">        getCOSObject().setName(COSName.SUBTYPE, SUB_TYPE);</span>
+<span class="nc" id="L45">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param dict The annotations dictionary.
+     */
+    public PDAnnotationPolyline(COSDictionary dict)
+    {
+<span class="nc" id="L54">        super(dict);</span>
+<span class="nc" id="L55">    }</span>
+
+    /**
+     * This will set the line ending style for the start point, see the LE_ constants for the possible values.
+     *
+     * @param style The new style.
+     */
+    public void setStartPointEndingStyle(String style)
+    {
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        String actualStyle = style == null ? PDAnnotationLine.LE_NONE : style;</span>
+<span class="nc" id="L65">        COSArray array = getCOSObject().getCOSArray(COSName.LE);</span>
+<span class="nc bnc" id="L66" title="All 4 branches missed.">        if (array == null || array.isEmpty())</span>
+        {
+<span class="nc" id="L68">            array = new COSArray();</span>
+<span class="nc" id="L69">            array.add(COSName.getPDFName(actualStyle));</span>
+<span class="nc" id="L70">            array.add(COSName.getPDFName(PDAnnotationLine.LE_NONE));</span>
+<span class="nc" id="L71">            getCOSObject().setItem(COSName.LE, array);</span>
+        }
+        else
+        {
+<span class="nc" id="L75">            array.setName(0, actualStyle);</span>
+        }
+<span class="nc" id="L77">    }</span>
+
+    /**
+     * This will retrieve the line ending style for the start point, possible values shown in the LE_ constants section.
+     *
+     * @return The ending style for the start point, LE_NONE if missing, never null.
+     */
+    public String getStartPointEndingStyle()
+    {
+<span class="nc" id="L86">        COSArray array = getCOSObject().getCOSArray(COSName.LE);</span>
+<span class="nc bnc" id="L87" title="All 4 branches missed.">        if (array != null &amp;&amp; array.size() &gt;= 2)</span>
+        {
+<span class="nc" id="L89">            return array.getName(0, PDAnnotationLine.LE_NONE);</span>
+        }
+<span class="nc" id="L91">        return PDAnnotationLine.LE_NONE;</span>
+    }
+
+    /**
+     * This will set the line ending style for the end point, see the LE_ constants for the possible values.
+     *
+     * @param style The new style.
+     */
+    public void setEndPointEndingStyle(String style)
+    {
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        String actualStyle = style == null ? PDAnnotationLine.LE_NONE : style;</span>
+<span class="nc" id="L102">        COSArray array = getCOSObject().getCOSArray(COSName.LE);</span>
+<span class="nc bnc" id="L103" title="All 4 branches missed.">        if (array == null || array.size() &lt; 2)</span>
+        {
+<span class="nc" id="L105">            array = new COSArray();</span>
+<span class="nc" id="L106">            array.add(COSName.getPDFName(PDAnnotationLine.LE_NONE));</span>
+<span class="nc" id="L107">            array.add(COSName.getPDFName(actualStyle));</span>
+<span class="nc" id="L108">            getCOSObject().setItem(COSName.LE, array);</span>
+        }
+        else
+        {
+<span class="nc" id="L112">            array.setName(1, actualStyle);</span>
+        }
+<span class="nc" id="L114">    }</span>
+
+    /**
+     * This will retrieve the line ending style for the end point, possible values shown in the LE_ constants section.
+     *
+     * @return The ending style for the end point, LE_NONE if missing, never null.
+     */
+    public String getEndPointEndingStyle()
+    {
+<span class="nc" id="L123">        COSArray array = getCOSObject().getCOSArray(COSName.LE);</span>
+<span class="nc bnc" id="L124" title="All 4 branches missed.">        if (array != null &amp;&amp; array.size() &gt;= 2)</span>
+        {
+<span class="nc" id="L126">            return array.getName(1, PDAnnotationLine.LE_NONE);</span>
+        }
+<span class="nc" id="L128">        return PDAnnotationLine.LE_NONE;</span>
+    }
+
+    /**
+     * This will set interior color of the line endings defined in the LE entry.
+     *
+     * @param ic color.
+     */
+    public void setInteriorColor(PDColor ic)
+    {
+<span class="nc" id="L138">        getCOSObject().setItem(COSName.IC, ic.toCOSArray());</span>
+<span class="nc" id="L139">    }</span>
+
+    /**
+     * This will retrieve the interior color with which to fill the annotation’s line endings.
+     *
+     * @return object representing the color.
+     */
+    public PDColor getInteriorColor()
+    {
+<span class="nc" id="L148">        return getColor(COSName.IC);</span>
+    }
+
+    /**
+     * This will retrieve the numbers that shall represent the alternating horizontal and vertical
+     * coordinates.
+     *
+     * @return An array of floats representing the alternating horizontal and vertical coordinates.
+     */
+    public float[] getVertices()
+    {
+<span class="nc" id="L159">        COSArray vertices = getCOSObject().getCOSArray(COSName.VERTICES);</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">        return vertices != null ? vertices.toFloatArray() : null;</span>
+    }
+
+    /**
+     * This will set the numbers that shall represent the alternating horizontal and vertical
+     * coordinates.
+     *
+     * @param points an array with the numbers that shall represent the alternating horizontal and
+     * vertical coordinates.
+     */
+    public void setVertices(float[] points)
+    {
+<span class="nc" id="L172">        getCOSObject().setItem(COSName.VERTICES, COSArray.of(points));</span>
+<span class="nc" id="L173">    }</span>
+
+    /**
+     * Set a custom appearance handler for generating the annotations appearance streams.
+     * 
+     * @param appearanceHandler custom appearance handler
+     */
+    public void setCustomAppearanceHandler(PDAppearanceHandler appearanceHandler)
+    {
+<span class="nc" id="L182">        customAppearanceHandler = appearanceHandler;</span>
+<span class="nc" id="L183">    }</span>
+
+    @Override
+    public void constructAppearances()
+    {
+<span class="nc" id="L188">        this.constructAppearances(null);</span>
+<span class="nc" id="L189">    }</span>
+
+    @Override
+    public void constructAppearances(PDDocument document)
+    {
+<span class="nc bnc" id="L194" title="All 2 branches missed.">        if (customAppearanceHandler == null)</span>
+        {
+<span class="nc" id="L196">            PDPolylineAppearanceHandler appearanceHandler = new PDPolylineAppearanceHandler(this, document);</span>
+<span class="nc" id="L197">            appearanceHandler.generateAppearanceStreams();</span>
+<span class="nc" id="L198">        }</span>
+        else
+        {
+<span class="nc" id="L201">            customAppearanceHandler.generateAppearanceStreams();</span>
+        }
+<span class="nc" id="L203">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

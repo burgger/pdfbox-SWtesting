@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFormXObject.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.form</a> &gt; <span class="el_source">PDFormXObject.java</span></div><h1>PDFormXObject.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.form;
+
+import java.awt.geom.AffineTransform;
+import java.io.IOException;
+import java.io.InputStream;
+import org.apache.pdfbox.contentstream.PDContentStream;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.io.RandomAccessInputStream;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.ResourceCache;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+import org.apache.pdfbox.pdmodel.documentinterchange.markedcontent.PDPropertyList;
+import org.apache.pdfbox.pdmodel.graphics.PDXObject;
+import org.apache.pdfbox.util.Matrix;
+
+/*
+TODO There are further Form XObjects to implement:
+
++ PDFormXObject
+|- PDReferenceXObject
+|- PDGroupXObject
+   |- PDTransparencyXObject
+
+See PDF 32000 p111
+
+When doing this all methods on PDFormXObject should probably be made
+final and all fields private.
+*/
+
+/**
+ * A Form XObject.
+ * 
+ * @author Ben Litchfield
+ */
+public class PDFormXObject extends PDXObject implements PDContentStream
+{
+    private PDTransparencyGroupAttributes group;
+    private final ResourceCache cache;
+
+    /**
+     * Creates a Form XObject for reading.
+     * @param stream The XObject stream
+     */
+    public PDFormXObject(PDStream stream)
+    {
+<span class="nc" id="L69">        super(stream, COSName.FORM);</span>
+<span class="nc" id="L70">        cache = null;</span>
+<span class="nc" id="L71">    }</span>
+
+    /**
+     * Creates a Form XObject for reading.
+     * @param stream The XObject stream
+     */
+    public PDFormXObject(COSStream stream)
+    {
+<span class="nc" id="L79">        super(stream, COSName.FORM);</span>
+<span class="nc" id="L80">        cache = null;</span>
+<span class="nc" id="L81">    }</span>
+
+    /**
+     * Creates a Form XObject for reading.
+     * 
+     * @param stream The XObject stream
+     * @param cache the cache to be used for the resources
+     */
+    public PDFormXObject(COSStream stream, ResourceCache cache)
+    {
+<span class="nc" id="L91">        super(stream, COSName.FORM);</span>
+<span class="nc" id="L92">        this.cache = cache;</span>
+<span class="nc" id="L93">    }</span>
+    
+    /**
+     * Creates a Form Image XObject for writing, in the given document.
+     * @param document The current document
+     */
+    public PDFormXObject(PDDocument document)
+    {
+<span class="nc" id="L101">        super(document, COSName.FORM);</span>
+<span class="nc" id="L102">        cache = null;</span>
+<span class="nc" id="L103">    }</span>
+
+    /**
+     * This will get the form type, currently 1 is the only form type.
+     * @return The form type.
+     */
+    public int getFormType()
+    {
+<span class="nc" id="L111">        return getCOSObject().getInt(COSName.FORMTYPE, 1);</span>
+    }
+
+    /**
+     * Set the form type.
+     * @param formType The new form type.
+     */
+    public void setFormType(int formType)
+    {
+<span class="nc" id="L120">        getCOSObject().setInt(COSName.FORMTYPE, formType);</span>
+<span class="nc" id="L121">    }</span>
+
+    /**
+     * Returns the transparency group attributes dictionary.
+     *
+     * @return the transparency group attributes dictionary, never null.
+     */
+    public PDTransparencyGroupAttributes getGroup()
+    {
+<span class="nc bnc" id="L130" title="All 2 branches missed.">        if( group == null ) </span>
+        {
+<span class="nc" id="L132">            COSDictionary dic = getCOSObject().getCOSDictionary(COSName.GROUP);</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">            if( dic != null ) </span>
+            {
+<span class="nc" id="L135">                group = new PDTransparencyGroupAttributes(dic);</span>
+            }
+        }
+<span class="nc" id="L138">        return group;</span>
+    }
+
+    /**
+     * Sets the transparency group attributes dictionary.
+     *
+     * @param group a transparency group attributes dictionary.
+     */
+    public void setGroup(PDTransparencyGroupAttributes group)
+    {
+<span class="nc" id="L148">        this.group = group;</span>
+<span class="nc" id="L149">        getCOSObject().setItem(COSName.GROUP, group);</span>
+<span class="nc" id="L150">    }</span>
+
+    public PDStream getContentStream()
+    {
+<span class="nc" id="L154">        return new PDStream(getCOSObject());</span>
+    }
+
+    @Override
+    public InputStream getContents() throws IOException
+    {
+<span class="nc" id="L160">        return new RandomAccessInputStream(getContentsForRandomAccess());</span>
+    }
+
+    @Override
+    public RandomAccessRead getContentsForRandomAccess() throws IOException
+    {
+<span class="nc" id="L166">        return getCOSObject().createView();</span>
+    }
+    /**
+     * This will get the resources for this Form XObject.
+     * This will return null if no resources are available.
+     * 
+     * @return The resources for this Form XObject.
+     */
+    @Override
+    public PDResources getResources()
+    {
+<span class="nc" id="L177">        COSDictionary resources = getCOSObject().getCOSDictionary(COSName.RESOURCES);</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        if (resources != null)</span>
+        {
+<span class="nc" id="L180">            return new PDResources(resources, cache);</span>
+        }
+<span class="nc bnc" id="L182" title="All 2 branches missed.">        if (getCOSObject().containsKey(COSName.RESOURCES))</span>
+        {
+            // PDFBOX-4372 if the resource key exists but has nothing, return empty resources,
+            // to avoid a self-reference (xobject form Fm0 contains &quot;/Fm0 Do&quot;)
+            // See also the mention of PDFBOX-1359 in PDFStreamEngine
+<span class="nc" id="L187">            return new PDResources();</span>
+        }
+<span class="nc" id="L189">        return null;</span>
+    }
+
+    /**
+     * This will set the resources for this page.
+     * @param resources The new resources for this page.
+     */
+    public void setResources(PDResources resources)
+    {
+<span class="nc" id="L198">        getCOSObject().setItem(COSName.RESOURCES, resources);</span>
+<span class="nc" id="L199">    }</span>
+
+    /**
+     * An array of four numbers in the form coordinate system (see below),
+     * giving the coordinates of the left, bottom, right, and top edges, respectively,
+     * of the form XObject's bounding box.
+     * These boundaries are used to clip the form XObject and to determine its size for caching.
+     * @return The BBox of the form.
+     */
+    @Override
+    public PDRectangle getBBox()
+    {
+<span class="nc" id="L211">        COSArray array = getCOSObject().getCOSArray(COSName.BBOX);</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">        return array != null ? new PDRectangle(array) : null;</span>
+    }
+
+    /**
+     * This will set the BBox (bounding box) for this form.
+     * @param bbox The new BBox for this form.
+     */
+    public void setBBox(PDRectangle bbox)
+    {
+<span class="nc bnc" id="L221" title="All 2 branches missed.">        if (bbox == null)</span>
+        {
+<span class="nc" id="L223">            getCOSObject().removeItem(COSName.BBOX);</span>
+        }
+        else
+        {
+<span class="nc" id="L227">            getCOSObject().setItem(COSName.BBOX, bbox.getCOSArray());</span>
+        }
+<span class="nc" id="L229">    }</span>
+
+    /**
+     * This will get the optional matrix of an XObjectForm. It maps the form space to user space.
+     * @return the form matrix if available, or the identity matrix.
+     */
+    @Override
+    public Matrix getMatrix()
+    {
+<span class="nc" id="L238">        return Matrix.createMatrix(getCOSObject().getDictionaryObject(COSName.MATRIX));</span>
+    }
+
+    /**
+     * Sets the optional Matrix entry for the form XObject.
+     * @param transform the transformation matrix
+     */
+    public void setMatrix(AffineTransform transform)
+    {
+<span class="nc" id="L247">        COSArray matrix = new COSArray();</span>
+<span class="nc" id="L248">        double[] values = new double[6];</span>
+<span class="nc" id="L249">        transform.getMatrix(values);</span>
+<span class="nc bnc" id="L250" title="All 2 branches missed.">        for (double v : values)</span>
+        {
+<span class="nc" id="L252">            matrix.add(new COSFloat((float) v));</span>
+        }
+<span class="nc" id="L254">        getCOSObject().setItem(COSName.MATRIX, matrix);</span>
+<span class="nc" id="L255">    }</span>
+
+    /**
+     * This will get the key of this XObjectForm in the structural parent tree. Required if the form
+     * XObject contains marked-content sequences that are structural content items.
+     *
+     * @return the integer key of the XObjectForm's entry in the structural parent tree or -1 if
+     * there isn't any.
+     */
+    public int getStructParents()
+    {
+<span class="nc" id="L266">        return getCOSObject().getInt(COSName.STRUCT_PARENTS);</span>
+    }
+
+    /**
+     * This will set the key for this XObjectForm in the structural parent tree.
+     * @param structParent The new key for this XObjectForm.
+     */
+    public void setStructParents(int structParent)
+    {
+<span class="nc" id="L275">        getCOSObject().setInt(COSName.STRUCT_PARENTS, structParent);</span>
+<span class="nc" id="L276">    }</span>
+
+    /**
+     * This will get the optional content group or optional content membership dictionary.
+     *
+     * @return The optional content group or optional content membership dictionary or null if there
+     * is none.
+     */
+    public PDPropertyList getOptionalContent()
+    {
+<span class="nc" id="L286">        COSDictionary optionalContent = getCOSObject().getCOSDictionary(COSName.OC);</span>
+<span class="nc bnc" id="L287" title="All 2 branches missed.">        return optionalContent != null ? PDPropertyList.create(optionalContent) : null;</span>
+    }
+
+    /**
+     * Sets the optional content group or optional content membership dictionary.
+     *
+     * @param oc The optional content group or optional content membership dictionary.
+     */
+    public void setOptionalContent(PDPropertyList oc)
+    {
+<span class="nc" id="L297">        getCOSObject().setItem(COSName.OC, oc);</span>
+<span class="nc" id="L298">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

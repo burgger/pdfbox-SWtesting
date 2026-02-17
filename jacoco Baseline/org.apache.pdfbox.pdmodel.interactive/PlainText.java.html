@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PlainText.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive</a> &gt; <span class="el_source">PlainText.java</span></div><h1>PlainText.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive;
+
+import java.io.IOException;
+import java.text.AttributedString;
+import java.text.BreakIterator;
+import java.text.AttributedCharacterIterator.Attribute;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.apache.pdfbox.pdmodel.font.PDFont;
+
+/**
+ * A block of text.
+ * &lt;p&gt;
+ * A block of text can contain multiple paragraphs which will
+ * be treated individually within the block placement.
+ * &lt;/p&gt;
+ * 
+ */
+public class PlainText
+{
+    private static final float FONTSCALE = 1000f;
+    
+    private final List&lt;Paragraph&gt; paragraphs;
+    
+    /**
+     * Construct the text block from a single value.
+     * 
+     * Constructs the text block from a single value splitting
+     * into individual {@link Paragraph} when a new line character is 
+     * encountered.
+     * 
+     * @param textValue the text block string.
+     */
+    public PlainText(String textValue)
+<span class="nc" id="L53">    {</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        if (textValue.isEmpty())</span>
+        {
+<span class="nc" id="L56">            paragraphs = new ArrayList&lt;&gt;(1);</span>
+<span class="nc" id="L57">            paragraphs.add(new Paragraph(&quot;&quot;));</span>
+        }
+        else
+        {
+<span class="nc" id="L61">            String[] parts = textValue.replace('\t', ' ').split(&quot;\\R&quot;);</span>
+<span class="nc" id="L62">            paragraphs = new ArrayList&lt;&gt;(parts.length);</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">            for (String part : parts)</span>
+            {
+                // Acrobat prints a space for an empty paragraph
+<span class="nc bnc" id="L66" title="All 2 branches missed.">                if (part.isEmpty())</span>
+                {
+<span class="nc" id="L68">                    part = &quot; &quot;;</span>
+                }
+<span class="nc" id="L70">                paragraphs.add(new Paragraph(part));</span>
+            }
+        }
+<span class="nc" id="L73">    }</span>
+    
+    /**
+     * Construct the text block from a list of values.
+     * 
+     * Constructs the text block from a list of values treating each
+     * entry as an individual {@link Paragraph}.
+     * 
+     * @param listValue the text block string.
+     */
+    public PlainText(List&lt;String&gt; listValue)
+<span class="nc" id="L84">    {</span>
+<span class="nc" id="L85">        paragraphs = new ArrayList&lt;&gt;(listValue.size());</span>
+<span class="nc" id="L86">        listValue.forEach(part -&gt; paragraphs.add(new Paragraph(part)));</span>
+<span class="nc" id="L87">    }</span>
+    
+    /**
+     * Get the list of paragraphs.
+     * 
+     * @return the paragraphs.
+     */
+    public List&lt;Paragraph&gt; getParagraphs()
+    {
+<span class="nc" id="L96">        return paragraphs;</span>
+    }
+    
+    /**
+     * Attribute keys and attribute values used for text handling.
+     * 
+     * This is similar to {@link java.awt.font.TextAttribute} but
+     * handled individually as to avoid a dependency on awt.
+     */
+    static class TextAttribute extends Attribute
+    {
+        /**
+         * UID for serializing.
+         */
+        private static final long serialVersionUID = -3138885145941283005L;
+
+        /**
+         * Attribute width of the text.
+         */
+<span class="nc" id="L115">        public static final Attribute WIDTH = new TextAttribute(&quot;width&quot;);</span>
+        
+        protected TextAttribute(String name)
+        {
+<span class="nc" id="L119">            super(name);</span>
+<span class="nc" id="L120">        }</span>
+        
+
+    }
+
+    /**
+     * A block of text to be formatted as a whole.
+     * &lt;p&gt;
+     * A block of text can contain multiple paragraphs which will
+     * be treated individually within the block placement.
+     * &lt;/p&gt;
+     */
+    public static class Paragraph
+    {
+        private final String textContent;
+
+        Paragraph(String text)
+<span class="nc" id="L137">        {</span>
+<span class="nc" id="L138">            textContent = text;</span>
+<span class="nc" id="L139">        }</span>
+
+        /**
+         * Get the paragraph text.
+         *
+         * @return the text.
+         */
+        String getText()
+        {
+<span class="nc" id="L148">            return textContent;</span>
+        }
+
+        /**
+         * Break the paragraph into individual lines.
+         *
+         * @param font the font used for rendering the text.
+         * @param fontSize the fontSize used for rendering the text.
+         * @param width the width of the box holding the content.
+         * @return the individual lines.
+         * @throws IOException
+         */
+        public List&lt;Line&gt; getLines(PDFont font, float fontSize, float width) throws IOException
+        {
+<span class="nc bnc" id="L162" title="All 2 branches missed.">            if (width &lt;= 0)</span>
+            {
+<span class="nc" id="L164">                return Collections.emptyList();</span>
+            }
+<span class="nc" id="L166">            BreakIterator iterator = BreakIterator.getLineInstance();</span>
+<span class="nc" id="L167">            iterator.setText(textContent);</span>
+
+<span class="nc" id="L169">            final float scale = fontSize/FONTSCALE;</span>
+
+<span class="nc" id="L171">            int start = iterator.first();</span>
+<span class="nc" id="L172">            int end = iterator.next();</span>
+<span class="nc" id="L173">            float lineWidth = 0;</span>
+
+<span class="nc" id="L175">            List&lt;Line&gt; textLines = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L176">            Line textLine = new Line();</span>
+
+<span class="nc bnc" id="L178" title="All 2 branches missed.">            while (end != BreakIterator.DONE)</span>
+            {
+<span class="nc" id="L180">                String word = textContent.substring(start,end);</span>
+<span class="nc" id="L181">                float wordWidth = font.getStringWidth(word) * scale;</span>
+
+<span class="nc" id="L183">                boolean wordNeedsSplit = false;</span>
+<span class="nc" id="L184">                int splitOffset = end - start;</span>
+
+<span class="nc" id="L186">                lineWidth = lineWidth + wordWidth;</span>
+
+                // check if the last word would fit without the whitespace ending it
+<span class="nc bnc" id="L189" title="All 4 branches missed.">                if (lineWidth &gt;= width &amp;&amp; Character.isWhitespace(word.charAt(word.length()-1)))</span>
+                {
+<span class="nc" id="L191">                    float whitespaceWidth = font.getStringWidth(word.substring(word.length()-1)) * scale;</span>
+<span class="nc" id="L192">                    lineWidth = lineWidth - whitespaceWidth;</span>
+                }
+
+<span class="nc bnc" id="L195" title="All 4 branches missed.">                if (lineWidth &gt;= width &amp;&amp; !textLine.getWords().isEmpty())</span>
+                {
+<span class="nc" id="L197">                    textLine.setWidth(textLine.calculateWidth(font, fontSize));</span>
+<span class="nc" id="L198">                    textLines.add(textLine);</span>
+<span class="nc" id="L199">                    textLine = new Line();</span>
+<span class="nc" id="L200">                    lineWidth = font.getStringWidth(word) * scale;</span>
+                }
+
+<span class="nc bnc" id="L203" title="All 6 branches missed.">                if (word.length() &gt; 1 &amp;&amp; wordWidth &gt; width &amp;&amp; textLine.getWords().isEmpty())</span>
+                {
+                    // single word does not fit into width
+                    // PDFBOX-6082: at least 1 character
+<span class="nc" id="L207">                    wordNeedsSplit = true;</span>
+                    while (true)
+                    {
+<span class="nc" id="L210">                        splitOffset--;</span>
+
+<span class="nc" id="L212">                        String substring = word.substring(0, splitOffset);</span>
+<span class="nc" id="L213">                        float substringWidth = font.getStringWidth(substring) * scale;</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">                        if (substringWidth &lt; width)</span>
+                        {
+<span class="nc" id="L216">                            word = substring;</span>
+<span class="nc" id="L217">                            wordWidth = font.getStringWidth(word) * scale;</span>
+<span class="nc" id="L218">                            lineWidth = wordWidth;</span>
+<span class="nc" id="L219">                            break;</span>
+                        }
+<span class="nc" id="L221">                    }</span>
+                }
+
+<span class="nc" id="L224">                AttributedString as = new AttributedString(word);</span>
+<span class="nc" id="L225">                as.addAttribute(TextAttribute.WIDTH, wordWidth);</span>
+<span class="nc" id="L226">                Word wordInstance = new Word(word);</span>
+<span class="nc" id="L227">                wordInstance.setAttributes(as);</span>
+<span class="nc" id="L228">                textLine.addWord(wordInstance);</span>
+
+<span class="nc bnc" id="L230" title="All 2 branches missed.">                if (wordNeedsSplit)</span>
+                {
+<span class="nc" id="L232">                    start = start + splitOffset;</span>
+                }
+                else
+                {
+<span class="nc" id="L236">                    start = end;</span>
+<span class="nc" id="L237">                    end = iterator.next();</span>
+                }
+<span class="nc" id="L239">            }</span>
+<span class="nc" id="L240">            textLine.setWidth(textLine.calculateWidth(font, fontSize));</span>
+<span class="nc" id="L241">            textLines.add(textLine);</span>
+<span class="nc" id="L242">            return textLines;</span>
+        }
+    }
+    
+    /**
+     * An individual line of text.
+     */
+<span class="nc" id="L249">    static class Line</span>
+    {
+<span class="nc" id="L251">        private final List&lt;Word&gt; words = new ArrayList&lt;&gt;();</span>
+        private float lineWidth;
+
+        float getWidth()
+        {
+<span class="nc" id="L256">            return lineWidth;</span>
+        }
+        
+        void setWidth(float width)
+        {
+<span class="nc" id="L261">            lineWidth = width;</span>
+<span class="nc" id="L262">        }</span>
+        
+        float calculateWidth(PDFont font, float fontSize) throws IOException
+        {
+<span class="nc" id="L266">            final float scale = fontSize/FONTSCALE;</span>
+<span class="nc" id="L267">            float calculatedWidth = 0f;</span>
+<span class="nc" id="L268">            int indexOfWord = 0;</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">            for (Word word : words)</span>
+            {
+<span class="nc" id="L271">                calculatedWidth = calculatedWidth + </span>
+<span class="nc" id="L272">                        (Float) word.getAttributes().getIterator().getAttribute(TextAttribute.WIDTH);</span>
+<span class="nc" id="L273">                String text = word.getText();</span>
+<span class="nc bnc" id="L274" title="All 4 branches missed.">                if (indexOfWord == words.size() -1 &amp;&amp; Character.isWhitespace(text.charAt(text.length()-1)))</span>
+                {
+<span class="nc" id="L276">                    float whitespaceWidth = font.getStringWidth(text.substring(text.length()-1)) * scale;</span>
+<span class="nc" id="L277">                    calculatedWidth = calculatedWidth - whitespaceWidth;</span>
+                }
+<span class="nc" id="L279">                ++indexOfWord;</span>
+<span class="nc" id="L280">            }</span>
+<span class="nc" id="L281">            return calculatedWidth;</span>
+        }
+
+        List&lt;Word&gt; getWords()
+        {
+<span class="nc" id="L286">            return words;</span>
+        }
+        
+        float getInterWordSpacing(float width)
+        {
+<span class="nc" id="L291">            return (width - lineWidth)/(words.size()-1);</span>
+        }
+
+        void addWord(Word word)
+        {
+<span class="nc" id="L296">            words.add(word);</span>
+<span class="nc" id="L297">        }</span>
+    }
+    
+    /**
+     * An individual word.
+     * 
+     * A word is defined as a string which must be kept
+     * on the same line.
+     */
+    static class Word
+    {
+        private AttributedString attributedString;
+        private final String textContent;
+        
+        Word(String text)
+<span class="nc" id="L312">        {</span>
+<span class="nc" id="L313">            textContent = text;</span>
+<span class="nc" id="L314">        }</span>
+        
+        String getText()
+        {
+<span class="nc" id="L318">            return textContent;</span>
+        }
+        
+        AttributedString getAttributes()
+        {
+<span class="nc" id="L323">            return attributedString;</span>
+        }
+        
+        void setAttributes(AttributedString as)
+        {
+<span class="nc" id="L328">            this.attributedString = as;</span>
+<span class="nc" id="L329">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

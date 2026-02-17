@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDArtifactMarkedContent.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.documentinterchange.taggedpdf</a> &gt; <span class="el_source">PDArtifactMarkedContent.java</span></div><h1>PDArtifactMarkedContent.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.documentinterchange.taggedpdf;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.documentinterchange.markedcontent.PDMarkedContent;
+
+/**
+ * An artifact marked content.
+ *
+ * @author Johannes Koch
+ *
+ */
+public class PDArtifactMarkedContent extends PDMarkedContent
+{
+
+    public PDArtifactMarkedContent(COSDictionary properties)
+    {
+<span class="nc" id="L36">        super(COSName.ARTIFACT, properties);</span>
+<span class="nc" id="L37">    }</span>
+
+
+    /**
+     * Gets the type (Type).
+     * 
+     * @return the type
+     */
+    public String getType()
+    {
+<span class="nc" id="L47">        return this.getProperties().getNameAsString(COSName.TYPE);</span>
+    }
+
+    /**
+     * Gets the artifact's bounding box (BBox).
+     * 
+     * @return the artifact's bounding box
+     */
+    public PDRectangle getBBox()
+    {
+<span class="nc" id="L57">        COSArray a = getProperties().getCOSArray(COSName.BBOX);</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        return a != null ? new PDRectangle(a) : null;</span>
+    }
+
+    /**
+     * Is the artifact attached to the top edge?
+     * 
+     * @return &lt;code&gt;true&lt;/code&gt; if the artifact is attached to the top edge,
+     * &lt;code&gt;false&lt;/code&gt; otherwise
+     */
+    public boolean isTopAttached()
+    {
+<span class="nc" id="L69">        return this.isAttached(&quot;Top&quot;);</span>
+    }
+
+    /**
+     * Is the artifact attached to the bottom edge?
+     * 
+     * @return &lt;code&gt;true&lt;/code&gt; if the artifact is attached to the bottom edge,
+     * &lt;code&gt;false&lt;/code&gt; otherwise
+     */
+    public boolean isBottomAttached()
+    {
+<span class="nc" id="L80">        return this.isAttached(&quot;Bottom&quot;);</span>
+    }
+
+    /**
+     * Is the artifact attached to the left edge?
+     * 
+     * @return &lt;code&gt;true&lt;/code&gt; if the artifact is attached to the left edge,
+     * &lt;code&gt;false&lt;/code&gt; otherwise
+     */
+    public boolean isLeftAttached()
+    {
+<span class="nc" id="L91">        return this.isAttached(&quot;Left&quot;);</span>
+    }
+
+    /**
+     * Is the artifact attached to the right edge?
+     * 
+     * @return &lt;code&gt;true&lt;/code&gt; if the artifact is attached to the right edge,
+     * &lt;code&gt;false&lt;/code&gt; otherwise
+     */
+    public boolean isRightAttached()
+    {
+<span class="nc" id="L102">        return this.isAttached(&quot;Right&quot;);</span>
+    }
+
+    /**
+     * Gets the subtype (Subtype).
+     * 
+     * @return the subtype
+     */
+    public String getSubtype()
+    {
+<span class="nc" id="L112">        return this.getProperties().getNameAsString(COSName.SUBTYPE);</span>
+    }
+
+
+    /**
+     * Is the artifact attached to the given edge?
+     * 
+     * @param edge the edge
+     * @return &lt;code&gt;true&lt;/code&gt; if the artifact is attached to the given edge,
+     * &lt;code&gt;false&lt;/code&gt; otherwise
+     */
+    private boolean isAttached(String edge)
+    {
+<span class="nc" id="L125">        COSArray a = getProperties().getCOSArray(COSName.ATTACHED);</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">        if (a != null)</span>
+        {
+<span class="nc bnc" id="L128" title="All 2 branches missed.">            for (int i = 0; i &lt; a.size(); i++)</span>
+            {
+<span class="nc bnc" id="L130" title="All 2 branches missed.">                if (edge.equals(a.getName(i)))</span>
+                {
+<span class="nc" id="L132">                    return true;</span>
+                }
+            }
+        }
+<span class="nc" id="L136">        return false;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDAppearanceEntry.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation</a> &gt; <span class="el_source">PDAppearanceEntry.java</span></div><h1>PDAppearanceEntry.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.interactive.annotation;
+
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.pdmodel.common.COSDictionaryMap;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * An entry in an appearance dictionary. May contain either a single appearance stream or an appearance subdictionary.
+ *
+ * @author John Hewson
+ */
+public class PDAppearanceEntry implements COSObjectable
+{
+    private COSDictionary entry;
+
+    private PDAppearanceEntry()
+    {
+    }
+
+    /**
+     * Constructor for reading.
+     * 
+     * @param entry the dictionary of the appearance entry
+     */
+    public PDAppearanceEntry(COSDictionary entry)
+<span class="nc" id="L47">    {</span>
+<span class="nc" id="L48">        this.entry = entry;</span>
+<span class="nc" id="L49">    }</span>
+
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L54">        return entry;</span>
+    }
+
+    /**
+     * Returns true if this entry is an appearance subdictionary.
+     * 
+     * @return true if this entry is an appearance subdictionary
+     */
+    public boolean isSubDictionary()
+    {
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        return !(this.entry instanceof COSStream);</span>
+    }
+
+    /**
+     * Returns true if this entry is an appearance stream.
+     * 
+     * @return true if this entry is an appearance stream
+     */
+    public boolean isStream()
+    {
+<span class="nc" id="L74">        return this.entry instanceof COSStream;</span>
+    }
+
+    /**
+     * Returns the entry as an appearance stream.
+     *
+     * @return the entry as an appearance stream
+     * 
+     * @throws IllegalStateException if this entry is not an appearance stream
+     */
+    public PDAppearanceStream getAppearanceStream()
+    {
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        if (!isStream())</span>
+        {
+<span class="nc" id="L88">            throw new IllegalStateException(&quot;This entry is not an appearance stream&quot;);</span>
+        }
+<span class="nc" id="L90">        return new PDAppearanceStream((COSStream) entry);</span>
+    }
+
+    /**
+     * Returns the entry as an appearance subdictionary.
+     *
+     * @return the entry as an appearance subdictionary
+     * 
+     * @throws IllegalStateException if this entry is not an appearance subdictionary
+     */
+    public Map&lt;COSName, PDAppearanceStream&gt; getSubDictionary()
+    {
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        if (!isSubDictionary())</span>
+        {
+<span class="nc" id="L104">            throw new IllegalStateException(&quot;This entry is not an appearance subdictionary&quot;);</span>
+        }
+
+<span class="nc" id="L107">        COSDictionary dict = entry;</span>
+<span class="nc" id="L108">        Map&lt;COSName, PDAppearanceStream&gt; map = new HashMap&lt;&gt;();</span>
+
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        for (COSName name : dict.keySet())</span>
+        {
+<span class="nc" id="L112">            COSStream stream = dict.getCOSStream(name);</span>
+            // the file from PDFBOX-1599 contains /null as its entry, so we skip non-stream entries
+<span class="nc bnc" id="L114" title="All 2 branches missed.">            if (stream != null)</span>
+            {
+<span class="nc" id="L116">                map.put(name, new PDAppearanceStream(stream));</span>
+            }
+<span class="nc" id="L118">        }</span>
+<span class="nc" id="L119">        return new COSDictionaryMap&lt;&gt;(map, dict);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

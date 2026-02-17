@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDOptionalContentMembershipDictionary.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.optionalcontent</a> &gt; <span class="el_source">PDOptionalContentMembershipDictionary.java</span></div><h1>PDOptionalContentMembershipDictionary.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.optionalcontent;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.documentinterchange.markedcontent.PDPropertyList;
+
+/**
+ * An optional content membership dictionary (OCMD).
+ *
+ * @author Tilman Hausherr
+ */
+public class PDOptionalContentMembershipDictionary extends PDPropertyList
+{
+    /**
+     * Creates a new optional content membership dictionary (OCMD).
+     */
+    public PDOptionalContentMembershipDictionary()
+<span class="nc" id="L39">    {</span>
+<span class="nc" id="L40">        this.dict.setItem(COSName.TYPE, COSName.OCMD);</span>
+<span class="nc" id="L41">    }</span>
+
+    /**
+     * Creates a new instance based on a given {@link COSDictionary}.
+     * @param dict the dictionary
+     */
+    public PDOptionalContentMembershipDictionary(COSDictionary dict)
+    {
+<span class="nc" id="L49">        super(dict);</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        if (!dict.getDictionaryObject(COSName.TYPE).equals(COSName.OCMD))</span>
+        {
+<span class="nc" id="L52">            throw new IllegalArgumentException(</span>
+                    &quot;Provided dictionary is not of type '&quot; + COSName.OCMD + &quot;'&quot;);
+        }
+<span class="nc" id="L55">    }</span>
+
+    /**
+     * Get a list of optional content groups.
+     * 
+     * @return List of optional content groups, never null.
+     */
+    public List&lt;PDPropertyList&gt; getOCGs()
+    {
+<span class="nc" id="L64">        COSBase base = dict.getDictionaryObject(COSName.OCGS);</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (base instanceof COSDictionary)</span>
+        {
+<span class="nc" id="L67">            return Collections.singletonList(PDPropertyList.create((COSDictionary) base));</span>
+        }
+
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (base instanceof COSArray)</span>
+        {
+<span class="nc" id="L72">            List&lt;PDPropertyList&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L73">            COSArray ar = (COSArray) base;</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">            for (int i = 0; i &lt; ar.size(); ++i)</span>
+            {
+<span class="nc" id="L76">                COSBase elem = ar.getObject(i);</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">                if (elem instanceof COSDictionary)</span>
+                {
+<span class="nc" id="L79">                    list.add(PDPropertyList.create((COSDictionary) elem));</span>
+                }
+            }
+<span class="nc" id="L82">            return list;</span>
+        }
+
+<span class="nc" id="L85">        return Collections.emptyList();</span>
+    }
+
+    /**
+     * Set optional content groups as a list.
+     * 
+     * @param ocgs list of optional content groups to set.
+     */
+    public void setOCGs(List&lt;PDPropertyList&gt; ocgs)
+    {
+<span class="nc" id="L95">        COSArray ar = new COSArray();</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        for (PDPropertyList prop : ocgs)</span>
+        {
+<span class="nc" id="L98">            ar.add(prop);</span>
+<span class="nc" id="L99">        }</span>
+<span class="nc" id="L100">        dict.setItem(COSName.OCGS, ar);</span>
+<span class="nc" id="L101">    }</span>
+
+    /**
+     * Get the visibility policy name. Valid names are AllOff, AllOn, AnyOff, AnyOn (default).
+     *
+     * @return the visibility policy, never null.
+     */
+    public COSName getVisibilityPolicy()
+    {
+<span class="nc" id="L110">        return dict.getCOSName(COSName.P, COSName.ANY_ON);</span>
+    }
+
+    /**
+     * Sets the visibility policy name. Valid names are AllOff, AllOn, AnyOff, AnyOn (default).
+     * 
+     * @param visibilityPolicy the visibility policy name
+     */
+    public void setVisibilityPolicy(COSName visibilityPolicy)
+    {
+<span class="nc" id="L120">        dict.setItem(COSName.P, visibilityPolicy);</span>
+<span class="nc" id="L121">    }</span>
+    
+    //TODO support /VE some day
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDActionRemoteGoTo.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.action</a> &gt; <span class="el_source">PDActionRemoteGoTo.java</span></div><h1>PDActionRemoteGoTo.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.action;
+
+import java.io.IOException;
+
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSBoolean;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+
+import org.apache.pdfbox.pdmodel.common.filespecification.PDFileSpecification;
+
+/**
+ * This represents a remote go-to action that can be executed in a PDF document.
+ *
+ * @author Ben Litchfield
+ * @author Panagiotis Toumasis
+ */
+public class PDActionRemoteGoTo extends PDAction
+{
+    /**
+     * This type of action this object represents.
+     */
+    public static final String SUB_TYPE = &quot;GoToR&quot;;
+
+    /**
+     * Default constructor.
+     */
+    public PDActionRemoteGoTo()
+<span class="nc" id="L45">    {</span>
+<span class="nc" id="L46">        setSubType( SUB_TYPE );</span>
+<span class="nc" id="L47">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param a The action dictionary.
+     */
+    public PDActionRemoteGoTo( COSDictionary a )
+    {
+<span class="nc" id="L56">        super( a );</span>
+<span class="nc" id="L57">    }</span>
+
+    /**
+     * This will get the file in which the destination is located.
+     *
+     * @return The F entry of the specific remote go-to action dictionary.
+     *
+     * @throws IOException If there is an error creating the file spec.
+     */
+    public PDFileSpecification getFile() throws IOException
+    {
+<span class="nc" id="L68">        return PDFileSpecification.createFS( action.getDictionaryObject( COSName.F ) );</span>
+    }
+
+    /**
+     * This will set the file in which the destination is located.
+     *
+     * @param fs The file specification.
+     */
+    public void setFile( PDFileSpecification fs )
+    {
+<span class="nc" id="L78">        action.setItem( COSName.F, fs );</span>
+<span class="nc" id="L79">    }</span>
+
+    /**
+     * This will get the destination to jump to.
+     * If the value is an array defining an explicit destination,
+     * its first element must be a page number within the remote
+     * document rather than an indirect reference to a page object
+     * in the current document. The first page is numbered 0.
+     *
+     * @return The D entry of the specific remote go-to action dictionary.
+     */
+
+    // Array or String.
+    public COSBase getD()
+    {
+<span class="nc" id="L94">        return action.getDictionaryObject( COSName.D );</span>
+    }
+
+    /**
+     * This will set the destination to jump to.
+     * If the value is an array defining an explicit destination,
+     * its first element must be a page number within the remote
+     * document rather than an indirect reference to a page object
+     * in the current document. The first page is numbered 0.
+     *
+     * @param d The destination.
+     */
+
+    // In case the value is an array.
+    public void setD( COSBase d )
+    {
+<span class="nc" id="L110">        action.setItem( COSName.D, d );</span>
+<span class="nc" id="L111">    }</span>
+
+    /**
+     * This will specify whether to open the destination document in a new window, in the same
+     * window, or behave in accordance with the current user preference.
+     *
+     * @return A flag specifying how to open the destination document.
+     */
+    public OpenMode getOpenInNewWindow()
+    {
+<span class="nc" id="L121">        COSBase dictionaryObject = getCOSObject().getDictionaryObject(COSName.NEW_WINDOW);</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (dictionaryObject instanceof COSBoolean)</span>
+        {
+<span class="nc" id="L124">            COSBoolean b = (COSBoolean) dictionaryObject;</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">            return b.getValue() ? OpenMode.NEW_WINDOW : OpenMode.SAME_WINDOW;</span>
+        }
+<span class="nc" id="L127">        return OpenMode.USER_PREFERENCE;</span>
+    }
+
+    /**
+     * This will specify whether to open the destination document in a new window.
+     *
+     * @param value The flag value.
+     */
+    public void setOpenInNewWindow(OpenMode value)
+    {
+<span class="nc bnc" id="L137" title="All 2 branches missed.">        if (null == value)</span>
+        {
+<span class="nc" id="L139">            getCOSObject().removeItem(COSName.NEW_WINDOW);</span>
+<span class="nc" id="L140">            return;</span>
+        }
+<span class="nc bnc" id="L142" title="All 4 branches missed.">        switch (value)</span>
+        {
+            case USER_PREFERENCE:
+<span class="nc" id="L145">                getCOSObject().removeItem(COSName.NEW_WINDOW);</span>
+<span class="nc" id="L146">                break;</span>
+            case SAME_WINDOW:
+<span class="nc" id="L148">                getCOSObject().setBoolean(COSName.NEW_WINDOW, false);</span>
+<span class="nc" id="L149">                break;</span>
+            case NEW_WINDOW:
+<span class="nc" id="L151">                getCOSObject().setBoolean(COSName.NEW_WINDOW, true);</span>
+<span class="nc" id="L152">                break;</span>
+            default:
+                // shouldn't happen unless the enum type is changed
+                break;
+        }
+<span class="nc" id="L157">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

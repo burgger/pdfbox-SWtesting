@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Type1ShadingContext.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.shading</a> &gt; <span class="el_source">Type1ShadingContext.java</span></div><h1>Type1ShadingContext.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2014 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.shading;
+
+import java.awt.geom.AffineTransform;
+import java.awt.geom.NoninvertibleTransformException;
+import java.awt.image.ColorModel;
+import java.awt.image.Raster;
+import java.awt.image.WritableRaster;
+import java.io.IOException;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * AWT PaintContext for function-based (Type 1) shading.
+ *
+ * @author Tilman Hausherr
+ */
+class Type1ShadingContext extends ShadingContext
+{
+<span class="nc" id="L36">    private static final Logger LOG = LogManager.getLogger(Type1ShadingContext.class);</span>
+
+    private PDShadingType1 type1ShadingType;
+    private AffineTransform rat;
+    private final float[] domain;
+
+    /**
+     * Constructor creates an instance to be used for fill operations.
+     *
+     * @param shading the shading type to be used
+     * @param colorModel the color model to be used
+     * @param xform transformation for user to device space
+     * @param matrix the pattern matrix concatenated with that of the parent content stream
+     */
+    Type1ShadingContext(PDShadingType1 shading, ColorModel colorModel, AffineTransform xform,
+                               Matrix matrix) throws IOException
+    {
+<span class="nc" id="L53">        super(shading, colorModel, xform, matrix);</span>
+<span class="nc" id="L54">        this.type1ShadingType = shading;</span>
+
+        // (Optional) An array of four numbers [ xmin xmax ymin ymax ] 
+        // specifying the rectangular domain of coordinates over which the 
+        // color function(s) are defined. Default value: [ 0.0 1.0 0.0 1.0 ].
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        if (shading.getDomain() != null)</span>
+        {
+<span class="nc" id="L61">            domain = shading.getDomain().toFloatArray();</span>
+        }
+        else
+        {
+<span class="nc" id="L65">            domain = new float[] { 0, 1, 0, 1 };</span>
+        }
+
+        try
+        {
+            // get inverse transform to be independent of 
+            // shading matrix and current user / device space 
+            // when handling actual pixels in getRaster()
+<span class="nc" id="L73">            rat = shading.getMatrix().createAffineTransform().createInverse();</span>
+<span class="nc" id="L74">            rat.concatenate(matrix.createAffineTransform().createInverse());</span>
+<span class="nc" id="L75">            rat.concatenate(xform.createInverse());</span>
+        }
+<span class="nc" id="L77">        catch (NoninvertibleTransformException ex)</span>
+        {
+<span class="nc" id="L79">            LOG.error(() -&gt; ex.getMessage() + &quot;, matrix: &quot; + matrix, ex);</span>
+<span class="nc" id="L80">            rat = new AffineTransform();</span>
+<span class="nc" id="L81">        }</span>
+<span class="nc" id="L82">    }</span>
+
+    @Override
+    public void dispose()
+    {
+<span class="nc" id="L87">        super.dispose();</span>
+<span class="nc" id="L88">        type1ShadingType = null;</span>
+<span class="nc" id="L89">    }</span>
+
+    @Override
+    public Raster getRaster(int x, int y, int w, int h)
+    {
+<span class="nc" id="L94">        WritableRaster raster = getColorModel().createCompatibleWritableRaster(w, h);</span>
+<span class="nc" id="L95">        int[] data = new int[w * h * 4];</span>
+<span class="nc" id="L96">        float[] values = new float[2];</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        for (int j = 0; j &lt; h; j++)</span>
+        {
+<span class="nc bnc" id="L99" title="All 2 branches missed.">            for (int i = 0; i &lt; w; i++)</span>
+            {
+<span class="nc" id="L101">                int index = (j * w + i) * 4;</span>
+<span class="nc" id="L102">                boolean useBackground = false;</span>
+<span class="nc" id="L103">                values[0] = x + i;</span>
+<span class="nc" id="L104">                values[1] = y + j;</span>
+<span class="nc" id="L105">                rat.transform(values, 0, values, 0, 1);</span>
+<span class="nc bnc" id="L106" title="All 8 branches missed.">                if (values[0] &lt; domain[0] || values[0] &gt; domain[1] ||</span>
+                    values[1] &lt; domain[2] || values[1] &gt; domain[3])
+                {
+<span class="nc bnc" id="L109" title="All 2 branches missed.">                    if (getBackground() == null)</span>
+                    {
+<span class="nc" id="L111">                        continue;</span>
+                    }
+<span class="nc" id="L113">                    useBackground = true;</span>
+                }
+
+                // evaluate function
+                float[] tmpValues; // &quot;values&quot; can't be reused due to different length
+<span class="nc bnc" id="L118" title="All 2 branches missed.">                if (useBackground)</span>
+                {
+<span class="nc" id="L120">                    tmpValues = getBackground();</span>
+                }
+                else
+                {
+                    try
+                    {
+<span class="nc" id="L126">                        tmpValues = type1ShadingType.evalFunction(values);</span>
+                    }
+<span class="nc" id="L128">                    catch (IOException e)</span>
+                    {
+<span class="nc" id="L130">                        LOG.error(&quot;error while processing a function&quot;, e);</span>
+<span class="nc" id="L131">                        continue;</span>
+<span class="nc" id="L132">                    }</span>
+                }
+
+                // convert color values from shading color space to RGB
+<span class="nc" id="L136">                PDColorSpace shadingColorSpace = getShadingColorSpace();</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">                if (shadingColorSpace != null)</span>
+                {
+                    try
+                    {
+<span class="nc" id="L141">                        tmpValues = shadingColorSpace.toRGB(tmpValues);</span>
+                    }
+<span class="nc" id="L143">                    catch (IOException e)</span>
+                    {
+<span class="nc" id="L145">                        LOG.error(&quot;error processing color space&quot;, e);</span>
+<span class="nc" id="L146">                        continue;</span>
+<span class="nc" id="L147">                    }</span>
+                }
+<span class="nc" id="L149">                data[index] = (int) (tmpValues[0] * 255);</span>
+<span class="nc" id="L150">                data[index + 1] = (int) (tmpValues[1] * 255);</span>
+<span class="nc" id="L151">                data[index + 2] = (int) (tmpValues[2] * 255);</span>
+<span class="nc" id="L152">                data[index + 3] = 255;</span>
+            }
+        }
+<span class="nc" id="L155">        raster.setPixels(0, 0, w, h, data);</span>
+<span class="nc" id="L156">        return raster;</span>
+    }
+
+    public float[] getDomain()
+    {
+<span class="nc" id="L161">        return domain;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

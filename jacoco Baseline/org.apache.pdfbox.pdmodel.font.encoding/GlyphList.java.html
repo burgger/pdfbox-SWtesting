@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GlyphList.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font.encoding</a> &gt; <span class="el_source">GlyphList.java</span></div><h1>GlyphList.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.font.encoding;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * PostScript glyph list, maps glyph names to sequences of Unicode characters.
+ * Instances of GlyphList are immutable.
+ */
+public final class GlyphList
+{
+<span class="nc" id="L37">    private static final Logger LOG = LogManager.getLogger(GlyphList.class);</span>
+
+    // Adobe Glyph List (AGL)
+<span class="nc" id="L40">    private static final GlyphList DEFAULT = load(&quot;glyphlist.txt&quot;, 4281);</span>
+    
+    // Zapf Dingbats has its own glyph list
+<span class="nc" id="L43">    private static final GlyphList ZAPF_DINGBATS = load(&quot;zapfdingbats.txt&quot;,201);</span>
+    
+    /**
+     * Loads a glyph list from disk.
+     */
+    private static GlyphList load(String filename, int numberOfEntries)
+    {
+<span class="nc" id="L50">        String path = &quot;/org/apache/pdfbox/resources/glyphlist/&quot; + filename;</span>
+        //no need to use a BufferedInputSteam here, as GlyphList uses a BufferedReader
+<span class="nc" id="L52">        try (InputStream resourceAsStream = GlyphList.class.getResourceAsStream(path))</span>
+        {
+<span class="nc bnc" id="L54" title="All 2 branches missed.">            if (resourceAsStream == null)</span>
+            {
+<span class="nc" id="L56">                throw new IOException(&quot;GlyphList '&quot; + path + &quot;' not found&quot;);</span>
+            }
+<span class="nc" id="L58">            return new GlyphList(resourceAsStream, numberOfEntries);</span>
+        }
+<span class="nc" id="L60">        catch (IOException e)</span>
+        {
+<span class="nc" id="L62">            throw new RuntimeException(e);</span>
+        }
+    }
+
+    /**
+     * Returns the Adobe Glyph List (AGL).
+     * 
+     * @return the Adobe glyph list
+     */
+    public static GlyphList getAdobeGlyphList()
+    {
+<span class="nc" id="L73">        return DEFAULT;</span>
+    }
+
+    /**
+     * Returns the Zapf Dingbats glyph list.
+     * 
+     * @return the Zapf Dingbats glyph list
+     */
+    public static GlyphList getZapfDingbats()
+    {
+<span class="nc" id="L83">        return ZAPF_DINGBATS;</span>
+    }
+
+    // read-only mappings, never modified outside GlyphList's constructor
+    private final Map&lt;String, String&gt; nameToUnicode;
+    private final Map&lt;String, String&gt; unicodeToName;
+    
+    // additional read/write cache for uniXXXX names
+<span class="nc" id="L91">    private final Map&lt;String, String&gt; uniNameToUnicodeCache = new ConcurrentHashMap&lt;&gt;();</span>
+
+    /**
+     * Creates a new GlyphList from a glyph list file.
+     *
+     * @param numberOfEntries number of expected values used to preallocate the correct amount of memory
+     * @param input glyph list in Adobe format
+     * @throws IOException if the glyph list could not be read
+     */
+    public GlyphList(InputStream input, int numberOfEntries) throws IOException
+<span class="nc" id="L101">    {</span>
+<span class="nc" id="L102">        nameToUnicode = new HashMap&lt;&gt;(numberOfEntries);</span>
+<span class="nc" id="L103">        unicodeToName = new HashMap&lt;&gt;(numberOfEntries);</span>
+<span class="nc" id="L104">        loadList(input);</span>
+<span class="nc" id="L105">    }</span>
+
+    /**
+     * Creates a new GlyphList from multiple glyph list files.
+     *
+     * @param glyphList an existing glyph list to be copied
+     * @param input glyph list in Adobe format
+     * @throws IOException if the glyph list could not be read
+     */
+    public GlyphList(GlyphList glyphList, InputStream input) throws IOException
+<span class="nc" id="L115">    {</span>
+<span class="nc" id="L116">        nameToUnicode = new HashMap&lt;&gt;(glyphList.nameToUnicode);</span>
+<span class="nc" id="L117">        unicodeToName = new HashMap&lt;&gt;(glyphList.unicodeToName);</span>
+<span class="nc" id="L118">        loadList(input);</span>
+<span class="nc" id="L119">    }</span>
+
+    private void loadList(InputStream input) throws IOException
+    {
+<span class="nc" id="L123">        try (BufferedReader in = new BufferedReader(new InputStreamReader(input, StandardCharsets.ISO_8859_1)))</span>
+        {
+<span class="nc bnc" id="L125" title="All 2 branches missed.">            while (in.ready())</span>
+            {
+<span class="nc" id="L127">                String line = in.readLine();</span>
+<span class="nc bnc" id="L128" title="All 4 branches missed.">                if (line != null &amp;&amp; !line.startsWith(&quot;#&quot;))</span>
+                {
+<span class="nc" id="L130">                    String[] parts = line.split(&quot;;&quot;);</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">                    if (parts.length &lt; 2)</span>
+                    {
+<span class="nc" id="L133">                        throw new IOException(&quot;Invalid glyph list entry: &quot; + line);</span>
+                    }
+
+<span class="nc" id="L136">                    String name = parts[0];</span>
+<span class="nc" id="L137">                    String[] unicodeList = parts[1].split(&quot; &quot;);</span>
+
+<span class="nc" id="L139">                    int[] codePoints = new int[unicodeList.length];</span>
+<span class="nc" id="L140">                    int index = 0;</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">                    for (String hex : unicodeList)</span>
+                    {
+<span class="nc" id="L143">                        codePoints[index++] = Integer.parseInt(hex, 16);</span>
+                    }
+<span class="nc" id="L145">                    String string = new String(codePoints, 0 , codePoints.length);</span>
+
+                    // forward mapping
+<span class="nc" id="L148">                    String oldMapping = nameToUnicode.put(name, string);</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">                    if (oldMapping != null)</span>
+                    {
+<span class="nc" id="L151">                        LOG.warn(&quot;duplicate value for {} -&gt; {} {}&quot;, name, parts[1], oldMapping);</span>
+                    }
+                    // reverse mapping
+                    // PDFBOX-3884: take the various standard encodings as canonical, 
+                    // e.g. tilde over ilde
+<span class="nc" id="L156">                    final boolean forceOverride =</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">                          WinAnsiEncoding.INSTANCE.contains(name) ||</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">                          MacRomanEncoding.INSTANCE.contains(name) || </span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">                          MacExpertEncoding.INSTANCE.contains(name) ||</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">                          SymbolEncoding.INSTANCE.contains(name) ||</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">                          ZapfDingbatsEncoding.INSTANCE.contains(name);</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">                    if (forceOverride)</span>
+                    {
+<span class="nc" id="L164">                        unicodeToName.put(string, name);</span>
+                    }
+                    else
+                    {
+<span class="nc" id="L168">                        unicodeToName.putIfAbsent(string, name);</span>
+                    }
+                }
+<span class="nc" id="L171">            }</span>
+        }
+<span class="nc" id="L173">    }</span>
+
+    /**
+     * Returns the name for the given Unicode code point.
+     *
+     * @param codePoint Unicode code point
+     * @return PostScript glyph name, or &quot;.notdef&quot;
+     */
+    public String codePointToName(int codePoint)
+    {
+<span class="nc" id="L183">        String name = unicodeToName.get(new String(new int[] { codePoint }, 0 , 1));</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">        if (name == null)</span>
+        {
+<span class="nc" id="L186">            return &quot;.notdef&quot;;</span>
+        }
+<span class="nc" id="L188">        return name;</span>
+    }
+
+    /**
+     * Returns the name for a given sequence of Unicode characters.
+     *
+     * @param unicodeSequence sequence of Unicode characters
+     * @return PostScript glyph name, or &quot;.notdef&quot;
+     */
+    public String sequenceToName(String unicodeSequence)
+    {
+<span class="nc" id="L199">        String name = unicodeToName.get(unicodeSequence);</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">        if (name == null)</span>
+        {
+<span class="nc" id="L202">            return &quot;.notdef&quot;;</span>
+        }
+<span class="nc" id="L204">        return name;</span>
+    }
+
+    /**
+     * Returns the Unicode character sequence for the given glyph name, or null if there isn't any.
+     *
+     * @param name PostScript glyph name
+     * @return Unicode character(s), or null.
+     */
+    public String toUnicode(String name)
+    {
+<span class="nc bnc" id="L215" title="All 2 branches missed.">        if (name == null)</span>
+        {
+<span class="nc" id="L217">            return null;</span>
+        }
+
+<span class="nc" id="L220">        String unicode = nameToUnicode.get(name);</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">        if (unicode != null)</span>
+        {
+<span class="nc" id="L223">            return unicode;</span>
+        }
+        
+        // separate read/write cache for thread safety
+<span class="nc" id="L227">        unicode = uniNameToUnicodeCache.get(name);</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">        if (unicode == null)</span>
+        {
+            // test if we have a suffix and if so remove it
+<span class="nc bnc" id="L231" title="All 2 branches missed.">            if (name.indexOf('.') &gt; 0)</span>
+            {
+<span class="nc" id="L233">                unicode = toUnicode(name.substring(0, name.indexOf('.')));</span>
+            }
+<span class="nc bnc" id="L235" title="All 4 branches missed.">            else if ((name.length() == 7 &amp;&amp; name.startsWith(&quot;uni&quot;))</span>
+<span class="nc bnc" id="L236" title="All 4 branches missed.">                    || (name.length() == 5 &amp;&amp; name.startsWith(&quot;u&quot;)))</span>
+            {
+                // test for Unicode name in the format uniXXXX/uXXXX where X is hex
+<span class="nc bnc" id="L239" title="All 2 branches missed.">                int start = name.length() == 7 ? 3 : 1;</span>
+                try
+                {
+<span class="nc" id="L242">                    int codePoint = Integer.parseInt(name, start, start + 4, 16);</span>
+<span class="nc bnc" id="L243" title="All 4 branches missed.">                    if (codePoint &gt; 0xD7FF &amp;&amp; codePoint &lt; 0xE000)</span>
+                    {
+<span class="nc" id="L245">                        LOG.warn(&quot;Unicode character name with disallowed code area: {}&quot;, name);</span>
+                    }
+                    else
+                    {
+<span class="nc" id="L249">                        unicode = String.valueOf((char) codePoint);</span>
+                    }
+                }
+<span class="nc" id="L252">                catch (NumberFormatException nfe)</span>
+                {
+<span class="nc" id="L254">                    LOG.warn(&quot;Not a number in Unicode character name: {}&quot;, name);</span>
+<span class="nc" id="L255">                }</span>
+            }
+<span class="nc bnc" id="L257" title="All 2 branches missed.">            if (unicode != null)</span>
+            {
+                // null value not allowed in ConcurrentHashMap
+<span class="nc" id="L260">                uniNameToUnicodeCache.put(name, unicode);</span>
+            }
+        }
+<span class="nc" id="L263">        return unicode;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

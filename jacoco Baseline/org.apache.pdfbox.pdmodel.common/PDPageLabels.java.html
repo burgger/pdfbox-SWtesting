@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDPageLabels.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.common</a> &gt; <span class="el_source">PDPageLabels.java</span></div><h1>PDPageLabels.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.common;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.TreeMap;
+import java.util.Map.Entry;
+import java.util.NavigableSet;
+import java.util.TreeSet;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDDocument;
+
+/**
+ * Represents the page label dictionary of a document.
+ * 
+ * @author Igor Podolskiy
+ */
+public class PDPageLabels implements COSObjectable
+{
+
+    private final Map&lt;Integer, PDPageLabelRange&gt; labels;
+
+    private final PDDocument doc;
+
+    /**
+     * Creates an empty page label dictionary for the given document.
+     * 
+     * &lt;p&gt;
+     * Note that the page label dictionary won't be automatically added to the
+     * document; you will still need to do it manually (see
+     * {@link org.apache.pdfbox.pdmodel.PDDocumentCatalog#setPageLabels(PDPageLabels)}.
+     * &lt;/p&gt;
+     * 
+     * @param document
+     *            The document the page label dictionary is created for.
+     * @see org.apache.pdfbox.pdmodel.PDDocumentCatalog#setPageLabels(PDPageLabels)
+     */
+    public PDPageLabels(PDDocument document)
+<span class="nc" id="L63">    {</span>
+<span class="nc" id="L64">        labels = new TreeMap&lt;&gt;();</span>
+<span class="nc" id="L65">        this.doc = document;</span>
+<span class="nc" id="L66">        PDPageLabelRange defaultRange = new PDPageLabelRange();</span>
+<span class="nc" id="L67">        defaultRange.setStyle(PDPageLabelRange.STYLE_DECIMAL);</span>
+<span class="nc" id="L68">        labels.put(0, defaultRange);</span>
+<span class="nc" id="L69">    }</span>
+
+    /**
+     * Creates an page label dictionary for a document using the information in
+     * the given COS dictionary.
+     * 
+     * &lt;p&gt;
+     * Note that the page label dictionary won't be automatically added to the
+     * document; you will still need to do it manually (see
+     * {@link org.apache.pdfbox.pdmodel.PDDocumentCatalog#setPageLabels(PDPageLabels)}.
+     * &lt;/p&gt;
+     * 
+     * @param document
+     *            The document the page label dictionary is created for.
+     * @param dict
+     *            an existing page label dictionary
+     * @see org.apache.pdfbox.pdmodel.PDDocumentCatalog#setPageLabels(PDPageLabels)
+     * @throws IOException
+     *             If something goes wrong during the number tree conversion.
+     */
+    public PDPageLabels(PDDocument document, COSDictionary dict) throws IOException
+    {
+<span class="nc" id="L91">        this(document);</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (dict == null)</span>
+        {
+<span class="nc" id="L94">            return;</span>
+        }
+<span class="nc" id="L96">        PDNumberTreeNode root = new PDNumberTreeNode(dict, PDPageLabelRange.class);</span>
+<span class="nc" id="L97">        findLabels(root);</span>
+<span class="nc" id="L98">    }</span>
+    
+    private void findLabels(PDNumberTreeNode node) throws IOException 
+    {
+<span class="nc" id="L102">        List&lt;PDNumberTreeNode&gt; kids = node.getKids();</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        if (kids != null) </span>
+        {
+<span class="nc bnc" id="L105" title="All 2 branches missed.">            for (PDNumberTreeNode kid : kids) </span>
+            {
+<span class="nc" id="L107">                findLabels(kid);</span>
+<span class="nc" id="L108">            }</span>
+        }
+        else
+        {
+<span class="nc" id="L112">            Map&lt;Integer,COSObjectable&gt; numbers = node.getNumbers();</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">            if (numbers != null)</span>
+            {
+<span class="nc" id="L115">                numbers.forEach((key, pageLabelRange) -&gt;</span>
+                {
+<span class="nc bnc" id="L117" title="All 2 branches missed.">                    if (key &gt;= 0)</span>
+                    {
+<span class="nc" id="L119">                        labels.put(key, (PDPageLabelRange) pageLabelRange);</span>
+                    }
+<span class="nc" id="L121">                });</span>
+            }
+        }
+<span class="nc" id="L124">    }</span>
+
+
+    /**
+     * Returns the number of page label ranges.
+     * 
+     * &lt;p&gt;
+     * This will be always &amp;gt;= 1, as the required default entry for the page
+     * range starting at the first page is added automatically by this
+     * implementation (see PDF32000-1:2008, p. 375).
+     * &lt;/p&gt;
+     * 
+     * @return the number of page label ranges.
+     */
+    public int getPageRangeCount()
+    {
+<span class="nc" id="L140">        return labels.size();</span>
+    }
+
+    /**
+     * Returns the page label range starting at the given page, or {@code null}
+     * if no such range is defined.
+     * 
+     * @param startPage
+     *            the 0-based page index representing the start page of the page
+     *            range the item is defined for.
+     * @return the page label range or {@code null} if no label range is defined
+     *         for the given start page.
+     */
+    public PDPageLabelRange getPageLabelRange(int startPage)
+    {
+<span class="nc" id="L155">        return labels.get(startPage);</span>
+    }
+
+    /**
+     * Sets the page label range beginning at the specified start page.
+     * 
+     * @param startPage
+     *            the 0-based index of the page representing the start of the
+     *            page label range.
+     * @param item
+     *            the page label item to set.
+     * @throws IllegalArgumentException if the startPage parameter is &amp;lt; 0.
+     */
+    public void setLabelItem(int startPage, PDPageLabelRange item)
+    {
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        if (startPage &lt; 0)</span>
+        {
+<span class="nc" id="L172">            throw new IllegalArgumentException(&quot;startPage parameter of setLabelItem may not be &lt; 0&quot;);</span>
+        }
+<span class="nc" id="L174">        labels.put(startPage, item);</span>
+<span class="nc" id="L175">    }</span>
+    
+    /**
+     * {@inheritDoc} 
+     */
+    @Override
+    public COSBase getCOSObject()
+    {
+<span class="nc" id="L183">        COSArray arr = new COSArray();</span>
+<span class="nc" id="L184">        labels.forEach((key, value) -&gt;</span>
+        {
+<span class="nc" id="L186">            arr.add(COSInteger.get(key));</span>
+<span class="nc" id="L187">            arr.add(value);</span>
+<span class="nc" id="L188">        });</span>
+<span class="nc" id="L189">        COSDictionary dict = new COSDictionary();</span>
+<span class="nc" id="L190">        dict.setItem(COSName.NUMS, arr);</span>
+<span class="nc" id="L191">        return dict;</span>
+    }
+
+    /**
+     * Returns a mapping with computed page labels as keys and corresponding
+     * 0-based page indices as values. The returned map will contain at most as
+     * much entries as the document has pages.
+     * 
+     * &lt;p&gt;
+     * &lt;strong&gt;NOTE:&lt;/strong&gt; If the document contains duplicate page labels,
+     * the returned map will contain &lt;em&gt;less&lt;/em&gt; entries than the document has
+     * pages. The page index returned in this case is the &lt;em&gt;highest&lt;/em&gt; index
+     * among all pages sharing the same label.
+     * &lt;/p&gt;
+     * 
+     * @return a mapping from labels to 0-based page indices.
+     */
+    public Map&lt;String, Integer&gt; getPageIndicesByLabels()
+    {
+<span class="nc" id="L210">        int numberOfPages = doc.getNumberOfPages();</span>
+<span class="nc" id="L211">        final Map&lt;String, Integer&gt; labelMap = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L212">        computeLabels((pageIndex, label) -&gt; labelMap.put(label, pageIndex), numberOfPages);</span>
+<span class="nc" id="L213">        return labelMap;</span>
+    }
+
+    /**
+     * Returns a mapping with 0-based page indices as keys and corresponding
+     * page labels as values as an array. The array will have exactly as much
+     * entries as the document has pages.
+     * 
+     * @return an array mapping from 0-based page indices to labels.
+     */
+    public String[] getLabelsByPageIndices()
+    {
+<span class="nc" id="L225">        final int numberOfPages = doc.getNumberOfPages();</span>
+<span class="nc" id="L226">        final String[] map = new String[numberOfPages];</span>
+<span class="nc" id="L227">        computeLabels((pageIndex, label) -&gt;</span>
+        {
+<span class="nc bnc" id="L229" title="All 2 branches missed.">            if (pageIndex &lt; numberOfPages)</span>
+            {
+<span class="nc" id="L231">                map[pageIndex] = label;</span>
+            }
+<span class="nc" id="L233">        }, numberOfPages);</span>
+<span class="nc" id="L234">        return map;</span>
+    }
+
+    /**
+     * Get an ordered set of page indices having a page label range.
+     *
+     * @return set of page indices.
+     */
+    public NavigableSet&lt;Integer&gt; getPageIndices()
+    {
+<span class="nc" id="L244">        return new TreeSet&lt;&gt;(labels.keySet());</span>
+    }
+
+    /**
+     * Internal interface for the control flow support.
+     * 
+     * @author Igor Podolskiy
+     */
+    private interface LabelHandler
+    {
+        void newLabel(int pageIndex, String label);
+    }
+
+    private void computeLabels(LabelHandler handler, int numberOfPages)
+    {
+<span class="nc" id="L259">        Iterator&lt;Entry&lt;Integer, PDPageLabelRange&gt;&gt; iterator = </span>
+<span class="nc" id="L260">            labels.entrySet().iterator();</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">        if (!iterator.hasNext())</span>
+        {
+<span class="nc" id="L263">            return;</span>
+        }
+<span class="nc" id="L265">        int pageIndex = 0;</span>
+<span class="nc" id="L266">        Entry&lt;Integer, PDPageLabelRange&gt; lastEntry = iterator.next();</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">        while (iterator.hasNext())</span>
+        {
+<span class="nc" id="L269">            Entry&lt;Integer, PDPageLabelRange&gt; entry = iterator.next();</span>
+<span class="nc" id="L270">            int numPages = entry.getKey() - lastEntry.getKey();</span>
+<span class="nc" id="L271">            LabelGenerator gen = new LabelGenerator(lastEntry.getValue(),</span>
+                    numPages);
+<span class="nc bnc" id="L273" title="All 2 branches missed.">            while (gen.hasNext())</span>
+            {
+<span class="nc" id="L275">                handler.newLabel(pageIndex, gen.next());</span>
+<span class="nc" id="L276">                pageIndex++;</span>
+            }
+<span class="nc" id="L278">            lastEntry = entry;</span>
+<span class="nc" id="L279">        }</span>
+<span class="nc" id="L280">        LabelGenerator gen = new LabelGenerator(lastEntry.getValue(), </span>
+<span class="nc" id="L281">                numberOfPages - lastEntry.getKey());</span>
+<span class="nc bnc" id="L282" title="All 2 branches missed.">        while (gen.hasNext())</span>
+        {
+<span class="nc" id="L284">            handler.newLabel(pageIndex, gen.next());</span>
+<span class="nc" id="L285">            pageIndex++;</span>
+        }
+<span class="nc" id="L287">    }</span>
+
+    /**
+     * Generates the labels in a page range.
+     * 
+     * @author Igor Podolskiy
+     * 
+     */
+    private static class LabelGenerator implements Iterator&lt;String&gt;
+    {
+        private final PDPageLabelRange labelInfo;
+        private final int numPages;
+        private int currentPage;
+
+        LabelGenerator(PDPageLabelRange label, int pages)
+<span class="nc" id="L302">        {</span>
+<span class="nc" id="L303">            this.labelInfo = label;</span>
+<span class="nc" id="L304">            this.numPages = pages;</span>
+<span class="nc" id="L305">            this.currentPage = 0;</span>
+<span class="nc" id="L306">        }</span>
+
+        @Override
+        public boolean hasNext()
+        {
+<span class="nc bnc" id="L311" title="All 2 branches missed.">            return currentPage &lt; numPages;</span>
+        }
+
+        @Override
+        public String next()
+        {
+<span class="nc bnc" id="L317" title="All 2 branches missed.">            if (!hasNext())</span>
+            {
+<span class="nc" id="L319">                throw new NoSuchElementException();</span>
+            }
+<span class="nc" id="L321">            StringBuilder buf = new StringBuilder();</span>
+<span class="nc" id="L322">            String label = labelInfo.getPrefix();</span>
+<span class="nc bnc" id="L323" title="All 2 branches missed.">            if (label != null)</span>
+            {
+                // there may be some labels with some null bytes at the end
+                // which will lead to an incomplete output, see PDFBOX-1047
+<span class="nc" id="L327">                int index = label.indexOf(0);</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">                if (index &gt; -1)</span>
+                {
+<span class="nc" id="L330">                    label = label.substring(0, index);</span>
+                }
+<span class="nc" id="L332">                buf.append(label);</span>
+            }
+<span class="nc" id="L334">            String style = labelInfo.getStyle();</span>
+<span class="nc bnc" id="L335" title="All 2 branches missed.">            if (style != null)</span>
+            {
+<span class="nc" id="L337">                buf.append(getNumber(labelInfo.getStart() + currentPage, style));</span>
+            }
+<span class="nc" id="L339">            currentPage++;</span>
+<span class="nc" id="L340">            return buf.toString();</span>
+        }
+
+        private String getNumber(int pageIndex, String style)
+        {
+<span class="nc bnc" id="L345" title="All 2 branches missed.">            if (style != null)</span>
+            {
+<span class="nc bnc" id="L347" title="All 6 branches missed.">                switch (style)</span>
+                {
+                    case PDPageLabelRange.STYLE_DECIMAL:
+<span class="nc" id="L350">                        return Integer.toString(pageIndex);</span>
+                    case PDPageLabelRange.STYLE_LETTERS_LOWER:
+<span class="nc" id="L352">                        return makeLetterLabel(pageIndex);</span>
+                    case PDPageLabelRange.STYLE_LETTERS_UPPER:
+<span class="nc" id="L354">                        return makeLetterLabel(pageIndex).toUpperCase();</span>
+                    case PDPageLabelRange.STYLE_ROMAN_LOWER:
+<span class="nc" id="L356">                        return makeRomanLabel(pageIndex);</span>
+                    case PDPageLabelRange.STYLE_ROMAN_UPPER:
+<span class="nc" id="L358">                        return makeRomanLabel(pageIndex).toUpperCase();</span>
+                    default:
+                        break;
+                }
+            }
+            // Fall back to decimals.
+<span class="nc" id="L364">            return Integer.toString(pageIndex);</span>
+        }
+
+        /**
+         * Lookup table used by the {@link #makeRomanLabel(int)} method.
+         */
+<span class="nc" id="L370">        private static final String[][] ROMANS = {</span>
+            { &quot;&quot;, &quot;i&quot;, &quot;ii&quot;, &quot;iii&quot;, &quot;iv&quot;, &quot;v&quot;, &quot;vi&quot;, &quot;vii&quot;, &quot;viii&quot;, &quot;ix&quot; },
+            { &quot;&quot;, &quot;x&quot;, &quot;xx&quot;, &quot;xxx&quot;, &quot;xl&quot;, &quot;l&quot;, &quot;lx&quot;, &quot;lxx&quot;, &quot;lxxx&quot;, &quot;xc&quot; },
+            { &quot;&quot;, &quot;c&quot;, &quot;cc&quot;, &quot;ccc&quot;, &quot;cd&quot;, &quot;d&quot;, &quot;dc&quot;, &quot;dcc&quot;, &quot;dccc&quot;, &quot;cm&quot; }
+        };
+
+        private static String makeRomanLabel(int pageIndex)
+        {
+<span class="nc" id="L378">            StringBuilder buf = new StringBuilder();</span>
+<span class="nc" id="L379">            int power = 0;</span>
+<span class="nc bnc" id="L380" title="All 4 branches missed.">            while (power &lt; 3 &amp;&amp; pageIndex &gt; 0)</span>
+            {
+<span class="nc" id="L382">                buf.insert(0, ROMANS[power][pageIndex % 10]);</span>
+<span class="nc" id="L383">                pageIndex /= 10;</span>
+<span class="nc" id="L384">                power++;</span>
+            }
+            // Prepend as many m as there are thousands (which is
+            // incorrect by the roman numeral rules for numbers &gt; 3999,
+            // but is unbounded and Adobe Acrobat does it this way).
+            // This code is somewhat inefficient for really big numbers,
+            // but those don't occur too often (and the numbers in those cases
+            // would be incomprehensible even if we and Adobe
+            // used strict Roman rules).
+<span class="nc bnc" id="L393" title="All 2 branches missed.">            for (int i = 0; i &lt; pageIndex; i++)</span>
+            {
+<span class="nc" id="L395">                buf.insert(0, 'm');</span>
+            }
+<span class="nc" id="L397">            return buf.toString();</span>
+        }
+
+        /**
+         * a..z, aa..zz, aaa..zzz ... labeling as described in PDF32000-1:2008,
+         * Table 159, Page 375.
+         */
+        private static String makeLetterLabel(int num)
+        {
+<span class="nc" id="L406">            StringBuilder buf = new StringBuilder();</span>
+<span class="nc" id="L407">            int numLetters = num / 26 + Integer.signum(num % 26);</span>
+<span class="nc" id="L408">            int letter = num % 26 + 26 * (1 - Integer.signum(num % 26)) + 'a' - 1;</span>
+<span class="nc bnc" id="L409" title="All 2 branches missed.">            for (int i = 0; i &lt; numLetters; i++)</span>
+            {
+<span class="nc" id="L411">                buf.appendCodePoint(letter);</span>
+            }
+<span class="nc" id="L413">            return buf.toString();</span>
+        }
+
+        @Override
+        public void remove()
+        {
+            // This is a generator, no removing allowed.
+<span class="nc" id="L420">            throw new UnsupportedOperationException();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

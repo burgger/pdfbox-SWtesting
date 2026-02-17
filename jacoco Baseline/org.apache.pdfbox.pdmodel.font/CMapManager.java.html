@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CMapManager.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font</a> &gt; <span class="el_source">CMapManager.java</span></div><h1>CMapManager.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.font;
+
+import org.apache.fontbox.cmap.CMap;
+import org.apache.fontbox.cmap.CMapParser;
+import org.apache.pdfbox.io.RandomAccessRead;
+
+import java.io.IOException;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * CMap resource loader and cache.
+ */
+final class CMapManager
+{
+<span class="nc" id="L33">    private static final Map&lt;String, CMap&gt; CMAP_CACHE = new ConcurrentHashMap&lt;&gt;();</span>
+
+    private CMapManager()
+    {
+    }
+
+    /**
+     * Fetches the predefined CMap from disk (or cache).
+     *
+     * @param cMapName CMap name
+     * @return The predefined CMap, never null.
+     * @throws IOException 
+     */
+    public static CMap getPredefinedCMap(String cMapName) throws IOException
+    {
+<span class="nc" id="L48">        CMap cmap = CMAP_CACHE.get(cMapName);</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        if (cmap != null)</span>
+        {
+<span class="nc" id="L51">            return cmap;</span>
+        }
+
+<span class="nc" id="L54">        CMap targetCmap = new CMapParser().parsePredefined(cMapName);</span>
+
+        // limit the cache to predefined CMaps
+<span class="nc" id="L57">        CMAP_CACHE.put(targetCmap.getName(), targetCmap);</span>
+<span class="nc" id="L58">        return targetCmap;</span>
+    }
+
+    /**
+     * Parse the given CMap.
+     *
+     * @param randomAccessRead the source of the CMap to be read
+     * @return the parsed CMap
+     */
+    public static CMap parseCMap(RandomAccessRead randomAccessRead) throws IOException
+    {
+<span class="nc" id="L69">        CMap targetCmap = null;</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (randomAccessRead != null)</span>
+        {
+<span class="nc" id="L72">            targetCmap = new CMapParser().parse(randomAccessRead);</span>
+        }
+<span class="nc" id="L74">        return targetCmap;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

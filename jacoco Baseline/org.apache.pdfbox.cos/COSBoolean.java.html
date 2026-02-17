@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>COSBoolean.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.cos</a> &gt; <span class="el_source">COSBoolean.java</span></div><h1>COSBoolean.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.cos;
+
+import java.io.IOException;
+import java.io.OutputStream;
+
+/**
+ * This class represents a boolean value in the PDF document.
+ *
+ * @author Ben Litchfield
+ */
+public final class COSBoolean extends COSBase
+{
+    /**
+     * The true boolean token.
+     */
+<span class="nc" id="L32">    private static final byte[] TRUE_BYTES = { 116, 114, 117, 101 }; // &quot;true&quot;.getBytes(&quot;ISO-8859-1&quot;)</span>
+    /**
+     * The false boolean token.
+     */
+<span class="nc" id="L36">    private static final byte[] FALSE_BYTES = { 102, 97, 108, 115, 101 }; // &quot;false&quot;.getBytes(&quot;ISO-8859-1&quot;)</span>
+
+    /**
+     * The PDF true value.
+     */
+<span class="nc" id="L41">    public static final COSBoolean TRUE = new COSBoolean( true );</span>
+
+    /**
+     * The PDF false value.
+     */
+<span class="nc" id="L46">    public static final COSBoolean FALSE = new COSBoolean( false );</span>
+
+    private final boolean value;
+
+    /**
+     * Constructor.
+     *
+     * @param aValue The boolean value.
+     */
+    private COSBoolean(boolean aValue)
+<span class="nc" id="L56">    {</span>
+<span class="nc" id="L57">        value = aValue;</span>
+<span class="nc" id="L58">    }</span>
+
+    /**
+     * This will get the value that this object wraps.
+     *
+     * @return The boolean value of this object.
+     */
+    public boolean getValue()
+    {
+<span class="nc" id="L67">        return value;</span>
+    }
+
+    /**
+     * This will get the value that this object wraps.
+     *
+     * @return The boolean value of this object.
+     */
+    public Boolean getValueAsObject()
+    {
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        return value ? Boolean.TRUE : Boolean.FALSE;</span>
+    }
+
+    /**
+     * This will get the boolean value.
+     *
+     * @param value Parameter telling which boolean value to get.
+     *
+     * @return The single boolean instance that matches the parameter.
+     */
+    public static COSBoolean getBoolean( boolean value )
+    {
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        return value ? TRUE : FALSE;</span>
+    }
+
+    /**
+     * This will get the boolean value.
+     *
+     * @param value Parameter telling which boolean value to get.
+     *
+     * @return The single boolean instance that matches the parameter.
+     */
+    public static COSBoolean getBoolean( Boolean value )
+    {
+<span class="nc" id="L101">        return getBoolean( value.booleanValue() );</span>
+    }
+
+    /**
+     * visitor pattern double dispatch method.
+     *
+     * @param visitor The object to notify when visiting this object.
+     * @throws IOException If an error occurs while visiting this object.
+     */
+    @Override
+    public void accept(ICOSVisitor visitor) throws IOException
+    {
+<span class="nc" id="L113">        visitor.visitFromBoolean(this);</span>
+<span class="nc" id="L114">    }</span>
+
+    /**
+     * Return a string representation of this object.
+     *
+     * @return The string value of this object.
+     */
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L124">        return String.valueOf( value );</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        //taken from java.lang.Boolean
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        return value ? 1231 : 1237;</span>
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    public boolean equals(Object obj)
+    {
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        return this == obj; // this is correct because there are only two COSBoolean objects.</span>
+    }
+
+    /**
+     * This will write this object out to a PDF stream.
+     *
+     * @param output The stream to write this object out to.
+     *
+     * @throws IOException If an error occurs while writing out this object.
+     */
+    public void writePDF( OutputStream output ) throws IOException
+    {
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        if( value )</span>
+        {
+<span class="nc" id="L155">            output.write( TRUE_BYTES );</span>
+        }
+        else
+        {
+<span class="nc" id="L159">            output.write( FALSE_BYTES );</span>
+        }
+<span class="nc" id="L161">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

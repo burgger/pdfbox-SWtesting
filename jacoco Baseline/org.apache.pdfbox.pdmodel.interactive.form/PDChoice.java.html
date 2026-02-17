@@ -1,0 +1,491 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDChoice.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.form</a> &gt; <span class="el_source">PDChoice.java</span></div><h1>PDChoice.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.form;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.pdmodel.interactive.form.FieldUtils.KeyValue;
+
+/**
+ * A choice field contains several text items, one or more of which shall be selected as the field
+ * value.
+ * 
+ * @author sug
+ * @author John Hewson
+ */
+public abstract class PDChoice extends PDVariableText
+{
+    static final int FLAG_COMBO = 1 &lt;&lt; 17;
+    
+    private static final int FLAG_SORT = 1 &lt;&lt; 19;
+    private static final int FLAG_MULTI_SELECT = 1 &lt;&lt; 21;
+    private static final int FLAG_DO_NOT_SPELL_CHECK = 1 &lt;&lt; 22;
+    private static final int FLAG_COMMIT_ON_SEL_CHANGE = 1 &lt;&lt; 26;
+    
+    /**
+     * @see PDField#PDField(PDAcroForm)
+     *
+     * @param acroForm The acroform.
+     */
+    protected PDChoice(PDAcroForm acroForm)
+    {
+<span class="nc" id="L54">        super(acroForm);</span>
+<span class="nc" id="L55">        getCOSObject().setItem(COSName.FT, COSName.CH);</span>
+<span class="nc" id="L56">    }</span>
+
+    /**
+     * Constructor.
+     * 
+     * @param acroForm The form that this field is part of.
+     * @param field the PDF object to represent as a field.
+     * @param parent the parent node of the node
+     */
+    PDChoice(PDAcroForm acroForm, COSDictionary field, PDNonTerminalField parent)
+    {
+<span class="nc" id="L67">        super(acroForm, field, parent);</span>
+<span class="nc" id="L68">    }</span>
+    
+    /**
+     * This will get the option values &quot;Opt&quot;.
+     * 
+     * &lt;p&gt;
+     * For a choice field the options array can either be an array
+     * of text strings or an array of a two-element arrays.&lt;br&gt;
+     * The method always only returns either the text strings or,
+     * in case of two-element arrays, an array of the first element of 
+     * the two-element arrays
+     * &lt;/p&gt;   
+     * &lt;p&gt;
+     * Use {@link #getOptionsExportValues()} and {@link #getOptionsDisplayValues()}
+     * to get the entries of two-element arrays.
+     * &lt;/p&gt;
+     * 
+     * @return List containing the export values.
+     */
+    public List&lt;String&gt; getOptions()
+    {
+<span class="nc" id="L89">        COSBase values = getCOSObject().getDictionaryObject(COSName.OPT);</span>
+<span class="nc" id="L90">        return FieldUtils.getPairableItems(values, 0);</span>
+    }
+
+    /**
+     * This will set the display values - the 'Opt' key.
+     * 
+     * &lt;p&gt;
+     * The Opt array specifies the list of options in the choice field either
+     * as an array of text strings representing the display value 
+     * or as an array of a two-element array where the
+     * first element is the export value and the second the display value.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * To set both the export and the display value use {@link #setOptions(List, List)}
+     * &lt;/p&gt; 
+     *
+     * @param displayValues List containing all possible options.
+     */
+    public void setOptions(List&lt;String&gt; displayValues)
+    {
+<span class="nc bnc" id="L110" title="All 4 branches missed.">        if (displayValues != null &amp;&amp; !displayValues.isEmpty())</span>
+        {
+<span class="nc bnc" id="L112" title="All 2 branches missed.">            if (isSort())</span>
+            {
+<span class="nc" id="L114">                Collections.sort(displayValues);</span>
+            }
+<span class="nc" id="L116">            getCOSObject().setItem(COSName.OPT,</span>
+<span class="nc" id="L117">                    COSArray.ofCOSStrings(displayValues));</span>
+        }
+        else
+        {
+<span class="nc" id="L121">            getCOSObject().removeItem(COSName.OPT);</span>
+        }
+<span class="nc" id="L123">    }</span>
+
+    /**
+     * This will set the display and export values - the 'Opt' key.
+     *
+     * &lt;p&gt;
+     * This will set both, the export value and the display value
+     * of the choice field. If either one of the parameters is null or an 
+     * empty list is supplied the options will
+     * be removed.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * An {@link IllegalArgumentException} will be thrown if the
+     * number of items in the list differ.
+     * &lt;/p&gt;
+     *
+     * @see #setOptions(List)
+     * @param exportValues List containing all possible export values.
+     * @param displayValues List containing all possible display values.
+     */
+    public void setOptions(List&lt;String&gt; exportValues, List&lt;String&gt; displayValues)
+    {
+<span class="nc bnc" id="L145" title="All 8 branches missed.">        if (exportValues != null &amp;&amp; displayValues != null &amp;&amp; !exportValues.isEmpty() &amp;&amp; !displayValues.isEmpty()) </span>
+        {
+<span class="nc bnc" id="L147" title="All 2 branches missed.">            if (exportValues.size() != displayValues.size())</span>
+            {
+<span class="nc" id="L149">                throw new IllegalArgumentException(</span>
+                        &quot;The number of entries for exportValue and displayValue shall be the same.&quot;);
+            }
+            else
+            {
+<span class="nc" id="L154">                List&lt;KeyValue&gt; keyValuePairs = FieldUtils.toKeyValueList(exportValues, displayValues);</span>
+
+<span class="nc bnc" id="L156" title="All 2 branches missed.">                if (isSort())</span>
+                {
+<span class="nc" id="L158">                    FieldUtils.sortByValue(keyValuePairs);</span>
+                } 
+
+<span class="nc" id="L161">                COSArray options = new COSArray();</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">                for (int i = 0; i&lt;exportValues.size(); i++)</span>
+                {
+<span class="nc" id="L164">                    COSArray entry = new COSArray();</span>
+<span class="nc" id="L165">                    KeyValue pair = keyValuePairs.get(i);</span>
+<span class="nc" id="L166">                    entry.add(new COSString(pair.getKey()));</span>
+<span class="nc" id="L167">                    entry.add(new COSString(pair.getValue()));</span>
+<span class="nc" id="L168">                    options.add(entry);</span>
+                }
+<span class="nc" id="L170">                getCOSObject().setItem(COSName.OPT, options);</span>
+<span class="nc" id="L171">            }</span>
+        }
+        else
+        {
+<span class="nc" id="L175">            getCOSObject().removeItem(COSName.OPT);</span>
+        }      
+<span class="nc" id="L177">    }</span>
+
+    /**
+     * This will get the display values from the options.
+     * 
+     * &lt;p&gt;
+     * For options with an array of text strings the display value and export value
+     * are the same.&lt;br&gt;
+     * For options with an array of two-element arrays the display value is the 
+     * second entry in the two-element array.
+     * &lt;/p&gt;
+     * 
+     * @return List containing all the display values.
+     */
+    public List&lt;String&gt; getOptionsDisplayValues()
+    {
+<span class="nc" id="L193">        COSBase values = getCOSObject().getDictionaryObject(COSName.OPT);</span>
+<span class="nc" id="L194">        return FieldUtils.getPairableItems(values, 1);</span>
+    }
+
+    /**
+     * This will get the export values from the options.
+     * 
+     * &lt;p&gt;
+     * For options with an array of text strings the display value and export value
+     * are the same.&lt;br&gt;
+     * For options with an array of two-element arrays the export value is the 
+     * first entry in the two-element array.
+     * &lt;/p&gt;
+     *
+     * @return List containing all export values.
+     */
+    public List&lt;String&gt; getOptionsExportValues()
+    {
+<span class="nc" id="L211">        return getOptions();</span>
+    }
+    
+    /**
+     * This will get the indices of the selected options - the 'I' key.
+     * &lt;p&gt;
+     * This is only needed if a choice field allows multiple selections and
+     * two different items have the same export value or more than one values
+     * is selected.
+     * &lt;/p&gt;
+     * &lt;p&gt;The indices are zero-based&lt;/p&gt;
+     *
+     * @return List containing the indices of all selected options.
+     */
+    public List&lt;Integer&gt; getSelectedOptionsIndex()
+    {
+<span class="nc" id="L227">        COSArray value = getCOSObject().getCOSArray(COSName.I);</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">        return value != null ? value.toCOSNumberIntegerList() : Collections.emptyList();</span>
+    }
+
+    /**
+     * This will set the indices of the selected options - the 'I' key.
+     * &lt;p&gt;
+     * This method is preferred over {@link #setValue(List)} for choice fields which
+     * &lt;ul&gt;
+     *  &lt;li&gt;do support multiple selections&lt;/li&gt;
+     *  &lt;li&gt;have export values with the same value&lt;/li&gt;
+     * &lt;/ul&gt;
+     * &lt;p&gt;
+     * Setting the index will set the value too.
+     *
+     * @param values List containing the indices of all selected options.
+     */
+    public void setSelectedOptionsIndex(List&lt;Integer&gt; values)
+    {
+<span class="nc bnc" id="L246" title="All 4 branches missed.">        if (values != null &amp;&amp; !values.isEmpty())</span>
+        {
+<span class="nc bnc" id="L248" title="All 2 branches missed.">            if (!isMultiSelect())</span>
+            {
+<span class="nc" id="L250">                throw new IllegalArgumentException(</span>
+                        &quot;Setting the indices is not allowed for choice fields not allowing multiple selections.&quot;);
+            }
+<span class="nc" id="L253">            getCOSObject().setItem(COSName.I, COSArray.ofCOSIntegers(values));</span>
+        }
+        else
+        {
+<span class="nc" id="L257">            getCOSObject().removeItem(COSName.I);</span>
+        }
+<span class="nc" id="L259">    }</span>
+
+    /**
+     * Determines if Sort is set.
+     * 
+     * &lt;p&gt;
+     * If set, the field’s option items shall be sorted alphabetically.
+     * The sorting has to be done when writing the PDF. PDF Readers are supposed to
+     * display the options in the order in which they occur in the Opt array. 
+     * &lt;/p&gt;
+     * 
+     * @return true if the options are sorted.
+     */
+    public boolean isSort()
+    {
+<span class="nc" id="L274">        return getCOSObject().getFlag(COSName.FF, FLAG_SORT);</span>
+    }
+
+    /**
+     * Set the Sort bit.
+     * 
+     * @see #isSort()
+     * @param sort The value for Sort.
+     */
+    public void setSort(boolean sort)
+    {
+<span class="nc" id="L285">        getCOSObject().setFlag(COSName.FF, FLAG_SORT, sort);</span>
+<span class="nc" id="L286">    }</span>
+
+    /**
+     * Determines if MultiSelect is set.
+     * 
+     * @return true if multi select is allowed.
+     */
+    public boolean isMultiSelect()
+    {
+<span class="nc" id="L295">        return getCOSObject().getFlag(COSName.FF, FLAG_MULTI_SELECT);</span>
+    }
+
+    /**
+     * Set the MultiSelect bit.
+     *
+     * @param multiSelect The value for MultiSelect.
+     */
+    public void setMultiSelect(boolean multiSelect)
+    {
+<span class="nc" id="L305">        getCOSObject().setFlag(COSName.FF, FLAG_MULTI_SELECT, multiSelect);</span>
+<span class="nc" id="L306">    }</span>
+
+    /**
+     * Determines if DoNotSpellCheck is set.
+     * 
+     * @return true if spell checker is disabled.
+     */
+    public boolean isDoNotSpellCheck()
+    {
+<span class="nc" id="L315">        return getCOSObject().getFlag(COSName.FF, FLAG_DO_NOT_SPELL_CHECK);</span>
+    }
+
+    /**
+     * Set the DoNotSpellCheck bit.
+     *
+     * @param doNotSpellCheck The value for DoNotSpellCheck.
+     */
+    public void setDoNotSpellCheck(boolean doNotSpellCheck)
+    {
+<span class="nc" id="L325">        getCOSObject().setFlag(COSName.FF, FLAG_DO_NOT_SPELL_CHECK, doNotSpellCheck);</span>
+<span class="nc" id="L326">    }</span>
+
+    /**
+     * Determines if CommitOnSelChange is set.
+     * 
+     * @return true if value shall be committed as soon as a selection is made.
+     */
+    public boolean isCommitOnSelChange()
+    {
+<span class="nc" id="L335">        return getCOSObject().getFlag(COSName.FF, FLAG_COMMIT_ON_SEL_CHANGE);</span>
+    }
+
+    /**
+     * Set the CommitOnSelChange bit.
+     *
+     * @param commitOnSelChange The value for CommitOnSelChange.
+     */
+    public void setCommitOnSelChange(boolean commitOnSelChange)
+    {
+<span class="nc" id="L345">        getCOSObject().setFlag(COSName.FF, FLAG_COMMIT_ON_SEL_CHANGE, commitOnSelChange);</span>
+<span class="nc" id="L346">    }</span>
+
+    /**
+     * Determines if Combo is set.
+     * 
+     * @return true if value the choice is a combo box..
+     */
+    public boolean isCombo()
+    {
+<span class="nc" id="L355">        return getCOSObject().getFlag(COSName.FF, FLAG_COMBO);</span>
+    }
+
+    /**
+     * Set the Combo bit.
+     *
+     * @param combo The value for Combo.
+     */
+    public void setCombo(boolean combo)
+    {
+<span class="nc" id="L365">        getCOSObject().setFlag(COSName.FF, FLAG_COMBO, combo);</span>
+<span class="nc" id="L366">    }</span>
+
+    /**
+     * Set the selected value of this field, and try to update the visual appearance.
+     *
+     * @param value The name of the selected item.
+     * @throws IOException if the value could not be set
+     */
+    @Override
+    public void setValue(String value) throws IOException
+    {
+<span class="nc" id="L377">        getCOSObject().setString(COSName.V, value);</span>
+        
+        // remove I key for single valued choice field
+<span class="nc" id="L380">        setSelectedOptionsIndex(null);</span>
+        
+<span class="nc" id="L382">        applyChange();</span>
+<span class="nc" id="L383">    }</span>
+
+    /**
+     * Sets the default value of this field.
+     *
+     * @param value The name of the selected item.
+     */
+    public void setDefaultValue(String value)
+    {
+<span class="nc" id="L392">        getCOSObject().setString(COSName.DV, value);</span>
+<span class="nc" id="L393">    }</span>
+    
+    /**
+     * Sets the entry &quot;V&quot; to the given values. Requires {@link #isMultiSelect()} to be true.
+     * 
+     * @param values the list of values
+     * @throws IOException if the appearance couldn't be generated.
+     */    
+    public void setValue(List&lt;String&gt; values) throws IOException
+    {
+<span class="nc bnc" id="L403" title="All 4 branches missed.">        if (values != null &amp;&amp; !values.isEmpty())</span>
+        {
+<span class="nc bnc" id="L405" title="All 2 branches missed.">            if (!isMultiSelect())</span>
+            {
+<span class="nc" id="L407">                throw new IllegalArgumentException(&quot;The list box does not allow multiple selections.&quot;);</span>
+            }
+<span class="nc" id="L409">            List&lt;String&gt; options = getOptions();</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">            if (!options.containsAll(values))</span>
+            {
+<span class="nc" id="L412">                throw new IllegalArgumentException(&quot;The values are not contained in the selectable options.&quot;);</span>
+            }
+<span class="nc" id="L414">            getCOSObject().setItem(COSName.V,</span>
+<span class="nc" id="L415">                    COSArray.ofCOSStrings(values));</span>
+<span class="nc" id="L416">            updateSelectedOptionsIndex(values, options);</span>
+<span class="nc" id="L417">        }</span>
+        else
+        {
+<span class="nc" id="L420">            getCOSObject().removeItem(COSName.V);</span>
+<span class="nc" id="L421">            getCOSObject().removeItem(COSName.I);</span>
+        }
+<span class="nc" id="L423">        applyChange();</span>
+<span class="nc" id="L424">    }</span>
+
+    /**
+     * Returns the selected values, or an empty List. This list always contains a single item
+     * unless {@link #isMultiSelect()} is true.
+     *
+     * @return A non-null string.
+     */
+    public List&lt;String&gt; getValue()
+    {
+<span class="nc" id="L434">        return getValueFor(COSName.V);</span>
+    }
+
+    /**
+     * Returns the default values, or an empty List. This list always contains a single item
+     * unless {@link #isMultiSelect()} is true.
+     *
+     * @return A non-null string.
+     */
+    public List&lt;String&gt; getDefaultValue()
+    {
+<span class="nc" id="L445">        return getValueFor(COSName.DV);</span>
+    }
+
+    /**
+     * Returns the selected values, or an empty List, for the given key.
+     */
+    private List&lt;String&gt; getValueFor(COSName name)
+    {
+<span class="nc" id="L453">        COSBase value = getCOSObject().getDictionaryObject(name);</span>
+<span class="nc bnc" id="L454" title="All 2 branches missed.">        if (value instanceof COSString)</span>
+        {
+<span class="nc" id="L456">            return Collections.singletonList(((COSString) value).getString());</span>
+        }
+<span class="nc bnc" id="L458" title="All 2 branches missed.">        else if (value instanceof COSArray)</span>
+        {
+<span class="nc" id="L460">            return ((COSArray) value).toCOSStringStringList();</span>
+        }
+<span class="nc" id="L462">        return Collections.emptyList();</span>
+    }
+
+    @Override
+    public String getValueAsString()
+    {
+<span class="nc" id="L468">        return Arrays.toString(getValue().toArray());</span>
+    }
+    
+    /**
+     * Update the 'I' key based on values set.
+     */
+    private void updateSelectedOptionsIndex(List&lt;String&gt; values, List&lt;String&gt; options)
+    {
+<span class="nc" id="L476">        List&lt;Integer&gt; indices = new ArrayList&lt;&gt;(values.size());</span>
+
+<span class="nc bnc" id="L478" title="All 2 branches missed.">        for (String value : values)</span>
+        {
+<span class="nc" id="L480">            indices.add(options.indexOf(value));</span>
+<span class="nc" id="L481">        }</span>
+        
+        // Indices have to be &quot;... array of integers, sorted in ascending order ...&quot;
+<span class="nc" id="L484">        Collections.sort(indices);</span>
+<span class="nc" id="L485">        setSelectedOptionsIndex(indices);</span>
+<span class="nc" id="L486">    }</span>
+
+    @Override
+    abstract void constructAppearances() throws IOException;
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

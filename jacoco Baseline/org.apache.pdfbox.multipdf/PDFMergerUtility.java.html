@@ -1,0 +1,1557 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFMergerUtility.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.multipdf</a> &gt; <span class="el_source">PDFMergerUtility.java</span></div><h1>PDFMergerUtility.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.multipdf;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.io.IOUtils;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.apache.pdfbox.io.RandomAccessStreamCache.StreamCacheCreateFunction;
+import org.apache.pdfbox.pdfwriter.compress.CompressParameters;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
+import org.apache.pdfbox.pdmodel.PDDocumentInformation;
+import org.apache.pdfbox.pdmodel.PDDocumentNameDestinationDictionary;
+import org.apache.pdfbox.pdmodel.PDDocumentNameDictionary;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageTree;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.PDStructureElementNameTreeNode;
+import org.apache.pdfbox.pdmodel.PageMode;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.common.PDDestinationOrAction;
+import org.apache.pdfbox.pdmodel.common.PDMetadata;
+import org.apache.pdfbox.pdmodel.common.PDNameTreeNode;
+import org.apache.pdfbox.pdmodel.common.PDNumberTreeNode;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+import org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure.PDMarkInfo;
+import org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure.PDParentTreeValue;
+import org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure.PDStructureElement;
+import org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure.PDStructureTreeRoot;
+import org.apache.pdfbox.pdmodel.graphics.color.PDOutputIntent;
+import org.apache.pdfbox.pdmodel.interactive.action.PDAction;
+import org.apache.pdfbox.pdmodel.interactive.action.PDActionFactory;
+import org.apache.pdfbox.pdmodel.interactive.action.PDActionGoTo;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDDestination;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDField;
+import org.apache.pdfbox.pdmodel.interactive.viewerpreferences.PDViewerPreferences;
+
+/**
+ * This class will take a list of pdf documents and merge them, saving the
+ * result in a new document.
+ *
+ * @author Ben Litchfield
+ */
+public class PDFMergerUtility
+{
+    /**
+     * Log instance.
+     */
+<span class="nc" id="L93">    private static final Logger LOG = LogManager.getLogger(PDFMergerUtility.class);</span>
+
+    private final List&lt;Object&gt; sources;
+    private String destinationFileName;
+    private OutputStream destinationStream;
+<span class="nc" id="L98">    private boolean ignoreAcroFormErrors = false;</span>
+<span class="nc" id="L99">    private PDDocumentInformation destinationDocumentInformation = null;</span>
+<span class="nc" id="L100">    private PDMetadata destinationMetadata = null;</span>
+
+<span class="nc" id="L102">    private DocumentMergeMode documentMergeMode = DocumentMergeMode.PDFBOX_LEGACY_MODE;</span>
+<span class="nc" id="L103">    private AcroFormMergeMode acroFormMergeMode = AcroFormMergeMode.PDFBOX_LEGACY_MODE;</span>
+    
+    /**
+     * The mode to use when merging documents:
+     * 
+     * &lt;ul&gt;
+     * &lt;li&gt;{@link DocumentMergeMode#OPTIMIZE_RESOURCES_MODE} Optimizes resource handling such as
+     *      closing documents early. &lt;strong&gt;Not all document elements are merged&lt;/strong&gt; compared to
+     *      the PDFBOX_LEGACY_MODE. Currently supported are:
+     *      &lt;ul&gt;
+     *          &lt;li&gt;Page content and resources
+     *      &lt;/ul&gt;  
+     * &lt;li&gt;{@link DocumentMergeMode#PDFBOX_LEGACY_MODE} Keeps all files open until the
+     *      merge has been completed. This is  currently necessary to merge documents
+     *      containing a Structure Tree.
+     * &lt;/ul&gt;
+     */
+<span class="nc" id="L120">    public enum DocumentMergeMode</span>
+    {
+<span class="nc" id="L122">        OPTIMIZE_RESOURCES_MODE,</span>
+<span class="nc" id="L123">        PDFBOX_LEGACY_MODE</span>
+    }
+    
+    /**
+     * The mode to use when merging AcroForm between documents:
+     * 
+     * &lt;ul&gt;
+     * &lt;li&gt;{@link AcroFormMergeMode#JOIN_FORM_FIELDS_MODE} fields with the same fully qualified name
+     *      will be merged into one with the widget annotations of the merged fields 
+     *      becoming part of the same field.
+     * &lt;li&gt;{@link AcroFormMergeMode#PDFBOX_LEGACY_MODE} fields with the same fully qualified name
+     *      will be renamed and treated as independent. This mode was used in versions
+     *      of PDFBox up to 2.x.
+     * &lt;/ul&gt;
+     */
+<span class="nc" id="L138">    public enum AcroFormMergeMode</span>
+    {
+<span class="nc" id="L140">        JOIN_FORM_FIELDS_MODE,</span>
+<span class="nc" id="L141">        PDFBOX_LEGACY_MODE</span>
+    }
+
+    /**
+     * Instantiate a new PDFMergerUtility.
+     */
+    public PDFMergerUtility()
+<span class="nc" id="L148">    {</span>
+<span class="nc" id="L149">        sources = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L150">    }</span>
+
+    /**
+     * Get the merge mode to be used for merging AcroForms between documents
+     * 
+     * {@link AcroFormMergeMode}
+     * 
+     * @return the current AcroFormMergeMode
+     */
+    public AcroFormMergeMode getAcroFormMergeMode()
+    {
+<span class="nc" id="L161">        return acroFormMergeMode;</span>
+    }
+
+    /**
+     * Set the merge mode to be used for merging AcroForms between documents
+     * 
+     * {@link AcroFormMergeMode}
+     * 
+     * @param theAcroFormMergeMode AcroFormMergeMode to be used
+     * 
+     */
+    public void setAcroFormMergeMode(AcroFormMergeMode theAcroFormMergeMode)
+    {
+<span class="nc" id="L174">        this.acroFormMergeMode = theAcroFormMergeMode;</span>
+<span class="nc" id="L175">    }</span>
+    
+    /**
+     * Get the merge mode to be used for merging documents
+     * 
+     * {@link DocumentMergeMode}
+     * 
+     * @return the current DocumentMergeMode
+     */
+    public DocumentMergeMode getDocumentMergeMode()
+    {
+<span class="nc" id="L186">        return documentMergeMode;</span>
+    }
+
+    /**
+     * Set the merge mode to be used for merging documents
+     * 
+     * {@link DocumentMergeMode}
+     * 
+     * @param theDocumentMergeMode DocumentMergeMode to be used
+     */
+    public void setDocumentMergeMode(DocumentMergeMode theDocumentMergeMode)
+    {
+<span class="nc" id="L198">        this.documentMergeMode = theDocumentMergeMode;</span>
+<span class="nc" id="L199">    }</span>
+
+    /**
+     * Get the name of the destination file.
+     *
+     * @return Returns the destination.
+     */
+    public String getDestinationFileName()
+    {
+<span class="nc" id="L208">        return destinationFileName;</span>
+    }
+
+    /**
+     * Set the name of the destination file.
+     *
+     * @param destination The destination to set.
+     */
+    public void setDestinationFileName(String destination)
+    {
+<span class="nc" id="L218">        destinationFileName = destination;</span>
+<span class="nc" id="L219">    }</span>
+
+    /**
+     * Get the destination OutputStream.
+     *
+     * @return Returns the destination OutputStream.
+     */
+    public OutputStream getDestinationStream()
+    {
+<span class="nc" id="L228">        return destinationStream;</span>
+    }
+
+    /**
+     * Set the destination OutputStream.
+     *
+     * @param destStream The destination to set.
+     */
+    public void setDestinationStream(OutputStream destStream)
+    {
+<span class="nc" id="L238">        destinationStream = destStream;</span>
+<span class="nc" id="L239">    }</span>
+
+    /**
+     * Get the destination document information that is to be set in
+     * {@link #mergeDocuments(org.apache.pdfbox.io.RandomAccessStreamCache.StreamCacheCreateFunction) }.
+     * The default is null, which means that it is ignored.
+     *
+     * @return The destination document information.
+     */
+    public PDDocumentInformation getDestinationDocumentInformation()
+    {
+<span class="nc" id="L250">        return destinationDocumentInformation;</span>
+    }
+
+    /**
+     * Set the destination document information that is to be set in
+     * {@link #mergeDocuments(org.apache.pdfbox.io.RandomAccessStreamCache.StreamCacheCreateFunction) }.
+     * The default is null, which means that it is ignored.
+     *
+     * @param info The destination document information.
+     */
+    public void setDestinationDocumentInformation(PDDocumentInformation info)
+    {
+<span class="nc" id="L262">        destinationDocumentInformation = info;</span>
+<span class="nc" id="L263">    }</span>
+
+    /**
+     * Set the destination metadata that is to be set in
+     * {@link #mergeDocuments(org.apache.pdfbox.io.RandomAccessStreamCache.StreamCacheCreateFunction) }.
+     * The default is null, which means that it is ignored.
+     *
+     * @return The destination metadata.
+     */
+    public PDMetadata getDestinationMetadata()
+    {
+<span class="nc" id="L274">        return destinationMetadata;</span>
+    }
+
+    /**
+     * Set the destination metadata that is to be set in
+     * {@link #mergeDocuments(org.apache.pdfbox.io.RandomAccessStreamCache.StreamCacheCreateFunction) }.
+     * The default is null, which means that it is ignored.
+     *
+     * @param meta The destination metadata.
+     */
+    public void setDestinationMetadata(PDMetadata meta)
+    {
+<span class="nc" id="L286">        destinationMetadata = meta;</span>
+<span class="nc" id="L287">    }</span>
+
+    /**
+     * Add a source file to the list of files to merge.
+     *
+     * @param source Full path and file name of source document.
+     * 
+     * @throws FileNotFoundException If the file doesn't exist
+     */
+    public void addSource(String source) throws FileNotFoundException
+    {
+<span class="nc" id="L298">        addSource(new File(source));</span>
+<span class="nc" id="L299">    }</span>
+
+    /**
+     * Add a source file to the list of files to merge.
+     *
+     * @param source File representing source document
+     * 
+     * @throws FileNotFoundException If the file doesn't exist
+     */
+    public void addSource(File source) throws FileNotFoundException
+    {
+<span class="nc" id="L310">        sources.add(source);</span>
+<span class="nc" id="L311">    }</span>
+
+    /**
+     * Add a source to the list of documents to merge.
+     *
+     * @param source RandomAccessRead representing source document. To pass an InputStream, wrap it
+     * into a {@link RandomAccessReadBuffer}.
+     */
+    public void addSource(RandomAccessRead source)
+    {
+<span class="nc" id="L321">        sources.add(source);</span>
+<span class="nc" id="L322">    }</span>
+
+    /**
+     * Add a list of sources to the list of documents to merge.
+     *
+     * @param sourcesList List of RandomAccessRead objects representing source documents
+     */
+    public void addSources(List&lt;RandomAccessRead&gt; sourcesList)
+    {
+<span class="nc" id="L331">        sources.addAll(sourcesList);</span>
+<span class="nc" id="L332">    }</span>
+
+    /**
+     * Merge the list of source documents, saving the result in the destination file. The source
+     * list is not reset after merge. If you want to merge one document at a time, then it's better
+     * to use
+     * {@link #appendDocument(org.apache.pdfbox.pdmodel.PDDocument, org.apache.pdfbox.pdmodel.PDDocument)}.
+     *
+     * @param streamCacheCreateFunction a function to create an instance of a stream cache; in case of &lt;code&gt;null&lt;/code&gt;
+     * unrestricted main memory is used
+     * 
+     * @throws IOException If there is an error saving the document.
+     */
+    public void mergeDocuments(StreamCacheCreateFunction streamCacheCreateFunction) throws IOException
+    {
+<span class="nc" id="L347">        mergeDocuments(streamCacheCreateFunction, CompressParameters.DEFAULT_COMPRESSION);</span>
+<span class="nc" id="L348">    }</span>
+
+    /**
+     * Merge the list of source documents, saving the result in the destination file. The source
+     * list is not reset after merge. If you want to merge one document at a time, then it's better
+     * to use
+     * {@link #appendDocument(org.apache.pdfbox.pdmodel.PDDocument, org.apache.pdfbox.pdmodel.PDDocument)}.
+     *
+     * @param streamCacheCreateFunction a function to create an instance of a stream cache; in case of &lt;code&gt;null&lt;/code&gt;
+     * unrestricted main memory is used
+     * @param compressParameters defines if compressed object streams are enabled
+     * 
+     * @throws IOException If there is an error saving the document.
+     */
+    public void mergeDocuments(StreamCacheCreateFunction streamCacheCreateFunction,
+            CompressParameters compressParameters) throws IOException
+    {
+<span class="nc bnc" id="L365" title="All 2 branches missed.">        if (documentMergeMode == DocumentMergeMode.PDFBOX_LEGACY_MODE)</span>
+        {
+<span class="nc" id="L367">            legacyMergeDocuments(streamCacheCreateFunction, compressParameters);</span>
+        }
+<span class="nc bnc" id="L369" title="All 2 branches missed.">        else if (documentMergeMode == DocumentMergeMode.OPTIMIZE_RESOURCES_MODE)</span>
+        {
+<span class="nc" id="L371">            optimizedMergeDocuments(streamCacheCreateFunction, compressParameters);</span>
+        }
+<span class="nc" id="L373">    }</span>
+    
+    private void optimizedMergeDocuments(StreamCacheCreateFunction streamCacheCreateFunction,
+            CompressParameters compressParameters) throws IOException
+    {
+<span class="nc bnc" id="L378" title="All 2 branches missed.">        StreamCacheCreateFunction strmCacheFunc = streamCacheCreateFunction != null ? streamCacheCreateFunction</span>
+<span class="nc" id="L379">                : IOUtils.createMemoryOnlyStreamCache();</span>
+<span class="nc" id="L380">        try (PDDocument destination = new PDDocument(strmCacheFunc))</span>
+        {
+<span class="nc" id="L382">            PDFCloneUtility cloner = new PDFCloneUtility(destination);</span>
+<span class="nc" id="L383">            PDPageTree destinationPageTree = destination.getPages(); // cache PageTree</span>
+<span class="nc bnc" id="L384" title="All 2 branches missed.">            for (Object sourceObject : sources)</span>
+            {
+<span class="nc" id="L386">                PDDocument sourceDoc = null;</span>
+                try
+                {
+<span class="nc bnc" id="L389" title="All 2 branches missed.">                    if (sourceObject instanceof File)</span>
+                    {
+<span class="nc" id="L391">                        sourceDoc = Loader.loadPDF((File) sourceObject);</span>
+                    }
+                    else
+                    {
+<span class="nc" id="L395">                        sourceDoc = Loader.loadPDF((RandomAccessRead) sourceObject);</span>
+                    }
+<span class="nc bnc" id="L397" title="All 2 branches missed.">                    for (PDPage page : sourceDoc.getPages())</span>
+                    {
+<span class="nc" id="L399">                        PDPage newPage = new PDPage(cloner.cloneForNewDocument(page.getCOSObject()));</span>
+<span class="nc" id="L400">                        newPage.setCropBox(page.getCropBox());</span>
+<span class="nc" id="L401">                        newPage.setMediaBox(page.getMediaBox());</span>
+<span class="nc" id="L402">                        newPage.setRotation(page.getRotation());</span>
+<span class="nc" id="L403">                        PDResources resources = page.getResources();</span>
+<span class="nc bnc" id="L404" title="All 2 branches missed.">                        if (resources != null)</span>
+                        {
+                            // this is smart enough to just create references for resources that are used on multiple
+                            // pages
+<span class="nc" id="L408">                            newPage.setResources(new PDResources(</span>
+<span class="nc" id="L409">                                    cloner.cloneForNewDocument(resources.getCOSObject())));</span>
+                        }
+                        else
+                        {
+<span class="nc" id="L413">                            newPage.setResources(new PDResources());</span>
+                        }
+<span class="nc" id="L415">                        destinationPageTree.add(newPage);</span>
+<span class="nc" id="L416">                    }</span>
+                }
+                finally
+                {
+<span class="nc" id="L420">                    IOUtils.closeQuietly(sourceDoc);</span>
+                }
+<span class="nc" id="L422">            }</span>
+            
+<span class="nc bnc" id="L424" title="All 2 branches missed.">            if (destinationStream == null)</span>
+            {
+<span class="nc" id="L426">                destination.save(destinationFileName, compressParameters);</span>
+            }
+            else
+            {
+<span class="nc" id="L430">                destination.save(destinationStream, compressParameters);</span>
+            }
+        }
+<span class="nc" id="L433">    }</span>
+    
+    
+    /**
+     * Merge the list of source documents, saving the result in the destination file.
+     *
+     * @param streamCacheCreateFunction a function to create an instance of a stream cache; in case of &lt;code&gt;null&lt;/code&gt;
+     * unrestricted main memory is used
+     * 
+     * @throws IOException If there is an error saving the document.
+     */
+    private void legacyMergeDocuments(StreamCacheCreateFunction streamCacheCreateFunction,
+            CompressParameters compressParameters) throws IOException
+    {
+<span class="nc bnc" id="L447" title="All 2 branches missed.">        if (!sources.isEmpty())</span>
+        {
+            // Make sure that:
+            // - first Exception is kept
+            // - all PDDocuments are closed
+            // - all FileInputStreams are closed
+            // - there's a way to see which errors occurred
+<span class="nc bnc" id="L454" title="All 2 branches missed.">            StreamCacheCreateFunction strmCacheFunc = streamCacheCreateFunction != null ? streamCacheCreateFunction</span>
+<span class="nc" id="L455">                    : IOUtils.createMemoryOnlyStreamCache();</span>
+<span class="nc" id="L456">            try (PDDocument destination = new PDDocument(strmCacheFunc))</span>
+            {
+<span class="nc bnc" id="L458" title="All 2 branches missed.">                for (Object sourceObject : sources)</span>
+                {
+                    PDDocument sourceDoc;
+<span class="nc bnc" id="L461" title="All 2 branches missed.">                    if (sourceObject instanceof File)</span>
+                    {
+<span class="nc" id="L463">                        sourceDoc = Loader.loadPDF((File) sourceObject);</span>
+                    }
+                    else
+                    {
+<span class="nc" id="L467">                        sourceDoc = Loader.loadPDF((RandomAccessRead) sourceObject);</span>
+                    }
+                    try
+                    {
+<span class="nc" id="L471">                        appendDocument(destination, sourceDoc);</span>
+                    }
+                    finally
+                    {
+<span class="nc" id="L475">                        IOUtils.closeAndLogException(sourceDoc, LOG, &quot;PDDocument&quot;, null);</span>
+                    }
+<span class="nc" id="L477">                }</span>
+                
+                // optionally set meta data
+<span class="nc bnc" id="L480" title="All 2 branches missed.">                if (destinationDocumentInformation != null)</span>
+                {
+<span class="nc" id="L482">                    destination.setDocumentInformation(destinationDocumentInformation);</span>
+                }
+<span class="nc bnc" id="L484" title="All 2 branches missed.">                if (destinationMetadata != null)</span>
+                {
+<span class="nc" id="L486">                    destination.getDocumentCatalog().setMetadata(destinationMetadata);</span>
+                }
+                
+<span class="nc bnc" id="L489" title="All 2 branches missed.">                if (destinationStream == null)</span>
+                {
+<span class="nc" id="L491">                    destination.save(destinationFileName, compressParameters);</span>
+                }
+                else
+                {
+<span class="nc" id="L495">                    destination.save(destinationStream, compressParameters);</span>
+                }
+            }
+        }
+<span class="nc" id="L499">    }</span>
+
+    /**
+     * append all pages from source to destination.
+     *
+     * @param destination the document to receive the pages
+     * @param source the document originating the new pages
+     *
+     * @throws IOException If there is an error accessing data from either
+     * document.
+     */
+    public void appendDocument(PDDocument destination, PDDocument source) throws IOException
+    {
+<span class="nc" id="L512">        PDFCloneUtility cloner = new PDFCloneUtility(destination);</span>
+<span class="nc bnc" id="L513" title="All 2 branches missed.">        if (source.getDocument().isClosed())</span>
+        {
+<span class="nc" id="L515">            throw new IOException(&quot;Error: source PDF is closed.&quot;);</span>
+        }
+<span class="nc bnc" id="L517" title="All 2 branches missed.">        if (destination.getDocument().isClosed())</span>
+        {
+<span class="nc" id="L519">            throw new IOException(&quot;Error: destination PDF is closed.&quot;);</span>
+        }
+
+<span class="nc" id="L522">        PDDocumentCatalog srcCatalog = source.getDocumentCatalog();</span>
+<span class="nc bnc" id="L523" title="All 2 branches missed.">        if (isDynamicXfa(srcCatalog.getAcroForm()))</span>
+        {
+<span class="nc" id="L525">            throw new IOException(&quot;Error: can't merge source document containing dynamic XFA form content.&quot;);</span>
+        }
+
+<span class="nc" id="L528">        PDDocumentInformation destInfo = destination.getDocumentInformation();</span>
+<span class="nc" id="L529">        PDDocumentInformation srcInfo = source.getDocumentInformation();</span>
+<span class="nc" id="L530">        mergeInto(srcInfo.getCOSObject(), destInfo.getCOSObject(), cloner, Collections.emptySet());</span>
+
+        // use the highest version number for the resulting pdf
+<span class="nc" id="L533">        float destVersion = destination.getVersion();</span>
+<span class="nc" id="L534">        float srcVersion = source.getVersion();</span>
+
+<span class="nc bnc" id="L536" title="All 2 branches missed.">        if (destVersion &lt; srcVersion)</span>
+        {
+<span class="nc" id="L538">            destination.setVersion(srcVersion);</span>
+        }
+
+<span class="nc" id="L541">        PDDocumentCatalog destCatalog = destination.getDocumentCatalog();</span>
+<span class="nc" id="L542">        mergeAcroForm(cloner, destCatalog, srcCatalog);</span>
+
+<span class="nc" id="L544">        COSArray destThreads = destCatalog.getCOSObject().getCOSArray(COSName.THREADS);</span>
+<span class="nc" id="L545">        COSArray srcThreads = cloner.cloneForNewDocument(destCatalog.getCOSObject().getCOSArray(</span>
+                COSName.THREADS));
+<span class="nc bnc" id="L547" title="All 2 branches missed.">        if (destThreads == null)</span>
+        {
+<span class="nc" id="L549">            destCatalog.getCOSObject().setItem(COSName.THREADS, srcThreads);</span>
+        }
+        else
+        {
+<span class="nc" id="L553">            destThreads.addAll(srcThreads);</span>
+        }
+
+<span class="nc" id="L556">        PDDocumentNameDictionary destNames = destCatalog.getNames();</span>
+<span class="nc" id="L557">        PDDocumentNameDictionary srcNames = srcCatalog.getNames();</span>
+<span class="nc bnc" id="L558" title="All 2 branches missed.">        if (srcNames != null)</span>
+        {
+<span class="nc bnc" id="L560" title="All 2 branches missed.">            if (destNames == null)</span>
+            {
+<span class="nc" id="L562">                destCatalog.getCOSObject().setItem(COSName.NAMES,</span>
+<span class="nc" id="L563">                        cloner.cloneForNewDocument(srcNames.getCOSObject()));</span>
+            }
+            else
+            {
+<span class="nc" id="L567">                cloner.cloneMerge(srcNames, destNames);</span>
+            }
+        }
+        
+<span class="nc bnc" id="L571" title="All 4 branches missed.">        if (destNames != null &amp;&amp; destNames.getCOSObject().containsKey(COSName.ID_TREE))</span>
+        {
+            // found in 001031.pdf from PDFBOX-4417 and doesn't belong there
+<span class="nc" id="L574">            destNames.getCOSObject().removeItem(COSName.ID_TREE);</span>
+<span class="nc" id="L575">            LOG.warn(&quot;Removed /IDTree from /Names dictionary, doesn't belong there&quot;);</span>
+        }
+
+<span class="nc" id="L578">        PDDocumentNameDestinationDictionary srcDests = srcCatalog.getDests();</span>
+<span class="nc bnc" id="L579" title="All 2 branches missed.">        if (srcDests != null)</span>
+        {
+<span class="nc" id="L581">            PDDocumentNameDestinationDictionary destDests = destCatalog.getDests();</span>
+<span class="nc bnc" id="L582" title="All 2 branches missed.">            if (destDests == null)</span>
+            {
+<span class="nc" id="L584">                destCatalog.getCOSObject().setItem(COSName.DESTS,</span>
+<span class="nc" id="L585">                        cloner.cloneForNewDocument(srcDests.getCOSObject()));</span>
+            }
+            else
+            {
+<span class="nc" id="L589">                cloner.cloneMerge(srcDests, destDests);</span>
+            }
+        }
+
+<span class="nc" id="L593">        PDDocumentOutline srcOutline = srcCatalog.getDocumentOutline();</span>
+<span class="nc bnc" id="L594" title="All 2 branches missed.">        if (srcOutline != null)</span>
+        {
+<span class="nc" id="L596">            PDDocumentOutline destOutline = destCatalog.getDocumentOutline();</span>
+<span class="nc bnc" id="L597" title="All 4 branches missed.">            if (destOutline == null || destOutline.getFirstChild() == null)</span>
+            {
+<span class="nc" id="L599">                PDDocumentOutline cloned = new PDDocumentOutline(</span>
+<span class="nc" id="L600">                        cloner.cloneForNewDocument(srcOutline.getCOSObject()));</span>
+<span class="nc" id="L601">                destCatalog.setDocumentOutline(cloned);</span>
+<span class="nc" id="L602">            }</span>
+            else
+            {
+                // search last sibling for dest, because /Last entry is sometimes wrong
+<span class="nc" id="L606">                PDOutlineItem destLastOutlineItem = destOutline.getFirstChild();</span>
+                while (true)
+                {
+<span class="nc" id="L609">                    PDOutlineItem outlineItem = destLastOutlineItem.getNextSibling();</span>
+<span class="nc bnc" id="L610" title="All 2 branches missed.">                    if (outlineItem == null)</span>
+                    {
+<span class="nc" id="L612">                        break;</span>
+                    }
+<span class="nc" id="L614">                    destLastOutlineItem = outlineItem;</span>
+<span class="nc" id="L615">                }</span>
+<span class="nc bnc" id="L616" title="All 2 branches missed.">                for (PDOutlineItem item : srcOutline.children())</span>
+                {
+                    // get each child, clone its dictionary, remove siblings info,
+                    // append outline item created from there
+<span class="nc" id="L620">                    COSDictionary clonedDict = cloner.cloneForNewDocument(item.getCOSObject());</span>
+<span class="nc" id="L621">                    clonedDict.removeItem(COSName.PREV);</span>
+<span class="nc" id="L622">                    clonedDict.removeItem(COSName.NEXT);</span>
+<span class="nc" id="L623">                    PDOutlineItem clonedItem = new PDOutlineItem(clonedDict);</span>
+<span class="nc" id="L624">                    destLastOutlineItem.insertSiblingAfter(clonedItem);</span>
+<span class="nc" id="L625">                    destLastOutlineItem = destLastOutlineItem.getNextSibling();</span>
+<span class="nc" id="L626">                }</span>
+            }
+        }
+
+<span class="nc" id="L630">        PageMode destPageMode = destCatalog.getPageMode();</span>
+<span class="nc bnc" id="L631" title="All 2 branches missed.">        if (destPageMode == null)</span>
+        {
+<span class="nc" id="L633">            PageMode srcPageMode = srcCatalog.getPageMode();</span>
+<span class="nc" id="L634">            destCatalog.setPageMode(srcPageMode);</span>
+        }
+
+<span class="nc" id="L637">        COSDictionary srcLabels = srcCatalog.getCOSObject().getCOSDictionary(COSName.PAGE_LABELS);</span>
+<span class="nc bnc" id="L638" title="All 2 branches missed.">        if (srcLabels != null)</span>
+        {
+<span class="nc" id="L640">            int destPageCount = destination.getNumberOfPages();</span>
+            COSArray destNums;
+<span class="nc" id="L642">            COSDictionary destLabels = destCatalog.getCOSObject().getCOSDictionary(COSName.PAGE_LABELS);</span>
+<span class="nc bnc" id="L643" title="All 2 branches missed.">            if (destLabels == null)</span>
+            {
+<span class="nc" id="L645">                destLabels = new COSDictionary();</span>
+<span class="nc" id="L646">                destNums = new COSArray();</span>
+<span class="nc" id="L647">                destLabels.setItem(COSName.NUMS, destNums);</span>
+<span class="nc" id="L648">                destCatalog.getCOSObject().setItem(COSName.PAGE_LABELS, destLabels);</span>
+            }
+            else
+            {
+<span class="nc" id="L652">                destNums = destLabels.getCOSArray(COSName.NUMS);</span>
+            }
+<span class="nc" id="L654">            COSArray srcNums = srcLabels.getCOSArray(COSName.NUMS);</span>
+<span class="nc bnc" id="L655" title="All 2 branches missed.">            if (srcNums != null)</span>
+            {
+<span class="nc" id="L657">                int startSize = destNums.size();</span>
+<span class="nc bnc" id="L658" title="All 2 branches missed.">                for (int i = 0; i &lt; srcNums.size(); i += 2)</span>
+                {
+<span class="nc" id="L660">                    COSBase base = srcNums.getObject(i);</span>
+<span class="nc bnc" id="L661" title="All 2 branches missed.">                    if (!(base instanceof COSNumber))</span>
+                    {
+<span class="nc" id="L663">                        LOG.error(&quot;page labels ignored, index {} should be a number, but is {}&quot;, i,</span>
+                                base);
+                        // remove what we added
+<span class="nc bnc" id="L666" title="All 2 branches missed.">                        while (destNums.size() &gt; startSize)</span>
+                        {
+<span class="nc" id="L668">                            destNums.remove(startSize);</span>
+                        }
+                        break;
+                    }
+<span class="nc" id="L672">                    COSNumber labelIndex = (COSNumber) base;</span>
+<span class="nc" id="L673">                    long labelIndexValue = labelIndex.intValue();</span>
+<span class="nc" id="L674">                    destNums.add(COSInteger.get(labelIndexValue + destPageCount));</span>
+<span class="nc" id="L675">                    destNums.add(cloner.cloneForNewDocument(srcNums.getObject(i + 1)));</span>
+                }
+            }
+        }
+
+<span class="nc" id="L680">        COSStream destMetadata = destCatalog.getCOSObject().getCOSStream(COSName.METADATA);</span>
+<span class="nc" id="L681">        COSStream srcMetadata = srcCatalog.getCOSObject().getCOSStream(COSName.METADATA);</span>
+<span class="nc bnc" id="L682" title="All 4 branches missed.">        if (destMetadata == null &amp;&amp; srcMetadata != null)</span>
+        {
+            try
+            {
+<span class="nc" id="L686">                PDStream newStream = new PDStream(destination, srcMetadata.createInputStream(), (COSName) null);                </span>
+<span class="nc" id="L687">                mergeInto(srcMetadata, newStream.getCOSObject(), cloner,</span>
+<span class="nc" id="L688">                        new HashSet&lt;&gt;(Arrays.asList(COSName.FILTER, COSName.LENGTH)));                </span>
+<span class="nc" id="L689">                destCatalog.getCOSObject().setItem(COSName.METADATA, newStream);</span>
+            }
+<span class="nc" id="L691">            catch (IOException ex)</span>
+            {
+                // PDFBOX-4227 cleartext XMP stream with /Flate 
+<span class="nc" id="L694">                LOG.error(&quot;Metadata skipped because it could not be read&quot;, ex);</span>
+<span class="nc" id="L695">            }</span>
+        }
+
+<span class="nc" id="L698">        COSDictionary destOCP = destCatalog.getCOSObject().getCOSDictionary(COSName.OCPROPERTIES);</span>
+<span class="nc" id="L699">        COSDictionary srcOCP = srcCatalog.getCOSObject().getCOSDictionary(COSName.OCPROPERTIES);</span>
+<span class="nc bnc" id="L700" title="All 4 branches missed.">        if (destOCP == null &amp;&amp; srcOCP != null)</span>
+        {
+<span class="nc" id="L702">            destCatalog.getCOSObject().setItem(COSName.OCPROPERTIES, cloner.cloneForNewDocument(srcOCP));</span>
+        }
+<span class="nc bnc" id="L704" title="All 4 branches missed.">        else if (destOCP != null &amp;&amp; srcOCP != null)</span>
+        {
+<span class="nc" id="L706">            cloner.cloneMerge(srcOCP, destOCP);</span>
+        }
+
+<span class="nc" id="L709">        mergeOutputIntents(srcCatalog, destCatalog, cloner);</span>
+
+        // merge logical structure hierarchy
+<span class="nc" id="L712">        boolean mergeStructTree = false;</span>
+<span class="nc" id="L713">        int destParentTreeNextKey = -1;</span>
+<span class="nc" id="L714">        Map&lt;Integer, COSObjectable&gt; srcNumberTreeAsMap = null;</span>
+<span class="nc" id="L715">        Map&lt;Integer, COSObjectable&gt; destNumberTreeAsMap = null;</span>
+<span class="nc" id="L716">        PDStructureTreeRoot srcStructTree = srcCatalog.getStructureTreeRoot();</span>
+<span class="nc" id="L717">        PDStructureTreeRoot destStructTree = destCatalog.getStructureTreeRoot();</span>
+<span class="nc bnc" id="L718" title="All 4 branches missed.">        if (destStructTree == null &amp;&amp; srcStructTree != null)</span>
+        {
+            // create a dummy structure tree in the destination, so that the source
+            // tree is cloned. (We can't just copy the tree reference due to PDFBOX-3999)
+<span class="nc" id="L722">            destStructTree = new PDStructureTreeRoot();</span>
+<span class="nc" id="L723">            destCatalog.setStructureTreeRoot(destStructTree);</span>
+<span class="nc" id="L724">            destStructTree.setParentTree(new PDNumberTreeNode(PDParentTreeValue.class));</span>
+            // PDFBOX-4429: remove bogus StructParent(s)
+<span class="nc bnc" id="L726" title="All 2 branches missed.">            for (PDPage page : destCatalog.getPages())</span>
+            {
+<span class="nc" id="L728">                page.getCOSObject().removeItem(COSName.STRUCT_PARENTS);</span>
+<span class="nc bnc" id="L729" title="All 2 branches missed.">                for (PDAnnotation ann : page.getAnnotations())</span>
+                {
+<span class="nc" id="L731">                    ann.getCOSObject().removeItem(COSName.STRUCT_PARENT);</span>
+<span class="nc" id="L732">                }</span>
+<span class="nc" id="L733">            }</span>
+        }
+<span class="nc bnc" id="L735" title="All 2 branches missed.">        if (destStructTree != null)</span>
+        {
+<span class="nc" id="L737">            PDNumberTreeNode destParentTree = destStructTree.getParentTree();</span>
+<span class="nc" id="L738">            destParentTreeNextKey = destStructTree.getParentTreeNextKey();</span>
+<span class="nc bnc" id="L739" title="All 2 branches missed.">            if (destParentTree != null)</span>
+            {
+<span class="nc" id="L741">                destNumberTreeAsMap = getNumberTreeAsMap(destParentTree);</span>
+<span class="nc bnc" id="L742" title="All 2 branches missed.">                if (destParentTreeNextKey &lt; 0)</span>
+                {
+<span class="nc bnc" id="L744" title="All 2 branches missed.">                    if (destNumberTreeAsMap.isEmpty())</span>
+                    {
+<span class="nc" id="L746">                        destParentTreeNextKey = 0;</span>
+                    }
+                    else
+                    {
+<span class="nc" id="L750">                        destParentTreeNextKey = Collections.max(destNumberTreeAsMap.keySet()) + 1;</span>
+                    }
+                }
+<span class="nc bnc" id="L753" title="All 4 branches missed.">                if (destParentTreeNextKey &gt;= 0 &amp;&amp; srcStructTree != null)</span>
+                {
+<span class="nc" id="L755">                    PDNumberTreeNode srcParentTree = srcStructTree.getParentTree();</span>
+<span class="nc bnc" id="L756" title="All 2 branches missed.">                    if (srcParentTree != null)</span>
+                    {
+<span class="nc" id="L758">                        srcNumberTreeAsMap = getNumberTreeAsMap(srcParentTree);</span>
+<span class="nc bnc" id="L759" title="All 2 branches missed.">                        if (!srcNumberTreeAsMap.isEmpty())</span>
+                        {
+<span class="nc" id="L761">                            mergeStructTree = true;</span>
+                        }
+                    }
+                }
+            }
+        }
+
+<span class="nc" id="L768">        Map&lt;COSDictionary, COSDictionary&gt; objMapping = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L769">        PDPageTree destinationPageTree = destination.getPages(); // cache PageTree</span>
+<span class="nc bnc" id="L770" title="All 2 branches missed.">        for (PDPage page : srcCatalog.getPages())</span>
+        {
+<span class="nc" id="L772">            PDPage newPage = new PDPage(cloner.cloneForNewDocument(page.getCOSObject()));</span>
+<span class="nc bnc" id="L773" title="All 2 branches missed.">            if (!mergeStructTree)</span>
+            {
+                // PDFBOX-4429: remove bogus StructParent(s)
+<span class="nc" id="L776">                newPage.getCOSObject().removeItem(COSName.STRUCT_PARENTS);</span>
+<span class="nc bnc" id="L777" title="All 2 branches missed.">                for (PDAnnotation ann : newPage.getAnnotations())</span>
+                {
+<span class="nc" id="L779">                    ann.getCOSObject().removeItem(COSName.STRUCT_PARENT);</span>
+<span class="nc" id="L780">                }</span>
+            }
+<span class="nc" id="L782">            newPage.setCropBox(page.getCropBox());</span>
+<span class="nc" id="L783">            newPage.setMediaBox(page.getMediaBox());</span>
+<span class="nc" id="L784">            newPage.setRotation(page.getRotation());</span>
+<span class="nc" id="L785">            PDResources resources = page.getResources();</span>
+<span class="nc bnc" id="L786" title="All 2 branches missed.">            if (resources != null)</span>
+            {
+                // this is smart enough to just create references for resources that are used on multiple pages
+<span class="nc" id="L789">                newPage.setResources(new PDResources(</span>
+<span class="nc" id="L790">                        cloner.cloneForNewDocument(resources.getCOSObject())));</span>
+            }
+            else
+            {
+<span class="nc" id="L794">                newPage.setResources(new PDResources());</span>
+            }
+<span class="nc bnc" id="L796" title="All 2 branches missed.">            if (mergeStructTree)</span>
+            {
+                // add the value of the destination ParentTreeNextKey to every source element 
+                // StructParent(s) value so that these don't overlap with the existing values
+<span class="nc" id="L800">                updateStructParentEntries(newPage, destParentTreeNextKey);</span>
+<span class="nc" id="L801">                objMapping.put(page.getCOSObject(), newPage.getCOSObject());</span>
+<span class="nc" id="L802">                List&lt;PDAnnotation&gt; oldAnnots = page.getAnnotations();</span>
+<span class="nc" id="L803">                List&lt;PDAnnotation&gt; newAnnots = newPage.getAnnotations();</span>
+<span class="nc bnc" id="L804" title="All 2 branches missed.">                for (int i = 0; i &lt; oldAnnots.size(); i++)</span>
+                {
+<span class="nc" id="L806">                    objMapping.put(oldAnnots.get(i).getCOSObject(), newAnnots.get(i).getCOSObject());</span>
+                }
+                // TODO update mapping for XObjects
+            }
+<span class="nc" id="L810">            destinationPageTree.add(newPage);</span>
+<span class="nc" id="L811">        }</span>
+<span class="nc" id="L812">        mergeOpenAction(srcCatalog, destCatalog, cloner);</span>
+<span class="nc bnc" id="L813" title="All 2 branches missed.">        if (mergeStructTree)</span>
+        {
+<span class="nc" id="L815">            updatePageReferences(cloner, srcNumberTreeAsMap, objMapping);</span>
+<span class="nc" id="L816">            int maxSrcKey = -1;</span>
+<span class="nc bnc" id="L817" title="All 2 branches missed.">            for (Map.Entry&lt;Integer, COSObjectable&gt; entry : srcNumberTreeAsMap.entrySet())</span>
+            {
+<span class="nc" id="L819">                int srcKey = entry.getKey();</span>
+<span class="nc" id="L820">                maxSrcKey = Math.max(srcKey, maxSrcKey);</span>
+<span class="nc" id="L821">                COSObjectable value = entry.getValue();</span>
+<span class="nc bnc" id="L822" title="All 2 branches missed.">                if (value != null)</span>
+                {
+<span class="nc" id="L824">                    value = cloner.cloneForNewDocument(value.getCOSObject());</span>
+<span class="nc" id="L825">                    destNumberTreeAsMap.put(destParentTreeNextKey + srcKey, value);</span>
+                }
+<span class="nc" id="L827">            }</span>
+<span class="nc" id="L828">            destParentTreeNextKey += maxSrcKey + 1;</span>
+<span class="nc" id="L829">            PDNumberTreeNode newParentTreeNode = new PDNumberTreeNode(PDParentTreeValue.class);</span>
+
+            // Note that all elements are stored flatly. This could become a problem for large files
+            // when these are opened in a viewer that uses the tagging information.
+            // If this happens, then PDNumberTreeNode should be improved with a convenience method that
+            // stores the map into a B+Tree, see https://en.wikipedia.org/wiki/B+_tree
+<span class="nc" id="L835">            newParentTreeNode.setNumbers(destNumberTreeAsMap);</span>
+
+<span class="nc" id="L837">            destStructTree.setParentTree(newParentTreeNode);</span>
+<span class="nc" id="L838">            destStructTree.setParentTreeNextKey(destParentTreeNextKey);</span>
+
+<span class="nc" id="L840">            mergeKEntries(cloner, srcStructTree, destStructTree);</span>
+<span class="nc" id="L841">            mergeRoleMap(srcStructTree, destStructTree, cloner);</span>
+<span class="nc" id="L842">            mergeIDTree(cloner, srcStructTree, destStructTree);</span>
+<span class="nc" id="L843">            mergeMarkInfo(destCatalog, srcCatalog);</span>
+<span class="nc" id="L844">            mergeLanguage(destCatalog, srcCatalog);</span>
+<span class="nc" id="L845">            mergeViewerPreferences(destCatalog, srcCatalog, cloner);</span>
+        }
+<span class="nc" id="L847">    }</span>
+
+    private void mergeOpenAction(PDDocumentCatalog srcCatalog, PDDocumentCatalog dstCatalog,
+            PDFCloneUtility cloner) throws IOException
+    {
+<span class="nc" id="L852">        PDDestinationOrAction srcOpenAction = null;</span>
+<span class="nc" id="L853">        PDDestinationOrAction dstOpenAction = null;</span>
+        try
+        {
+<span class="nc" id="L856">            dstOpenAction = dstCatalog.getOpenAction();</span>
+<span class="nc" id="L857">            srcOpenAction = srcCatalog.getOpenAction();</span>
+        }
+<span class="nc" id="L859">        catch (IOException ex)</span>
+        {
+            // PDFBOX-4223
+<span class="nc" id="L862">            LOG.error(&quot;Invalid OpenAction ignored&quot;, ex);</span>
+<span class="nc" id="L863">        }</span>
+<span class="nc bnc" id="L864" title="All 4 branches missed.">        if (dstOpenAction == null &amp;&amp; srcOpenAction != null)</span>
+        {
+<span class="nc" id="L866">            COSBase clonedOpenActionBase = cloner.cloneForNewDocument(srcOpenAction.getCOSObject());</span>
+<span class="nc" id="L867">            PDDestination openActionDestination = null;</span>
+<span class="nc bnc" id="L868" title="All 2 branches missed.">            if (clonedOpenActionBase instanceof COSDictionary)</span>
+            {
+<span class="nc" id="L870">                PDAction action = PDActionFactory.createAction((COSDictionary) clonedOpenActionBase);</span>
+<span class="nc bnc" id="L871" title="All 2 branches missed.">                if (action instanceof PDActionGoTo)</span>
+                {
+<span class="nc" id="L873">                    openActionDestination = ((PDActionGoTo) action).getDestination();</span>
+                }
+<span class="nc" id="L875">                dstCatalog.setOpenAction(action);</span>
+<span class="nc" id="L876">            }</span>
+<span class="nc bnc" id="L877" title="All 2 branches missed.">            else if (clonedOpenActionBase instanceof COSArray)</span>
+            {
+<span class="nc" id="L879">                openActionDestination = PDDestination.create(clonedOpenActionBase);</span>
+<span class="nc" id="L880">                dstCatalog.setOpenAction(openActionDestination);</span>
+            }
+<span class="nc bnc" id="L882" title="All 2 branches missed.">            if (openActionDestination instanceof PDPageDestination)</span>
+            {
+<span class="nc" id="L884">                PDPage page = ((PDPageDestination) openActionDestination).getPage();</span>
+<span class="nc bnc" id="L885" title="All 4 branches missed.">                if (page != null &amp;&amp; dstCatalog.getPages().indexOf(page) == -1)</span>
+                {
+<span class="nc" id="L887">                    LOG.warn(&quot;OpenAction entry ignored because destination page doesn't exist&quot;);</span>
+<span class="nc" id="L888">                    dstCatalog.setOpenAction(null);</span>
+                }
+            }
+        }
+<span class="nc" id="L892">    }</span>
+
+    private void mergeViewerPreferences(PDDocumentCatalog destCatalog, PDDocumentCatalog srcCatalog,
+            PDFCloneUtility cloner) throws IOException
+    {
+<span class="nc" id="L897">        PDViewerPreferences srcViewerPreferences = srcCatalog.getViewerPreferences();</span>
+<span class="nc bnc" id="L898" title="All 2 branches missed.">        if (srcViewerPreferences == null)</span>
+        {
+<span class="nc" id="L900">            return;</span>
+        }
+<span class="nc" id="L902">        PDViewerPreferences destViewerPreferences = destCatalog.getViewerPreferences();</span>
+<span class="nc bnc" id="L903" title="All 2 branches missed.">        if (destViewerPreferences == null)</span>
+        {
+<span class="nc" id="L905">            destViewerPreferences = new PDViewerPreferences();</span>
+<span class="nc" id="L906">            destCatalog.setViewerPreferences(destViewerPreferences);</span>
+        }
+<span class="nc" id="L908">        mergeInto(srcViewerPreferences.getCOSObject(), destViewerPreferences.getCOSObject(), cloner,</span>
+<span class="nc" id="L909">                  Collections.emptySet());</span>
+
+        // check the booleans - set to true if one is set and true
+<span class="nc bnc" id="L912" title="All 4 branches missed.">        if (srcViewerPreferences.hideToolbar() || destViewerPreferences.hideToolbar())</span>
+        {
+<span class="nc" id="L914">            destViewerPreferences.setHideToolbar(true);</span>
+        }
+<span class="nc bnc" id="L916" title="All 4 branches missed.">        if (srcViewerPreferences.hideMenubar() || destViewerPreferences.hideMenubar())</span>
+        {
+<span class="nc" id="L918">            destViewerPreferences.setHideMenubar(true);</span>
+        }
+<span class="nc bnc" id="L920" title="All 4 branches missed.">        if (srcViewerPreferences.hideWindowUI() || destViewerPreferences.hideWindowUI())</span>
+        {
+<span class="nc" id="L922">            destViewerPreferences.setHideWindowUI(true);</span>
+        }
+<span class="nc bnc" id="L924" title="All 4 branches missed.">        if (srcViewerPreferences.fitWindow() || destViewerPreferences.fitWindow())</span>
+        {
+<span class="nc" id="L926">            destViewerPreferences.setFitWindow(true);</span>
+        }
+<span class="nc bnc" id="L928" title="All 4 branches missed.">        if (srcViewerPreferences.centerWindow() || destViewerPreferences.centerWindow())</span>
+        {
+<span class="nc" id="L930">            destViewerPreferences.setCenterWindow(true);</span>
+        }
+<span class="nc bnc" id="L932" title="All 4 branches missed.">        if (srcViewerPreferences.displayDocTitle() || destViewerPreferences.displayDocTitle())</span>
+        {
+<span class="nc" id="L934">            destViewerPreferences.setDisplayDocTitle(true);</span>
+        }
+<span class="nc" id="L936">    }</span>
+
+    private void mergeLanguage(PDDocumentCatalog destCatalog, PDDocumentCatalog srcCatalog)
+    {
+<span class="nc bnc" id="L940" title="All 2 branches missed.">        if (destCatalog.getLanguage() == null)</span>
+        {
+<span class="nc" id="L942">            String srcLanguage = srcCatalog.getLanguage();</span>
+<span class="nc bnc" id="L943" title="All 2 branches missed.">            if (srcLanguage != null)</span>
+            {
+<span class="nc" id="L945">                destCatalog.setLanguage(srcLanguage);</span>
+            }
+        }
+<span class="nc" id="L948">    }</span>
+
+    private void mergeMarkInfo(PDDocumentCatalog destCatalog, PDDocumentCatalog srcCatalog)
+    {
+<span class="nc" id="L952">        PDMarkInfo destMark = destCatalog.getMarkInfo();</span>
+<span class="nc" id="L953">        PDMarkInfo srcMark = srcCatalog.getMarkInfo();</span>
+<span class="nc bnc" id="L954" title="All 2 branches missed.">        if (destMark == null)</span>
+        {
+<span class="nc" id="L956">            destMark = new PDMarkInfo();</span>
+        }
+<span class="nc bnc" id="L958" title="All 2 branches missed.">        if (srcMark == null)</span>
+        {
+<span class="nc" id="L960">            srcMark = new PDMarkInfo();</span>
+        }
+<span class="nc" id="L962">        destMark.setMarked(true);</span>
+<span class="nc bnc" id="L963" title="All 4 branches missed.">        destMark.setSuspect(srcMark.isSuspect() || destMark.isSuspect());</span>
+<span class="nc bnc" id="L964" title="All 4 branches missed.">        destMark.setSuspect(srcMark.usesUserProperties() || destMark.usesUserProperties());</span>
+<span class="nc" id="L965">        destCatalog.setMarkInfo(destMark);</span>
+<span class="nc" id="L966">    }</span>
+
+    private void mergeKEntries(PDFCloneUtility cloner,
+                      PDStructureTreeRoot srcStructTree,
+                      PDStructureTreeRoot destStructTree) throws IOException
+    {
+<span class="nc" id="L972">        COSBase srcKEntry = srcStructTree.getK();</span>
+<span class="nc" id="L973">        COSArray srcKArray = new COSArray();</span>
+<span class="nc" id="L974">        COSBase clonedSrcKEntry = cloner.cloneForNewDocument(srcKEntry);</span>
+<span class="nc bnc" id="L975" title="All 2 branches missed.">        if (clonedSrcKEntry instanceof COSArray)</span>
+        {
+<span class="nc" id="L977">            srcKArray.addAll((COSArray) clonedSrcKEntry);</span>
+        }
+<span class="nc bnc" id="L979" title="All 2 branches missed.">        else if (clonedSrcKEntry instanceof COSDictionary)</span>
+        {
+<span class="nc" id="L981">            srcKArray.add(clonedSrcKEntry);</span>
+        }
+
+<span class="nc bnc" id="L984" title="All 2 branches missed.">        if (srcKArray.isEmpty())</span>
+        {
+<span class="nc" id="L986">            return;</span>
+        }
+
+<span class="nc" id="L989">        COSArray dstKArray = new COSArray();</span>
+<span class="nc" id="L990">        COSBase dstKEntry = destStructTree.getK();</span>
+<span class="nc bnc" id="L991" title="All 2 branches missed.">        if (dstKEntry instanceof COSArray)</span>
+        {
+<span class="nc" id="L993">            dstKArray.addAll((COSArray) dstKEntry);</span>
+        }
+<span class="nc bnc" id="L995" title="All 2 branches missed.">        else if (dstKEntry instanceof COSDictionary)</span>
+        {
+<span class="nc" id="L997">            dstKArray.add(dstKEntry);</span>
+        }
+
+<span class="nc bnc" id="L1000" title="All 4 branches missed.">        if (dstKArray.size() == 1 &amp;&amp; dstKArray.getObject(0) instanceof COSDictionary)</span>
+        {
+            // Only one element in the destination. If it is a /Document and its children
+            // are /Document or /Part, then we can insert there
+<span class="nc" id="L1004">            COSDictionary topKDict = (COSDictionary) dstKArray.getObject(0);</span>
+<span class="nc bnc" id="L1005" title="All 2 branches missed.">            if (COSName.DOCUMENT.equals(topKDict.getCOSName(COSName.S)))</span>
+            {
+<span class="nc" id="L1007">                COSArray kLevelOneArray = topKDict.getCOSArray(COSName.K);</span>
+<span class="nc bnc" id="L1008" title="All 2 branches missed.">                if (kLevelOneArray != null)</span>
+                {
+<span class="nc" id="L1010">                    boolean onlyDocuments = hasOnlyDocumentsOrParts(kLevelOneArray);</span>
+<span class="nc bnc" id="L1011" title="All 2 branches missed.">                    if (onlyDocuments)</span>
+                    {
+                        // insert src elements at level 1
+<span class="nc" id="L1014">                        kLevelOneArray.addAll(srcKArray);</span>
+<span class="nc" id="L1015">                        updateParentEntry(kLevelOneArray, topKDict, COSName.PART);</span>
+<span class="nc" id="L1016">                        return;</span>
+                    }
+                }
+            }
+        }
+
+<span class="nc bnc" id="L1022" title="All 2 branches missed.">        if (dstKArray.isEmpty())</span>
+        {
+<span class="nc" id="L1024">            updateParentEntry(srcKArray, destStructTree.getCOSObject(), null);</span>
+<span class="nc" id="L1025">            destStructTree.setK(srcKArray);</span>
+<span class="nc" id="L1026">            return;</span>
+        }
+
+        // whatever this is, merge this under a new /Document element
+<span class="nc" id="L1030">        dstKArray.addAll(srcKArray);</span>
+<span class="nc" id="L1031">        COSDictionary kLevelZeroDict = new COSDictionary();</span>
+        // If it is all Document, then make it all Part
+<span class="nc bnc" id="L1033" title="All 2 branches missed.">        COSName newStructureType = hasOnlyDocumentsOrParts(dstKArray) ? COSName.PART : null;</span>
+<span class="nc" id="L1034">        updateParentEntry(dstKArray, kLevelZeroDict, newStructureType);</span>
+<span class="nc" id="L1035">        kLevelZeroDict.setItem(COSName.K, dstKArray);</span>
+<span class="nc" id="L1036">        kLevelZeroDict.setItem(COSName.P, destStructTree);</span>
+<span class="nc" id="L1037">        kLevelZeroDict.setItem(COSName.S, COSName.DOCUMENT);</span>
+<span class="nc" id="L1038">        destStructTree.setK(kLevelZeroDict);</span>
+<span class="nc" id="L1039">    }</span>
+
+    private boolean hasOnlyDocumentsOrParts(COSArray kLevelOneArray)
+    {
+<span class="nc bnc" id="L1043" title="All 2 branches missed.">        for (int i = 0; i &lt; kLevelOneArray.size(); ++i)</span>
+        {
+<span class="nc" id="L1045">            COSBase base = kLevelOneArray.getObject(i);</span>
+<span class="nc bnc" id="L1046" title="All 2 branches missed.">            if (!(base instanceof COSDictionary))</span>
+            {
+<span class="nc" id="L1048">                return false;</span>
+            }
+<span class="nc" id="L1050">            COSDictionary dict = (COSDictionary) base;</span>
+<span class="nc" id="L1051">            COSName sEntry = dict.getCOSName(COSName.S);</span>
+<span class="nc bnc" id="L1052" title="All 4 branches missed.">            if (!COSName.DOCUMENT.equals(sEntry) &amp;&amp; !COSName.PART.equals(sEntry))</span>
+            {
+<span class="nc" id="L1054">                return false;</span>
+            }
+        }
+<span class="nc" id="L1057">        return true;</span>
+    }
+
+    /**
+     * Update the P reference to the new parent dictionary.
+     *
+     * @param kArray the kids array
+     * @param newParent the new parent
+     * @param newStructureType the new structure type in /S or null so it doesn't get replaced
+     */
+    private void updateParentEntry(COSArray kArray, COSDictionary newParent, COSName newStructureType)
+    {
+<span class="nc bnc" id="L1069" title="All 2 branches missed.">        for (int i = 0; i &lt; kArray.size(); i++)</span>
+        {
+<span class="nc" id="L1071">            COSBase subEntry = kArray.getObject(i);</span>
+<span class="nc bnc" id="L1072" title="All 2 branches missed.">            if (subEntry instanceof COSDictionary)</span>
+            {
+<span class="nc" id="L1074">                COSDictionary dictEntry = (COSDictionary) subEntry;</span>
+<span class="nc" id="L1075">                dictEntry.setItem(COSName.P, newParent);</span>
+<span class="nc bnc" id="L1076" title="All 2 branches missed.">                if (newStructureType != null)</span>
+                {
+<span class="nc" id="L1078">                    dictEntry.setItem(COSName.S, newStructureType);</span>
+                }
+            }
+        }
+<span class="nc" id="L1082">    }</span>
+
+    private void mergeIDTree(PDFCloneUtility cloner,
+            PDStructureTreeRoot srcStructTree,
+            PDStructureTreeRoot destStructTree) throws IOException
+    {
+<span class="nc bnc" id="L1088" title="All 2 branches missed.">        if (srcStructTree == null)</span>
+        {
+<span class="nc" id="L1090">            return;</span>
+        }
+<span class="nc" id="L1092">        PDNameTreeNode&lt;PDStructureElement&gt; srcIDTree = srcStructTree.getIDTree();</span>
+<span class="nc bnc" id="L1093" title="All 2 branches missed.">        if (srcIDTree == null)</span>
+        {
+<span class="nc" id="L1095">            return;</span>
+        }
+<span class="nc" id="L1097">        PDNameTreeNode&lt;PDStructureElement&gt; destIDTree = destStructTree.getIDTree();</span>
+<span class="nc bnc" id="L1098" title="All 2 branches missed.">        if (destIDTree == null)</span>
+        {
+<span class="nc" id="L1100">            destIDTree = new PDStructureElementNameTreeNode();</span>
+        }
+<span class="nc" id="L1102">        Map&lt;String, PDStructureElement&gt; srcNames = getIDTreeAsMap(srcIDTree);</span>
+<span class="nc" id="L1103">        Map&lt;String, PDStructureElement&gt; destNames = getIDTreeAsMap(destIDTree);</span>
+<span class="nc bnc" id="L1104" title="All 2 branches missed.">        for (Map.Entry&lt;String, PDStructureElement&gt; entry : srcNames.entrySet())</span>
+        {
+<span class="nc bnc" id="L1106" title="All 2 branches missed.">            if (destNames.containsKey(entry.getKey()))</span>
+            {
+<span class="nc" id="L1108">                LOG.warn(&quot;key '{}' already exists in destination IDTree&quot;, entry.getKey());</span>
+            }
+            else
+            {
+<span class="nc bnc" id="L1112" title="All 2 branches missed.">                if (entry.getValue() != null)</span>
+                {
+<span class="nc" id="L1114">                    PDStructureElement structureElement = new PDStructureElement(</span>
+<span class="nc" id="L1115">                            cloner.cloneForNewDocument(entry.getValue().getCOSObject()));</span>
+<span class="nc" id="L1116">                    destNames.put(entry.getKey(), structureElement);</span>
+                }
+            }
+<span class="nc" id="L1119">        }</span>
+<span class="nc" id="L1120">        destIDTree = new PDStructureElementNameTreeNode();</span>
+<span class="nc" id="L1121">        destIDTree.setNames(destNames);</span>
+<span class="nc" id="L1122">        destStructTree.setIDTree(destIDTree);</span>
+        // Note that all elements are stored flatly. This could become a problem for large files
+        // when these are opened in a viewer that uses the tagging information.
+        // If this happens, then PDNameTreeNode should be improved with a convenience method that
+        // stores the map into a B+Tree, see https://en.wikipedia.org/wiki/B+_tree
+<span class="nc" id="L1127">    }</span>
+
+    // PDNameTreeNode.getNames() only brings one level, this is why we need this
+    // might be made public at a later time, or integrated into PDNameTreeNode with template.
+    static Map&lt;String, PDStructureElement&gt; getIDTreeAsMap(PDNameTreeNode&lt;PDStructureElement&gt; idTree)
+            throws IOException
+    {
+<span class="nc bnc" id="L1134" title="All 2 branches missed.">        if (idTree == null)</span>
+        {
+<span class="nc" id="L1136">            return new LinkedHashMap&lt;&gt;();</span>
+        }
+<span class="nc" id="L1138">        Map&lt;String, PDStructureElement&gt; names = idTree.getNames();</span>
+<span class="nc bnc" id="L1139" title="All 2 branches missed.">        if (names == null)</span>
+        {
+<span class="nc" id="L1141">            names = new LinkedHashMap&lt;&gt;();</span>
+        }
+        else
+        {
+            // must copy because the map is read only
+<span class="nc" id="L1146">            names = new LinkedHashMap&lt;&gt;(names);</span>
+        }
+<span class="nc" id="L1148">        List&lt;PDNameTreeNode&lt;PDStructureElement&gt;&gt; kids = idTree.getKids();</span>
+<span class="nc bnc" id="L1149" title="All 2 branches missed.">        if (kids != null)</span>
+        {
+<span class="nc bnc" id="L1151" title="All 2 branches missed.">            for (PDNameTreeNode&lt;PDStructureElement&gt; kid : kids)</span>
+            {
+<span class="nc" id="L1153">                names.putAll(getIDTreeAsMap(kid));</span>
+<span class="nc" id="L1154">            }</span>
+        }
+<span class="nc" id="L1156">        return names;</span>
+    }
+
+    // PDNumberTreeNode.getNumbers() only brings one level, this is why we need this
+    // might be made public at a later time, or integrated into PDNumberTreeNode.
+    static Map&lt;Integer, COSObjectable&gt; getNumberTreeAsMap(PDNumberTreeNode tree)
+            throws IOException
+    {
+<span class="nc bnc" id="L1164" title="All 2 branches missed.">        if (tree == null)</span>
+        {
+<span class="nc" id="L1166">            return new LinkedHashMap&lt;&gt;();</span>
+        }
+<span class="nc" id="L1168">        Map&lt;Integer, COSObjectable&gt; numbers = tree.getNumbers();</span>
+<span class="nc bnc" id="L1169" title="All 2 branches missed.">        if (numbers == null)</span>
+        {
+<span class="nc" id="L1171">            numbers = new LinkedHashMap&lt;&gt;();</span>
+        }
+        else
+        {
+            // must copy because the map is read only
+<span class="nc" id="L1176">            numbers = new LinkedHashMap&lt;&gt;(numbers);</span>
+        }
+<span class="nc" id="L1178">        List&lt;PDNumberTreeNode&gt; kids = tree.getKids();</span>
+<span class="nc bnc" id="L1179" title="All 2 branches missed.">        if (kids != null)</span>
+        {
+<span class="nc bnc" id="L1181" title="All 2 branches missed.">            for (PDNumberTreeNode kid : kids)</span>
+            {
+<span class="nc" id="L1183">                numbers.putAll(getNumberTreeAsMap(kid));</span>
+<span class="nc" id="L1184">            }</span>
+        }
+<span class="nc" id="L1186">        return numbers;</span>
+    }
+
+    private void mergeRoleMap(PDStructureTreeRoot srcStructTree, PDStructureTreeRoot destStructTree,
+            PDFCloneUtility cloner) throws IOException
+    {
+<span class="nc" id="L1192">        COSDictionary srcDict = srcStructTree.getCOSObject().getCOSDictionary(COSName.ROLE_MAP);</span>
+<span class="nc bnc" id="L1193" title="All 2 branches missed.">        if (srcDict == null)</span>
+        {
+<span class="nc" id="L1195">            return;</span>
+        }
+<span class="nc" id="L1197">        COSDictionary destDict = destStructTree.getCOSObject().getCOSDictionary(COSName.ROLE_MAP);</span>
+<span class="nc bnc" id="L1198" title="All 2 branches missed.">        if (destDict == null)</span>
+        {
+<span class="nc" id="L1200">            destStructTree.getCOSObject().setItem(COSName.ROLE_MAP, cloner.cloneForNewDocument(srcDict));</span>
+<span class="nc" id="L1201">            return;</span>
+        }
+<span class="nc bnc" id="L1203" title="All 2 branches missed.">        for (Map.Entry&lt;COSName, COSBase&gt; entry : srcDict.entrySet())</span>
+        {
+<span class="nc" id="L1205">            COSBase destValue = destDict.getDictionaryObject(entry.getKey());</span>
+<span class="nc bnc" id="L1206" title="All 4 branches missed.">            if (destValue != null &amp;&amp; destValue.equals(entry.getValue()))</span>
+            {
+                // already exists, but identical
+<span class="nc" id="L1209">                continue;</span>
+            }
+<span class="nc bnc" id="L1211" title="All 2 branches missed.">            if (destDict.containsKey(entry.getKey()))</span>
+            {
+<span class="nc" id="L1213">                LOG.warn(&quot;key '{}' already exists in destination RoleMap&quot;, entry.getKey().getName());</span>
+            }
+            else
+            {
+<span class="nc" id="L1217">                destDict.setItem(entry.getKey(), cloner.cloneForNewDocument(entry.getValue()));</span>
+            }
+<span class="nc" id="L1219">        }</span>
+<span class="nc" id="L1220">    }</span>
+
+    private void mergeAcroForm(PDFCloneUtility cloner, PDDocumentCatalog destCatalog,
+            PDDocumentCatalog srcCatalog ) throws IOException
+    {
+        try
+        {
+<span class="nc" id="L1227">            PDAcroForm destAcroForm = destCatalog.getAcroForm();</span>
+<span class="nc" id="L1228">            PDAcroForm srcAcroForm = srcCatalog.getAcroForm();</span>
+            
+<span class="nc bnc" id="L1230" title="All 4 branches missed.">            if (destAcroForm == null &amp;&amp; srcAcroForm != null)</span>
+            {
+<span class="nc" id="L1232">                destCatalog.getCOSObject().setItem(COSName.ACRO_FORM,</span>
+<span class="nc" id="L1233">                        cloner.cloneForNewDocument(srcAcroForm.getCOSObject()));       </span>
+                
+            }
+            else
+            {
+<span class="nc bnc" id="L1238" title="All 2 branches missed.">                if (srcAcroForm != null)</span>
+                {
+<span class="nc bnc" id="L1240" title="All 2 branches missed.">                    if (acroFormMergeMode == AcroFormMergeMode.PDFBOX_LEGACY_MODE)</span>
+                    {
+<span class="nc" id="L1242">                        acroFormLegacyMode(cloner, destAcroForm, srcAcroForm);</span>
+                    }
+<span class="nc bnc" id="L1244" title="All 2 branches missed.">                    else if (acroFormMergeMode == AcroFormMergeMode.JOIN_FORM_FIELDS_MODE)</span>
+                    {
+<span class="nc" id="L1246">                        acroFormJoinFieldsMode(cloner, destAcroForm, srcAcroForm);</span>
+                    }
+                }
+            }
+        }
+<span class="nc" id="L1251">        catch (IOException e)</span>
+        {
+            // if we are not ignoring exceptions, we'll re-throw this
+<span class="nc bnc" id="L1254" title="All 2 branches missed.">            if (!ignoreAcroFormErrors)</span>
+            {
+<span class="nc" id="L1256">                throw new IOException(e);</span>
+            }
+<span class="nc" id="L1258">        }</span>
+<span class="nc" id="L1259">    }</span>
+    
+    /*
+     * Merge the contents of the source form into the destination form for the
+     * destination file.
+     *
+     * @param cloner the object cloner for the destination document
+     * @param destAcroForm the destination form
+     * @param srcAcroForm the source form
+     * @throws IOException If an error occurs while adding the field.
+     */
+    private void acroFormJoinFieldsMode(PDFCloneUtility cloner, PDAcroForm destAcroForm, PDAcroForm srcAcroForm)
+            throws IOException
+    {
+<span class="nc" id="L1273">        acroFormLegacyMode(cloner, destAcroForm, srcAcroForm);</span>
+<span class="nc" id="L1274">    }</span>
+    
+    /*
+     * Merge the contents of the source form into the destination form for the
+     * destination file.
+     *
+     * @param cloner the object cloner for the destination document
+     * @param destAcroForm the destination form
+     * @param srcAcroForm the source form
+     * @throws IOException If an error occurs while adding the field.
+     */
+    private void acroFormLegacyMode(PDFCloneUtility cloner, PDAcroForm destAcroForm, PDAcroForm srcAcroForm)
+            throws IOException
+    {
+<span class="nc" id="L1288">        List&lt;PDField&gt; srcFields = srcAcroForm.getFields();</span>
+        COSArray destFields;
+
+<span class="nc bnc" id="L1291" title="All 2 branches missed.">        if (!srcFields.isEmpty())</span>
+        {
+            // if a form is merged multiple times using PDFBox the newly generated
+            // fields starting with dummyFieldName may already exist. We need to determine the last unique 
+            // number used and increment that.
+<span class="nc" id="L1296">            final String prefix = &quot;dummyFieldName&quot;;</span>
+<span class="nc" id="L1297">            final int prefixLength = prefix.length();</span>
+
+<span class="nc bnc" id="L1299" title="All 2 branches missed.">            for (PDField destField : destAcroForm.getFieldTree())</span>
+            {
+<span class="nc" id="L1301">                String fieldName = destField.getPartialName();</span>
+<span class="nc bnc" id="L1302" title="All 4 branches missed.">                if (fieldName != null &amp;&amp; fieldName.startsWith(prefix))</span>
+                {
+<span class="nc" id="L1304">                    String suffix = fieldName.substring(prefixLength);</span>
+<span class="nc bnc" id="L1305" title="All 2 branches missed.">                    if (suffix.matches(&quot;\\d+&quot;))</span>
+                    {
+<span class="nc" id="L1307">                        nextFieldNum = Math.max(nextFieldNum, Integer.parseInt(suffix) + 1);</span>
+                    }
+                }
+<span class="nc" id="L1310">            }</span>
+
+            // get the destinations root fields. Could be that the entry doesn't exist
+            // or is of wrong type
+<span class="nc" id="L1314">            COSBase base = destAcroForm.getCOSObject().getItem(COSName.FIELDS);</span>
+<span class="nc bnc" id="L1315" title="All 2 branches missed.">            if (base instanceof COSArray)</span>
+            {
+<span class="nc" id="L1317">                destFields = (COSArray) base;</span>
+            }
+            else
+            {
+<span class="nc" id="L1321">                destFields = new COSArray();</span>
+            }
+            
+<span class="nc bnc" id="L1324" title="All 2 branches missed.">            for (PDField srcField : srcAcroForm.getFields())</span>
+            {
+<span class="nc" id="L1326">                COSDictionary dstField = cloner.cloneForNewDocument(srcField.getCOSObject());</span>
+                // if the form already has a field with this name then we need to rename this field
+                // to prevent merge conflicts.
+<span class="nc bnc" id="L1329" title="All 2 branches missed.">                if (destAcroForm.getField(srcField.getFullyQualifiedName()) != null)</span>
+                {
+<span class="nc" id="L1331">                    dstField.setString(COSName.T, prefix + nextFieldNum++);</span>
+                }
+<span class="nc" id="L1333">                destFields.add(dstField);</span>
+<span class="nc" id="L1334">            }</span>
+<span class="nc" id="L1335">            destAcroForm.getCOSObject().setItem(COSName.FIELDS,destFields);</span>
+        }
+<span class="nc" id="L1337">    }</span>
+
+    // copy outputIntents to destination, but avoid duplicate OutputConditionIdentifier,
+    // except when it is missing or is named &quot;Custom&quot;.
+    private void mergeOutputIntents(PDDocumentCatalog srcCatalog, PDDocumentCatalog destCatalog, PDFCloneUtility cloner) throws IOException
+    {
+<span class="nc" id="L1343">        List&lt;PDOutputIntent&gt; srcOutputIntents = srcCatalog.getOutputIntents();</span>
+<span class="nc" id="L1344">        List&lt;PDOutputIntent&gt; dstOutputIntents = destCatalog.getOutputIntents();</span>
+<span class="nc bnc" id="L1345" title="All 2 branches missed.">        for (PDOutputIntent srcOI : srcOutputIntents)</span>
+        {
+<span class="nc" id="L1347">            String srcOCI = srcOI.getOutputConditionIdentifier();</span>
+<span class="nc bnc" id="L1348" title="All 4 branches missed.">            if (srcOCI != null &amp;&amp; !&quot;Custom&quot;.equals(srcOCI))</span>
+            {
+                // is that identifier already there?
+<span class="nc" id="L1351">                boolean skip = false;</span>
+<span class="nc bnc" id="L1352" title="All 2 branches missed.">                for (PDOutputIntent dstOI : dstOutputIntents)</span>
+                {
+<span class="nc bnc" id="L1354" title="All 2 branches missed.">                    if (dstOI.getOutputConditionIdentifier().equals(srcOCI))</span>
+                    {
+<span class="nc" id="L1356">                        skip = true;</span>
+<span class="nc" id="L1357">                        break;</span>
+                    }
+<span class="nc" id="L1359">                }</span>
+<span class="nc bnc" id="L1360" title="All 2 branches missed.">                if (skip)</span>
+                {
+<span class="nc" id="L1362">                    continue;</span>
+                }
+            }
+<span class="nc" id="L1365">            destCatalog.addOutputIntent(new PDOutputIntent(</span>
+<span class="nc" id="L1366">                    cloner.cloneForNewDocument(srcOI.getCOSObject())));</span>
+<span class="nc" id="L1367">            dstOutputIntents.add(srcOI);</span>
+<span class="nc" id="L1368">        }</span>
+<span class="nc" id="L1369">    }</span>
+
+<span class="nc" id="L1371">    private int nextFieldNum = 1;</span>
+
+
+    /**
+     * Indicates if acroform errors are ignored or not.
+     *
+     * @return true if acroform errors are ignored
+     */
+    public boolean isIgnoreAcroFormErrors()
+    {
+<span class="nc" id="L1381">        return ignoreAcroFormErrors;</span>
+    }
+
+    /**
+     * Set to true to ignore acroform errors.
+     *
+     * @param ignoreAcroFormErrorsValue true if acroform errors should be
+     * ignored
+     */
+    public void setIgnoreAcroFormErrors(boolean ignoreAcroFormErrorsValue)
+    {
+<span class="nc" id="L1392">        ignoreAcroFormErrors = ignoreAcroFormErrorsValue;</span>
+<span class="nc" id="L1393">    }</span>
+
+    /**
+     * Update the Pg and Obj references to the new (merged) page.
+     */
+    private void updatePageReferences(PDFCloneUtility cloner,
+            Map&lt;Integer, COSObjectable&gt; numberTreeAsMap,
+            Map&lt;COSDictionary, COSDictionary&gt; objMapping) throws IOException
+    {
+<span class="nc bnc" id="L1402" title="All 2 branches missed.">        for (COSObjectable obj : numberTreeAsMap.values())</span>
+        {
+<span class="nc bnc" id="L1404" title="All 2 branches missed.">            if (obj == null)</span>
+            {
+<span class="nc" id="L1406">                continue;</span>
+            }
+<span class="nc" id="L1408">            PDParentTreeValue val = (PDParentTreeValue) obj;</span>
+<span class="nc" id="L1409">            COSBase base = val.getCOSObject();</span>
+<span class="nc bnc" id="L1410" title="All 2 branches missed.">            if (base instanceof COSArray)</span>
+            {
+<span class="nc" id="L1412">                updatePageReferences(cloner, (COSArray) base, objMapping);</span>
+            }
+            else
+            {
+<span class="nc" id="L1416">                updatePageReferences(cloner, (COSDictionary) base, objMapping);</span>
+            }
+<span class="nc" id="L1418">        }</span>
+<span class="nc" id="L1419">    }</span>
+
+    /**
+     * Update the Pg and Obj references to the new (merged) page.
+     *
+     * @param parentTreeEntry
+     * @param objMapping mapping between old and new references
+     */
+    private void updatePageReferences(PDFCloneUtility cloner,
+            COSDictionary parentTreeEntry, Map&lt;COSDictionary, COSDictionary&gt; objMapping)
+            throws IOException
+    {
+<span class="nc" id="L1431">        COSDictionary pageDict = parentTreeEntry.getCOSDictionary(COSName.PG);</span>
+<span class="nc bnc" id="L1432" title="All 2 branches missed.">        if (objMapping.containsKey(pageDict))</span>
+        {
+<span class="nc" id="L1434">            parentTreeEntry.setItem(COSName.PG, objMapping.get(pageDict));</span>
+        }
+<span class="nc" id="L1436">        COSDictionary objDict = parentTreeEntry.getCOSDictionary(COSName.OBJ);</span>
+<span class="nc bnc" id="L1437" title="All 2 branches missed.">        if (objDict != null)</span>
+        {
+<span class="nc bnc" id="L1439" title="All 2 branches missed.">            if (objMapping.containsKey(objDict))</span>
+            {
+<span class="nc" id="L1441">                parentTreeEntry.setItem(COSName.OBJ, objMapping.get(objDict));</span>
+            }
+            else
+            {
+                // PDFBOX-3999: clone objects that are not in mapping to make sure that
+                // these don't remain attached to the source document
+<span class="nc" id="L1447">                COSBase item = parentTreeEntry.getItem(COSName.OBJ);</span>
+<span class="nc bnc" id="L1448" title="All 2 branches missed.">                if (item instanceof COSObject)</span>
+                {
+<span class="nc" id="L1450">                    LOG.debug(</span>
+                            &quot;clone potential orphan object in structure tree: {}, Type: {}, Subtype: {}, T: {}&quot;,
+<span class="nc" id="L1452">                            () -&gt; item,</span>
+<span class="nc" id="L1453">                            () -&gt; objDict.getNameAsString(COSName.TYPE),</span>
+<span class="nc" id="L1454">                            () -&gt; objDict.getNameAsString(COSName.SUBTYPE),</span>
+<span class="nc" id="L1455">                            () -&gt; objDict.getNameAsString(COSName.T));</span>
+                }
+                else
+                {
+                    // don't display in full because of stack overflow
+<span class="nc" id="L1460">                    LOG.debug(</span>
+                            &quot;clone potential orphan object in structure tree, Type: {}, Subtype: {}, T: {}&quot;,
+<span class="nc" id="L1462">                            () -&gt; objDict.getNameAsString(COSName.TYPE),</span>
+<span class="nc" id="L1463">                            () -&gt; objDict.getNameAsString(COSName.SUBTYPE),</span>
+<span class="nc" id="L1464">                            () -&gt; objDict.getNameAsString(COSName.T));</span>
+                }
+<span class="nc" id="L1466">                parentTreeEntry.setItem(COSName.OBJ, cloner.cloneForNewDocument(objDict));</span>
+            }
+        }
+<span class="nc" id="L1469">        COSBase kSubEntry = parentTreeEntry.getDictionaryObject(COSName.K);</span>
+<span class="nc bnc" id="L1470" title="All 2 branches missed.">        if (kSubEntry instanceof COSArray)</span>
+        {
+<span class="nc" id="L1472">            updatePageReferences(cloner, (COSArray) kSubEntry, objMapping);</span>
+        }
+<span class="nc bnc" id="L1474" title="All 2 branches missed.">        else if (kSubEntry instanceof COSDictionary)</span>
+        {
+<span class="nc" id="L1476">            updatePageReferences(cloner, (COSDictionary) kSubEntry, objMapping);</span>
+        }
+<span class="nc" id="L1478">    }</span>
+
+    private void updatePageReferences(PDFCloneUtility cloner,
+            COSArray parentTreeEntry, Map&lt;COSDictionary, COSDictionary&gt; objMapping)
+            throws IOException
+    {
+<span class="nc bnc" id="L1484" title="All 2 branches missed.">        for (int i = 0; i &lt; parentTreeEntry.size(); i++)</span>
+        {
+<span class="nc" id="L1486">            COSBase subEntry = parentTreeEntry.getObject(i);</span>
+<span class="nc bnc" id="L1487" title="All 2 branches missed.">            if (subEntry instanceof COSArray)</span>
+            {
+<span class="nc" id="L1489">                updatePageReferences(cloner, (COSArray) subEntry, objMapping);</span>
+            }
+<span class="nc bnc" id="L1491" title="All 2 branches missed.">            else if (subEntry instanceof COSDictionary)</span>
+            {
+<span class="nc" id="L1493">                updatePageReferences(cloner, (COSDictionary) subEntry, objMapping);</span>
+            }
+        }
+<span class="nc" id="L1496">    }</span>
+
+    /**
+     * Update the StructParents and StructParent values in a PDPage.
+     *
+     * @param page the new page
+     * @param structParentOffset the offset which should be applied
+     */
+    private void updateStructParentEntries(PDPage page, int structParentOffset) throws IOException
+    {
+<span class="nc" id="L1506">        int structParents = page.getStructParents();</span>
+<span class="nc bnc" id="L1507" title="All 2 branches missed.">        if (structParents &gt;= 0)</span>
+        {
+<span class="nc" id="L1509">            page.setStructParents(structParents + structParentOffset);</span>
+        }
+<span class="nc" id="L1511">        List&lt;PDAnnotation&gt; annots = page.getAnnotations();</span>
+<span class="nc" id="L1512">        List&lt;PDAnnotation&gt; newannots = new ArrayList&lt;&gt;(annots.size());</span>
+<span class="nc" id="L1513">        annots.forEach(annot -&gt;</span>
+        {
+<span class="nc" id="L1515">            int structParent = annot.getStructParent();</span>
+<span class="nc bnc" id="L1516" title="All 2 branches missed.">            if (structParent &gt;= 0)</span>
+            {
+<span class="nc" id="L1518">                annot.setStructParent(structParent + structParentOffset);</span>
+            }
+<span class="nc" id="L1520">            newannots.add(annot);</span>
+<span class="nc" id="L1521">        });</span>
+<span class="nc" id="L1522">        page.setAnnotations(newannots);</span>
+<span class="nc" id="L1523">    }</span>
+    
+    /**
+     * Test for dynamic XFA content.
+     * 
+     * @param acroForm the AcroForm
+     * @return true if there is a dynamic XFA form.
+     */
+    private boolean isDynamicXfa(PDAcroForm acroForm)
+    {
+<span class="nc bnc" id="L1533" title="All 4 branches missed.">        return acroForm != null &amp;&amp; acroForm.xfaIsDynamic();</span>
+    }
+
+    /**
+     * This will add all of the dictionaries keys/values to this dictionary, but
+     * only if they are not in an exclusion list and if they don't already
+     * exist. If a key already exists in this dictionary then nothing is
+     * changed.
+     *
+     * @param src The source dictionary to get the keys/values from.
+     * @param dst The destination dictionary to merge the keys/values into.
+     * @param exclude Names of keys that shall be skipped.
+     */
+    private void mergeInto(COSDictionary src, COSDictionary dst, PDFCloneUtility cloner, Set&lt;COSName&gt; exclude) throws IOException
+    {
+<span class="nc bnc" id="L1548" title="All 2 branches missed.">        for (Map.Entry&lt;COSName, COSBase&gt; entry : src.entrySet())</span>
+        {
+<span class="nc bnc" id="L1550" title="All 4 branches missed.">            if (!exclude.contains(entry.getKey()) &amp;&amp; !dst.containsKey(entry.getKey()))</span>
+            {
+<span class="nc" id="L1552">                dst.setItem(entry.getKey(), cloner.cloneForNewDocument(entry.getValue()));</span>
+            }
+<span class="nc" id="L1554">        }</span>
+<span class="nc" id="L1555">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

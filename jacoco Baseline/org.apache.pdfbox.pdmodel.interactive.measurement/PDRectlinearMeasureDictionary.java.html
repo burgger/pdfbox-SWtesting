@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDRectlinearMeasureDictionary.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.measurement</a> &gt; <span class="el_source">PDRectlinearMeasureDictionary.java</span></div><h1>PDRectlinearMeasureDictionary.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.measurement;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+
+/**
+ * This class represents a rectlinear measure dictionary.
+ * 
+ */
+public class PDRectlinearMeasureDictionary extends PDMeasureDictionary
+{
+
+    /**
+     * The subtype of the rectlinear measure dictionary.
+     */
+    public static final String SUBTYPE = &quot;RL&quot;;
+
+    /**
+     * Constructor.
+     */
+    public PDRectlinearMeasureDictionary()
+<span class="nc" id="L39">    {</span>
+<span class="nc" id="L40">        this.setSubtype(SUBTYPE);</span>
+<span class="nc" id="L41">    }</span>
+
+    /**
+     * Constructor.
+     * 
+     * @param dictionary the corresponding dictionary
+     */
+    public PDRectlinearMeasureDictionary(COSDictionary dictionary)
+    {
+<span class="nc" id="L50">        super(dictionary);</span>
+<span class="nc" id="L51">    }</span>
+
+    /**
+     * This will return the scale ration.
+     * 
+     * @return the scale ratio.
+     */
+    public String getScaleRatio()
+    {
+<span class="nc" id="L60">        return this.getCOSObject().getString(COSName.R);</span>
+    }
+
+    /**
+     * This will set the scale ration.
+     * 
+     * @param scaleRatio the scale ratio.
+     */
+    public void setScaleRatio(String scaleRatio)
+    {
+<span class="nc" id="L70">        this.getCOSObject().setString(COSName.R, scaleRatio);</span>
+<span class="nc" id="L71">    }</span>
+
+    /**
+     * This will return the changes along the x-axis.
+     * 
+     * @return changes along the x-axis
+     */
+    public PDNumberFormatDictionary[] getChangeXs()
+    {
+<span class="nc" id="L80">        COSArray x = getCOSObject().getCOSArray(COSName.X);</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        if (x != null)</span>
+        {
+<span class="nc" id="L83">            PDNumberFormatDictionary[] retval =</span>
+<span class="nc" id="L84">                new PDNumberFormatDictionary[x.size()];</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            for (int i = 0; i &lt; x.size(); i++)</span>
+            {
+<span class="nc" id="L87">                COSDictionary dic = (COSDictionary) x.get(i);</span>
+<span class="nc" id="L88">                retval[i] = new PDNumberFormatDictionary(dic);</span>
+            }
+<span class="nc" id="L90">            return retval;</span>
+        }
+<span class="nc" id="L92">        return null;</span>
+    }
+
+    /**
+     * This will set the changes along the x-axis.
+     * 
+     * @param changeXs changes along the x-axis
+     */
+    public void setChangeXs(PDNumberFormatDictionary[] changeXs)
+    {
+<span class="nc" id="L102">        COSArray array = new COSArray();</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        for (PDNumberFormatDictionary changeX : changeXs)</span>
+        {
+<span class="nc" id="L105">            array.add(changeX);</span>
+        }
+<span class="nc" id="L107">        this.getCOSObject().setItem(COSName.X, array);</span>
+<span class="nc" id="L108">    }</span>
+
+    /**
+     * This will return the changes along the y-axis.
+     * 
+     * @return changes along the y-axis
+     */
+    public PDNumberFormatDictionary[] getChangeYs()
+    {
+<span class="nc" id="L117">        COSArray y = getCOSObject().getCOSArray(COSName.Y);</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        if (y != null)</span>
+        {
+<span class="nc" id="L120">            PDNumberFormatDictionary[] retval =</span>
+<span class="nc" id="L121">                new PDNumberFormatDictionary[y.size()];</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">            for (int i = 0; i &lt; y.size(); i++)</span>
+            {
+<span class="nc" id="L124">                COSDictionary dic = (COSDictionary) y.get(i);</span>
+<span class="nc" id="L125">                retval[i] = new PDNumberFormatDictionary(dic);</span>
+            }
+<span class="nc" id="L127">            return retval;</span>
+        }
+<span class="nc" id="L129">        return null;</span>
+    }
+
+    /**
+     * This will set the changes along the y-axis.
+     * 
+     * @param changeYs changes along the y-axis
+     */
+    public void setChangeYs(PDNumberFormatDictionary[] changeYs)
+    {
+<span class="nc" id="L139">        COSArray array = new COSArray();</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        for (PDNumberFormatDictionary changeY : changeYs)</span>
+        {
+<span class="nc" id="L142">            array.add(changeY);</span>
+        }
+<span class="nc" id="L144">        this.getCOSObject().setItem(COSName.Y, array);</span>
+<span class="nc" id="L145">    }</span>
+
+    /**
+     * This will return the distances.
+     * 
+     * @return distances
+     */
+    public PDNumberFormatDictionary[] getDistances()
+    {
+<span class="nc" id="L154">        COSArray d = getCOSObject().getCOSArray(COSName.D);</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        if (d != null)</span>
+        {
+<span class="nc" id="L157">            PDNumberFormatDictionary[] retval =</span>
+<span class="nc" id="L158">                new PDNumberFormatDictionary[d.size()];</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">            for (int i = 0; i &lt; d.size(); i++)</span>
+            {
+<span class="nc" id="L161">                COSDictionary dic = (COSDictionary) d.get(i);</span>
+<span class="nc" id="L162">                retval[i] = new PDNumberFormatDictionary(dic);</span>
+            }
+<span class="nc" id="L164">            return retval;</span>
+        }
+<span class="nc" id="L166">        return null;</span>
+    }
+
+    /**
+     * This will set the distances.
+     * 
+     * @param distances distances
+     */
+    public void setDistances(PDNumberFormatDictionary[] distances)
+    {
+<span class="nc" id="L176">        COSArray array = new COSArray();</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        for (PDNumberFormatDictionary distance : distances)</span>
+        {
+<span class="nc" id="L179">            array.add(distance);</span>
+        }
+<span class="nc" id="L181">        this.getCOSObject().setItem(COSName.D, array);</span>
+<span class="nc" id="L182">    }</span>
+
+    /**
+     * This will return the areas.
+     * 
+     * @return areas
+     */
+    public PDNumberFormatDictionary[] getAreas()
+    {
+<span class="nc" id="L191">        COSArray a = getCOSObject().getCOSArray(COSName.A);</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">        if (a != null)</span>
+        {
+<span class="nc" id="L194">            PDNumberFormatDictionary[] retval =</span>
+<span class="nc" id="L195">                new PDNumberFormatDictionary[a.size()];</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">            for (int i = 0; i &lt; a.size(); i++)</span>
+            {
+<span class="nc" id="L198">                COSDictionary dic = (COSDictionary) a.get(i);</span>
+<span class="nc" id="L199">                retval[i] = new PDNumberFormatDictionary(dic);</span>
+            }
+<span class="nc" id="L201">            return retval;</span>
+        }
+<span class="nc" id="L203">        return null;</span>
+    }
+
+    /**
+     * This will set the areas.
+     * 
+     * @param areas areas
+     */
+    public void setAreas(PDNumberFormatDictionary[] areas)
+    {
+<span class="nc" id="L213">        COSArray array = new COSArray();</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">        for (PDNumberFormatDictionary area : areas)</span>
+        {
+<span class="nc" id="L216">            array.add(area);</span>
+        }
+<span class="nc" id="L218">        this.getCOSObject().setItem(COSName.A, array);</span>
+<span class="nc" id="L219">    }</span>
+
+    /**
+     * This will return the angles.
+     * 
+     * @return angles
+     */
+    public PDNumberFormatDictionary[] getAngles()
+    {
+<span class="nc" id="L228">        COSArray t = getCOSObject().getCOSArray(COSName.T);</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">        if (t != null)</span>
+        {
+<span class="nc" id="L231">            PDNumberFormatDictionary[] retval =</span>
+<span class="nc" id="L232">                new PDNumberFormatDictionary[t.size()];</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">            for (int i = 0; i &lt; t.size(); i++)</span>
+            {
+<span class="nc" id="L235">                COSDictionary dic = (COSDictionary) t.get(i);</span>
+<span class="nc" id="L236">                retval[i] = new PDNumberFormatDictionary(dic);</span>
+            }
+<span class="nc" id="L238">            return retval;</span>
+        }
+<span class="nc" id="L240">        return null;</span>
+    }
+
+    /**
+     * This will set the angles.
+     * 
+     * @param angles angles
+     */
+    public void setAngles(PDNumberFormatDictionary[] angles)
+    {
+<span class="nc" id="L250">        COSArray array = new COSArray();</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">        for (PDNumberFormatDictionary angle : angles)</span>
+        {
+<span class="nc" id="L253">            array.add(angle);</span>
+        }
+<span class="nc" id="L255">        this.getCOSObject().setItem(COSName.T, array);</span>
+<span class="nc" id="L256">    }</span>
+
+    /**
+     * This will return the sloaps of a line.
+     * 
+     * @return the sloaps of a line
+     */
+    public PDNumberFormatDictionary[] getLineSloaps()
+    {
+<span class="nc" id="L265">        COSArray s = getCOSObject().getCOSArray(COSName.S);</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">        if (s != null)</span>
+        {
+<span class="nc" id="L268">            PDNumberFormatDictionary[] retval =</span>
+<span class="nc" id="L269">                new PDNumberFormatDictionary[s.size()];</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">            for (int i = 0; i &lt; s.size(); i++)</span>
+            {
+<span class="nc" id="L272">                COSDictionary dic = (COSDictionary) s.get(i);</span>
+<span class="nc" id="L273">                retval[i] = new PDNumberFormatDictionary(dic);</span>
+            }
+<span class="nc" id="L275">            return retval;</span>
+        }
+<span class="nc" id="L277">        return null;</span>
+    }
+
+    /**
+     * This will set the sloaps of a line.
+     * 
+     * @param lineSloaps the sloaps of a line
+     */
+    public void setLineSloaps(PDNumberFormatDictionary[] lineSloaps)
+    {
+<span class="nc" id="L287">        COSArray array = new COSArray();</span>
+<span class="nc bnc" id="L288" title="All 2 branches missed.">        for (PDNumberFormatDictionary lineSloap : lineSloaps)</span>
+        {
+<span class="nc" id="L290">            array.add(lineSloap);</span>
+        }
+<span class="nc" id="L292">        this.getCOSObject().setItem(COSName.S, array);</span>
+<span class="nc" id="L293">    }</span>
+
+    /**
+     * This will return the origin of the coordinate system.
+     * 
+     * @return the origin
+     */
+    public float[] getCoordSystemOrigin()
+    {
+<span class="nc" id="L302">        COSArray o = getCOSObject().getCOSArray(COSName.O);</span>
+<span class="nc bnc" id="L303" title="All 2 branches missed.">        return o != null ? o.toFloatArray() : null;</span>
+    }
+
+    /**
+     * This will set the origin of the coordinate system.
+     * 
+     * @param coordSystemOrigin the origin
+     */
+    public void setCoordSystemOrigin(float[] coordSystemOrigin)
+    {
+<span class="nc" id="L313">        this.getCOSObject().setItem(COSName.O, COSArray.of(coordSystemOrigin));</span>
+<span class="nc" id="L314">    }</span>
+
+    /**
+     * This will return the CYX factor.
+     * 
+     * @return CYX factor
+     */
+    public float getCYX()
+    {
+<span class="nc" id="L323">        return this.getCOSObject().getFloat(COSName.CYX);</span>
+    }
+
+    /**
+     * This will set the CYX factor.
+     * 
+     * @param cyx CYX factor
+     */
+    public void setCYX(float cyx)
+    {
+<span class="nc" id="L333">        this.getCOSObject().setFloat(COSName.CYX, cyx);</span>
+<span class="nc" id="L334">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

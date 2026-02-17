@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFPrintable.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.printing</a> &gt; <span class="el_source">PDFPrintable.java</span></div><h1>PDFPrintable.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.printing;
+
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
+import java.awt.print.PageFormat;
+import java.awt.print.Printable;
+import java.awt.print.PrinterException;
+import java.awt.print.PrinterIOException;
+import java.io.IOException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageTree;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.pdfbox.rendering.RenderDestination;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * Prints pages from a PDF document using any page size or scaling mode.
+ *
+ * @author John Hewson
+ */
+public final class PDFPrintable implements Printable
+{
+<span class="nc" id="L49">    private static final Logger LOG = LogManager.getLogger(PDFPrintable.class);</span>
+    public static final float RASTERIZE_OFF = 0f;
+    public static final float RASTERIZE_DPI_AUTO = -1f;
+
+    private final PDPageTree pageTree;
+    private final PDFRenderer renderer;
+    
+    private final boolean showPageBorder;
+    private final Scaling scaling;
+    private final float dpi;
+    private final boolean center;
+<span class="nc" id="L60">    private boolean subsamplingAllowed = false;</span>
+<span class="nc" id="L61">    private RenderingHints renderingHints = null;</span>
+
+    /**
+     * Creates a new PDFPrintable.
+     *
+     * @param document the document to print
+     */
+    public PDFPrintable(PDDocument document)
+    {
+<span class="nc" id="L70">        this(document, Scaling.SHRINK_TO_FIT);</span>
+<span class="nc" id="L71">    }</span>
+
+    /**
+     * Creates a new PDFPrintable with the given page scaling.
+     *
+     * @param document the document to print
+     * @param scaling page scaling policy
+     */
+    public PDFPrintable(PDDocument document, Scaling scaling)
+    {
+<span class="nc" id="L81">       this(document, scaling, false);</span>
+<span class="nc" id="L82">    }</span>
+
+    /**
+     * Creates a new PDFPrintable with the given page scaling and with optional page borders shown.
+     *
+     * @param document the document to print
+     * @param scaling page scaling policy
+     * @param showPageBorder true if page borders are to be printed
+     */
+    public PDFPrintable(PDDocument document, Scaling scaling, boolean showPageBorder)
+    {
+<span class="nc" id="L93">        this(document, scaling, showPageBorder, RASTERIZE_OFF);</span>
+<span class="nc" id="L94">    }</span>
+
+    /**
+     * Creates a new PDFPrintable with the given page scaling and with optional page borders shown.
+     * The image will be rasterized at the given DPI before being sent to the printer.
+     *
+     * @param document the document to print
+     * @param scaling page scaling policy
+     * @param showPageBorder true if page borders are to be printed
+     * @param dpi if positive non-zero then the image will be rasterized at the given DPI. If
+     * set to the special value RASTERIZE_DPI_AUTO, the dpi of the printer will be used.
+     */
+    public PDFPrintable(PDDocument document, Scaling scaling, boolean showPageBorder, float dpi)
+    {
+<span class="nc" id="L108">        this(document, scaling, showPageBorder, dpi, true);</span>
+<span class="nc" id="L109">    }</span>
+    
+    /**
+     * Creates a new PDFPrintable with the given page scaling and with optional page borders shown.
+     * The image will be rasterized at the given DPI before being sent to the printer.
+     *
+     * @param document the document to print
+     * @param scaling page scaling policy
+     * @param showPageBorder true if page borders are to be printed
+     * @param dpi if positive non-zero then the image will be rasterized at the given DPI. If
+     * set to the special value RASTERIZE_DPI_AUTO, the dpi of the printer will be used.
+     * @param center true if the content is to be centered on the page (otherwise top-left).
+     */
+    public PDFPrintable(PDDocument document, Scaling scaling, boolean showPageBorder, float dpi,
+                        boolean center)
+    {
+<span class="nc" id="L125">        this(document, scaling, showPageBorder, dpi, center, new PDFRenderer(document));</span>
+<span class="nc" id="L126">    }</span>
+
+    /**
+     * Creates a new PDFPrintable with the given page scaling and with optional page borders shown.
+     * The image will be rasterized at the given DPI before being sent to the printer.
+     *
+     * @param document the document to print
+     * @param scaling page scaling policy
+     * @param showPageBorder true if page borders are to be printed
+     * @param dpi if positive non-zero then the image will be rasterized at the given DPI. If
+     * set to the special value RASTERIZE_DPI_AUTO, the dpi of the printer will be used.
+     * @param center true if the content is to be centered on the page (otherwise top-left).
+     * @param renderer the document renderer. Useful if {@link PDFRenderer} has been subclassed.
+     */
+    public PDFPrintable(PDDocument document, Scaling scaling, boolean showPageBorder, float dpi,
+                        boolean center, PDFRenderer renderer)
+<span class="nc" id="L142">    {</span>
+<span class="nc" id="L143">        this.pageTree = document.getPages();</span>
+<span class="nc" id="L144">        this.renderer = renderer;</span>
+<span class="nc" id="L145">        this.scaling = scaling;</span>
+<span class="nc" id="L146">        this.showPageBorder = showPageBorder;</span>
+<span class="nc" id="L147">        this.dpi = dpi;</span>
+<span class="nc" id="L148">        this.center = center;</span>
+<span class="nc" id="L149">    }</span>
+
+    /**
+     * Value indicating if the renderer is allowed to subsample images before drawing, according to
+     * image dimensions and requested scale.
+     *
+     * Subsampling may be faster and less memory-intensive in some cases, but it may also lead to
+     * loss of quality, especially in images with high spatial frequency.
+     *
+     * @return true if subsampling of images is allowed, false otherwise.
+     */
+    public boolean isSubsamplingAllowed()
+    {
+<span class="nc" id="L162">        return subsamplingAllowed;</span>
+    }
+
+    /**
+     * Sets a value instructing the renderer whether it is allowed to subsample images before
+     * drawing. The subsampling frequency is determined according to image size and requested scale.
+     *
+     * Subsampling may be faster and less memory-intensive in some cases, but it may also lead to
+     * loss of quality, especially in images with high spatial frequency.
+     *
+     * @param subsamplingAllowed The new value indicating if subsampling is allowed.
+     */
+    public void setSubsamplingAllowed(boolean subsamplingAllowed)
+    {
+<span class="nc" id="L176">        this.subsamplingAllowed = subsamplingAllowed;</span>
+<span class="nc" id="L177">    }</span>
+
+    /**
+     * Get the rendering hints.
+     *
+     * @return the rendering hints or null if none are set.
+     */
+    public RenderingHints getRenderingHints()
+    {
+<span class="nc" id="L186">        return renderingHints;</span>
+    }
+
+    /**
+     * Set the rendering hints. Use this to influence rendering quality and speed. If you don't set them yourself or
+     * pass null, PDFBox will decide &lt;b&gt;&lt;u&gt;at runtime&lt;/u&gt;&lt;/b&gt; depending on the destination.
+     *
+     * @param renderingHints rendering hints to be used to influence rendering quality and speed
+     */
+    public void setRenderingHints(RenderingHints renderingHints)
+    {
+<span class="nc" id="L197">        this.renderingHints = renderingHints;</span>
+<span class="nc" id="L198">    }</span>
+
+    @Override
+    public int print(Graphics graphics, PageFormat pageFormat, int pageIndex)
+            throws PrinterException
+    {
+<span class="nc bnc" id="L204" title="All 4 branches missed.">        if (pageIndex &lt; 0 || pageIndex &gt;= pageTree.getCount())</span>
+        {
+<span class="nc" id="L206">            return NO_SUCH_PAGE;</span>
+        }
+        try
+        {
+<span class="nc" id="L210">            Graphics2D graphics2D = (Graphics2D)graphics;</span>
+
+            // capture the DPI that will be used for rasterizing the image
+            // if rasterizing is specified
+<span class="nc" id="L214">            float rasterDpi = dpi;</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">            if (rasterDpi == RASTERIZE_DPI_AUTO)</span>
+            {
+<span class="nc" id="L217">                rasterDpi = new Matrix(graphics2D.getTransform()).getScalingFactorX() * 72.0f;</span>
+<span class="nc" id="L218">                LOG.debug(&quot;auto raster dpi: {}, g2d: {}, g2d transform: {}&quot;, rasterDpi, graphics2D, graphics2D.getTransform());</span>
+            }
+
+<span class="nc" id="L221">            PDPage page = pageTree.get(pageIndex);</span>
+<span class="nc" id="L222">            PDRectangle cropBox = getRotatedCropBox(page);</span>
+
+            // the imageable area is the area within the page margins
+<span class="nc" id="L225">            final double imageableWidth = pageFormat.getImageableWidth();</span>
+<span class="nc" id="L226">            final double imageableHeight = pageFormat.getImageableHeight();</span>
+
+<span class="nc" id="L228">            double scale = 1;</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">            if (scaling != Scaling.ACTUAL_SIZE)</span>
+            {
+                // scale to fit
+<span class="nc" id="L232">                double scaleX = imageableWidth / cropBox.getWidth();</span>
+<span class="nc" id="L233">                double scaleY = imageableHeight / cropBox.getHeight();</span>
+<span class="nc" id="L234">                scale = Math.min(scaleX, scaleY);</span>
+
+                // only shrink to fit when enabled
+<span class="nc bnc" id="L237" title="All 4 branches missed.">                if (scale &gt; 1 &amp;&amp; scaling == Scaling.SHRINK_TO_FIT)</span>
+                {
+<span class="nc" id="L239">                    scale = 1;</span>
+                }
+                
+                // only stretch to fit when enabled
+<span class="nc bnc" id="L243" title="All 4 branches missed.">                if (scale &lt; 1 &amp;&amp; scaling == Scaling.STRETCH_TO_FIT)</span>
+                {
+<span class="nc" id="L245">                    scale = 1;</span>
+                }
+            }
+
+            // set the graphics origin to the origin of the imageable area (i.e the margins)
+<span class="nc" id="L250">            graphics2D.translate(pageFormat.getImageableX(), pageFormat.getImageableY());</span>
+
+            // center on page
+<span class="nc bnc" id="L253" title="All 2 branches missed.">            if (center)</span>
+            {
+<span class="nc" id="L255">                double dx = (imageableWidth - cropBox.getWidth() * scale) / 2;</span>
+<span class="nc" id="L256">                double dy = (imageableHeight - cropBox.getHeight() * scale) / 2;</span>
+<span class="nc bnc" id="L257" title="All 4 branches missed.">                if (dx &gt;= 0 &amp;&amp; dy &gt;= 0)</span>
+                {
+<span class="nc" id="L259">                    graphics2D.translate(dx, dy);</span>
+                }
+                else
+                {
+                    // PDFBOX-3117 and https://lists.apache.org/thread/12s9tc93ofgmjfq1dpqfps9p725l0wwr
+<span class="nc" id="L264">                    LOG.warn(&quot;Centering disabled because of negative translation value ({},{})&quot;, dx, dy);</span>
+                }
+            }
+
+            // rasterize to bitmap (optional)
+<span class="nc" id="L269">            Graphics2D printerGraphics = null;</span>
+<span class="nc" id="L270">            BufferedImage image = null;</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">            if (rasterDpi &gt; 0)</span>
+            {
+<span class="nc" id="L273">                LOG.debug(&quot;dpi set to {}&quot;, rasterDpi);</span>
+<span class="nc" id="L274">                float dpiScale = rasterDpi / 72;</span>
+<span class="nc" id="L275">                image = new BufferedImage((int)(imageableWidth * dpiScale / scale),</span>
+                                          (int)(imageableHeight * dpiScale / scale),
+                                          BufferedImage.TYPE_INT_ARGB);
+
+<span class="nc" id="L279">                printerGraphics = graphics2D;</span>
+<span class="nc" id="L280">                graphics2D = image.createGraphics();</span>
+
+                // rescale
+<span class="nc" id="L283">                printerGraphics.scale(scale / dpiScale, scale / dpiScale);</span>
+<span class="nc" id="L284">                scale = dpiScale;</span>
+            }
+
+            // draw to graphics using PDFRender
+<span class="nc" id="L288">            AffineTransform transform = graphics2D.getTransform();</span>
+<span class="nc" id="L289">            graphics2D.setBackground(Color.WHITE);</span>
+<span class="nc" id="L290">            renderer.setSubsamplingAllowed(subsamplingAllowed);</span>
+<span class="nc" id="L291">            renderer.setRenderingHints(renderingHints);</span>
+<span class="nc" id="L292">            renderer.renderPageToGraphics(pageIndex, graphics2D, (float) scale, (float) scale, RenderDestination.PRINT);</span>
+
+            // draw crop box
+<span class="nc bnc" id="L295" title="All 2 branches missed.">            if (showPageBorder)</span>
+            {
+<span class="nc" id="L297">                graphics2D.setTransform(transform);</span>
+<span class="nc" id="L298">                graphics2D.setClip(0, 0, (int)imageableWidth, (int)imageableHeight);</span>
+<span class="nc" id="L299">                graphics2D.scale(scale, scale);</span>
+<span class="nc" id="L300">                graphics2D.setColor(Color.GRAY);</span>
+<span class="nc" id="L301">                graphics2D.setStroke(new BasicStroke(0.5f));</span>
+<span class="nc" id="L302">                graphics.drawRect(0, 0, (int)cropBox.getWidth(), (int)cropBox.getHeight());</span>
+            }
+
+            // draw rasterized bitmap (optional)
+<span class="nc bnc" id="L306" title="All 2 branches missed.">            if (printerGraphics != null)</span>
+            {
+<span class="nc" id="L308">                printerGraphics.setBackground(Color.WHITE);</span>
+<span class="nc" id="L309">                printerGraphics.clearRect(0, 0, image.getWidth(), image.getHeight());</span>
+<span class="nc" id="L310">                printerGraphics.drawImage(image, 0, 0, null);</span>
+<span class="nc" id="L311">                graphics2D.dispose();</span>
+            }
+
+<span class="nc" id="L314">            return PAGE_EXISTS;</span>
+        }
+<span class="nc" id="L316">        catch (IOException e)</span>
+        {
+<span class="nc" id="L318">            throw new PrinterIOException(e);</span>
+        }
+    }
+
+    /**
+     * This will find the CropBox with rotation applied, for this page by looking up the hierarchy
+     * until it finds them.
+     *
+     * @return The CropBox at this level in the hierarchy.
+     */
+    static PDRectangle getRotatedCropBox(PDPage page)
+    {
+<span class="nc" id="L330">        PDRectangle cropBox = page.getCropBox();</span>
+<span class="nc" id="L331">        int rotationAngle = page.getRotation();</span>
+<span class="nc bnc" id="L332" title="All 4 branches missed.">        if (rotationAngle == 90 || rotationAngle == 270)</span>
+        {
+<span class="nc" id="L334">            return new PDRectangle(cropBox.getLowerLeftY(), cropBox.getLowerLeftX(),</span>
+<span class="nc" id="L335">                                   cropBox.getHeight(), cropBox.getWidth());</span>
+        }
+        else
+        {
+<span class="nc" id="L339">            return cropBox;</span>
+        }
+    }
+
+    /**
+     * This will find the MediaBox with rotation applied, for this page by looking up the hierarchy
+     * until it finds them.
+     *
+     * @return The MediaBox at this level in the hierarchy.
+     */
+    static PDRectangle getRotatedMediaBox(PDPage page)
+    {
+<span class="nc" id="L351">        PDRectangle mediaBox = page.getMediaBox();</span>
+<span class="nc" id="L352">        int rotationAngle = page.getRotation();</span>
+<span class="nc bnc" id="L353" title="All 4 branches missed.">        if (rotationAngle == 90 || rotationAngle == 270)</span>
+        {
+<span class="nc" id="L355">            return new PDRectangle(mediaBox.getLowerLeftY(), mediaBox.getLowerLeftX(),</span>
+<span class="nc" id="L356">                                   mediaBox.getHeight(), mediaBox.getWidth());</span>
+        }
+        else
+        {
+<span class="nc" id="L360">            return mediaBox;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

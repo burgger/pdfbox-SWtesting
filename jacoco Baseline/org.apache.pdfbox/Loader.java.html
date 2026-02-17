@@ -1,0 +1,487 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Loader.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox</a> &gt; <span class="el_source">Loader.java</span></div><h1>Loader.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+import org.apache.pdfbox.io.IOUtils;
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
+import org.apache.pdfbox.io.RandomAccessStreamCache.StreamCacheCreateFunction;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.pdfparser.FDFParser;
+import org.apache.pdfbox.pdfparser.PDFParser;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
+import org.apache.pdfbox.pdmodel.fdf.FDFDocument;
+import org.apache.pdfbox.util.XMLUtil;
+
+/**
+ * Utility methods to load different types of documents
+ *
+ */
+public class Loader
+{
+
+    private Loader()
+    {
+    }
+
+    /**
+     * This will load a document from a file.
+     *
+     * @param filename The name of the file to load. {@link org.apache.pdfbox.io.RandomAccessReadBufferedFile} is used
+     * to read the file.
+     *
+     * @return The document that was loaded.
+     *
+     * @throws IOException If there is an error reading from the stream.
+     */
+    public static FDFDocument loadFDF(String filename) throws IOException
+    {
+<span class="nc" id="L61">        return Loader.loadFDF(new File(filename));</span>
+    }
+
+    /**
+     * This will load a document from a file.
+     *
+     * @param file The name of the file to load. {@link org.apache.pdfbox.io.RandomAccessReadBufferedFile} is used to
+     * read the file.
+     *
+     * @return The document that was loaded.
+     *
+     * @throws IOException If there is an error reading from the stream.
+     */
+    public static FDFDocument loadFDF(File file) throws IOException
+    {
+<span class="nc" id="L76">        RandomAccessRead raFile = null;</span>
+        try
+        {
+            // PDFBOX-5894: RandomAccessRead is not closed here
+<span class="nc" id="L80">            raFile = new RandomAccessReadBufferedFile(file);</span>
+<span class="nc" id="L81">            FDFParser parser = new FDFParser(raFile);</span>
+<span class="nc" id="L82">            return parser.parse();</span>
+        }
+<span class="nc" id="L84">        catch (IOException ioe)</span>
+        {
+<span class="nc" id="L86">            IOUtils.closeQuietly(raFile);</span>
+<span class="nc" id="L87">            throw ioe;</span>
+        }
+    }
+
+    /**
+     * This will load a document from an input stream. The stream is loaded to the memory to establish random access to
+     * the data.
+     *
+     * @param input The stream that contains the document. To read the stream
+     * {@link org.apache.pdfbox.io.RandomAccessReadBuffer} is used
+     *
+     * @return The document that was loaded.
+     *
+     * @throws IOException If there is an error reading from the stream.
+     */
+    public static FDFDocument loadFDF(InputStream input) throws IOException
+    {
+<span class="nc" id="L104">        try (RandomAccessRead readBuffer = new RandomAccessReadBuffer(input))</span>
+        {
+<span class="nc" id="L106">            FDFParser parser = new FDFParser(readBuffer);</span>
+<span class="nc" id="L107">            return parser.parse();</span>
+        }
+    }
+
+    /**
+     * This will load a document from a file.
+     *
+     * @param filename The name of the file to load.
+     *
+     * @return The document that was loaded.
+     *
+     * @throws IOException If there is an error reading from the stream.
+     */
+    public static FDFDocument loadXFDF(String filename) throws IOException
+    {
+<span class="nc" id="L122">        return Loader.loadXFDF(new File(filename));</span>
+    }
+
+    /**
+     * This will load a document from a file.
+     *
+     * @param file The name of the file to load.
+     *
+     * @return The document that was loaded.
+     *
+     * @throws IOException If there is an error reading from the stream.
+     */
+    public static FDFDocument loadXFDF(File file) throws IOException
+    {
+<span class="nc" id="L136">        try (InputStream is = new BufferedInputStream(new FileInputStream(file)))</span>
+        {
+<span class="nc" id="L138">            return Loader.loadXFDF(is);</span>
+        }
+    }
+
+    /**
+     * This will load a document from an input stream. The stream is loaded to the memory to establish random access to
+     * the data.
+     *
+     * @param input The stream that contains the document.
+     *
+     * @return The document that was loaded.
+     *
+     * @throws IOException If there is an error reading from the stream.
+     */
+    public static FDFDocument loadXFDF(InputStream input) throws IOException
+    {
+<span class="nc" id="L154">        return new FDFDocument(XMLUtil.parse(input));</span>
+    }
+    
+    /**
+     * Parses a PDF. Unrestricted main memory will be used for buffering PDF streams.
+     * 
+     * @param input byte array that contains the document. {@link org.apache.pdfbox.io.RandomAccessReadBuffer} is used
+     * to read the data.
+     * 
+     * @return loaded document
+     * 
+     * @throws InvalidPasswordException If the PDF required a non-empty password.
+     * @throws IOException In case of a reading or parsing error.
+     */
+    public static PDDocument loadPDF(byte[] input) throws IOException
+    {
+<span class="nc" id="L170">        return Loader.loadPDF(input, &quot;&quot;);</span>
+    }
+    
+    /**
+     * Parses a PDF. Unrestricted main memory will be used for buffering PDF streams.
+     * 
+     * @param input byte array that contains the document. {@link org.apache.pdfbox.io.RandomAccessReadBuffer} is used
+     * to read the data.
+     * @param password password to be used for decryption
+     * 
+     * @return loaded document
+     * 
+     * @throws InvalidPasswordException If the password is incorrect.
+     * @throws IOException In case of a reading or parsing error.
+     */
+    public static PDDocument loadPDF(byte[] input, String password) throws IOException
+    {
+<span class="nc" id="L187">        return Loader.loadPDF(input, password, null, null);</span>
+    }
+    
+    /**
+     * Parses a PDF. Unrestricted main memory will be used for buffering PDF streams.
+     * 
+     * @param input byte array that contains the document. {@link org.apache.pdfbox.io.RandomAccessReadBuffer} is used
+     * to read the data.
+     * @param password password to be used for decryption
+     * @param keyStore key store to be used for decryption when using public key security
+     * @param alias alias to be used for decryption when using public key security
+     * 
+     * @return loaded document
+     * 
+     * @throws InvalidPasswordException If the password is incorrect.
+     * @throws IOException In case of a reading or parsing error.
+     */
+    public static PDDocument loadPDF(byte[] input, String password, InputStream keyStore, String alias)
+            throws IOException
+    {
+<span class="nc" id="L207">        return Loader.loadPDF(input, password, keyStore, alias, IOUtils.createMemoryOnlyStreamCache());</span>
+    }
+    
+    /**
+     * Parses a PDF.
+     * 
+     * @param input byte array that contains the document. {@link org.apache.pdfbox.io.RandomAccessReadBuffer} is used
+     * to read the data.
+     * @param password password to be used for decryption
+     * @param keyStore key store to be used for decryption when using public key security
+     * @param alias alias to be used for decryption when using public key security
+     * @param streamCacheCreateFunction a function to create an instance of a stream cache to be used for buffering
+     * new/altered PDF streams
+     * 
+     * @return loaded document
+     * 
+     * @throws InvalidPasswordException If the password is incorrect.
+     * @throws IOException In case of a reading or parsing error.
+     */
+    public static PDDocument loadPDF(byte[] input, String password, InputStream keyStore, String alias,
+            StreamCacheCreateFunction streamCacheCreateFunction) throws IOException
+    {
+<span class="nc" id="L229">        RandomAccessRead source = null;</span>
+        try
+        {
+            // RandomAccessRead is not closed here, may be needed for signing
+<span class="nc" id="L233">            source = new RandomAccessReadBuffer(input);</span>
+<span class="nc" id="L234">            PDFParser parser = new PDFParser(source, password, keyStore, alias, streamCacheCreateFunction);</span>
+<span class="nc" id="L235">            return parser.parse();</span>
+        }
+<span class="nc" id="L237">        catch (IOException ioe)</span>
+        {
+<span class="nc" id="L239">            IOUtils.closeQuietly(source);</span>
+<span class="nc" id="L240">            throw ioe;</span>
+        }
+    }
+    
+    /**
+     * Parses a PDF. Unrestricted main memory will be used for buffering PDF streams.
+     * 
+     * @param file file to be loaded. {@link org.apache.pdfbox.io.RandomAccessReadBufferedFile} is used to read the
+     * file.
+     * 
+     * @return loaded document
+     * 
+     * @throws InvalidPasswordException If the file required a non-empty password.
+     * @throws IOException in case of a file reading or parsing error
+     */
+    public static PDDocument loadPDF(File file) throws IOException
+    {
+<span class="fc" id="L257">        return Loader.loadPDF(file, &quot;&quot;, IOUtils.createMemoryOnlyStreamCache());</span>
+    }
+    
+    /**
+     * Parses a PDF.
+     * 
+     * @param file file to be loaded. {@link org.apache.pdfbox.io.RandomAccessReadBufferedFile} is used to read the
+     * file.
+     * @param streamCacheCreateFunction a function to create an instance of a stream cache to be used for buffering
+     * new/altered PDF streams
+     * 
+     * @return loaded document
+     * 
+     * @throws InvalidPasswordException If the file required a non-empty password.
+     * @throws IOException in case of a file reading or parsing error
+     */
+    public static PDDocument loadPDF(File file, StreamCacheCreateFunction streamCacheCreateFunction)
+            throws IOException
+    {
+<span class="nc" id="L276">        return Loader.loadPDF(file, &quot;&quot;, null, null, streamCacheCreateFunction);</span>
+    }
+    
+    /**
+     * Parses a PDF. Unrestricted main memory will be used for buffering PDF streams.
+     * 
+     * @param file file to be loaded. {@link org.apache.pdfbox.io.RandomAccessReadBufferedFile} is used to read the
+     * file.
+     * @param password password to be used for decryption
+     * 
+     * @return loaded document
+     * 
+     * @throws InvalidPasswordException If the password is incorrect.
+     * @throws IOException in case of a file reading or parsing error
+     */
+    public static PDDocument loadPDF(File file, String password) throws IOException
+    {
+<span class="nc" id="L293">        return Loader.loadPDF(file, password, null, null, IOUtils.createMemoryOnlyStreamCache());</span>
+    }
+    
+    /**
+     * Parses a PDF.
+     * 
+     * @param file file to be loaded. {@link org.apache.pdfbox.io.RandomAccessReadBufferedFile} is used to read the
+     * file.
+     * @param password password to be used for decryption
+     * @param streamCacheCreateFunction a function to create an instance of a stream cache to be used for buffering
+     * new/altered PDF streams
+     * 
+     * @return loaded document
+     * 
+     * @throws InvalidPasswordException If the password is incorrect.
+     * @throws IOException in case of a file reading or parsing error
+     */
+    public static PDDocument loadPDF(File file, String password,
+            StreamCacheCreateFunction streamCacheCreateFunction)
+            throws IOException
+    {
+<span class="fc" id="L314">        return Loader.loadPDF(file, password, null, null, streamCacheCreateFunction);</span>
+    }
+    
+    /**
+     * Parses a PDF. Unrestricted main memory will be used for buffering PDF streams.
+     * 
+     * @param file file to be loaded. {@link org.apache.pdfbox.io.RandomAccessReadBufferedFile} is used to read the
+     * file.
+     * @param password password to be used for decryption
+     * @param keyStore key store to be used for decryption when using public key security
+     * @param alias alias to be used for decryption when using public key security
+     * 
+     * @return loaded document
+     * 
+     * @throws IOException in case of a file reading or parsing error
+     */
+    public static PDDocument loadPDF(File file, String password, InputStream keyStore, String alias)
+            throws IOException
+    {
+<span class="nc" id="L333">        return Loader.loadPDF(file, password, keyStore, alias, IOUtils.createMemoryOnlyStreamCache());</span>
+    }
+    
+    /**
+     * Parses a PDF.
+     * 
+     * @param file file to be loaded. {@link org.apache.pdfbox.io.RandomAccessReadBufferedFile} is used to read the
+     * file.
+     * @param password password to be used for decryption
+     * @param keyStore key store to be used for decryption when using public key security
+     * @param alias alias to be used for decryption when using public key security
+     * @param streamCacheCreateFunction a function to create an instance of a stream cache to be used for buffering
+     * new/altered PDF streams
+     * 
+     * @return loaded document
+     * 
+     * @throws IOException in case of a file reading or parsing error
+     */
+    public static PDDocument loadPDF(File file, String password, InputStream keyStore, String alias,
+            StreamCacheCreateFunction streamCacheCreateFunction) throws IOException
+    {
+<span class="fc" id="L354">        RandomAccessRead raFile = null;</span>
+        try
+        {
+            // RandomAccessRead is not closed here, may be needed for signing
+<span class="fc" id="L358">            raFile = new RandomAccessReadBufferedFile(file);</span>
+<span class="fc" id="L359">            return Loader.loadPDF(raFile, password, keyStore, alias, streamCacheCreateFunction);</span>
+        }
+<span class="nc" id="L361">        catch (IOException ioe)</span>
+        {
+<span class="nc" id="L363">            IOUtils.closeQuietly(raFile);</span>
+<span class="nc" id="L364">            throw ioe;</span>
+        }
+    }
+
+    /**
+     * Parses a PDF. Unrestricted main memory will be used for buffering PDF new streams.
+     * 
+     * @param randomAccessRead random access read representing the pdf to be loaded. To pass an
+     * InputStream, wrap it into a {@link RandomAccessReadBuffer}.
+     * 
+     * @return loaded document
+     * 
+     * @throws InvalidPasswordException If the PDF required a non-empty password.
+     * @throws IOException In case of a reading or parsing error.
+     */
+    public static PDDocument loadPDF(RandomAccessRead randomAccessRead) throws IOException
+    {
+<span class="nc" id="L381">        return Loader.loadPDF(randomAccessRead, &quot;&quot;, null, null, IOUtils.createMemoryOnlyStreamCache());</span>
+    }
+
+    /**
+     * Parses a PDF.
+     * 
+     * @param randomAccessRead random access read representing the pdf to be loaded. To pass an
+     * InputStream, wrap it into a {@link RandomAccessReadBuffer}.
+     * @param streamCacheCreateFunction a function to create an instance of a stream cache to be used for buffering
+     * new/altered PDF streams
+     * 
+     * @return loaded document
+     * 
+     * @throws InvalidPasswordException If the PDF required a non-empty password.
+     * @throws IOException In case of a reading or parsing error.
+     */
+    public static PDDocument loadPDF(RandomAccessRead randomAccessRead,
+            StreamCacheCreateFunction streamCacheCreateFunction)
+            throws IOException
+    {
+<span class="nc" id="L401">        return Loader.loadPDF(randomAccessRead, &quot;&quot;, null, null, streamCacheCreateFunction);</span>
+    }
+
+    /**
+     * Parses a PDF. Unrestricted main memory will be used for buffering new/altered PDF streams.
+     *
+     * @param randomAccessRead random access read representing the pdf to be loaded. To pass an
+     * InputStream, wrap it into a {@link RandomAccessReadBuffer}.
+     * @param password password to be used for decryption
+     *
+     * @return loaded document
+     * 
+     * @throws InvalidPasswordException If the password is incorrect.
+     * @throws IOException In case of a reading or parsing error.
+     */
+    public static PDDocument loadPDF(RandomAccessRead randomAccessRead, String password) throws IOException
+    {
+<span class="nc" id="L418">        return Loader.loadPDF(randomAccessRead, password, null, null,</span>
+<span class="nc" id="L419">                IOUtils.createMemoryOnlyStreamCache());</span>
+    }
+
+    /**
+     * Parses a PDF. Unrestricted main memory will be used for buffering new/altered PDF streams.
+     *
+     * @param randomAccessRead random access read representing the pdf to be loaded. To pass an
+     * InputStream, wrap it into a {@link RandomAccessReadBuffer}.
+     * @param password password to be used for decryption
+     * @param keyStore key store to be used for decryption when using public key security
+     * @param alias alias to be used for decryption when using public key security
+     * 
+     * @return loaded document
+     * 
+     * @throws IOException In case of a reading or parsing error.
+     */
+    public static PDDocument loadPDF(RandomAccessRead randomAccessRead, String password, InputStream keyStore,
+            String alias) throws IOException
+    {
+<span class="nc" id="L438">        return Loader.loadPDF(randomAccessRead, password, keyStore, alias,</span>
+<span class="nc" id="L439">                IOUtils.createMemoryOnlyStreamCache());</span>
+    }
+
+    /**
+     * Parses a PDF.
+     *
+     * @param randomAccessRead random access read representing the pdf to be loaded. To pass an
+     * InputStream, wrap it into a {@link RandomAccessReadBuffer}.
+     * @param password password to be used for decryption
+     * @param streamCacheCreateFunction a function to create an instance of a stream cache to be used for buffering
+     * new/altered PDF streams
+     * 
+     * @return loaded document
+     * 
+     * @throws InvalidPasswordException If the password is incorrect.
+     * @throws IOException In case of a reading or parsing error.
+     */
+    public static PDDocument loadPDF(RandomAccessRead randomAccessRead, String password,
+            StreamCacheCreateFunction streamCacheCreateFunction) throws IOException
+    {
+<span class="nc" id="L459">        return Loader.loadPDF(randomAccessRead, password, null, null, streamCacheCreateFunction);</span>
+    }
+
+    /**
+     * Parses a PDF.
+     * 
+     * @param randomAccessRead random access read representing the pdf to be loaded. To pass an
+     * InputStream, wrap it into a {@link RandomAccessReadBuffer}.
+     * @param password password to be used for decryption
+     * @param keyStore key store to be used for decryption when using public key security
+     * @param alias alias to be used for decryption when using public key security
+     * @param streamCacheCreateFunction a function to create an instance of a stream cache to be used for buffering
+     * new/altered PDF streams
+     * 
+     * @return loaded document
+     * 
+     * @throws IOException in case of a file reading or parsing error
+     */
+    public static PDDocument loadPDF(RandomAccessRead randomAccessRead, String password,
+            InputStream keyStore, String alias, StreamCacheCreateFunction streamCacheCreateFunction)
+            throws IOException
+    {
+<span class="fc" id="L481">        PDFParser parser = new PDFParser(randomAccessRead, password, keyStore, alias,</span>
+                streamCacheCreateFunction);
+<span class="fc" id="L483">        return parser.parse();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

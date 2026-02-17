@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDDefaultAppearanceString.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.form</a> &gt; <span class="el_source">PDDefaultAppearanceString.java</span></div><h1>PDDefaultAppearanceString.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.form;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.pdfbox.contentstream.operator.Operator;
+import org.apache.pdfbox.contentstream.operator.OperatorName;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.pdfparser.PDFStreamParser;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceCMYK;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceGray;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
+import org.apache.pdfbox.pdmodel.PDAppearanceContentStream;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceStream;
+
+/**
+ * Represents a default appearance string, as found in the /DA entry of free text annotations.
+ * 
+ * &lt;p&gt;The default appearance string (DA) contains any graphics state or text state operators needed
+ * to establish the graphics state parameters, such as text size and colour, for displaying the
+ * field’s variable text. Only operators that are allowed within text objects shall occur in this
+ * string.
+ * 
+ * Note: This class is not yet public, as its API is still unstable.
+ */
+class PDDefaultAppearanceString
+{
+    /**
+     * The default font size used by Acrobat.
+     */
+    private static final float DEFAULT_FONT_SIZE = 12;
+    
+    private final PDResources defaultResources;
+    
+    private COSName fontName;
+    private PDFont font;
+<span class="nc" id="L63">    private float fontSize = DEFAULT_FONT_SIZE;</span>
+    private PDColor fontColor;
+    
+    /**
+     * Constructor for reading an existing DA string.
+     * 
+     * @param defaultResources DR entry
+     * @param defaultAppearance DA entry
+     * @throws IOException If the DA could not be parsed
+     */
+    PDDefaultAppearanceString(COSString defaultAppearance, PDResources defaultResources) throws IOException
+<span class="nc" id="L74">    {</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        if (defaultAppearance == null)</span>
+        {
+<span class="nc" id="L77">            throw new IllegalArgumentException(&quot;/DA is a required entry. &quot;</span>
+                    + &quot;Please set a default appearance first.&quot;);
+        }
+        
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        if (defaultResources == null)</span>
+        {
+<span class="nc" id="L83">            throw new IllegalArgumentException(&quot;/DR is a required entry&quot;);</span>
+        }
+        
+<span class="nc" id="L86">        this.defaultResources = defaultResources;</span>
+<span class="nc" id="L87">        processAppearanceStringOperators(defaultAppearance.getBytes());</span>
+<span class="nc" id="L88">    }</span>
+    
+    /**
+     * Processes the operators of the given content stream.
+     *
+     * @param content the content to parse.
+     * @throws IOException if there is an error reading or parsing the content stream.
+     */
+    private void processAppearanceStringOperators(byte[] content) throws IOException
+    {
+<span class="nc" id="L98">        List&lt;COSBase&gt; arguments = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L99">        PDFStreamParser parser = new PDFStreamParser(content);</span>
+<span class="nc" id="L100">        Object token = parser.parseNextToken();</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        while (token != null)</span>
+        {
+<span class="nc bnc" id="L103" title="All 2 branches missed.">            if (token instanceof Operator)</span>
+            {
+<span class="nc" id="L105">                processOperator((Operator) token, arguments);</span>
+<span class="nc" id="L106">                arguments = new ArrayList&lt;&gt;();</span>
+            }
+            else
+            {
+<span class="nc" id="L110">                arguments.add((COSBase) token);</span>
+            }
+<span class="nc" id="L112">            token = parser.parseNextToken();</span>
+        }
+<span class="nc" id="L114">    }</span>
+    
+    /**
+     * This is used to handle an operation.
+     * 
+     * @param operator The operation to perform.
+     * @param operands The list of arguments.
+     * @throws IOException If there is an error processing the operation.
+     */
+    private void processOperator(Operator operator, List&lt;COSBase&gt; operands) throws IOException
+    {
+<span class="nc bnc" id="L125" title="All 3 branches missed.">        switch (operator.getName())</span>
+        {
+            case OperatorName.SET_FONT_AND_SIZE:
+<span class="nc" id="L128">                processSetFont(operands);</span>
+<span class="nc" id="L129">                break;</span>
+            case OperatorName.NON_STROKING_GRAY:
+            case OperatorName.NON_STROKING_RGB:
+            case OperatorName.NON_STROKING_CMYK:
+<span class="nc" id="L133">                processSetFontColor(operands);</span>
+<span class="nc" id="L134">                break;</span>
+            default:
+                break;
+        }
+<span class="nc" id="L138">    }</span>
+    
+    /**
+     * Process the set font and font size operator.
+     * 
+     * @param operands the font name and size
+     * @throws IOException in case there are missing operators or the font is not within the resources
+     */
+    private void processSetFont(List&lt;COSBase&gt; operands) throws IOException
+    {
+<span class="nc bnc" id="L148" title="All 2 branches missed.">        if (operands.size() &lt; 2)</span>
+        {
+<span class="nc" id="L150">            throw new IOException(&quot;Missing operands for set font operator &quot; + Arrays.toString(operands.toArray()));</span>
+        }
+
+<span class="nc" id="L153">        COSBase base0 = operands.get(0);</span>
+<span class="nc" id="L154">        COSBase base1 = operands.get(1);</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        if (!(base0 instanceof COSName))</span>
+        {
+<span class="nc" id="L157">            return;</span>
+        }
+<span class="nc bnc" id="L159" title="All 2 branches missed.">        if (!(base1 instanceof COSNumber))</span>
+        {
+<span class="nc" id="L161">            return;</span>
+        }
+<span class="nc" id="L163">        COSName fontName = (COSName) base0;</span>
+        
+<span class="nc" id="L165">        PDFont font = defaultResources.getFont(fontName);</span>
+<span class="nc" id="L166">        float fontSize = ((COSNumber) base1).floatValue();</span>
+        
+        // todo: handle cases where font == null with special mapping logic (see PDFBOX-2661)
+<span class="nc bnc" id="L169" title="All 2 branches missed.">        if (font == null)</span>
+        {
+<span class="nc" id="L171">            throw new IOException(&quot;Could not find font: /&quot; + fontName.getName());</span>
+        }
+<span class="nc" id="L173">        setFontName(fontName);</span>
+<span class="nc" id="L174">        setFont(font);</span>
+<span class="nc" id="L175">        setFontSize(fontSize);</span>
+<span class="nc" id="L176">    }</span>
+    
+    /**
+     * Process the font color operator.
+     * 
+     * This is assumed to be an RGB color.
+     * 
+     * @param operands the color components
+     * @throws IOException in case of the color components not matching
+     */
+    private void processSetFontColor(List&lt;COSBase&gt; operands) throws IOException
+    {
+        PDColorSpace colorSpace;
+
+<span class="nc bnc" id="L190" title="All 4 branches missed.">        switch (operands.size())</span>
+        {
+            case 1:
+<span class="nc" id="L193">                colorSpace = PDDeviceGray.INSTANCE;</span>
+<span class="nc" id="L194">                break;</span>
+            case 3:
+<span class="nc" id="L196">                colorSpace = PDDeviceRGB.INSTANCE;</span>
+<span class="nc" id="L197">                break;</span>
+            case 4:
+<span class="nc" id="L199">                colorSpace = PDDeviceCMYK.INSTANCE;</span>
+<span class="nc" id="L200">                break;</span>
+            default:
+<span class="nc" id="L202">                throw new IOException(&quot;Missing operands for set non stroking color operator &quot; + Arrays.toString(operands.toArray()));</span>
+        }
+<span class="nc" id="L204">        COSArray array = new COSArray();</span>
+<span class="nc" id="L205">        array.addAll(operands);</span>
+<span class="nc" id="L206">        setFontColor(new PDColor(array, colorSpace));</span>
+<span class="nc" id="L207">    }</span>
+
+    /**
+     * Get the font name
+     * 
+     * @return the font name to use for resource lookup
+     */
+    COSName getFontName()
+    {
+<span class="nc" id="L216">        return fontName;</span>
+    }
+
+    /**
+     * Set the font name.
+     * 
+     * @param fontName the font name to use for resource lookup
+     */
+    void setFontName(COSName fontName)
+    {
+<span class="nc" id="L226">        this.fontName = fontName;</span>
+<span class="nc" id="L227">    }</span>
+    
+    /**
+     * Returns the font.
+     */
+    PDFont getFont()
+    {
+<span class="nc" id="L234">        return font;</span>
+    }
+    
+    /**
+     * Set the font.
+     * 
+     * @param font the font to use.
+     */
+    void setFont(PDFont font)
+    {
+<span class="nc" id="L244">        this.font = font;</span>
+<span class="nc" id="L245">    }</span>
+
+    /**
+     * Returns the font size.
+     */
+    public float getFontSize()
+    {
+<span class="nc" id="L252">        return fontSize;</span>
+    }
+    
+    /**
+     * Set the font size.
+     * 
+     * @param fontSize the font size.
+     */
+    void setFontSize(float fontSize)
+    {
+<span class="nc" id="L262">        this.fontSize = fontSize;</span>
+<span class="nc" id="L263">    }</span>
+    
+    /**
+     * Returns the font color
+     */
+    PDColor getFontColor()
+    {
+<span class="nc" id="L270">        return fontColor;</span>
+    }
+
+    /**
+     * Set the font color.
+     * 
+     * @param fontColor the fontColor to use.
+     */
+    void setFontColor(PDColor fontColor)
+    {
+<span class="nc" id="L280">        this.fontColor = fontColor;</span>
+<span class="nc" id="L281">    }</span>
+
+    /**
+     * Write font name, font size and color from the /DA string to the given content stream.
+     *
+     * @param contents The content stream.
+     * @param zeroFontSize The calculated font size to use if the /DA string has a size 0
+     * (autosize). Otherwise the size from the /DA string is used.
+     */
+    void writeTo(PDAppearanceContentStream contents, float zeroFontSize) throws IOException
+    {
+<span class="nc" id="L292">        float fontSize = getFontSize();</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">        if (Float.compare(fontSize, 0) == 0)</span>
+        {
+<span class="nc" id="L295">            fontSize = zeroFontSize;</span>
+        }
+<span class="nc" id="L297">        contents.setFont(getFont(), fontSize);</span>
+        
+<span class="nc bnc" id="L299" title="All 2 branches missed.">        if (getFontColor() != null)</span>
+        {
+<span class="nc" id="L301">            contents.setNonStrokingColor(getFontColor());</span>
+        }
+<span class="nc" id="L303">    }</span>
+
+    /**
+     * Copies any needed resources from the document’s DR dictionary into the stream’s Resources
+     * dictionary. Resources with the same name shall be left intact.
+     */
+    void copyNeededResourcesTo(PDAppearanceStream appearanceStream) throws IOException
+    {
+        // make sure we have resources
+<span class="nc" id="L312">        PDResources streamResources = appearanceStream.getResources();</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">        if (streamResources == null)</span>
+        {
+<span class="nc" id="L315">            streamResources = new PDResources();</span>
+<span class="nc" id="L316">            appearanceStream.setResources(streamResources);</span>
+        }
+        
+<span class="nc bnc" id="L319" title="All 2 branches missed.">        if (streamResources.getFont(fontName) == null)</span>
+        {
+<span class="nc" id="L321">            streamResources.put(fontName, getFont());</span>
+        }
+
+        // todo: other kinds of resource...
+<span class="nc" id="L325">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

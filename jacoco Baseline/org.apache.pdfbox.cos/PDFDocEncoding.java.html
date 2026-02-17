@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFDocEncoding.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.cos</a> &gt; <span class="el_source">PDFDocEncoding.java</span></div><h1>PDFDocEncoding.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.cos;
+
+import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * The &quot;PDFDocEncoding&quot; encoding. Note that this is *not* a Type 1 font encoding, it is used only
+ * within PDF &quot;text strings&quot;.
+ */
+final class PDFDocEncoding
+{
+    private static final char REPLACEMENT_CHARACTER = '\uFFFD';
+
+    private static final int[] CODE_TO_UNI;
+    private static final Map&lt;Character, Integer&gt; UNI_TO_CODE;
+
+    static
+    {
+<span class="nc" id="L37">        CODE_TO_UNI = new int[256];</span>
+<span class="nc" id="L38">        UNI_TO_CODE = new HashMap&lt;&gt;(256);</span>
+
+        // initialize with basically ISO-8859-1
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        for (int i = 0; i &lt; 256; i++)</span>
+        {
+            // skip entries not in Unicode column
+<span class="nc bnc" id="L44" title="All 4 branches missed.">            if (i &gt; 0x17 &amp;&amp; i &lt; 0x20)</span>
+            {
+<span class="nc" id="L46">                continue;</span>
+            }
+<span class="nc bnc" id="L48" title="All 4 branches missed.">            if (i &gt; 0x7E &amp;&amp; i &lt; 0xA1)</span>
+            {
+<span class="nc" id="L50">                continue;</span>
+            }
+<span class="nc bnc" id="L52" title="All 2 branches missed.">            if (i == 0xAD)</span>
+            {
+<span class="nc" id="L54">                continue;</span>
+            }
+            
+<span class="nc" id="L57">            set(i, (char)i);</span>
+        }
+
+        // then do all deviations (based on the table in ISO 32000-1:2008)
+        // block 1
+<span class="nc" id="L62">        set(0x18, '\u02D8'); // BREVE</span>
+<span class="nc" id="L63">        set(0x19, '\u02C7'); // CARON</span>
+<span class="nc" id="L64">        set(0x1A, '\u02C6'); // MODIFIER LETTER CIRCUMFLEX ACCENT</span>
+<span class="nc" id="L65">        set(0x1B, '\u02D9'); // DOT ABOVE</span>
+<span class="nc" id="L66">        set(0x1C, '\u02DD'); // DOUBLE ACUTE ACCENT</span>
+<span class="nc" id="L67">        set(0x1D, '\u02DB'); // OGONEK</span>
+<span class="nc" id="L68">        set(0x1E, '\u02DA'); // RING ABOVE</span>
+<span class="nc" id="L69">        set(0x1F, '\u02DC'); // SMALL TILDE</span>
+        // block 2
+<span class="nc" id="L71">        set(0x7F, REPLACEMENT_CHARACTER); // undefined</span>
+<span class="nc" id="L72">        set(0x80, '\u2022'); // BULLET</span>
+<span class="nc" id="L73">        set(0x81, '\u2020'); // DAGGER</span>
+<span class="nc" id="L74">        set(0x82, '\u2021'); // DOUBLE DAGGER</span>
+<span class="nc" id="L75">        set(0x83, '\u2026'); // HORIZONTAL ELLIPSIS</span>
+<span class="nc" id="L76">        set(0x84, '\u2014'); // EM DASH</span>
+<span class="nc" id="L77">        set(0x85, '\u2013'); // EN DASH</span>
+<span class="nc" id="L78">        set(0x86, '\u0192'); // LATIN SMALL LETTER SCRIPT F</span>
+<span class="nc" id="L79">        set(0x87, '\u2044'); // FRACTION SLASH (solidus)</span>
+<span class="nc" id="L80">        set(0x88, '\u2039'); // SINGLE LEFT-POINTING ANGLE QUOTATION MARK</span>
+<span class="nc" id="L81">        set(0x89, '\u203A'); // SINGLE RIGHT-POINTING ANGLE QUOTATION MARK</span>
+<span class="nc" id="L82">        set(0x8A, '\u2212'); // MINUS SIGN</span>
+<span class="nc" id="L83">        set(0x8B, '\u2030'); // PER MILLE SIGN</span>
+<span class="nc" id="L84">        set(0x8C, '\u201E'); // DOUBLE LOW-9 QUOTATION MARK (quotedblbase)</span>
+<span class="nc" id="L85">        set(0x8D, '\u201C'); // LEFT DOUBLE QUOTATION MARK (quotedblleft)</span>
+<span class="nc" id="L86">        set(0x8E, '\u201D'); // RIGHT DOUBLE QUOTATION MARK (quotedblright)</span>
+<span class="nc" id="L87">        set(0x8F, '\u2018'); // LEFT SINGLE QUOTATION MARK (quoteleft)</span>
+<span class="nc" id="L88">        set(0x90, '\u2019'); // RIGHT SINGLE QUOTATION MARK (quoteright)</span>
+<span class="nc" id="L89">        set(0x91, '\u201A'); // SINGLE LOW-9 QUOTATION MARK (quotesinglbase)</span>
+<span class="nc" id="L90">        set(0x92, '\u2122'); // TRADE MARK SIGN</span>
+<span class="nc" id="L91">        set(0x93, '\uFB01'); // LATIN SMALL LIGATURE FI</span>
+<span class="nc" id="L92">        set(0x94, '\uFB02'); // LATIN SMALL LIGATURE FL</span>
+<span class="nc" id="L93">        set(0x95, '\u0141'); // LATIN CAPITAL LETTER L WITH STROKE</span>
+<span class="nc" id="L94">        set(0x96, '\u0152'); // LATIN CAPITAL LIGATURE OE</span>
+<span class="nc" id="L95">        set(0x97, '\u0160'); // LATIN CAPITAL LETTER S WITH CARON</span>
+<span class="nc" id="L96">        set(0x98, '\u0178'); // LATIN CAPITAL LETTER Y WITH DIAERESIS</span>
+<span class="nc" id="L97">        set(0x99, '\u017D'); // LATIN CAPITAL LETTER Z WITH CARON</span>
+<span class="nc" id="L98">        set(0x9A, '\u0131'); // LATIN SMALL LETTER DOTLESS I</span>
+<span class="nc" id="L99">        set(0x9B, '\u0142'); // LATIN SMALL LETTER L WITH STROKE</span>
+<span class="nc" id="L100">        set(0x9C, '\u0153'); // LATIN SMALL LIGATURE OE</span>
+<span class="nc" id="L101">        set(0x9D, '\u0161'); // LATIN SMALL LETTER S WITH CARON</span>
+<span class="nc" id="L102">        set(0x9E, '\u017E'); // LATIN SMALL LETTER Z WITH CARON</span>
+<span class="nc" id="L103">        set(0x9F, REPLACEMENT_CHARACTER); // undefined</span>
+<span class="nc" id="L104">        set(0xA0, '\u20AC'); // EURO SIGN</span>
+        // end of deviations
+<span class="nc" id="L106">    }</span>
+    
+    private PDFDocEncoding()
+    {
+    }
+
+    private static void set(int code, char unicode)
+    {
+<span class="nc" id="L114">        CODE_TO_UNI[code] = unicode;</span>
+<span class="nc" id="L115">        UNI_TO_CODE.put(unicode, code);</span>
+<span class="nc" id="L116">    }</span>
+
+    /**
+     * Returns the string representation of the given PDFDocEncoded bytes.
+     */
+    public static String toString(byte[] bytes)
+    {
+<span class="nc" id="L123">        StringBuilder sb = new StringBuilder(bytes.length);</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">        for (byte b : bytes)</span>
+        {
+<span class="nc bnc" id="L126" title="All 2 branches missed.">            if ((b &amp; 0xff) &gt;= CODE_TO_UNI.length)</span>
+            {
+<span class="nc" id="L128">                sb.append('?');</span>
+            }
+            else
+            {
+<span class="nc" id="L132">                sb.append((char)CODE_TO_UNI[b &amp; 0xff]);</span>
+            }
+        }
+<span class="nc" id="L135">        return sb.toString();</span>
+    }
+
+    /**
+     * Returns the given string encoded with PDFDocEncoding.
+     */
+    public static byte[] getBytes(String text)
+    {
+<span class="nc" id="L143">        ByteArrayOutputStream out = new ByteArrayOutputStream(text.length());</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">        for (char c : text.toCharArray())</span>
+        {
+<span class="nc" id="L146">            out.write(UNI_TO_CODE.getOrDefault(c, 0));</span>
+        }
+<span class="nc" id="L148">        return out.toByteArray();</span>
+    }
+
+    /**
+     * Returns true if the given character is available in PDFDocEncoding.
+     *
+     * @param character UTF-16 character
+     */
+    public static boolean containsChar(char character)
+    {
+<span class="nc" id="L158">        return UNI_TO_CODE.containsKey(character);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

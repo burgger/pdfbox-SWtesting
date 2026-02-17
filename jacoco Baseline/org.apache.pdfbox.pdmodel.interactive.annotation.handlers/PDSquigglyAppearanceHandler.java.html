@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDSquigglyAppearanceHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation.handlers</a> &gt; <span class="el_source">PDSquigglyAppearanceHandler.java</span></div><h1>PDSquigglyAppearanceHandler.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2018 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.interactive.annotation.handlers;
+
+import java.awt.geom.AffineTransform;
+import java.io.IOException;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDAppearanceContentStream;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDFormContentStream;
+import org.apache.pdfbox.pdmodel.PDPatternContentStream;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
+import org.apache.pdfbox.pdmodel.graphics.color.PDPattern;
+import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
+import org.apache.pdfbox.pdmodel.graphics.pattern.PDTilingPattern;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationSquiggly;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ *
+ */
+public class PDSquigglyAppearanceHandler extends PDAbstractAppearanceHandler
+{
+<span class="nc" id="L45">    private static final Logger LOG = LogManager.getLogger(PDSquigglyAppearanceHandler.class);</span>
+
+    public PDSquigglyAppearanceHandler(PDAnnotation annotation)
+    {
+<span class="nc" id="L49">        super(annotation);</span>
+<span class="nc" id="L50">    }</span>
+
+    public PDSquigglyAppearanceHandler(PDAnnotation annotation, PDDocument document)
+    {
+<span class="nc" id="L54">        super(annotation, document);</span>
+<span class="nc" id="L55">    }</span>
+
+    @Override
+    public void generateNormalAppearance()
+    {
+<span class="nc" id="L60">        PDAnnotationSquiggly annotation = (PDAnnotationSquiggly) getAnnotation();</span>
+<span class="nc" id="L61">        PDRectangle rect = annotation.getRectangle();</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        if (rect == null)</span>
+        {
+<span class="nc" id="L64">            return;</span>
+        }
+<span class="nc" id="L66">        float[] pathsArray = annotation.getQuadPoints();</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        if (pathsArray == null)</span>
+        {
+<span class="nc" id="L69">            return;</span>
+        }
+<span class="nc" id="L71">        AnnotationBorder ab = AnnotationBorder.getAnnotationBorder(annotation, annotation.getBorderStyle());</span>
+<span class="nc" id="L72">        PDColor color = annotation.getColor();</span>
+<span class="nc bnc" id="L73" title="All 4 branches missed.">        if (color == null || color.getComponents().length == 0)</span>
+        {
+<span class="nc" id="L75">            return;</span>
+        }
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        if (Float.compare(ab.width, 0) == 0)</span>
+        {
+            // value found in adobe reader
+<span class="nc" id="L80">            ab.width = 1.5f;</span>
+        }
+
+        // Adjust rectangle even if not empty, see PLPDF.com-MarkupAnnotations.pdf
+        //TODO in a class structure this should be overridable
+        // this is similar to polyline but different data type
+        // all coordinates (unlike painting) are used because I'm lazy
+<span class="nc" id="L87">        float minX = Float.MAX_VALUE;</span>
+<span class="nc" id="L88">        float minY = Float.MAX_VALUE;</span>
+<span class="nc" id="L89">        float maxX = Float.MIN_VALUE;</span>
+<span class="nc" id="L90">        float maxY = Float.MIN_VALUE;</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        for (int i = 0; i &lt; pathsArray.length / 2; ++i)</span>
+        {
+<span class="nc" id="L93">            float x = pathsArray[i * 2];</span>
+<span class="nc" id="L94">            float y = pathsArray[i * 2 + 1];</span>
+<span class="nc" id="L95">            minX = Math.min(minX, x);</span>
+<span class="nc" id="L96">            minY = Math.min(minY, y);</span>
+<span class="nc" id="L97">            maxX = Math.max(maxX, x);</span>
+<span class="nc" id="L98">            maxY = Math.max(maxY, y);</span>
+        }
+<span class="nc" id="L100">        rect.setLowerLeftX(Math.min(minX - ab.width / 2, rect.getLowerLeftX()));</span>
+<span class="nc" id="L101">        rect.setLowerLeftY(Math.min(minY - ab.width / 2, rect.getLowerLeftY()));</span>
+<span class="nc" id="L102">        rect.setUpperRightX(Math.max(maxX + ab.width / 2, rect.getUpperRightX()));</span>
+<span class="nc" id="L103">        rect.setUpperRightY(Math.max(maxY + ab.width / 2, rect.getUpperRightY()));</span>
+<span class="nc" id="L104">        annotation.setRectangle(rect);</span>
+
+<span class="nc" id="L106">        try (PDAppearanceContentStream cs = getNormalAppearanceAsContentStream())</span>
+        {
+<span class="nc" id="L108">            setOpacity(cs, annotation.getConstantOpacity());</span>
+
+<span class="nc" id="L110">            cs.setStrokingColor(color);</span>
+
+            //TODO we ignore dash pattern and line width for now. Do they have any effect?
+
+
+            // quadpoints spec is incorrect
+            // https://stackoverflow.com/questions/9855814/pdf-spec-vs-acrobat-creation-quadpoints
+<span class="nc bnc" id="L117" title="All 2 branches missed.">            for (int i = 0; i &lt; pathsArray.length / 8; ++i)</span>
+            {
+                // Adobe uses a fixed pattern that assumes a height of 40, and it transforms to that height
+                // horizontally and the same / 1.8 vertically.
+                // translation apparently based on bottom left, but slightly different in Adobe
+                //TODO what if the annotation is not horizontal?
+<span class="nc" id="L123">                float height = pathsArray[i * 8 + 1] - pathsArray[i * 8 + 5];</span>
+<span class="nc" id="L124">                cs.transform(new Matrix(height / 40f, 0, 0, height / 40f / 1.8f, pathsArray[i * 8 + 4], pathsArray[i * 8 + 5]));</span>
+
+                // Create form, BBox is mostly fixed, except for the horizontal size which is
+                // horizontal size divided by the horizontal transform factor from above
+                // (almost)
+<span class="nc" id="L129">                PDFormXObject form = new PDFormXObject(createCOSStream());</span>
+<span class="nc" id="L130">                form.setBBox(new PDRectangle(-0.5f, -0.5f, (pathsArray[i * 8 + 2] - pathsArray[i * 8]) / height * 40f + 0.5f, 13));</span>
+<span class="nc" id="L131">                form.setResources(new PDResources());</span>
+<span class="nc" id="L132">                form.setMatrix(AffineTransform.getTranslateInstance(0.5f, 0.5f));</span>
+<span class="nc" id="L133">                cs.drawForm(form);</span>
+<span class="nc" id="L134">                try (PDFormContentStream formCS = new PDFormContentStream(form))</span>
+                {
+<span class="nc" id="L136">                    PDTilingPattern pattern = new PDTilingPattern();</span>
+<span class="nc" id="L137">                    pattern.setBBox(new PDRectangle(0, 0, 10, 12));</span>
+<span class="nc" id="L138">                    pattern.setXStep(10);</span>
+<span class="nc" id="L139">                    pattern.setYStep(13);</span>
+<span class="nc" id="L140">                    pattern.setTilingType(PDTilingPattern.TILING_CONSTANT_SPACING_FASTER_TILING);</span>
+<span class="nc" id="L141">                    pattern.setPaintType(PDTilingPattern.PAINT_UNCOLORED);</span>
+<span class="nc" id="L142">                    try (PDPatternContentStream patternCS = new PDPatternContentStream(pattern))</span>
+                    {
+                        // from Adobe
+<span class="nc" id="L145">                        patternCS.setLineCapStyle(1);</span>
+<span class="nc" id="L146">                        patternCS.setLineJoinStyle(1);</span>
+<span class="nc" id="L147">                        patternCS.setLineWidth(1);</span>
+<span class="nc" id="L148">                        patternCS.setMiterLimit(10);</span>
+<span class="nc" id="L149">                        patternCS.moveTo(0, 1);</span>
+<span class="nc" id="L150">                        patternCS.lineTo(5, 11);</span>
+<span class="nc" id="L151">                        patternCS.lineTo(10, 1);</span>
+<span class="nc" id="L152">                        patternCS.stroke();</span>
+                    }
+<span class="nc" id="L154">                    COSName patternName = form.getResources().add(pattern);</span>
+<span class="nc" id="L155">                    PDColorSpace patternColorSpace = new PDPattern(null, PDDeviceRGB.INSTANCE);</span>
+<span class="nc" id="L156">                    PDColor patternColor = new PDColor(color.getComponents(), patternName, patternColorSpace);</span>
+<span class="nc" id="L157">                    formCS.setNonStrokingColor(patternColor);</span>
+
+                    // With Adobe, the horizontal size is slightly different, don't know why
+<span class="nc" id="L160">                    formCS.addRect(0, 0, (pathsArray[i * 8 + 2] - pathsArray[i * 8]) / height * 40f, 12);</span>
+<span class="nc" id="L161">                    formCS.fill();</span>
+                }
+            }
+        }
+<span class="nc" id="L165">        catch (IOException ex)</span>
+        {
+<span class="nc" id="L167">            LOG.error(ex);</span>
+<span class="nc" id="L168">        }</span>
+<span class="nc" id="L169">    }</span>
+
+    @Override
+    public void generateRolloverAppearance()
+    {
+        // No rollover appearance generated
+<span class="nc" id="L175">    }</span>
+
+    @Override
+    public void generateDownAppearance()
+    {
+        // No down appearance generated
+<span class="nc" id="L181">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

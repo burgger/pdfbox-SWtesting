@@ -1,0 +1,1719 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>COSWriter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdfwriter</a> &gt; <span class="el_source">COSWriter.java</span></div><h1>COSWriter.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdfwriter;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.SequenceInputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSBoolean;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSDocument;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNull;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.cos.COSObjectKey;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.cos.COSUpdateInfo;
+import org.apache.pdfbox.cos.ICOSVisitor;
+
+import org.apache.pdfbox.io.RandomAccessInputStream;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.pdfparser.PDFXRefStream;
+import org.apache.pdfbox.pdfparser.xref.FreeXReference;
+import org.apache.pdfbox.pdfparser.xref.NormalXReference;
+import org.apache.pdfbox.pdfparser.xref.ObjectStreamXReference;
+import org.apache.pdfbox.pdfparser.xref.XReferenceEntry;
+import org.apache.pdfbox.pdfwriter.compress.COSWriterCompressionPool;
+import org.apache.pdfbox.pdfwriter.compress.COSWriterObjectStream;
+import org.apache.pdfbox.pdfwriter.compress.CompressParameters;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy;
+import org.apache.pdfbox.pdmodel.encryption.SecurityHandler;
+import org.apache.pdfbox.pdmodel.fdf.FDFDocument;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.COSFilterInputStream;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureInterface;
+import org.apache.pdfbox.util.Hex;
+
+/**
+ * This class acts on a in-memory representation of a PDF document.
+ *
+ * @author Michael Traut
+ * @author Ben Litchfield
+ */
+public class COSWriter implements ICOSVisitor
+{
+<span class="fc" id="L90">    private static final Logger LOG = LogManager.getLogger(COSWriter.class);</span>
+
+    /**
+     * The dictionary open token.
+     */
+<span class="fc" id="L95">    public static final byte[] DICT_OPEN = &quot;&lt;&lt;&quot;.getBytes(StandardCharsets.US_ASCII);</span>
+    /**
+     * The dictionary close token.
+     */
+<span class="fc" id="L99">    public static final byte[] DICT_CLOSE = &quot;&gt;&gt;&quot;.getBytes(StandardCharsets.US_ASCII);</span>
+    /**
+     * space character.
+     */
+<span class="fc" id="L103">    public static final byte[] SPACE = { ' ' };</span>
+    /**
+     * The start to a PDF comment.
+     */
+<span class="fc" id="L107">    public static final byte[] COMMENT = { '%' };</span>
+
+    /**
+     * The output version of the PDF.
+     */
+<span class="fc" id="L112">    public static final byte[] VERSION = &quot;PDF-1.4&quot;.getBytes(StandardCharsets.US_ASCII);</span>
+    /**
+     * Garbage bytes used to create the PDF header.
+     */
+<span class="fc" id="L116">    public static final byte[] GARBAGE = {(byte)0xf6, (byte)0xe4, (byte)0xfc, (byte)0xdf};</span>
+    /**
+     * The EOF constant.
+     */
+<span class="fc" id="L120">    public static final byte[] EOF = &quot;%%EOF&quot;.getBytes(StandardCharsets.US_ASCII);</span>
+    // pdf tokens
+
+    /**
+     * The reference token.
+     */
+<span class="fc" id="L126">    public static final byte[] REFERENCE = &quot;R&quot;.getBytes(StandardCharsets.US_ASCII);</span>
+    /**
+     * The XREF token.
+     */
+<span class="fc" id="L130">    public static final byte[] XREF = &quot;xref&quot;.getBytes(StandardCharsets.US_ASCII);</span>
+    /**
+     * The xref free token.
+     */
+<span class="fc" id="L134">    public static final byte[] XREF_FREE = &quot;f&quot;.getBytes(StandardCharsets.US_ASCII);</span>
+    /**
+     * The xref used token.
+     */
+<span class="fc" id="L138">    public static final byte[] XREF_USED = &quot;n&quot;.getBytes(StandardCharsets.US_ASCII);</span>
+    /**
+     * The trailer token.
+     */
+<span class="fc" id="L142">    public static final byte[] TRAILER = &quot;trailer&quot;.getBytes(StandardCharsets.US_ASCII);</span>
+    /**
+     * The start xref token.
+     */
+<span class="fc" id="L146">    public static final byte[] STARTXREF = &quot;startxref&quot;.getBytes(StandardCharsets.US_ASCII);</span>
+    /**
+     * The starting object token.
+     */
+<span class="fc" id="L150">    public static final byte[] OBJ = &quot;obj&quot;.getBytes(StandardCharsets.US_ASCII);</span>
+    /**
+     * The end object token.
+     */
+<span class="fc" id="L154">    public static final byte[] ENDOBJ = &quot;endobj&quot;.getBytes(StandardCharsets.US_ASCII);</span>
+    /**
+     * The array open token.
+     */
+<span class="fc" id="L158">    public static final byte[] ARRAY_OPEN = &quot;[&quot;.getBytes(StandardCharsets.US_ASCII);</span>
+    /**
+     * The array close token.
+     */
+<span class="fc" id="L162">    public static final byte[] ARRAY_CLOSE = &quot;]&quot;.getBytes(StandardCharsets.US_ASCII);</span>
+    /**
+     * The open stream token.
+     */
+<span class="fc" id="L166">    public static final byte[] STREAM = &quot;stream&quot;.getBytes(StandardCharsets.US_ASCII);</span>
+    /**
+     * The close stream token.
+     */
+<span class="fc" id="L170">    public static final byte[] ENDSTREAM = &quot;endstream&quot;.getBytes(StandardCharsets.US_ASCII);</span>
+    
+<span class="fc" id="L172">    private static final NumberFormat formatXrefOffset = new DecimalFormat(&quot;0000000000&quot;,</span>
+<span class="fc" id="L173">            DecimalFormatSymbols.getInstance(Locale.US));</span>
+
+    // the decimal format for the xref object generation number data
+<span class="fc" id="L176">    private static final NumberFormat formatXrefGeneration = new DecimalFormat(&quot;00000&quot;,</span>
+<span class="fc" id="L177">            DecimalFormatSymbols.getInstance(Locale.US));</span>
+
+    // the stream where we create the pdf output
+    private OutputStream output;
+
+    // the stream used to write standard cos data
+    private COSStandardOutputStream standardOutput;
+
+    // the start position of the x ref section
+<span class="pc" id="L186">    private long startxref = 0;</span>
+
+    // the current object number
+<span class="pc" id="L189">    private long number = 0;</span>
+
+    // maps the object to the keys generated in the writer
+    // these are used for indirect references in other objects
+    //A hashtable is used on purpose over a hashmap
+    //so that null entries will not get added.
+<span class="pc" id="L195">    @SuppressWarnings({&quot;squid:S1149&quot;})</span>
+    private final Map&lt;COSBase,COSObjectKey&gt; objectKeys = new Hashtable&lt;&gt;();
+
+<span class="pc" id="L198">    private final Map&lt;COSObjectKey,COSBase&gt; keyObject = new HashMap&lt;&gt;();</span>
+
+    // the list of x ref entries to be made so far
+<span class="pc" id="L201">    private final List&lt;XReferenceEntry&gt; xRefEntries = new ArrayList&lt;&gt;();</span>
+
+    //A list of objects to write.
+<span class="pc" id="L204">    private final Deque&lt;COSBase&gt; objectsToWrite = new ArrayDeque&lt;&gt;();</span>
+
+    //a list of objects already written
+<span class="pc" id="L207">    private final Set&lt;COSBase&gt; writtenObjects = new HashSet&lt;&gt;();</span>
+
+    //An 'actual' is any COSBase that is not a COSObject.
+    //need to keep a list of the actuals that are added
+    //as well as the objects because there is a problem
+    //when adding a COSObject and then later adding
+    //the actual for that object, so we will track
+    //actuals separately.
+<span class="pc" id="L215">    private final Set&lt;COSBase&gt; actualsAdded = new HashSet&lt;&gt;();</span>
+
+<span class="pc" id="L217">    private COSObjectKey currentObjectKey = null;</span>
+<span class="pc" id="L218">    private PDDocument pdDocument = null;</span>
+<span class="pc" id="L219">    private FDFDocument fdfDocument = null;</span>
+<span class="pc" id="L220">    private boolean willEncrypt = false;</span>
+
+    // signing
+<span class="pc" id="L223">    private boolean incrementalUpdate = false;</span>
+<span class="pc" id="L224">    private boolean reachedSignature = false;</span>
+    private long signatureOffset;
+    private long signatureLength;
+    private long byteRangeOffset;
+    private long byteRangeLength;
+    private RandomAccessRead incrementalInput;
+    private OutputStream incrementalOutput;
+    private SignatureInterface signatureInterface;
+    private byte[] incrementPart;
+    private COSArray byteRangeArray;
+    private final CompressParameters compressParameters;
+<span class="pc" id="L235">    private boolean blockAddingObject = false;</span>
+
+    /**
+     * COSWriter constructor.
+     *
+     * @param outputStream The output stream to write the PDF.
+     */
+    public COSWriter(OutputStream outputStream)
+    {
+<span class="nc" id="L244">        this(outputStream, (CompressParameters) null);</span>
+<span class="nc" id="L245">    }</span>
+
+    /**
+     * COSWriter constructor.
+     *
+     * @param outputStream The output stream to write the PDF.
+     * @param compressParameters The configuration for the document's compression.
+     */
+    public COSWriter(OutputStream outputStream, CompressParameters compressParameters)
+<span class="fc" id="L254">    {</span>
+<span class="fc" id="L255">        setOutput(outputStream);</span>
+<span class="fc" id="L256">        setStandardOutput(new COSStandardOutputStream(output));</span>
+<span class="fc" id="L257">        this.compressParameters = compressParameters;</span>
+<span class="fc" id="L258">    }</span>
+
+    /**
+     * COSWriter constructor for incremental updates. There must be a path of objects that have
+     * {@link COSUpdateInfo#isNeedToBeUpdated()} set, starting from the document catalog. For signatures this is taken
+     * care by PDFBox itself.
+     *
+     * @param outputStream output stream where the new PDF data will be written.
+     * @param inputData random access read containing source PDF data
+     *
+     * @throws IOException if something went wrong
+     */
+    public COSWriter(OutputStream outputStream, RandomAccessRead inputData) throws IOException
+<span class="nc" id="L271">    {</span>
+        // write to buffer instead of output
+<span class="nc" id="L273">        setOutput(new ByteArrayOutputStream());</span>
+<span class="nc" id="L274">        setStandardOutput(new COSStandardOutputStream(output, inputData.length()));</span>
+        // disable compressed object streams
+<span class="nc" id="L276">        compressParameters = CompressParameters.NO_COMPRESSION;</span>
+<span class="nc" id="L277">        incrementalInput = inputData;</span>
+<span class="nc" id="L278">        incrementalOutput = outputStream;</span>
+<span class="nc" id="L279">        incrementalUpdate = true;</span>
+<span class="nc" id="L280">    }</span>
+
+    /**
+     * Constructor for incremental updates with a list of objects to write. This allows to
+     * include objects even if there is no path of objects that have
+     * {@link COSUpdateInfo#isNeedToBeUpdated()} set so the incremental update gets smaller. Only
+     * dictionaries are supported; if you need to update other objects classes, then add their
+     * parent dictionary.
+     *
+     * @param outputStream output stream where the new PDF data will be written.
+     * @param inputData random access read containing source PDF data.
+     * @param objectsToWrite objects that &lt;b&gt;must&lt;/b&gt; be part of the incremental saving.
+     * @throws IOException if something went wrong
+     */
+    public COSWriter(OutputStream outputStream, RandomAccessRead inputData,
+            Set&lt;COSDictionary&gt; objectsToWrite) throws IOException
+    {
+        // Implementation notes / summary of April 2019 comments in PDFBOX-45:
+        // we allow only COSDictionary in objectsToWrite because other types, 
+        // especially COSArray, are written directly. If we'd allow them with the current
+        // COSWriter implementation, they would be written twice,
+        // once directly and once indirectly as orphan.
+        // One could improve visitFromArray and visitFromDictionary (see commit 1856891)
+        // to handle arrays like dictionaries so that arrays are written indirectly,
+        // but this produces very inefficient files.
+        // If there is ever a real need to update arrays, then a future implementation could
+        // recommit change 1856891 (also needs to move the byteRange position detection code)
+        // and also set isDirect in arrays to true by default, to avoid inefficient files.
+        // COSArray.setDirect(true) is called at some places in the current implementation for
+        // documentational purposes only.
+<span class="nc" id="L310">        this(outputStream, inputData);</span>
+<span class="nc" id="L311">        this.objectsToWrite.addAll(objectsToWrite);</span>
+<span class="nc" id="L312">    }</span>
+
+    /**
+     * Returns true, if the resulting document shall be compressed.
+     *
+     * @return True, if the resulting document shall be compressed.
+     */
+    public boolean isCompress()
+    {
+<span class="pc bpc" id="L321" title="2 of 4 branches missed.">        return compressParameters != null &amp;&amp; compressParameters.isCompress();</span>
+    }
+
+    private void prepareIncrement()
+    {
+<span class="nc" id="L326">        COSDocument cosDoc = pdDocument.getDocument();</span>
+<span class="nc" id="L327">        Set&lt;COSObjectKey&gt; keySet = cosDoc.getXrefTable().keySet();</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">        for (COSObjectKey cosObjectKey : keySet)</span>
+        {
+<span class="nc bnc" id="L330" title="All 2 branches missed.">            if (cosObjectKey != null)</span>
+            {
+<span class="nc" id="L332">                COSBase object = cosDoc.getObjectFromPool(cosObjectKey).getObject();</span>
+<span class="nc bnc" id="L333" title="All 4 branches missed.">                if (object != null &amp;&amp; !(object instanceof COSNumber))</span>
+                {
+                    // FIXME see PDFBOX-4997: objectKeys is (theoretically) risky because a COSName in
+                    // different objects would appear only once. Rev 1092855 considered this
+                    // but only for COSNumber.
+<span class="nc" id="L338">                    objectKeys.put(object, cosObjectKey);</span>
+<span class="nc" id="L339">                    keyObject.put(cosObjectKey, object);</span>
+                }
+            }
+<span class="nc" id="L342">        }</span>
+<span class="nc" id="L343">    }</span>
+    
+    /**
+     * add an entry in the x ref table for later dump.
+     *
+     * @param entry The new entry to add.
+     */
+    protected void addXRefEntry(XReferenceEntry entry)
+    {
+<span class="fc" id="L352">        getXRefEntries().add(entry);</span>
+<span class="fc" id="L353">    }</span>
+
+    /**
+     * This will get the output stream.
+     *
+     * @return The output stream.
+     */
+    protected java.io.OutputStream getOutput()
+    {
+<span class="nc" id="L362">        return output;</span>
+    }
+
+    /**
+     * This will get the standard output stream.
+     *
+     * @return The standard output stream.
+     */
+    protected COSStandardOutputStream getStandardOutput()
+    {
+<span class="fc" id="L372">        return standardOutput;</span>
+    }
+
+    /**
+     * This will get the current start xref.
+     *
+     * @return The current start xref.
+     */
+    protected long getStartxref()
+    {
+<span class="fc" id="L382">        return startxref;</span>
+    }
+    /**
+     * This will get the xref entries.
+     *
+     * @return All available xref entries.
+     */
+    protected List&lt;XReferenceEntry&gt; getXRefEntries()
+    {
+<span class="fc" id="L391">        return xRefEntries;</span>
+    }
+
+    /**
+     * This will set the output stream.
+     *
+     * @param newOutput The new output stream.
+     */
+    private void setOutput( OutputStream newOutput )
+    {
+<span class="fc" id="L401">        output = newOutput;</span>
+<span class="fc" id="L402">    }</span>
+
+    /**
+     * This will set the standard output stream.
+     *
+     * @param newStandardOutput The new standard output stream.
+     */
+    private void setStandardOutput(COSStandardOutputStream newStandardOutput)
+    {
+<span class="fc" id="L411">        standardOutput = newStandardOutput;</span>
+<span class="fc" id="L412">    }</span>
+
+    /**
+     * This will set the start xref.
+     *
+     * @param newStartxref The new start xref attribute.
+     */
+    protected void setStartxref(long newStartxref)
+    {
+<span class="fc" id="L421">        startxref = newStartxref;</span>
+<span class="fc" id="L422">    }</span>
+
+    /**
+     * This will write the body of the document.
+     *
+     * @param doc The document to write the body for.
+     *
+     * @throws IOException If there is an error writing the data.
+     */
+    protected void doWriteBody(COSDocument doc) throws IOException
+    {
+<span class="fc" id="L433">        COSDictionary trailer = doc.getTrailer();</span>
+        // get the COSObjects to preserve the origin object numbers
+<span class="fc" id="L435">        COSBase root = trailer.getItem(COSName.ROOT);</span>
+<span class="fc" id="L436">        COSBase info = trailer.getItem(COSName.INFO);</span>
+<span class="fc" id="L437">        COSBase encrypt = trailer.getItem(COSName.ENCRYPT);</span>
+<span class="pc bpc" id="L438" title="1 of 2 branches missed.">        if( root != null )</span>
+        {
+<span class="fc" id="L440">            addObjectToWrite( root );</span>
+        }
+<span class="pc bpc" id="L442" title="1 of 2 branches missed.">        if( info != null )</span>
+        {
+<span class="fc" id="L444">            addObjectToWrite( info );</span>
+        }
+<span class="fc" id="L446">        doWriteObjects();</span>
+<span class="fc" id="L447">        willEncrypt = false;</span>
+<span class="pc bpc" id="L448" title="1 of 2 branches missed.">        if( encrypt != null )</span>
+        {
+<span class="nc" id="L450">            addObjectToWrite( encrypt );</span>
+        }
+
+<span class="fc" id="L453">        doWriteObjects();</span>
+<span class="fc" id="L454">    }</span>
+
+    /**
+     * This will write the compressed body of the document.
+     *
+     * @param document The document to write the body for.
+     * @throws IOException If there is an error writing the data.
+     */
+    private void doWriteBodyCompressed(COSDocument document) throws IOException
+    {
+<span class="nc" id="L464">        COSDictionary trailer = document.getTrailer();</span>
+<span class="nc" id="L465">        COSDictionary encrypt = trailer.getCOSDictionary(COSName.ENCRYPT);</span>
+<span class="nc" id="L466">        blockAddingObject = true;</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">        willEncrypt = encrypt != null;</span>
+<span class="nc bnc" id="L468" title="All 2 branches missed.">        if (trailer.containsKey(COSName.ROOT))</span>
+        {
+<span class="nc" id="L470">            COSWriterCompressionPool compressionPool = new COSWriterCompressionPool(pdDocument,</span>
+                    compressParameters);
+            // Append object stream entries to document.
+<span class="nc bnc" id="L473" title="All 2 branches missed.">            for (COSObjectKey key : compressionPool.getObjectStreamObjects())</span>
+            {
+<span class="nc" id="L475">                COSBase object = compressionPool.getObject(key);</span>
+<span class="nc" id="L476">                writtenObjects.add(object);</span>
+<span class="nc" id="L477">                objectKeys.put(object, key);</span>
+<span class="nc" id="L478">                keyObject.put(key, object);</span>
+<span class="nc" id="L479">            }</span>
+            // Append top level objects to document.
+<span class="nc bnc" id="L481" title="All 2 branches missed.">            for (COSObjectKey key : compressionPool.getTopLevelObjects())</span>
+            {
+<span class="nc" id="L483">                COSBase object = compressionPool.getObject(key);</span>
+<span class="nc" id="L484">                writtenObjects.add(object);</span>
+<span class="nc" id="L485">                objectKeys.put(object, key);</span>
+<span class="nc" id="L486">                keyObject.put(key, object);</span>
+<span class="nc" id="L487">            }</span>
+<span class="nc" id="L488">            number = compressionPool.getHighestXRefObjectNumber();</span>
+<span class="nc bnc" id="L489" title="All 2 branches missed.">            for (COSObjectKey key : compressionPool.getTopLevelObjects())</span>
+            {
+<span class="nc" id="L491">                currentObjectKey = key;</span>
+<span class="nc" id="L492">                doWriteObject(key, keyObject.get(key));</span>
+<span class="nc" id="L493">            }</span>
+            // Append object streams to document.
+<span class="nc bnc" id="L495" title="All 2 branches missed.">            for (COSWriterObjectStream finalizedObjectStream : compressionPool</span>
+<span class="nc" id="L496">                    .createObjectStreams())</span>
+            {
+                // Create new COSObject for object stream.
+<span class="nc" id="L499">                COSStream stream = finalizedObjectStream</span>
+<span class="nc" id="L500">                        .writeObjectsToStream(document.createCOSStream());</span>
+                // Determine key for object stream.
+<span class="nc" id="L502">                COSObjectKey objectStreamKey = new COSObjectKey(++number, 0);</span>
+                // Create new COSObject for object stream.
+<span class="nc" id="L504">                COSObject objectStream = new COSObject(stream, objectStreamKey);</span>
+                // Add object stream entries to xref - stream.
+<span class="nc" id="L506">                int i = 0;</span>
+<span class="nc bnc" id="L507" title="All 2 branches missed.">                for (COSObjectKey key : finalizedObjectStream.getPreparedKeys())</span>
+                {
+<span class="nc" id="L509">                    COSBase object = compressionPool.getObject(key);</span>
+<span class="nc" id="L510">                    addXRefEntry(new ObjectStreamXReference(i, key, object, objectStreamKey));</span>
+<span class="nc" id="L511">                    i++;</span>
+<span class="nc" id="L512">                }</span>
+                // Include object stream in document.
+<span class="nc" id="L514">                currentObjectKey = objectStreamKey;</span>
+<span class="nc" id="L515">                doWriteObject(objectStreamKey, objectStream);</span>
+<span class="nc" id="L516">            }</span>
+<span class="nc" id="L517">            willEncrypt = false;</span>
+<span class="nc bnc" id="L518" title="All 2 branches missed.">            if (encrypt != null)</span>
+            {
+<span class="nc" id="L520">                COSObjectKey encryptKey = new COSObjectKey(++number, 0);</span>
+<span class="nc" id="L521">                currentObjectKey = encryptKey;</span>
+<span class="nc" id="L522">                writtenObjects.add(encrypt);</span>
+<span class="nc" id="L523">                keyObject.put(encryptKey, encrypt);</span>
+<span class="nc" id="L524">                objectKeys.put(encrypt, encryptKey);</span>
+
+<span class="nc" id="L526">                doWriteObject(encryptKey, encrypt);</span>
+            }
+<span class="nc" id="L528">            blockAddingObject = false;</span>
+        }
+<span class="nc" id="L530">    }</span>
+
+    private void doWriteObjects() throws IOException
+    {
+<span class="fc bfc" id="L534" title="All 2 branches covered.">        while (!objectsToWrite.isEmpty())</span>
+        {
+<span class="fc" id="L536">            doWriteObject(objectsToWrite.removeFirst());</span>
+        }
+<span class="fc" id="L538">    }</span>
+
+    private void addObjectToWrite( COSBase object )
+    {
+<span class="pc bpc" id="L542" title="1 of 2 branches missed.">        if (blockAddingObject)</span>
+        {
+<span class="nc" id="L544">            return;</span>
+        }
+<span class="fc" id="L546">        COSBase actual = object;</span>
+<span class="fc bfc" id="L547" title="All 2 branches covered.">        if( actual instanceof COSObject )</span>
+        {
+<span class="fc" id="L549">            actual = ((COSObject)actual).getObject();</span>
+        }
+
+<span class="fc bfc" id="L552" title="All 2 branches covered.">        if (writtenObjects.contains(object) //</span>
+<span class="fc bfc" id="L553" title="All 2 branches covered.">                || actualsAdded.contains(actual) //</span>
+<span class="pc bpc" id="L554" title="1 of 2 branches missed.">                || objectsToWrite.contains(object))</span>
+        {
+<span class="fc" id="L556">            return;</span>
+        }
+
+<span class="fc" id="L559">        COSBase cosBase = null;</span>
+<span class="fc" id="L560">        COSObjectKey cosObjectKey = null;</span>
+<span class="pc bpc" id="L561" title="1 of 2 branches missed.">        if (actual != null)</span>
+        {
+<span class="fc" id="L563">            cosObjectKey = objectKeys.get(actual);</span>
+<span class="pc bpc" id="L564" title="1 of 2 branches missed.">            if (cosObjectKey != null)</span>
+            {
+<span class="nc" id="L566">                cosBase = keyObject.get(cosObjectKey);</span>
+<span class="nc bnc" id="L567" title="All 4 branches missed.">                if (!isNeedToBeUpdated(object) &amp;&amp; !isNeedToBeUpdated(cosBase))</span>
+                {
+<span class="nc" id="L569">                    return;</span>
+                }
+            }
+        }
+<span class="fc" id="L573">        objectsToWrite.add(object);</span>
+<span class="pc bpc" id="L574" title="1 of 2 branches missed.">        if (actual != null)</span>
+        {
+<span class="fc" id="L576">            actualsAdded.add(actual);</span>
+        }
+<span class="fc" id="L578">    }</span>
+
+    /**
+     * This will write a COS object for a predefined key.
+     *
+     * @param key The key of the object to write.
+     * @param obj The object to write.
+     *
+     * @throws IOException if the output cannot be written
+     */
+    public void doWriteObject(COSObjectKey key, COSBase obj) throws IOException
+    {
+        // don't write missing objects to avoid broken xref tables
+<span class="pc bpc" id="L591" title="2 of 6 branches missed.">        if (obj == null || (obj instanceof COSObject &amp;&amp; ((COSObject) obj).getObject() == null))</span>
+        {
+<span class="nc" id="L593">            return;</span>
+        }
+        // add a x ref entry
+<span class="fc" id="L596">        addXRefEntry(new NormalXReference(getStandardOutput().getPos(), key, obj));</span>
+        // write the object
+<span class="fc" id="L598">        getStandardOutput()</span>
+<span class="fc" id="L599">                .write(String.valueOf(key.getNumber()).getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L600">        getStandardOutput().write(SPACE);</span>
+<span class="fc" id="L601">        getStandardOutput()</span>
+<span class="fc" id="L602">                .write(String.valueOf(key.getGeneration()).getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L603">        getStandardOutput().write(SPACE);</span>
+<span class="fc" id="L604">        getStandardOutput().write(OBJ);</span>
+<span class="fc" id="L605">        getStandardOutput().writeEOL();</span>
+<span class="fc" id="L606">        obj.accept(this);</span>
+<span class="fc" id="L607">        getStandardOutput().writeEOL();</span>
+<span class="fc" id="L608">        getStandardOutput().write(ENDOBJ);</span>
+<span class="fc" id="L609">        getStandardOutput().writeEOL();</span>
+<span class="fc" id="L610">    }</span>
+
+    /**
+     * Convenience method, so that we get false for types that can't be updated.
+     * 
+     * @param base
+     * @return
+     */
+    private boolean isNeedToBeUpdated(COSBase base)
+    {
+<span class="nc bnc" id="L620" title="All 2 branches missed.">        if (base instanceof COSUpdateInfo)</span>
+        {
+<span class="nc" id="L622">            return ((COSUpdateInfo) base).isNeedToBeUpdated();</span>
+        }
+<span class="nc" id="L624">        return false;</span>
+    }
+
+    /**
+     * This will write a COS object.
+     *
+     * @param obj The object to write.
+     *
+     * @throws IOException if the output cannot be written
+     */
+    public void doWriteObject( COSBase obj ) throws IOException
+    {
+<span class="fc" id="L636">            writtenObjects.add( obj );</span>
+            // find the physical reference
+<span class="fc" id="L638">            currentObjectKey = getObjectKey( obj );</span>
+<span class="fc" id="L639">            doWriteObject(currentObjectKey, obj);</span>
+<span class="fc" id="L640">    }</span>
+
+    /**
+     * This will write the header to the PDF document.
+     *
+     * @param doc The document to get the data from.
+     *
+     * @throws IOException If there is an error writing to the stream.
+     */
+    protected void doWriteHeader(COSDocument doc) throws IOException
+    {
+<span class="pc bpc" id="L651" title="1 of 2 branches missed.">        if (isCompress())</span>
+        {
+<span class="nc" id="L653">            pdDocument.setVersion(</span>
+<span class="nc" id="L654">                    Math.max(pdDocument.getVersion(), COSWriterCompressionPool.MINIMUM_SUPPORTED_VERSION));</span>
+<span class="nc" id="L655">            doc.setVersion(</span>
+<span class="nc" id="L656">                    Math.max(doc.getVersion(), COSWriterCompressionPool.MINIMUM_SUPPORTED_VERSION));</span>
+        }
+        String headerString;
+<span class="pc bpc" id="L659" title="1 of 2 branches missed.">        if (fdfDocument != null)</span>
+        {
+<span class="nc" id="L661">            headerString = &quot;%FDF-&quot; + doc.getVersion();</span>
+        }
+        else
+        {
+<span class="fc" id="L665">            headerString = &quot;%PDF-&quot; + doc.getVersion();</span>
+        }
+<span class="fc" id="L667">        getStandardOutput().write( headerString.getBytes(StandardCharsets.ISO_8859_1) );</span>
+        
+<span class="fc" id="L669">        getStandardOutput().writeEOL();</span>
+<span class="fc" id="L670">        getStandardOutput().write(COMMENT);</span>
+<span class="fc" id="L671">        getStandardOutput().write(GARBAGE);</span>
+<span class="fc" id="L672">        getStandardOutput().writeEOL();</span>
+<span class="fc" id="L673">    }</span>
+
+
+    /**
+     * This will write the trailer to the PDF document.
+     *
+     * @param doc The document to create the trailer for.
+     *
+     * @throws IOException If there is an IOError while writing the document.
+     */
+    protected void doWriteTrailer(COSDocument doc) throws IOException
+    {
+<span class="fc" id="L685">        getStandardOutput().write(TRAILER);</span>
+<span class="fc" id="L686">        getStandardOutput().writeEOL();</span>
+
+<span class="fc" id="L688">        COSDictionary trailer = doc.getTrailer();</span>
+        // Only need to stay, if an incremental update will be performed
+<span class="pc bpc" id="L690" title="1 of 2 branches missed.">        if (!incrementalUpdate)</span>
+        {
+            // sort xref, needed only if object keys not regenerated
+<span class="fc" id="L693">            Collections.sort(getXRefEntries());</span>
+<span class="fc" id="L694">            XReferenceEntry lastEntry = getXRefEntries().get(getXRefEntries().size() - 1);</span>
+<span class="fc" id="L695">            trailer.setLong(COSName.SIZE, lastEntry.getReferencedKey().getNumber() + 1);</span>
+<span class="fc" id="L696">            trailer.removeItem(COSName.PREV);</span>
+        }
+<span class="pc bpc" id="L698" title="1 of 2 branches missed.">        if (!doc.isXRefStream())</span>
+        {
+<span class="fc" id="L700">            trailer.setLong(COSName.SIZE, number + 1);</span>
+<span class="fc" id="L701">            trailer.removeItem(COSName.XREF_STM);</span>
+        }
+        // Remove a checksum if present
+<span class="fc" id="L704">        trailer.removeItem( COSName.DOC_CHECKSUM );</span>
+
+<span class="fc" id="L706">        COSArray idArray = trailer.getCOSArray(COSName.ID);</span>
+<span class="pc bpc" id="L707" title="1 of 2 branches missed.">        if (idArray != null)</span>
+        {
+<span class="fc" id="L709">            idArray.setDirect(true);</span>
+        }
+
+<span class="fc" id="L712">        trailer.accept(this);</span>
+<span class="fc" id="L713">    }</span>
+
+    private void doWriteXRefInc(COSDocument doc) throws IOException
+    {
+<span class="nc bnc" id="L717" title="All 6 branches missed.">        if (!doc.isXRefStream() || (doc.hasHybridXRef() &amp;&amp; incrementalUpdate))</span>
+        {
+<span class="nc" id="L719">            COSDictionary trailer = doc.getTrailer();</span>
+<span class="nc" id="L720">            trailer.setLong(COSName.PREV, doc.getStartXref());</span>
+<span class="nc" id="L721">            doWriteXRefTable();</span>
+<span class="nc" id="L722">            doWriteTrailer(doc);</span>
+<span class="nc" id="L723">        }</span>
+        else
+        {
+            // the file uses XrefStreams, so we need to update
+            // it with an xref stream. We create a new one and fill it
+            // with data available here
+
+            // create a new XRefStream object
+<span class="nc" id="L731">            PDFXRefStream pdfxRefStream = new PDFXRefStream(doc);</span>
+
+            // add all entries from the incremental update.
+<span class="nc" id="L734">            getXRefEntries().forEach(pdfxRefStream::addEntry);</span>
+
+<span class="nc" id="L736">            COSDictionary trailer = doc.getTrailer();</span>
+<span class="nc bnc" id="L737" title="All 2 branches missed.">            if (incrementalUpdate)</span>
+            {
+                // use previous startXref value as new PREV value
+<span class="nc" id="L740">                trailer.setLong(COSName.PREV, doc.getStartXref());</span>
+            }
+            else
+            {
+<span class="nc" id="L744">                trailer.removeItem(COSName.PREV);</span>
+            }
+<span class="nc" id="L746">            pdfxRefStream.addTrailerInfo(trailer);</span>
+            // the size is the highest object number+1. we add one more
+            // for the xref stream object we are going to write
+<span class="nc" id="L749">            pdfxRefStream.setSize(number + 2);</span>
+
+<span class="nc" id="L751">            setStartxref(getStandardOutput().getPos());</span>
+<span class="nc" id="L752">            COSStream stream2 = pdfxRefStream.getStream();</span>
+<span class="nc" id="L753">            doWriteObject(stream2);</span>
+        }
+<span class="nc" id="L755">    }</span>
+
+    // writes the &quot;xref&quot; table
+    private void doWriteXRefTable() throws IOException
+    {
+<span class="pc bpc" id="L760" title="1 of 2 branches missed.">        if (!incrementalUpdate)</span>
+        {
+            // fill gaps with free entries
+<span class="fc" id="L763">            fillGapsWithFreeEntries();</span>
+        }
+        else
+        {
+            // add free entry with object number 0
+<span class="nc" id="L768">            addXRefEntry(FreeXReference.NULL_ENTRY);</span>
+        }
+
+        // Filter for NormalXReferences and FreeXReferences
+        // sort xref, needed only if object keys not regenerated
+<span class="fc" id="L773">        List&lt;XReferenceEntry&gt; tmpXRefEntries = getXRefEntries().stream() //</span>
+<span class="pc bpc" id="L774" title="1 of 4 branches missed.">                .filter(e -&gt; e instanceof NormalXReference || e instanceof FreeXReference) //</span>
+<span class="fc" id="L775">                .sorted() //</span>
+<span class="fc" id="L776">                .collect(Collectors.toList());</span>
+
+        // remember the position where x ref was written
+<span class="fc" id="L779">        setStartxref(getStandardOutput().getPos());</span>
+
+<span class="fc" id="L781">        getStandardOutput().write(XREF);</span>
+<span class="fc" id="L782">        getStandardOutput().writeEOL();</span>
+        // write start object number and object count for this x ref section
+        // we assume starting from scratch
+
+<span class="fc" id="L786">        Long[] xRefRanges = getXRefRanges(tmpXRefEntries);</span>
+<span class="fc" id="L787">        int xRefLength = xRefRanges.length;</span>
+<span class="fc" id="L788">        int x = 0;</span>
+<span class="fc" id="L789">        int j = 0;</span>
+<span class="pc bpc" id="L790" title="1 of 2 branches missed.">        if ((xRefLength % 2) == 0)</span>
+        {
+<span class="fc bfc" id="L792" title="All 2 branches covered.">            while (x &lt; xRefLength)</span>
+            {
+<span class="fc" id="L794">                long xRefRangeX1 = xRefRanges[x + 1];</span>
+<span class="fc" id="L795">                writeXrefRange(xRefRanges[x], xRefRangeX1);</span>
+
+<span class="fc bfc" id="L797" title="All 2 branches covered.">                for (int i = 0; i &lt; xRefRangeX1; ++i)</span>
+                {
+<span class="fc" id="L799">                    writeXrefEntry(tmpXRefEntries.get(j++));</span>
+                }
+<span class="fc" id="L801">                x += 2;</span>
+<span class="fc" id="L802">            }</span>
+        }
+<span class="fc" id="L804">    }</span>
+
+    private void fillGapsWithFreeEntries()
+    {
+<span class="fc" id="L808">        List&lt;NormalXReference&gt; normalXReferences = getXRefEntries().stream() //</span>
+<span class="fc" id="L809">                .filter(NormalXReference.class::isInstance) //</span>
+<span class="fc" id="L810">                .map(NormalXReference.class::cast) //</span>
+<span class="fc" id="L811">                .sorted() //</span>
+<span class="fc" id="L812">                .collect(Collectors.toList());</span>
+<span class="fc" id="L813">        long last = 0;</span>
+<span class="fc" id="L814">        List&lt;Long&gt; freeNumbers = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L815" title="All 2 branches covered.">        for (NormalXReference entry : normalXReferences)</span>
+        {
+<span class="fc" id="L817">            long nr = entry.getReferencedKey().getNumber();</span>
+<span class="fc bfc" id="L818" title="All 2 branches covered.">            if (nr != last)</span>
+            {
+<span class="fc bfc" id="L820" title="All 2 branches covered.">                for (long i = last; i &lt; nr; i++)</span>
+                {
+<span class="fc" id="L822">                    freeNumbers.add(i);</span>
+                }
+            }
+<span class="fc" id="L825">            last = nr + 1;</span>
+<span class="fc" id="L826">        }</span>
+<span class="fc" id="L827">        int numberOfFreeNumbers = freeNumbers.size();</span>
+<span class="pc bpc" id="L828" title="1 of 2 branches missed.">        if (numberOfFreeNumbers == 0)</span>
+        {
+            // no gaps found -&gt; add free entry with object number 0
+<span class="nc" id="L831">            addXRefEntry(FreeXReference.NULL_ENTRY);</span>
+<span class="nc" id="L832">            return;</span>
+        }
+        // add free entries for all but the last one
+<span class="fc bfc" id="L835" title="All 2 branches covered.">        for (int i = 0; i &lt; numberOfFreeNumbers - 1; i++)</span>
+        {
+<span class="fc" id="L837">            addXRefEntry(new FreeXReference(new COSObjectKey(freeNumbers.get(i), 65535),</span>
+<span class="fc" id="L838">                    freeNumbers.get(i + 1)));</span>
+        }
+        // add free entry for the last one referencing object 0 as next free one
+<span class="fc" id="L841">        addXRefEntry(new FreeXReference(</span>
+<span class="fc" id="L842">                new COSObjectKey(freeNumbers.get(numberOfFreeNumbers - 1), 65535), 0));</span>
+<span class="fc" id="L843">        long firstObjectNumber = freeNumbers.get(0);</span>
+        // add free entry for object number 0 if not already present
+<span class="pc bpc" id="L845" title="1 of 2 branches missed.">        if (firstObjectNumber &gt; 0)</span>
+        {
+<span class="nc" id="L847">            addXRefEntry(new FreeXReference(new COSObjectKey(0, 65535), firstObjectNumber));</span>
+        }
+<span class="fc" id="L849">    }</span>
+
+    /**
+     * Write an incremental update for a non signature case. This can be used for e.g. augmenting
+     * signatures.
+     *
+     * @throws IOException
+     */
+    private void doWriteIncrement() throws IOException
+    {
+        // write existing PDF
+<span class="nc" id="L860">        try (InputStream input = new RandomAccessInputStream(incrementalInput))</span>
+        {
+<span class="nc" id="L862">            input.transferTo(incrementalOutput);</span>
+            // write the actual incremental update
+<span class="nc" id="L864">            incrementalOutput.write(((ByteArrayOutputStream) output).toByteArray());</span>
+        }
+<span class="nc" id="L866">    }</span>
+    
+    private void doWriteSignature() throws IOException
+    {
+        // calculate the ByteRange values
+<span class="nc" id="L871">        long inLength = incrementalInput.length();</span>
+<span class="nc" id="L872">        long beforeLength = signatureOffset;</span>
+<span class="nc" id="L873">        long afterOffset = signatureOffset + signatureLength;</span>
+<span class="nc" id="L874">        long afterLength = getStandardOutput().getPos() - (inLength + signatureLength) - (signatureOffset - inLength);</span>
+
+<span class="nc" id="L876">        String byteRange = &quot;0 &quot; + beforeLength + &quot; &quot; + afterOffset + &quot; &quot; + afterLength + &quot;]&quot;;</span>
+        
+        // Assign the values to the actual COSArray, so that the user can access it before closing
+<span class="nc" id="L879">        byteRangeArray.set(0, COSInteger.ZERO);</span>
+<span class="nc" id="L880">        byteRangeArray.set(1, COSInteger.get(beforeLength));</span>
+<span class="nc" id="L881">        byteRangeArray.set(2, COSInteger.get(afterOffset));</span>
+<span class="nc" id="L882">        byteRangeArray.set(3, COSInteger.get(afterLength));</span>
+
+<span class="nc bnc" id="L884" title="All 2 branches missed.">        if (byteRange.length() &gt; byteRangeLength)</span>
+        {
+<span class="nc" id="L886">            throw new IOException(&quot;Can't write new byteRange '&quot; + byteRange + </span>
+<span class="nc" id="L887">                    &quot;' not enough space: byteRange.length(): &quot; + byteRange.length() + </span>
+                    &quot;, byteRangeLength: &quot; + byteRangeLength +
+                    &quot;, byteRangeOffset: &quot; + byteRangeOffset +
+                    &quot;, inLength: &quot; + inLength);
+        }
+
+        // copy the new incremental data into a buffer (e.g. signature dict, trailer)
+<span class="nc" id="L894">        ByteArrayOutputStream byteOut = (ByteArrayOutputStream) output;</span>
+<span class="nc" id="L895">        byteOut.flush();</span>
+<span class="nc" id="L896">        incrementPart = byteOut.toByteArray();</span>
+
+        // overwrite the reserve ByteRange in the buffer
+<span class="nc" id="L899">        byte[] byteRangeBytes = byteRange.getBytes(StandardCharsets.ISO_8859_1);</span>
+<span class="nc bnc" id="L900" title="All 2 branches missed.">        for (int i = 0; i &lt; byteRangeLength; i++)</span>
+        {
+<span class="nc bnc" id="L902" title="All 2 branches missed.">            if (i &gt;= byteRangeBytes.length)</span>
+            {
+<span class="nc" id="L904">                incrementPart[(int) (byteRangeOffset + i - inLength)] = 0x20; // SPACE</span>
+            }
+            else
+            {
+<span class="nc" id="L908">                incrementPart[(int) (byteRangeOffset + i - inLength)] = byteRangeBytes[i];</span>
+            }
+        }
+
+<span class="nc bnc" id="L912" title="All 2 branches missed.">        if (signatureInterface != null)</span>
+        {
+            // data to be signed
+<span class="nc" id="L915">            final InputStream dataToSign = getDataToSign();</span>
+
+            // sign the bytes
+<span class="nc" id="L918">            byte[] signatureBytes = signatureInterface.sign(dataToSign);</span>
+<span class="nc" id="L919">            writeExternalSignature(signatureBytes);</span>
+        }
+        // else signature should be created externally and set via writeSignature()
+<span class="nc" id="L922">    }</span>
+
+    /**
+     * Return the stream of PDF data to be signed. Clients should use this method only to create
+     * signatures externally. {@link #write(PDDocument)} method should have been called prior. The
+     * created signature should be set using {@link #writeExternalSignature(byte[])}.
+     * &lt;p&gt;
+     * When {@link SignatureInterface} instance is used, COSWriter obtains and writes the signature
+     * itself.
+     * &lt;/p&gt;
+     *
+     * @return data stream to be signed
+     * @throws IllegalStateException if PDF is not prepared for external signing
+     * @throws IOException if input data is closed
+     */
+    public InputStream getDataToSign() throws IOException
+    {
+<span class="nc bnc" id="L939" title="All 4 branches missed.">        if (incrementPart == null || incrementalInput == null)</span>
+        {
+<span class="nc" id="L941">            throw new IllegalStateException(&quot;PDF not prepared for signing&quot;);</span>
+        }
+        // range of incremental bytes to be signed (includes /ByteRange but not /Contents)
+<span class="nc" id="L944">        int incPartSigOffset = (int) (signatureOffset - incrementalInput.length());</span>
+<span class="nc" id="L945">        int afterSigOffset = incPartSigOffset + (int) signatureLength;</span>
+<span class="nc" id="L946">        int[] range =</span>
+        {
+            0, incPartSigOffset,
+            afterSigOffset, incrementPart.length - afterSigOffset
+        };
+
+<span class="nc" id="L952">        return new SequenceInputStream(</span>
+                new RandomAccessInputStream(incrementalInput),
+                new COSFilterInputStream(incrementPart, range));
+    }
+
+    /**
+     * Write externally created signature of PDF data obtained via {@link #getDataToSign()} method.
+     *
+     * @param cmsSignature CMS signature byte array
+     * @throws IllegalStateException if PDF is not prepared for external signing
+     * @throws IOException if source data stream is closed
+     */
+    public void writeExternalSignature(byte[] cmsSignature) throws IOException
+    {
+
+<span class="nc bnc" id="L967" title="All 4 branches missed.">        if (incrementPart == null || incrementalInput == null)</span>
+        {
+<span class="nc" id="L969">            throw new IllegalStateException(&quot;PDF not prepared for setting signature&quot;);</span>
+        }
+<span class="nc" id="L971">        byte[] signatureBytes = Hex.getBytes(cmsSignature);</span>
+
+        // subtract 2 bytes because of the enclosing &quot;&lt;&gt;&quot;
+<span class="nc bnc" id="L974" title="All 2 branches missed.">        if (signatureBytes.length &gt; signatureLength - 2)</span>
+        {
+<span class="nc" id="L976">            throw new IOException(&quot;Can't write signature, not enough space; &quot;</span>
+                    + &quot;adjust it with SignatureOptions.setPreferredSignatureSize&quot;);
+        }
+
+        // overwrite the signature Contents in the buffer
+<span class="nc" id="L981">        int incPartSigOffset = (int) (signatureOffset - incrementalInput.length());</span>
+<span class="nc" id="L982">        System.arraycopy(signatureBytes, 0, incrementPart, incPartSigOffset + 1, signatureBytes.length);</span>
+
+        // write the data to the incremental output stream
+<span class="nc" id="L985">        InputStream input = new RandomAccessInputStream(incrementalInput);</span>
+<span class="nc" id="L986">        input.transferTo(incrementalOutput);</span>
+<span class="nc" id="L987">        incrementalOutput.write(incrementPart);</span>
+
+        // prevent further use
+<span class="nc" id="L990">        incrementPart = null;</span>
+<span class="nc" id="L991">    }</span>
+
+    private void writeXrefRange(long x, long y) throws IOException
+    {
+<span class="fc" id="L995">        getStandardOutput().write(String.valueOf(x).getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L996">        getStandardOutput().write(SPACE);</span>
+<span class="fc" id="L997">        getStandardOutput().write(String.valueOf(y).getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L998">        getStandardOutput().writeEOL();</span>
+<span class="fc" id="L999">    }</span>
+
+    private void writeXrefEntry(XReferenceEntry entry) throws IOException
+    {
+<span class="fc" id="L1003">        String offset = formatXrefOffset.format(entry.getSecondColumnValue());</span>
+<span class="fc" id="L1004">        String generation = formatXrefGeneration.format(entry.getThirdColumnValue());</span>
+<span class="fc" id="L1005">        getStandardOutput().write(offset.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L1006">        getStandardOutput().write(SPACE);</span>
+<span class="fc" id="L1007">        getStandardOutput().write(generation.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L1008">        getStandardOutput().write(SPACE);</span>
+<span class="fc bfc" id="L1009" title="All 2 branches covered.">        getStandardOutput().write(entry instanceof FreeXReference ? XREF_FREE : XREF_USED);</span>
+<span class="fc" id="L1010">        getStandardOutput().writeCRLF();</span>
+<span class="fc" id="L1011">    }</span>
+
+    /**
+     * check the xref entries and write out the ranges.  The format of the
+     * returned array is exactly the same as the pdf specification.  See section
+     * 7.5.4 of ISO32000-1:2008, example 1 (page 40) for reference.
+     * &lt;p&gt;
+     * example: 0 1 2 5 6 7 8 10
+     * &lt;p&gt;
+     * will create a array with follow ranges
+     * &lt;p&gt;
+     * 0 3 5 4 10 1
+     * &lt;p&gt;
+     * this mean that the element 0 is followed by two other related numbers 
+     * that represent a cluster of the size 3. 5 is follow by three other
+     * related numbers and create a cluster of size 4. etc.
+     * 
+     * @param xRefEntriesList list with the xRef entries that was written
+     * @return a integer array with the ranges
+     */
+    protected Long[] getXRefRanges(List&lt;XReferenceEntry&gt; xRefEntriesList)
+    {
+<span class="fc" id="L1033">        long last = -2;</span>
+<span class="fc" id="L1034">        long count = 1;</span>
+
+<span class="fc" id="L1036">        List&lt;Long&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L1037" title="All 2 branches covered.">        for (XReferenceEntry entry : xRefEntriesList)</span>
+        {
+<span class="fc" id="L1039">            long nr = entry.getReferencedKey().getNumber();</span>
+<span class="fc bfc" id="L1040" title="All 2 branches covered.">            if (nr == last + 1)</span>
+            {
+<span class="fc" id="L1042">                ++count;</span>
+<span class="fc" id="L1043">                last = nr;</span>
+            }
+<span class="pc bpc" id="L1045" title="1 of 2 branches missed.">            else if (last == -2)</span>
+            {
+<span class="fc" id="L1047">                last = nr;</span>
+            }
+            else
+            {
+<span class="nc" id="L1051">                list.add(last - count + 1);</span>
+<span class="nc" id="L1052">                list.add(count);</span>
+<span class="nc" id="L1053">                last = nr;</span>
+<span class="nc" id="L1054">                count = 1;</span>
+            }
+<span class="fc" id="L1056">        }</span>
+        // If no new entry is found, we need to write out the last result
+<span class="pc bpc" id="L1058" title="1 of 2 branches missed.">        if (!xRefEntriesList.isEmpty())</span>
+        {
+<span class="fc" id="L1060">            list.add(last - count + 1);</span>
+<span class="fc" id="L1061">            list.add(count);</span>
+        }
+<span class="fc" id="L1063">        return list.toArray(Long[]::new);</span>
+    }
+    
+    /**
+     * This will get the object key for the object.
+     *
+     * @param obj The object to get the key for.
+     *
+     * @return The object key for the object.
+     */
+    private COSObjectKey getObjectKey( COSBase obj )
+    {
+<span class="fc" id="L1075">        COSObjectKey key = obj.getKey();</span>
+        COSBase actual;
+<span class="fc bfc" id="L1077" title="All 2 branches covered.">        if (obj instanceof COSObject)</span>
+        {
+<span class="fc" id="L1079">            actual = ((COSObject) obj).getObject();</span>
+<span class="pc bpc" id="L1080" title="1 of 2 branches missed.">            if (actual == null)</span>
+            {
+                // the referenced object isn't there due to a malformed pdf
+                // check if a key is present, otherwise create a new one
+<span class="nc bnc" id="L1084" title="All 2 branches missed.">                if (key == null)</span>
+                {
+<span class="nc" id="L1086">                    key = new COSObjectKey(++number, 0);</span>
+                }
+<span class="nc" id="L1088">                objectKeys.put(obj, key);</span>
+<span class="nc" id="L1089">                return key;</span>
+            }
+        }
+        else
+        {
+<span class="fc" id="L1094">            actual = obj;</span>
+        }
+<span class="fc" id="L1096">        COSObjectKey actualKey = objectKeys.computeIfAbsent(actual,</span>
+<span class="fc" id="L1097">                k -&gt; new COSObjectKey(++number, 0));</span>
+        // check if the returned key and the origin key of the given object are the same
+<span class="pc bpc" id="L1099" title="1 of 6 branches missed.">        if (key == null || (actualKey != null &amp;&amp; !key.equals(actualKey)))</span>
+        {
+            // update the object key given object/referenced object
+<span class="fc" id="L1102">            key = actualKey;</span>
+<span class="fc" id="L1103">            actual.setKey(actualKey);</span>
+<span class="fc bfc" id="L1104" title="All 2 branches covered.">            if (obj instanceof COSObject)</span>
+            {
+                // update the object key of the indirect object
+<span class="fc" id="L1107">                obj.setKey(key);</span>
+<span class="fc" id="L1108">                objectKeys.put(obj, key);</span>
+            }
+        }
+<span class="fc" id="L1111">        return key;</span>
+    }
+
+    @Override
+    public void visitFromArray(COSArray array) throws IOException
+    {
+<span class="fc" id="L1117">        int count = 0;</span>
+<span class="fc" id="L1118">        getStandardOutput().write(ARRAY_OPEN);</span>
+<span class="fc bfc" id="L1119" title="All 2 branches covered.">        for (Iterator&lt;COSBase&gt; i = array.iterator(); i.hasNext();)</span>
+        {
+<span class="fc" id="L1121">            COSBase current = i.next();</span>
+<span class="fc bfc" id="L1122" title="All 2 branches covered.">            if( current instanceof COSDictionary )</span>
+            {
+<span class="fc" id="L1124">                writeDictionary((COSDictionary) current);</span>
+            }
+<span class="pc bpc" id="L1126" title="1 of 2 branches missed.">            else if (current instanceof COSArray)</span>
+            {
+<span class="nc" id="L1128">                writeArray((COSArray) current);</span>
+            }
+<span class="fc bfc" id="L1130" title="All 2 branches covered.">            else if( current instanceof COSObject )</span>
+            {
+<span class="fc" id="L1132">                addObjectToWrite(current);</span>
+<span class="fc" id="L1133">                writeReference(current);</span>
+            }
+<span class="pc bpc" id="L1135" title="1 of 2 branches missed.">            else if( current == null )</span>
+            {
+<span class="nc" id="L1137">                COSNull.NULL.accept( this );</span>
+            }
+            else
+            {
+<span class="fc" id="L1141">                current.accept(this);</span>
+            }
+<span class="fc" id="L1143">            count++;</span>
+<span class="fc bfc" id="L1144" title="All 2 branches covered.">            if (i.hasNext())</span>
+            {
+<span class="fc bfc" id="L1146" title="All 2 branches covered.">                if (count % 10 == 0)</span>
+                {
+<span class="fc" id="L1148">                    getStandardOutput().writeEOL();</span>
+                }
+                else
+                {
+<span class="fc" id="L1152">                    getStandardOutput().write(SPACE);</span>
+                }
+            }
+<span class="fc" id="L1155">        }</span>
+<span class="fc" id="L1156">        getStandardOutput().write(ARRAY_CLOSE);</span>
+<span class="fc" id="L1157">        getStandardOutput().writeEOL();</span>
+<span class="fc" id="L1158">    }</span>
+
+    private void writeArray(COSArray array) throws IOException
+    {
+<span class="pc bpc" id="L1162" title="1 of 2 branches missed.">        if (array.isDirect())</span>
+        {
+<span class="fc" id="L1164">            visitFromArray(array);</span>
+        }
+        else
+        {
+<span class="nc" id="L1168">            addObjectToWrite(array);</span>
+<span class="nc" id="L1169">            writeReference(array);</span>
+        }
+<span class="fc" id="L1171">    }</span>
+
+    private void writeDictionary(COSDictionary dictionary) throws IOException
+    {
+<span class="fc bfc" id="L1175" title="All 2 branches covered.">        if (dictionary.isDirect())</span>
+        {
+<span class="fc" id="L1177">            visitFromDictionary(dictionary);</span>
+        }
+        else
+        {
+<span class="fc" id="L1181">            addObjectToWrite(dictionary);</span>
+<span class="fc" id="L1182">            writeReference(dictionary);</span>
+        }
+<span class="fc" id="L1184">    }</span>
+
+    @Override
+    public void visitFromBoolean(COSBoolean obj) throws IOException
+    {
+<span class="nc" id="L1189">        obj.writePDF( getStandardOutput() );</span>
+<span class="nc" id="L1190">    }</span>
+
+    @Override
+    public void visitFromDictionary(COSDictionary obj) throws IOException
+    {
+<span class="fc" id="L1195">        detectPossibleSignature(obj);</span>
+<span class="fc" id="L1196">        getStandardOutput().write(DICT_OPEN);</span>
+<span class="fc" id="L1197">        getStandardOutput().writeEOL();</span>
+<span class="fc bfc" id="L1198" title="All 2 branches covered.">        for (Map.Entry&lt;COSName, COSBase&gt; entry : obj.entrySet())</span>
+        {
+<span class="fc" id="L1200">            COSBase value = entry.getValue();</span>
+<span class="pc bpc" id="L1201" title="1 of 2 branches missed.">            if (value != null)</span>
+            {
+<span class="fc" id="L1203">                entry.getKey().accept(this);</span>
+<span class="fc" id="L1204">                getStandardOutput().write(SPACE);</span>
+<span class="fc bfc" id="L1205" title="All 2 branches covered.">                if( value instanceof COSDictionary )</span>
+                {
+<span class="fc" id="L1207">                    COSDictionary dict = (COSDictionary)value;</span>
+
+<span class="pc bpc" id="L1209" title="1 of 2 branches missed.">                    if (!incrementalUpdate)</span>
+                    {            
+                        // write all XObjects as direct objects, this will save some size
+                        // PDFBOX-3684: but avoid dictionary that references itself
+<span class="fc" id="L1213">                        COSBase item = dict.getItem(COSName.XOBJECT);</span>
+<span class="pc bpc" id="L1214" title="3 of 4 branches missed.">                        if (item != null &amp;&amp; !COSName.XOBJECT.equals(entry.getKey()))</span>
+                        {
+<span class="nc" id="L1216">                            item.setDirect(true);</span>
+                        }
+<span class="fc" id="L1218">                        item = dict.getItem(COSName.RESOURCES);</span>
+<span class="pc bpc" id="L1219" title="3 of 4 branches missed.">                        if (item != null &amp;&amp; !COSName.RESOURCES.equals(entry.getKey()))</span>
+                        {
+<span class="nc" id="L1221">                            item.setDirect(true);</span>
+                        }
+                    }
+<span class="fc" id="L1224">                    writeDictionary(dict);</span>
+<span class="fc" id="L1225">                }</span>
+<span class="fc bfc" id="L1226" title="All 2 branches covered.">                else if( value instanceof COSObject )</span>
+                {
+<span class="fc" id="L1228">                    addObjectToWrite(value);</span>
+<span class="fc" id="L1229">                    writeReference(value);</span>
+                }
+                else
+                {
+                    // If we reach the pdf signature, we need to determinate the position of the
+                    // content and byterange
+<span class="pc bpc" id="L1235" title="3 of 4 branches missed.">                    if(reachedSignature &amp;&amp; COSName.CONTENTS.equals(entry.getKey()))</span>
+                    {
+<span class="nc" id="L1237">                        signatureOffset = getStandardOutput().getPos();</span>
+<span class="nc" id="L1238">                        value.accept(this);</span>
+<span class="nc" id="L1239">                        signatureLength = getStandardOutput().getPos()- signatureOffset;</span>
+                    }
+<span class="pc bpc" id="L1241" title="3 of 4 branches missed.">                    else if(reachedSignature &amp;&amp; COSName.BYTERANGE.equals(entry.getKey()))</span>
+                    {
+<span class="nc" id="L1243">                        byteRangeArray = (COSArray) entry.getValue();</span>
+<span class="nc" id="L1244">                        byteRangeOffset = getStandardOutput().getPos() + 1;</span>
+<span class="nc" id="L1245">                        value.accept(this);</span>
+<span class="nc" id="L1246">                        byteRangeLength = getStandardOutput().getPos() - 1 - byteRangeOffset;</span>
+<span class="nc" id="L1247">                        reachedSignature = false;</span>
+                    }
+<span class="fc bfc" id="L1249" title="All 2 branches covered.">                    else if (value instanceof COSArray)</span>
+                    {
+<span class="fc" id="L1251">                        writeArray((COSArray) value);</span>
+                    }
+                    else
+                    {
+<span class="fc" id="L1255">                        value.accept(this);</span>
+                    }
+                }
+<span class="fc" id="L1258">                getStandardOutput().writeEOL();</span>
+
+            }
+            else
+            {
+                //then we won't write anything, there are a couple cases
+                //were the value of an entry in the COSDictionary will
+                //be a dangling reference that points to nothing
+                //so we will just not write out the entry if that is the case
+            }
+<span class="fc" id="L1268">        }</span>
+<span class="fc" id="L1269">        getStandardOutput().write(DICT_CLOSE);</span>
+<span class="fc" id="L1270">        getStandardOutput().writeEOL();</span>
+<span class="fc" id="L1271">    }</span>
+
+    private void detectPossibleSignature(COSDictionary obj) throws IOException
+    {
+<span class="pc bpc" id="L1275" title="2 of 4 branches missed.">        if (!reachedSignature &amp;&amp; incrementalUpdate)</span>
+        {
+<span class="nc" id="L1277">            COSBase itemType = obj.getItem(COSName.TYPE);</span>
+<span class="nc bnc" id="L1278" title="All 4 branches missed.">            if (COSName.SIG.equals(itemType) || COSName.DOC_TIME_STAMP.equals(itemType))</span>
+            {
+<span class="nc" id="L1280">                COSArray byteRange = obj.getCOSArray(COSName.BYTERANGE);</span>
+<span class="nc bnc" id="L1281" title="All 4 branches missed.">                if (byteRange != null &amp;&amp; byteRange.size() == 4)</span>
+                {
+<span class="nc" id="L1283">                    COSBase base2 = byteRange.get(2);</span>
+<span class="nc bnc" id="L1284" title="All 2 branches missed.">                    if (base2 instanceof COSInteger)</span>
+                    {
+                        // PDFBOX-5521 avoid hitting &quot;old&quot; signatures
+<span class="nc" id="L1287">                        long br2 = ((COSInteger) base2).longValue();</span>
+<span class="nc bnc" id="L1288" title="All 2 branches missed.">                        if (br2 &gt; incrementalInput.length())</span>
+                        {
+<span class="nc" id="L1290">                            LOG.debug(&quot;reachedSignature at offset {}, byteRange: {}, input length: {}&quot;, </span>
+<span class="nc" id="L1291">                                    getStandardOutput().getPos(), byteRange, incrementalInput.length());</span>
+<span class="nc" id="L1292">                            reachedSignature = true;</span>
+                        }
+                    }
+                }
+            }
+        }
+<span class="fc" id="L1298">    }</span>
+
+    @Override
+    public void visitFromDocument(COSDocument doc) throws IOException
+    {
+<span class="pc bpc" id="L1303" title="1 of 2 branches missed.">        if(!incrementalUpdate)</span>
+        {
+<span class="fc" id="L1305">            doWriteHeader(doc);</span>
+        }
+        else
+        {
+            // Sometimes the original file will be missing a newline at the end
+            // In order to avoid having %%EOF the first object on the same line
+            // as the %%EOF, we put a newline here. If there's already one at
+            // the end of the file, an extra one won't hurt. PDFBOX-1051
+<span class="nc" id="L1313">            getStandardOutput().writeCRLF();</span>
+        }
+
+<span class="pc bpc" id="L1316" title="1 of 2 branches missed.">        if (isCompress())</span>
+        {
+<span class="nc" id="L1318">            doWriteBodyCompressed(doc);</span>
+        }
+        else
+        {
+<span class="fc" id="L1322">            doWriteBody(doc);</span>
+        }
+
+<span class="pc bpc" id="L1325" title="2 of 4 branches missed.">        if(incrementalUpdate || doc.isXRefStream())</span>
+        {
+<span class="nc" id="L1327">            doWriteXRefInc(doc);</span>
+        }
+        else
+        {
+<span class="fc" id="L1331">            doWriteXRefTable();</span>
+<span class="fc" id="L1332">            doWriteTrailer(doc);</span>
+        }
+
+        // write endof
+<span class="fc" id="L1336">        getStandardOutput().write(STARTXREF);</span>
+<span class="fc" id="L1337">        getStandardOutput().writeEOL();</span>
+<span class="fc" id="L1338">        getStandardOutput().write(String.valueOf(getStartxref()).getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L1339">        getStandardOutput().writeEOL();</span>
+<span class="fc" id="L1340">        getStandardOutput().write(EOF);</span>
+<span class="fc" id="L1341">        getStandardOutput().writeEOL();</span>
+
+<span class="pc bpc" id="L1343" title="1 of 2 branches missed.">        if (incrementalUpdate)</span>
+        {
+<span class="nc bnc" id="L1345" title="All 4 branches missed.">            if (signatureOffset == 0 || byteRangeOffset == 0)</span>
+            {
+<span class="nc" id="L1347">                doWriteIncrement();</span>
+            }
+            else
+            {
+<span class="nc" id="L1351">                doWriteSignature();</span>
+            }
+        }
+
+<span class="fc" id="L1355">    }</span>
+
+    @Override
+    public void visitFromFloat(COSFloat obj) throws IOException
+    {
+<span class="fc" id="L1360">        obj.writePDF( getStandardOutput() );</span>
+<span class="fc" id="L1361">    }</span>
+
+    @Override
+    public void visitFromInt(COSInteger obj) throws IOException
+    {
+<span class="fc" id="L1366">        obj.writePDF( getStandardOutput() );</span>
+<span class="fc" id="L1367">    }</span>
+
+    @Override
+    public void visitFromName(COSName obj) throws IOException
+    {
+<span class="fc" id="L1372">        obj.writePDF( getStandardOutput() );</span>
+<span class="fc" id="L1373">    }</span>
+
+    @Override
+    public void visitFromNull(COSNull obj) throws IOException
+    {
+<span class="nc" id="L1378">        obj.writePDF(getStandardOutput());</span>
+<span class="nc" id="L1379">    }</span>
+
+    /**
+     * visitFromObjRef method comment.
+     *
+     * @param obj The object that is being visited.
+     *
+     * @throws IOException If there is an exception while visiting this object.
+     */
+    public void writeReference(COSBase obj) throws IOException
+    {
+<span class="fc" id="L1390">            COSObjectKey key = getObjectKey(obj);</span>
+<span class="fc" id="L1391">            getStandardOutput().write(String.valueOf(key.getNumber()).getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L1392">            getStandardOutput().write(SPACE);</span>
+<span class="fc" id="L1393">            getStandardOutput().write(String.valueOf(key.getGeneration()).getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L1394">            getStandardOutput().write(SPACE);</span>
+<span class="fc" id="L1395">            getStandardOutput().write(REFERENCE);</span>
+<span class="fc" id="L1396">    }</span>
+
+    @Override
+    public void visitFromStream(COSStream obj) throws IOException
+    {
+<span class="pc bpc" id="L1401" title="1 of 2 branches missed.">        if (willEncrypt)</span>
+        {
+<span class="nc" id="L1403">            pdDocument.getEncryption().getSecurityHandler()</span>
+<span class="nc" id="L1404">                .encryptStream(obj, currentObjectKey.getNumber(), currentObjectKey.getGeneration());</span>
+        }
+
+<span class="fc" id="L1407">        InputStream input = null;</span>
+        try
+        {
+            // write the stream content
+<span class="fc" id="L1411">            visitFromDictionary(obj);</span>
+<span class="fc" id="L1412">            getStandardOutput().write(STREAM);</span>
+<span class="fc" id="L1413">            getStandardOutput().writeCRLF();</span>
+<span class="pc bpc" id="L1414" title="1 of 2 branches missed.">            if (obj.hasData())</span>
+            {
+<span class="fc" id="L1416">                input = obj.createRawInputStream();</span>
+<span class="fc" id="L1417">                input.transferTo(getStandardOutput());</span>
+            }
+<span class="fc" id="L1419">            getStandardOutput().writeCRLF();</span>
+<span class="fc" id="L1420">            getStandardOutput().write(ENDSTREAM);</span>
+<span class="fc" id="L1421">            getStandardOutput().writeEOL();</span>
+        }
+        finally
+        {
+<span class="pc bpc" id="L1425" title="1 of 2 branches missed.">            if (input != null)</span>
+            {
+<span class="fc" id="L1427">                input.close();</span>
+            }
+        }
+<span class="fc" id="L1430">    }</span>
+
+    @Override
+    public void visitFromString(COSString obj) throws IOException
+    {
+<span class="pc bpc" id="L1435" title="1 of 2 branches missed.">        if (willEncrypt)</span>
+        {
+<span class="nc" id="L1437">            COSString encryptedCOSString = (COSString) pdDocument.getEncryption()</span>
+<span class="nc" id="L1438">                    .getSecurityHandler().encryptString(</span>
+                    obj,
+<span class="nc" id="L1440">                    currentObjectKey.getNumber(),</span>
+<span class="nc" id="L1441">                    currentObjectKey.getGeneration());</span>
+<span class="nc" id="L1442">            COSWriter.writeString(encryptedCOSString, getStandardOutput());</span>
+<span class="nc" id="L1443">        }</span>
+        else
+        {
+<span class="fc" id="L1446">            COSWriter.writeString(obj, getStandardOutput());</span>
+        }
+<span class="fc" id="L1448">    }</span>
+
+    @Override
+    public void visitFromObject(COSObject obj) throws IOException
+    {
+<span class="fc" id="L1453">        COSBase base = obj.getObject();</span>
+<span class="pc bpc" id="L1454" title="1 of 2 branches missed.">        if (base == null)</span>
+        {
+<span class="nc" id="L1456">            visitFromNull(COSNull.NULL);</span>
+        }
+        else
+        {
+<span class="fc" id="L1460">            base.accept(this);</span>
+        }
+<span class="fc" id="L1462">    }</span>
+
+    /**
+     * This will write the pdf document.
+     *
+     * @throws IOException If an error occurs while generating the data.
+     * @param doc The document to write.
+     */
+    public void write(COSDocument doc) throws IOException
+    {
+<span class="nc" id="L1472">        PDDocument pdDoc = new PDDocument( doc );</span>
+<span class="nc" id="L1473">        write( pdDoc );</span>
+<span class="nc" id="L1474">    }</span>
+
+    /**
+     * This will write the pdf document. If signature should be created externally,
+     * {@link #writeExternalSignature(byte[])} should be invoked to set signature after calling this method.
+     *
+     * @param doc The document to write.
+     *
+     * @throws IOException If an error occurs while generating the data.
+     */
+    public void write(PDDocument doc) throws IOException
+    {
+<span class="fc" id="L1486">        write(doc, null);</span>
+<span class="fc" id="L1487">    }</span>
+
+    /**
+     * This will write the pdf document. If signature should be created externally,
+     * {@link #writeExternalSignature(byte[])} should be invoked to set signature after calling this method.
+     *
+     * @param doc The document to write.
+     * @param signInterface class to be used for signing; {@code null} if external signing would be performed
+     *                      or there will be no signing at all
+     *
+     * @throws IOException If an error occurs while generating the data.
+     * @throws IllegalStateException If the document has an encryption dictionary but no protection
+     * policy.
+     */
+    public void write(PDDocument doc, SignatureInterface signInterface) throws IOException
+    {
+<span class="fc" id="L1503">        pdDocument = doc;</span>
+<span class="fc" id="L1504">        COSDocument cosDoc = pdDocument.getDocument();</span>
+<span class="fc" id="L1505">        COSDictionary trailer = cosDoc.getTrailer();</span>
+<span class="pc bpc" id="L1506" title="1 of 2 branches missed.">        if (incrementalUpdate)</span>
+        {
+<span class="nc" id="L1508">            trailer.toIncrement().exclude(trailer).forEach(base -&gt; {</span>
+<span class="nc" id="L1509">                objectsToWrite.add(base);</span>
+<span class="nc bnc" id="L1510" title="All 2 branches missed.">                if (base instanceof COSObject)</span>
+                {
+<span class="nc" id="L1512">                    actualsAdded.add(((COSObject) base).getObject());</span>
+                }
+                else
+                {
+<span class="nc" id="L1516">                    actualsAdded.add(base);</span>
+                }
+<span class="nc" id="L1518">            });</span>
+        }
+<span class="fc" id="L1520">        signatureInterface = signInterface;</span>
+<span class="fc" id="L1521">        number = pdDocument.getDocument().getHighestXRefObjectNumber();</span>
+<span class="pc bpc" id="L1522" title="1 of 2 branches missed.">        if (incrementalUpdate)</span>
+        {
+<span class="nc" id="L1524">            prepareIncrement();</span>
+        }
+<span class="pc bpc" id="L1526" title="1 of 2 branches missed.">        long idTime = pdDocument.getDocumentId() == null ? System.currentTimeMillis()</span>
+<span class="pc" id="L1527">                : pdDocument.getDocumentId();</span>
+
+        // if the document says we should remove encryption, then we shouldn't encrypt
+<span class="pc bpc" id="L1530" title="1 of 2 branches missed.">        if (doc.isAllSecurityToBeRemoved())</span>
+        {
+<span class="nc" id="L1532">            willEncrypt = false;</span>
+            // also need to get rid of the &quot;Encrypt&quot; in the trailer so readers 
+            // don't try to decrypt a document which is not encrypted
+<span class="nc" id="L1535">            trailer.removeItem(COSName.ENCRYPT);</span>
+        }
+        else
+        {
+<span class="pc bpc" id="L1539" title="1 of 2 branches missed.">            if (pdDocument.getEncryption() != null)</span>
+            {
+<span class="nc bnc" id="L1541" title="All 2 branches missed.">                if (!incrementalUpdate)</span>
+                {
+<span class="nc" id="L1543">                    SecurityHandler&lt;? extends ProtectionPolicy&gt; securityHandler =</span>
+<span class="nc" id="L1544">                            pdDocument.getEncryption().getSecurityHandler();</span>
+<span class="nc bnc" id="L1545" title="All 2 branches missed.">                    if (!securityHandler.hasProtectionPolicy())</span>
+                    {
+<span class="nc" id="L1547">                        throw new IllegalStateException(&quot;PDF contains an encryption dictionary, please remove it with &quot;</span>
+                                + &quot;setAllSecurityToBeRemoved() or set a protection policy with protect()&quot;);
+                    }
+<span class="nc" id="L1550">                    securityHandler.prepareDocumentForEncryption(pdDocument);</span>
+                }
+<span class="nc" id="L1552">                willEncrypt = true;</span>
+            }
+            else
+            {
+<span class="fc" id="L1556">                willEncrypt = false;</span>
+            }
+        }
+
+        COSArray idArray;
+<span class="fc" id="L1561">        boolean missingID = true;</span>
+<span class="fc" id="L1562">        COSBase base = trailer.getDictionaryObject(COSName.ID);</span>
+<span class="pc bpc" id="L1563" title="1 of 2 branches missed.">        if (base instanceof COSArray)</span>
+        {
+<span class="fc" id="L1565">            idArray = (COSArray) base;</span>
+<span class="pc bpc" id="L1566" title="1 of 2 branches missed.">            if (idArray.size() == 2)</span>
+            {
+<span class="fc" id="L1568">                missingID = false;</span>
+            }
+        }
+        else
+        {
+<span class="nc" id="L1573">            idArray = new COSArray();</span>
+        }
+<span class="pc bpc" id="L1575" title="2 of 4 branches missed.">        if( missingID || incrementalUpdate)</span>
+        {
+            MessageDigest sha256;
+            try
+            {
+<span class="nc" id="L1580">                sha256 = MessageDigest.getInstance(&quot;SHA-256&quot;);</span>
+            }
+<span class="nc" id="L1582">            catch (NoSuchAlgorithmException e)</span>
+            {
+                // should never happen
+<span class="nc" id="L1585">                throw new RuntimeException(e);</span>
+<span class="nc" id="L1586">            }</span>
+
+            // algorithm says to use time/path/size/values in doc to generate the id.
+            // we don't have path or size, so do the best we can
+<span class="nc" id="L1590">            sha256.update(Long.toString(idTime).getBytes(StandardCharsets.ISO_8859_1));</span>
+
+<span class="nc" id="L1592">            COSDictionary info = trailer.getCOSDictionary(COSName.INFO);</span>
+<span class="nc bnc" id="L1593" title="All 2 branches missed.">            if( info != null )</span>
+            {
+<span class="nc bnc" id="L1595" title="All 2 branches missed.">                for (COSBase cosBase : info.getValues())</span>
+                {
+<span class="nc" id="L1597">                    sha256.update(cosBase.toString().getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="nc" id="L1598">                }</span>
+            }
+            // reuse origin documentID if available as first value
+<span class="nc bnc" id="L1601" title="All 2 branches missed.">            COSString firstID = missingID ? new COSString(sha256.digest()) : (COSString) idArray.get(0);</span>
+            // it's ok to use the same ID for the second part if the ID is created for the first time
+<span class="nc bnc" id="L1603" title="All 2 branches missed.">            COSString secondID = missingID ? firstID : new COSString(sha256.digest());</span>
+<span class="nc" id="L1604">            idArray = new COSArray();</span>
+<span class="nc" id="L1605">            idArray.add( firstID );</span>
+<span class="nc" id="L1606">            idArray.add( secondID );</span>
+<span class="nc" id="L1607">            trailer.setItem(COSName.ID, idArray);</span>
+        }
+<span class="fc" id="L1609">        cosDoc.accept(this);</span>
+<span class="pc bpc" id="L1610" title="1 of 2 branches missed.">        if (!incrementalUpdate)</span>
+        {
+<span class="fc" id="L1612">            cosDoc.setHighestXRefObjectNumber(number);</span>
+        }
+<span class="fc" id="L1614">    }</span>
+
+    /**
+     * This will write the fdf document.
+     *
+     * @param doc The document to write.
+     *
+     * @throws IOException If an error occurs while generating the data.
+     */
+    public void write(FDFDocument doc) throws IOException
+    {
+<span class="nc" id="L1625">        fdfDocument = doc;</span>
+<span class="nc" id="L1626">        COSDocument cosDoc = fdfDocument.getDocument();</span>
+<span class="nc bnc" id="L1627" title="All 2 branches missed.">        if (incrementalUpdate)</span>
+        {
+<span class="nc" id="L1629">            COSDictionary trailer = cosDoc.getTrailer();</span>
+<span class="nc" id="L1630">            trailer.toIncrement().exclude(trailer).forEach(objectsToWrite::add);</span>
+        }
+<span class="nc" id="L1632">        willEncrypt = false;</span>
+<span class="nc" id="L1633">        cosDoc.accept(this);</span>
+<span class="nc" id="L1634">    }</span>
+    /**
+     * This will output the given byte getString as a PDF object.
+     *
+     * @param string COSString to be written
+     * @param output The stream to write to.
+     * @throws IOException If there is an error writing to the stream.
+     */
+    public static void writeString(COSString string, OutputStream output) throws IOException
+    {
+<span class="fc" id="L1644">        writeString(string.getBytes(), string.getForceHexForm(), output);</span>
+<span class="fc" id="L1645">    }</span>
+
+    /**
+     * This will output the given text/byte getString as a PDF object.
+     *
+     * @param bytes byte array representation of a string to be written
+     * @param output The stream to write to.
+     * @throws IOException If there is an error writing to the stream.
+     */
+    public static void writeString(byte[] bytes, OutputStream output) throws IOException
+    {
+<span class="nc" id="L1656">        writeString(bytes, false, output);</span>
+<span class="nc" id="L1657">    }</span>
+
+    /**
+     * This will output the given text/byte string as a PDF object.
+     *
+     * @param output The stream to write to.
+     * @throws IOException If there is an error writing to the stream.
+     */
+    private static void writeString(byte[] bytes, boolean forceHex, OutputStream output)
+            throws IOException
+    {
+        // check for non-ASCII characters
+<span class="fc" id="L1669">        boolean isASCII = true;</span>
+<span class="pc bpc" id="L1670" title="1 of 2 branches missed.">        if (!forceHex)</span>
+        {
+<span class="fc bfc" id="L1672" title="All 2 branches covered.">            for (byte b : bytes)</span>
+            {
+                // if the byte is negative then it is an eight bit byte and is outside the ASCII range
+<span class="fc bfc" id="L1675" title="All 2 branches covered.">                if (b &lt; 0)</span>
+                {
+<span class="fc" id="L1677">                    isASCII = false;</span>
+<span class="fc" id="L1678">                    break;</span>
+                }
+                // PDFBOX-3107 EOL markers within a string are troublesome
+<span class="pc bpc" id="L1681" title="2 of 4 branches missed.">                if (b == 0x0d || b == 0x0a)</span>
+                {
+<span class="nc" id="L1683">                    isASCII = false;</span>
+<span class="nc" id="L1684">                    break;</span>
+                }
+            }
+        }
+
+<span class="pc bpc" id="L1689" title="1 of 4 branches missed.">        if (isASCII &amp;&amp; !forceHex)</span>
+        {
+            // write ASCII string
+<span class="fc" id="L1692">            output.write('(');</span>
+<span class="fc bfc" id="L1693" title="All 2 branches covered.">            for (byte b : bytes)</span>
+            {
+<span class="fc bfc" id="L1695" title="All 2 branches covered.">                switch (b)</span>
+                {
+                    case '(':
+                    case ')':
+                    case '\\':
+<span class="fc" id="L1700">                        output.write('\\');</span>
+<span class="fc" id="L1701">                        output.write(b);</span>
+<span class="fc" id="L1702">                        break;</span>
+                    default:
+<span class="fc" id="L1704">                        output.write(b);</span>
+                        break;
+                }
+            }
+<span class="fc" id="L1708">            output.write(')');</span>
+        }
+        else
+        {
+            // write hex string
+<span class="fc" id="L1713">            output.write('&lt;');</span>
+<span class="fc" id="L1714">            Hex.writeHexBytes(bytes, output);</span>
+<span class="fc" id="L1715">            output.write('&gt;');</span>
+        }
+<span class="fc" id="L1717">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

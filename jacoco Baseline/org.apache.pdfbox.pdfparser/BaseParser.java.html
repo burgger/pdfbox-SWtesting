@@ -1,0 +1,676 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BaseParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdfparser</a> &gt; <span class="el_source">BaseParser.java</span></div><h1>BaseParser.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdfparser;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+import java.nio.charset.StandardCharsets;
+
+import org.apache.pdfbox.io.RandomAccessRead;
+
+/**
+ * This class is used to contain parsing logic that will be used by all parsers.
+ *
+ * @author Ben Litchfield
+ */
+public abstract class BaseParser
+{
+<span class="fc" id="L33">    private static final int MAX_LENGTH_LONG = Long.toString(Long.MAX_VALUE).length();</span>
+
+    /**
+     * ASCII code for Null.
+     */
+    private static final byte ASCII_NULL = 0;
+    /**
+     * ASCII code for horizontal tab.
+     */
+    private static final byte ASCII_TAB = 9;
+    /**
+     * ASCII code for line feed.
+     */
+    private static final byte ASCII_LF = 10;
+    /**
+     * ASCII code for form feed.
+     */
+    private static final byte ASCII_FF = 12;
+    /**
+     * ASCII code for carriage return.
+     */
+    private static final byte ASCII_CR = 13;
+    private static final byte ASCII_ZERO = 48;
+    private static final byte ASCII_NINE = 57;
+    private static final byte ASCII_SPACE = 32;
+    
+    /**
+     * This is the stream that will be read from.
+     */
+    protected final RandomAccessRead source;
+
+    /**
+     * Default constructor.
+     */
+    BaseParser(RandomAccessRead pdfSource)
+<span class="fc" id="L68">    {</span>
+<span class="fc" id="L69">        this.source = pdfSource;</span>
+<span class="fc" id="L70">    }</span>
+
+    /**
+     * Skip the upcoming CRLF or LF which are supposed to follow a stream. Trailing spaces are removed as well.
+     * 
+     * @throws IOException if something went wrong
+     */
+    protected void skipWhiteSpaces() throws IOException
+    {
+        //PDF Ref 3.2.7 A stream must be followed by either
+        //a CRLF or LF but nothing else.
+<span class="fc" id="L81">        int whitespace = source.read();</span>
+        //see brother_scan_cover.pdf, it adds whitespaces
+        //after the stream but before the start of the
+        //data, so just read those first
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">        while (isSpace(whitespace))</span>
+        {
+<span class="nc" id="L87">            whitespace = source.read();</span>
+        }
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        if (!skipLinebreak(whitespace))</span>
+        {
+<span class="fc" id="L91">            source.rewind(1);</span>
+        }
+<span class="fc" id="L93">    }</span>
+
+    /**
+     * Skip one line break, such as CR, LF or CRLF.
+     * 
+     * @return true if a line break was found and removed.
+     * 
+     * @throws IOException if something went wrong
+     */
+    protected boolean skipLinebreak() throws IOException
+    {
+        // a line break is a CR, or LF or CRLF
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        if (!skipLinebreak(source.read()))</span>
+        {
+<span class="nc" id="L107">            source.rewind(1);</span>
+<span class="nc" id="L108">            return false;</span>
+        }
+<span class="nc" id="L110">        return true;</span>
+    }
+
+    /**
+     * Skip one line break, such as CR, LF or CRLF.
+     * 
+     * @param linebreak the first character to be checked.
+     * 
+     * @return true if a line break was found and removed.
+     * 
+     * @throws IOException if something went wrong
+     */
+    private boolean skipLinebreak(int linebreak) throws IOException
+    {
+        // a line break is a CR, or LF or CRLF
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (isCR(linebreak))</span>
+        {
+<span class="nc" id="L127">            int next = source.read();</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">            if (!isLF(next))</span>
+            {
+<span class="nc" id="L130">                source.rewind(1);</span>
+            }
+<span class="nc" id="L132">        }</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        else if (!isLF(linebreak))</span>
+        {
+<span class="fc" id="L135">            return false;</span>
+        }
+<span class="fc" id="L137">        return true;</span>
+    }
+
+    /**
+     * This is really a bug in the Document creators code, but it caused a crash in PDFBox, the first bug was in this
+     * format: /Title ( (5) /Creator which was patched in 1 place.
+     *
+     * However it missed the case where the number of opening and closing parenthesis isn't balanced
+     *
+     * The second bug was in this format /Title (c:\) /Producer
+     *
+     * @param bracesParameter the number of braces currently open.
+     *
+     * @return the corrected value of the brace counter
+     * @throws IOException
+     */
+    private int checkForEndOfString(final int bracesParameter) throws IOException
+    {
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        if (bracesParameter == 0)</span>
+        {
+<span class="fc" id="L157">            return 0;</span>
+        }
+        // Check the next 3 bytes if available
+<span class="fc" id="L160">        byte[] nextThreeBytes = new byte[3];</span>
+<span class="fc" id="L161">        int amountRead = source.read(nextThreeBytes);</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">        if (amountRead &gt; 0)</span>
+        {
+<span class="fc" id="L164">            source.rewind(amountRead);</span>
+        }
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">        if (amountRead &lt; 3)</span>
+        {
+<span class="nc" id="L168">            return bracesParameter;</span>
+        }
+        // The following cases are valid indicators for the end of the string
+        // 1. Next line contains another COSObject: CR + LF + '/'
+        // 2. COSDictionary ends in the next line: CR + LF + '&gt;'
+        // 3. Next line contains another COSObject: LF + '/'
+        // 4. COSDictionary ends in the next line: LF + '&gt;'
+        // 5. Next line contains another COSObject: CR + '/'
+        // 6. COSDictionary ends in the next line: CR + '&gt;'
+<span class="pc bpc" id="L177" title="6 of 8 branches missed.">        if (((isCR(nextThreeBytes[0]) || isLF(nextThreeBytes[0]))</span>
+                &amp;&amp; (nextThreeBytes[1] == '/' || nextThreeBytes[1] == '&gt;')) //
+                || //
+<span class="pc bpc" id="L180" title="7 of 8 branches missed.">                (isCR(nextThreeBytes[0]) &amp;&amp; isLF(nextThreeBytes[1])</span>
+                        &amp;&amp; (nextThreeBytes[2] == '/' || nextThreeBytes[2] == '&gt;')) //
+        )
+        {
+<span class="nc" id="L184">            return 0;</span>
+        }
+<span class="fc" id="L186">        return bracesParameter;</span>
+    }
+
+    /**
+     * Determine if a character terminates a PDF name.
+     *
+     * @param ch The character
+     * @return true if the character terminates a PDF name, otherwise false.
+     */
+    protected static boolean isEndOfName(int ch)
+    {
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        switch (ch)</span>
+        {
+        case ASCII_SPACE:
+        case ASCII_CR:
+        case ASCII_LF:
+        case ASCII_TAB:
+        case '&gt;':
+        case '&lt;':
+        case '[':
+        case '/':
+        case ']':
+        case ')':
+        case '(':
+        case ASCII_NULL:
+        case '\f':
+        case '%':
+        case -1:
+<span class="fc" id="L214">            return true;</span>
+        default:
+<span class="fc" id="L216">            return false;</span>
+        }
+    }
+
+    /**
+     * This will read the next string from the stream.
+     *
+     * @return The string that was read from the stream, never null.
+     *
+     * @throws IOException If there is an error reading from the stream.
+     */
+    protected String readString() throws IOException
+    {
+<span class="fc" id="L229">        skipSpaces();</span>
+<span class="fc" id="L230">        StringBuilder buffer = new StringBuilder();</span>
+<span class="fc" id="L231">        int c = source.read();</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">        while (!isEndOfName(c))</span>
+        {
+<span class="fc" id="L234">            buffer.append( (char)c );</span>
+<span class="fc" id="L235">            c = source.read();</span>
+        }
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">        if (c != -1)</span>
+        {
+<span class="fc" id="L239">            source.rewind(1);</span>
+        }
+<span class="fc" id="L241">        return buffer.toString();</span>
+    }
+    
+    /**
+     * This will parse a PDF string.
+     *
+     * @return The parsed PDF string.
+     *
+     * @throws IOException If there is an error reading from the stream.
+     */
+    protected byte[] readLiteralString() throws IOException
+    {
+<span class="fc" id="L253">        readExpectedChar('(');</span>
+<span class="fc" id="L254">        ByteArrayOutputStream out = new ByteArrayOutputStream();</span>
+        // This is the number of braces read
+<span class="fc" id="L256">        int braces = 1;</span>
+<span class="fc" id="L257">        int c = source.read();</span>
+<span class="pc bpc" id="L258" title="1 of 4 branches missed.">        while( braces &gt; 0 &amp;&amp; c != -1)</span>
+        {
+<span class="fc" id="L260">            char ch = (char)c;</span>
+<span class="fc" id="L261">            int nextc = -2; // not yet read</span>
+
+<span class="fc bfc" id="L263" title="All 2 branches covered.">            if (ch == ')')</span>
+            {
+<span class="fc" id="L265">                braces--;</span>
+<span class="fc" id="L266">                braces = checkForEndOfString(braces);</span>
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">                if (braces != 0)</span>
+                {
+<span class="nc" id="L269">                    out.write(ch);</span>
+                }
+            }
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">            else if (ch == '(')</span>
+            {
+<span class="nc" id="L274">                braces++;</span>
+<span class="nc" id="L275">                out.write(ch);</span>
+            }
+<span class="fc bfc" id="L277" title="All 2 branches covered.">            else if( ch == '\\' )</span>
+            {
+                //patched by ram
+<span class="fc" id="L280">                char next = (char) source.read();</span>
+<span class="pc bpc" id="L281" title="8 of 10 branches missed.">                switch (next)</span>
+                {
+                case 'n':
+<span class="nc" id="L284">                    out.write('\n');</span>
+<span class="nc" id="L285">                    break;</span>
+                case 'r':
+<span class="nc" id="L287">                    out.write('\r');</span>
+<span class="nc" id="L288">                    break;</span>
+                case 't':
+<span class="nc" id="L290">                    out.write('\t');</span>
+<span class="nc" id="L291">                    break;</span>
+                case 'b':
+<span class="nc" id="L293">                    out.write('\b');</span>
+<span class="nc" id="L294">                    break;</span>
+                case 'f':
+<span class="nc" id="L296">                    out.write('\f');</span>
+<span class="nc" id="L297">                    break;</span>
+                case ')':
+                    // PDFBox 276 /Title (c:\)
+<span class="fc" id="L300">                    braces = checkForEndOfString(braces);</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">                    if (braces != 0)</span>
+                    {
+<span class="fc" id="L303">                        out.write(next);</span>
+                    }
+                    else
+                    {
+<span class="nc" id="L307">                        out.write('\\');</span>
+                    }
+<span class="nc" id="L309">                    break;</span>
+                case '(':
+                case '\\':
+<span class="fc" id="L312">                    out.write(next);</span>
+<span class="fc" id="L313">                    break;</span>
+                case ASCII_LF:
+                case ASCII_CR:
+                    // this is a break in the line so ignore it and the newline and continue
+<span class="nc" id="L317">                    c = source.read();</span>
+<span class="nc bnc" id="L318" title="All 4 branches missed.">                    while (isEOL(c) &amp;&amp; c != -1)</span>
+                    {
+<span class="nc" id="L320">                        c = source.read();</span>
+                    }
+<span class="nc" id="L322">                    nextc = c;</span>
+<span class="nc" id="L323">                    break;</span>
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+<span class="nc" id="L332">                    StringBuilder octal = new StringBuilder();</span>
+<span class="nc" id="L333">                    octal.append(next);</span>
+<span class="nc" id="L334">                    c = source.read();</span>
+<span class="nc" id="L335">                    char digit = (char) c;</span>
+<span class="nc bnc" id="L336" title="All 4 branches missed.">                    if (digit &gt;= '0' &amp;&amp; digit &lt;= '7')</span>
+                    {
+<span class="nc" id="L338">                        octal.append(digit);</span>
+<span class="nc" id="L339">                        c = source.read();</span>
+<span class="nc" id="L340">                        digit = (char) c;</span>
+<span class="nc bnc" id="L341" title="All 4 branches missed.">                        if (digit &gt;= '0' &amp;&amp; digit &lt;= '7')</span>
+                        {
+<span class="nc" id="L343">                            octal.append(digit);</span>
+                        }
+                        else
+                        {
+<span class="nc" id="L347">                            nextc = c;</span>
+                        }
+                    }
+                    else
+                    {
+<span class="nc" id="L352">                        nextc = c;</span>
+                    }
+
+<span class="nc" id="L355">                    int character = 0;</span>
+                    try
+                    {
+<span class="nc" id="L358">                        character = Integer.parseInt(octal.toString(), 8);</span>
+                    }
+<span class="nc" id="L360">                    catch (NumberFormatException e)</span>
+                    {
+<span class="nc" id="L362">                        throw new IOException(</span>
+                                &quot;Error: Expected octal character, actual='&quot; + octal + &quot;'&quot;, e);
+<span class="nc" id="L364">                    }</span>
+<span class="nc" id="L365">                    out.write(character);</span>
+<span class="nc" id="L366">                    break;</span>
+                default:
+                    // dropping the backslash
+                    // see 7.3.4.2 Literal Strings for further information
+<span class="nc" id="L370">                    out.write(next);</span>
+                }
+<span class="fc" id="L372">            }</span>
+            else
+            {
+<span class="fc" id="L375">                out.write(ch);</span>
+            }
+<span class="pc bpc" id="L377" title="1 of 2 branches missed.">            if (nextc != -2)</span>
+            {
+<span class="nc" id="L379">                c = nextc;</span>
+            }
+            else
+            {
+<span class="fc" id="L383">                c = source.read();</span>
+            }
+<span class="fc" id="L385">        }</span>
+<span class="pc bpc" id="L386" title="1 of 2 branches missed.">        if (c != -1)</span>
+        {
+<span class="fc" id="L388">            source.rewind(1);</span>
+        }
+<span class="fc" id="L390">        return out.toByteArray();</span>
+    }
+
+    /**
+     * Reads given pattern from {@link #source}. Skipping whitespace at start and end if wanted.
+     * 
+     * @param expectedString pattern to be skipped
+     * @param skipSpaces if set to true spaces before and after the string will be skipped
+     * @throws IOException if pattern could not be read
+     */
+    protected final void readExpectedString(final char[] expectedString, boolean skipSpaces) throws IOException
+    {
+<span class="pc bpc" id="L402" title="1 of 2 branches missed.">        if (skipSpaces)</span>
+        {
+<span class="fc" id="L404">            skipSpaces();</span>
+        }
+<span class="fc bfc" id="L406" title="All 2 branches covered.">        for (char c : expectedString)</span>
+        {
+<span class="pc bpc" id="L408" title="1 of 2 branches missed.">            if (source.read() != c)</span>
+            {
+<span class="nc" id="L410">                throw new IOException(&quot;Expected string '&quot; + new String(expectedString)</span>
+                        + &quot;' but missed at character '&quot; + c + &quot;' at offset &quot;
+<span class="nc" id="L412">                        + source.getPosition());</span>
+            }
+        }
+<span class="pc bpc" id="L415" title="1 of 2 branches missed.">        if (skipSpaces)</span>
+        {
+<span class="fc" id="L417">            skipSpaces();</span>
+        }
+<span class="fc" id="L419">    }</span>
+
+    /**
+     * Read one char and throw an exception if it is not the expected value.
+     *
+     * @param ec the char value that is expected.
+     * @throws IOException if the read char is not the expected value or if an
+     * I/O error occurs.
+     */
+    protected void readExpectedChar(char ec) throws IOException
+    {
+<span class="fc" id="L430">        char c = (char) source.read();</span>
+<span class="pc bpc" id="L431" title="1 of 2 branches missed.">        if (c != ec)</span>
+        {
+<span class="nc" id="L433">            throw new IOException(</span>
+<span class="nc" id="L434">                    &quot;expected='&quot; + ec + &quot;' actual='&quot; + c + &quot;' at offset &quot; + source.getPosition());</span>
+        }
+<span class="fc" id="L436">    }</span>
+
+    /**
+     * This will tell if the end of the data is reached.
+     * 
+     * @return true if the end of the data is reached.
+     * @throws IOException If there is an error reading from the stream.
+     */
+    protected boolean isEOF() throws IOException
+    {
+<span class="fc" id="L446">        return source.isEOF();</span>
+    }
+
+    /**
+     * This will tell if the next byte to be read is an end of line byte.
+     *
+     * @param c The character to check against end of line
+     * @return true if the next byte is 0x0A or 0x0D.
+     */
+    protected static boolean isEOL(int c)
+    {
+<span class="fc bfc" id="L457" title="All 4 branches covered.">        return isLF(c) || isCR(c);</span>
+    }
+
+    /**
+     * This will tell if the next byte to be read is a line feed.
+     *
+     * @param c The character to check against line feed
+     * @return true if the next byte is 0x0A.
+     */
+    protected static boolean isLF(int c)
+    {
+<span class="fc bfc" id="L468" title="All 2 branches covered.">        return ASCII_LF == c;</span>
+    }
+
+    /**
+     * This will tell if the next byte to be read is a carriage return.
+     *
+     * @param c The character to check against carriage return
+     * @return true if the next byte is 0x0D.
+     */
+    protected static boolean isCR(int c)
+    {
+<span class="fc bfc" id="L479" title="All 2 branches covered.">        return ASCII_CR == c;</span>
+    }
+    
+    /**
+     * This will tell if the next byte is whitespace or not.
+     *
+     * @return true if the next byte in the stream is a whitespace character.
+     *
+     * @throws IOException If there is an error reading from the stream.
+     */
+    protected boolean isWhitespace() throws IOException
+    {
+<span class="nc" id="L491">        return isWhitespace(source.peek());</span>
+    }
+
+    /**
+     * This will tell if a character is whitespace or not.  These values are
+     * specified in table 1 (page 12) of ISO 32000-1:2008.
+     * @param c The character to check against whitespace
+     * @return true if the character is a whitespace character.
+     */
+    protected static boolean isWhitespace( int c )
+    {
+<span class="fc bfc" id="L502" title="All 2 branches covered.">        switch (c)</span>
+        {
+        case ASCII_NULL:
+        case ASCII_TAB:
+        case ASCII_FF:
+        case ASCII_LF:
+        case ASCII_CR:
+        case ASCII_SPACE:
+<span class="fc" id="L510">            return true;</span>
+        default:
+<span class="fc" id="L512">            return false;</span>
+        }
+    }
+
+    /**
+     * This will tell if the next byte is a space or not.
+     *
+     * @return true if the next byte in the stream is a space character.
+     *
+     * @throws IOException If there is an error reading from the stream.
+     */
+    protected boolean isSpace() throws IOException
+    {
+<span class="nc" id="L525">        return isSpace(source.peek());</span>
+    }
+    
+    /**
+     * This will tell if the given value is a space or not.
+     * 
+     * @param c The character to check against space
+     * @return true if the next byte in the stream is a space character.
+     */
+    private static boolean isSpace(int c)
+    {
+<span class="pc bpc" id="L536" title="1 of 2 branches missed.">        return ASCII_SPACE == c;</span>
+    }
+
+    /**
+     * This will tell if the next byte is a digit or not.
+     *
+     * @return true if the next byte in the stream is a digit.
+     *
+     * @throws IOException If there is an error reading from the stream.
+     */
+    protected boolean isDigit() throws IOException
+    {
+<span class="fc" id="L548">        return isDigit(source.peek());</span>
+    }
+
+    /**
+     * This will tell if the given value is a digit or not.
+     * 
+     * @param c The character to be checked
+     * @return true if the next byte in the stream is a digit.
+     */
+    protected static boolean isDigit(int c)
+    {
+<span class="fc bfc" id="L559" title="All 4 branches covered.">        return c &gt;= ASCII_ZERO &amp;&amp; c &lt;= ASCII_NINE;</span>
+    }
+
+    /**
+     * This will skip all spaces and comments that are present.
+     *
+     * @throws IOException If there is an error reading from the stream.
+     */
+    protected void skipSpaces() throws IOException
+    {
+<span class="fc" id="L569">        int c = source.read();</span>
+        // 37 is the % character, a comment
+<span class="pc bpc" id="L571" title="1 of 4 branches missed.">        while( isWhitespace(c) || c == 37)</span>
+        {
+<span class="pc bpc" id="L573" title="1 of 2 branches missed.">            if ( c == 37 )</span>
+            {
+                // skip past the comment section
+<span class="nc" id="L576">                c = source.read();</span>
+<span class="nc bnc" id="L577" title="All 4 branches missed.">                while(!isEOL(c) &amp;&amp; c != -1)</span>
+                {
+<span class="nc" id="L579">                    c = source.read();</span>
+                }
+            }
+            else
+            {
+<span class="fc" id="L584">                c = source.read();</span>
+            }
+        }
+<span class="pc bpc" id="L587" title="1 of 2 branches missed.">        if (c != -1)</span>
+        {
+<span class="fc" id="L589">            source.rewind(1);</span>
+        }
+<span class="fc" id="L591">    }</span>
+
+    /**
+     * This will read an integer from the stream.
+     *
+     * @return The integer that was read from the stream.
+     *
+     * @throws IOException If there is an error reading from the stream.
+     */
+    protected int readInt() throws IOException
+    {
+<span class="fc" id="L602">        skipSpaces();</span>
+<span class="fc" id="L603">        int retval = 0;</span>
+
+<span class="fc" id="L605">        StringBuilder intBuffer = readStringNumber();</span>
+
+        try
+        {
+<span class="fc" id="L609">            retval = Integer.parseInt( intBuffer.toString() );</span>
+        }
+<span class="nc" id="L611">        catch( NumberFormatException e )</span>
+        {
+<span class="nc" id="L613">            source.rewind(intBuffer.toString().getBytes(StandardCharsets.ISO_8859_1).length);</span>
+<span class="nc" id="L614">            throw new IOException(&quot;Error: Expected an integer type at offset &quot; +</span>
+<span class="nc" id="L615">                    source.getPosition() +</span>
+                                  &quot;, instead got '&quot; + intBuffer + &quot;'&quot;, e);
+<span class="fc" id="L617">        }</span>
+<span class="fc" id="L618">        return retval;</span>
+    }
+
+    /**
+     * This will read an long from the stream.
+     *
+     * @return The long that was read from the stream.
+     *
+     * @throws IOException If there is an error reading from the stream.
+     */
+    protected long readLong() throws IOException
+    {
+<span class="fc" id="L630">        skipSpaces();</span>
+<span class="fc" id="L631">        long retval = 0;</span>
+
+<span class="fc" id="L633">        StringBuilder longBuffer = readStringNumber();</span>
+
+        try
+        {
+<span class="fc" id="L637">            retval = Long.parseLong( longBuffer.toString() );</span>
+        }
+<span class="nc" id="L639">        catch( NumberFormatException e )</span>
+        {
+<span class="nc" id="L641">            source.rewind(longBuffer.toString().getBytes(StandardCharsets.ISO_8859_1).length);</span>
+<span class="nc" id="L642">            throw new IOException( &quot;Error: Expected a long type at offset &quot;</span>
+<span class="nc" id="L643">                    + source.getPosition() + &quot;, instead got '&quot; + longBuffer + &quot;'&quot;, e);</span>
+<span class="fc" id="L644">        }</span>
+<span class="fc" id="L645">        return retval;</span>
+    }
+
+    /**
+     * This method is used to read a token by the {@linkplain #readInt()} and the {@linkplain #readLong()} method. Valid
+     * delimiters are any non digit values.
+     *
+     * @return the token to parse as integer or long by the calling method.
+     * @throws IOException throws by the {@link #source} methods.
+     */
+    protected final StringBuilder readStringNumber() throws IOException
+    {
+        int lastByte;
+<span class="fc" id="L658">        StringBuilder buffer = new StringBuilder();</span>
+<span class="fc bfc" id="L659" title="All 2 branches covered.">        while (isDigit(lastByte = source.read()))</span>
+        {
+<span class="fc" id="L661">            buffer.append( (char)lastByte );</span>
+<span class="pc bpc" id="L662" title="1 of 2 branches missed.">            if (buffer.length() &gt; MAX_LENGTH_LONG)</span>
+            {
+<span class="nc" id="L664">                throw new IOException(&quot;Number '&quot; + buffer + </span>
+<span class="nc" id="L665">                        &quot;' is getting too long, stop reading at offset &quot; + source.getPosition());</span>
+            }
+        }
+<span class="pc bpc" id="L668" title="1 of 2 branches missed.">        if( lastByte != -1 )</span>
+        {
+<span class="fc" id="L670">            source.rewind(1);</span>
+        }
+<span class="fc" id="L672">        return buffer;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

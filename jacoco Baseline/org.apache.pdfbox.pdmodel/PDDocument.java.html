@@ -1,0 +1,1480 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDDocument.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel</a> &gt; <span class="el_source">PDDocument.java</span></div><h1>PDDocument.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel;
+
+import java.awt.Point;
+import java.awt.image.DataBuffer;
+import java.awt.image.Raster;
+import java.awt.image.WritableRaster;
+import java.io.BufferedOutputStream;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.fontbox.ttf.TrueTypeFont;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSDocument;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.cos.COSUpdateInfo;
+import org.apache.pdfbox.io.IOUtils;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.io.RandomAccessStreamCache.StreamCacheCreateFunction;
+import org.apache.pdfbox.pdfwriter.COSWriter;
+import org.apache.pdfbox.pdfwriter.compress.CompressParameters;
+import org.apache.pdfbox.pdmodel.common.COSArrayList;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
+import org.apache.pdfbox.pdmodel.encryption.PDEncryption;
+import org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy;
+import org.apache.pdfbox.pdmodel.encryption.SecurityHandler;
+import org.apache.pdfbox.pdmodel.encryption.SecurityHandlerFactory;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceDictionary;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceStream;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.ExternalSigningSupport;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureInterface;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureOptions;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SigningSupport;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDField;
+import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
+
+/**
+ * This is the in-memory representation of the PDF document.
+ * The #close() method must be called once the document is no longer needed.
+ * 
+ * @author Ben Litchfield
+ */
+public class PDDocument implements Closeable
+{
+    /**
+     * For signing: large reserve byte range used as placeholder in the saved PDF until the actual
+     * length of the PDF is known. You'll need to fetch (with
+     * {@link PDSignature#getByteRange()} ) and reassign this yourself (with
+     * {@link PDSignature#setByteRange(int[])} ) only if you call
+     * {@link #saveIncrementalForExternalSigning(java.io.OutputStream) saveIncrementalForExternalSigning()}
+     * twice.
+     */
+<span class="fc" id="L92">    private static final int[] RESERVE_BYTE_RANGE = { 0, 1000000000, 1000000000, 1000000000 };</span>
+
+<span class="fc" id="L94">    private static final Logger LOG = LogManager.getLogger(PDDocument.class);</span>
+
+    /*
+     * avoid concurrency issues with PDDeviceRGB
+     */
+    static
+    {
+        try
+        {
+<span class="fc" id="L103">            WritableRaster raster = Raster.createBandedRaster(DataBuffer.TYPE_BYTE, 1, 1, 3, new Point(0, 0));</span>
+<span class="fc" id="L104">            PDDeviceRGB.INSTANCE.toRGBImage(raster);</span>
+        }
+<span class="nc" id="L106">        catch (IOException ex)</span>
+        {
+<span class="nc" id="L108">            LOG.debug(&quot;voodoo error&quot;, ex);</span>
+<span class="fc" id="L109">        }</span>
+<span class="fc" id="L110">    }</span>
+    
+    private final COSDocument document;
+
+    // cached values
+    private PDDocumentInformation documentInformation;
+    private PDDocumentCatalog documentCatalog;
+
+    // the encryption will be cached here. When the document is decrypted then
+    // the COSDocument will not have an &quot;Encrypt&quot; dictionary anymore and this object must be used
+    private PDEncryption encryption;
+
+    // holds a flag which tells us if we should remove all security from this documents.
+    private boolean allSecurityToBeRemoved;
+
+    // keep tracking customized documentId for the trailer. If null, a new id will be generated
+    // this ID doesn't represent the actual documentId from the trailer
+    private Long documentId;
+
+    // the pdf to be read
+    private final RandomAccessRead pdfSource;
+
+    // the access permissions of the document
+    private AccessPermission accessPermission;
+    
+    // fonts to subset before saving
+<span class="pc" id="L136">    private final Set&lt;PDFont&gt; fontsToSubset = new HashSet&lt;&gt;();</span>
+
+    // fonts to close when closing document
+<span class="pc" id="L139">    private final Set&lt;TrueTypeFont&gt; fontsToClose = new HashSet&lt;&gt;();</span>
+
+    // Signature interface
+    private SignatureInterface signInterface;
+
+    // helper class used to create external signature
+    private SigningSupport signingSupport;
+
+    // document-wide cached resources
+<span class="pc" id="L148">    private ResourceCache resourceCache = ResourceCacheFactory.createResourceCache();</span>
+
+    // to make sure only one signature is added
+<span class="pc" id="L151">    private boolean signatureAdded = false;</span>
+
+    /**
+     * Creates an empty PDF document.
+     * You need to add at least one page for the document to be valid.
+     */
+    public PDDocument()
+    {
+<span class="nc" id="L159">        this(IOUtils.createMemoryOnlyStreamCache());</span>
+<span class="nc" id="L160">    }</span>
+
+    /**
+     * Creates an empty PDF document. You need to add at least one page for the document to be valid.
+     *
+     * @param streamCacheCreateFunction a function to create an instance of a stream cache for buffering PDF streams
+     */
+    public PDDocument(StreamCacheCreateFunction streamCacheCreateFunction)
+<span class="nc" id="L168">    {</span>
+<span class="nc" id="L169">        document = new COSDocument(streamCacheCreateFunction);</span>
+<span class="nc" id="L170">        document.getDocumentState().setParsing(false);</span>
+<span class="nc" id="L171">        pdfSource = null;</span>
+
+        // First we need a trailer
+<span class="nc" id="L174">        COSDictionary trailer = new COSDictionary();</span>
+<span class="nc" id="L175">        document.setTrailer(trailer);</span>
+
+        // Next we need the root dictionary.
+<span class="nc" id="L178">        COSDictionary rootDictionary = new COSDictionary();</span>
+<span class="nc" id="L179">        trailer.setItem(COSName.ROOT, rootDictionary);</span>
+<span class="nc" id="L180">        rootDictionary.setItem(COSName.TYPE, COSName.CATALOG);</span>
+<span class="nc" id="L181">        rootDictionary.setItem(COSName.VERSION, COSName.getPDFName(&quot;1.4&quot;));</span>
+
+        // next we need the pages tree structure
+<span class="nc" id="L184">        COSDictionary pages = new COSDictionary();</span>
+<span class="nc" id="L185">        rootDictionary.setItem(COSName.PAGES, pages);</span>
+<span class="nc" id="L186">        pages.setItem(COSName.TYPE, COSName.PAGES);</span>
+<span class="nc" id="L187">        COSArray kidsArray = new COSArray();</span>
+<span class="nc" id="L188">        pages.setItem(COSName.KIDS, kidsArray);</span>
+<span class="nc" id="L189">        pages.setItem(COSName.COUNT, COSInteger.ZERO);</span>
+<span class="nc" id="L190">    }</span>
+
+    /**
+     * Constructor that uses an existing document. The COSDocument that is passed in must be valid.
+     * 
+     * @param doc The COSDocument that this document wraps.
+     */
+    public PDDocument(COSDocument doc)
+    {
+<span class="nc" id="L199">        this(doc, null);</span>
+<span class="nc" id="L200">    }</span>
+
+    /**
+     * Constructor that uses an existing document. The COSDocument that is passed in must be valid.
+     * 
+     * @param doc The COSDocument that this document wraps.
+     * @param source input representing the pdf
+     */
+    public PDDocument(COSDocument doc, RandomAccessRead source)
+    {
+<span class="nc" id="L210">        this(doc, source, null);</span>
+<span class="nc" id="L211">    }</span>
+
+    /**
+     * Constructor that uses an existing document. The COSDocument that is passed in must be valid.
+     * 
+     * @param doc The COSDocument that this document wraps.
+     * @param source input representing the pdf
+     * @param permission he access permissions of the pdf
+     * 
+     */
+    public PDDocument(COSDocument doc, RandomAccessRead source, AccessPermission permission)
+<span class="fc" id="L222">    {</span>
+<span class="fc" id="L223">        document = doc;</span>
+<span class="fc" id="L224">        document.getDocumentState().setParsing(false);</span>
+<span class="fc" id="L225">        pdfSource = source;</span>
+<span class="fc" id="L226">        accessPermission = permission;</span>
+<span class="fc" id="L227">    }</span>
+
+    /**
+     * This will add a page to the document. This is a convenience method, that will add the page to the root of the
+     * hierarchy and set the parent of the page to the root.
+     * 
+     * @param page The page to add to the document.
+     */
+    public void addPage(PDPage page)
+    {
+<span class="fc" id="L237">        getPages().add(page);</span>
+<span class="fc" id="L238">    }</span>
+
+    /**
+     * Add parameters of signature to be created externally using default signature options. See
+     * {@link #saveIncrementalForExternalSigning(OutputStream)} method description on external
+     * signature creation scenario details.
+     * &lt;p&gt;
+     * Only one signature may be added in a document. To sign several times,
+     * load document, add signature, save incremental and close again.
+     *
+     * @param sigObject is the PDSignatureField model
+     * @throws IOException if there is an error creating required fields
+     * @throws IllegalStateException if one attempts to add several signature
+     * fields.
+     */
+    public void addSignature(PDSignature sigObject) throws IOException
+    {
+<span class="nc" id="L255">        addSignature(sigObject, new SignatureOptions());</span>
+<span class="nc" id="L256">    }</span>
+
+    /**
+     * Add parameters of signature to be created externally. See
+     * {@link #saveIncrementalForExternalSigning(OutputStream)} method description on external
+     * signature creation scenario details.
+     * &lt;p&gt;
+     * Only one signature may be added in a document. To sign several times,
+     * load document, add signature, save incremental and close again.
+     *
+     * @param sigObject is the PDSignatureField model
+     * @param options signature options
+     * @throws IOException if there is an error creating required fields
+     * @throws IllegalStateException if one attempts to add several signature
+     * fields.
+     */
+    public void addSignature(PDSignature sigObject, SignatureOptions options) throws IOException
+    {
+<span class="nc" id="L274">        addSignature(sigObject, null, options);</span>
+<span class="nc" id="L275">    }</span>
+
+    /**
+     * Add a signature to be created using the instance of given interface.
+     * &lt;p&gt;
+     * Only one signature may be added in a document. To sign several times,
+     * load document, add signature, save incremental and close again.
+     * 
+     * @param sigObject is the PDSignatureField model
+     * @param signatureInterface is an interface whose implementation provides
+     * signing capabilities. Can be null if external signing if used.
+     * @throws IOException if there is an error creating required fields
+     * @throws IllegalStateException if one attempts to add several signature
+     * fields.
+     */
+    public void addSignature(PDSignature sigObject, SignatureInterface signatureInterface) throws IOException
+    {
+<span class="nc" id="L292">        addSignature(sigObject, signatureInterface, new SignatureOptions());</span>
+<span class="nc" id="L293">    }</span>
+
+    /**
+     * This will add a signature to the document. If the 0-based page number in the options
+     * parameter is smaller than 0 or larger than max, the nearest valid page number will be used
+     * (i.e. 0 or max) and no exception will be thrown.
+     * &lt;p&gt;
+     * Only one signature may be added in a document. To sign several times,
+     * load document, add signature, save incremental and close again.
+     *
+     * @param sigObject is the PDSignatureField model
+     * @param signatureInterface is an interface whose implementation provides
+     * signing capabilities. Can be null if external signing if used.
+     * @param options signature options
+     * @throws IOException if there is an error creating required fields
+     * @throws IllegalStateException if one attempts to add several signature
+     * fields.
+     */
+    public void addSignature(PDSignature sigObject, SignatureInterface signatureInterface,
+                             SignatureOptions options) throws IOException
+    {
+<span class="nc bnc" id="L314" title="All 2 branches missed.">        if (signatureAdded)</span>
+        {
+<span class="nc" id="L316">            throw new IllegalStateException(&quot;Only one signature may be added in a document&quot;);</span>
+        }
+<span class="nc" id="L318">        signatureAdded = true;</span>
+
+        // Reserve content
+        // We need to reserve some space for the signature. Some signatures including
+        // big certificate chain and we need enough space to store it.
+<span class="nc" id="L323">        int preferredSignatureSize = options.getPreferredSignatureSize();</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">        if (preferredSignatureSize &gt; 0)</span>
+        {
+<span class="nc" id="L326">            sigObject.setContents(new byte[preferredSignatureSize]);</span>
+        }
+        else
+        {
+<span class="nc" id="L330">            sigObject.setContents(new byte[SignatureOptions.DEFAULT_SIGNATURE_SIZE]);</span>
+        }
+
+        // Reserve ByteRange, will be overwritten in COSWriter
+<span class="nc" id="L334">        sigObject.setByteRange(RESERVE_BYTE_RANGE);</span>
+
+<span class="nc" id="L336">        signInterface = signatureInterface;</span>
+
+        // Create SignatureForm for signature and append it to the document
+
+        // Get the first valid page
+<span class="nc" id="L341">        PDPageTree pageTree = getPages();</span>
+<span class="nc" id="L342">        int pageCount = pageTree.getCount();</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">        if (pageCount == 0)</span>
+        {
+<span class="nc" id="L345">            throw new IllegalStateException(&quot;Cannot sign an empty document&quot;);</span>
+        }
+
+        // Get the AcroForm from the Root-Dictionary and append the annotation
+<span class="nc" id="L349">        PDDocumentCatalog catalog = getDocumentCatalog();</span>
+<span class="nc" id="L350">        PDAcroForm acroForm = catalog.getAcroForm(null);</span>
+<span class="nc" id="L351">        catalog.getCOSObject().setNeedToBeUpdated(true);</span>
+
+<span class="nc bnc" id="L353" title="All 2 branches missed.">        if (acroForm == null)</span>
+        {
+<span class="nc" id="L355">            acroForm = new PDAcroForm(this);</span>
+<span class="nc" id="L356">            catalog.setAcroForm(acroForm);</span>
+        }
+        else
+        {
+<span class="nc" id="L360">            acroForm.getCOSObject().setNeedToBeUpdated(true);</span>
+        }
+
+<span class="nc" id="L363">        PDSignatureField signatureField = null;</span>
+<span class="nc" id="L364">        COSArray fieldArray = acroForm.getCOSObject().getCOSArray(COSName.FIELDS);</span>
+<span class="nc bnc" id="L365" title="All 2 branches missed.">        if (fieldArray != null)</span>
+        {
+<span class="nc" id="L367">            fieldArray.setNeedToBeUpdated(true);</span>
+<span class="nc" id="L368">            signatureField = findSignatureField(acroForm.getFieldIterator(), sigObject);</span>
+        }
+        else
+        {
+<span class="nc" id="L372">            acroForm.getCOSObject().setItem(COSName.FIELDS, new COSArray());</span>
+        }
+        PDAnnotationWidget firstWidget;
+        PDPage page;
+<span class="nc bnc" id="L376" title="All 2 branches missed.">        if (signatureField == null)</span>
+        {
+<span class="nc" id="L378">            signatureField = new PDSignatureField(acroForm);</span>
+            // append the signature object
+<span class="nc" id="L380">            signatureField.setValue(sigObject);</span>
+<span class="nc" id="L381">            firstWidget = signatureField.getWidgets().get(0);</span>
+<span class="nc" id="L382">            int startIndex = Math.min(Math.max(options.getPage(), 0), pageCount - 1);</span>
+<span class="nc" id="L383">            page = pageTree.get(startIndex);</span>
+            // backward linking
+<span class="nc" id="L385">            firstWidget.setPage(page);</span>
+<span class="nc" id="L386">        }</span>
+        else
+        {
+<span class="nc" id="L389">            firstWidget = signatureField.getWidgets().get(0);</span>
+<span class="nc" id="L390">            sigObject.getCOSObject().setNeedToBeUpdated(true);</span>
+<span class="nc" id="L391">            page = null;</span>
+        }
+
+        // TODO This &quot;overwrites&quot; the settings of the original signature field which might not be intended by the user
+        // better make it configurable (not all users need/want PDF/A but their own setting):
+
+        // to conform PDF/A-1 requirement:
+        // The /F key's Print flag bit shall be set to 1 and 
+        // its Hidden, Invisible and NoView flag bits shall be set to 0
+<span class="nc" id="L400">        firstWidget.setPrinted(true);</span>
+        // This may be troublesome if several form fields are signed,
+        // see thread from PDFBox users mailing list 17.2.2021 - 19.2.2021
+        // https://mail-archives.apache.org/mod_mbox/pdfbox-users/202102.mbox/thread
+        // better set the printed flag in advance
+
+        // Set the AcroForm Fields
+<span class="nc" id="L407">        List&lt;PDField&gt; acroFormFields = acroForm.getFields();</span>
+<span class="nc" id="L408">        acroForm.getCOSObject().setDirect(true);</span>
+<span class="nc" id="L409">        acroForm.setSignaturesExist(true);</span>
+<span class="nc" id="L410">        acroForm.setAppendOnly(true);</span>
+
+<span class="nc" id="L412">        boolean checkFields = checkSignatureField(acroForm.getFieldIterator(), signatureField);</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">        if (checkFields)</span>
+        {
+<span class="nc" id="L415">            signatureField.getCOSObject().setNeedToBeUpdated(true);</span>
+        }
+        else
+        {
+<span class="nc" id="L419">            acroFormFields.add(signatureField);</span>
+        }
+
+        // Get the object from the visual signature
+<span class="nc" id="L423">        COSDocument visualSignature = options.getVisualSignature();</span>
+
+        // Distinction of case for visual and non-visual signature
+<span class="nc bnc" id="L426" title="All 2 branches missed.">        if (visualSignature == null)</span>
+        {
+<span class="nc" id="L428">            prepareNonVisibleSignature(firstWidget);</span>
+        }
+        else
+        {
+<span class="nc" id="L432">            prepareVisibleSignature(firstWidget, acroForm, visualSignature);</span>
+        }
+
+<span class="nc bnc" id="L435" title="All 2 branches missed.">        if (page != null)</span>
+        {
+            // Create Annotation / Field for signature
+<span class="nc" id="L438">            List&lt;PDAnnotation&gt; annotations = page.getAnnotations();</span>
+
+            // Get the annotations of the page and append the signature-annotation to it
+            // take care that page and acroforms do not share the same array
+            // (if so, we don't need to add it twice)
+<span class="nc bnc" id="L443" title="All 6 branches missed.">            if (!(checkFields &amp;&amp;</span>
+                  annotations instanceof COSArrayList &amp;&amp;
+                  acroFormFields instanceof COSArrayList &amp;&amp;
+<span class="nc" id="L446">                  ((COSArrayList) annotations).toList().</span>
+<span class="nc bnc" id="L447" title="All 2 branches missed.">                          equals(((COSArrayList) acroFormFields).toList())))</span>
+            {
+                // use check to prevent the annotation widget from appearing twice
+<span class="nc bnc" id="L450" title="All 2 branches missed.">                if (checkSignatureAnnotation(annotations, firstWidget))</span>
+                {
+<span class="nc" id="L452">                    firstWidget.getCOSObject().setNeedToBeUpdated(true);</span>
+                }
+                else
+                {
+<span class="nc" id="L456">                    annotations.add(firstWidget);</span>
+                }   
+            }
+
+            // Make /Annots a direct object by reassigning it,
+            // to avoid problem if it is an existing indirect object: 
+            // it would not be updated in incremental save, and if we'd set the /Annots array &quot;to be updated&quot; 
+            // while keeping it indirect, Adobe Reader would claim that the document had been modified.
+<span class="nc" id="L464">            page.setAnnotations(annotations);</span>
+
+<span class="nc" id="L466">            page.getCOSObject().setNeedToBeUpdated(true);</span>
+        }
+<span class="nc" id="L468">    }</span>
+
+    /**
+     * Search acroform fields for signature field with specific signature dictionary.
+     * 
+     * @param fieldIterator iterator on all fields.
+     * @param sigObject signature object (the /V part).
+     * @return a signature field if found, or null if none was found.
+     */
+    private PDSignatureField findSignatureField(Iterator&lt;PDField&gt; fieldIterator, PDSignature sigObject)
+    {
+<span class="nc" id="L479">        PDSignatureField signatureField = null;</span>
+<span class="nc bnc" id="L480" title="All 2 branches missed.">        while (fieldIterator.hasNext())</span>
+        {
+<span class="nc" id="L482">            PDField pdField = fieldIterator.next();</span>
+<span class="nc bnc" id="L483" title="All 2 branches missed.">            if (pdField instanceof PDSignatureField)</span>
+            {
+<span class="nc" id="L485">                PDSignature signature = ((PDSignatureField) pdField).getSignature();</span>
+<span class="nc bnc" id="L486" title="All 4 branches missed.">                if (signature != null &amp;&amp; signature.getCOSObject().equals(sigObject.getCOSObject()))</span>
+                {
+<span class="nc" id="L488">                    signatureField = (PDSignatureField) pdField;</span>
+<span class="nc" id="L489">                    break;</span>
+                }
+            }
+<span class="nc" id="L492">        }</span>
+<span class="nc" id="L493">        return signatureField;</span>
+    }
+
+    /**
+     * Check if the field already exists in the field list.
+     *
+     * @param fieldIterator iterator on all fields.
+     * @param signatureField the signature field.
+     * @return true if the field already existed in the field list, false if not.
+     */
+    private boolean checkSignatureField(Iterator&lt;PDField&gt; fieldIterator, PDSignatureField signatureField)
+    {
+<span class="nc bnc" id="L505" title="All 2 branches missed.">        while (fieldIterator.hasNext())</span>
+        {
+<span class="nc" id="L507">            PDField field = fieldIterator.next();</span>
+<span class="nc bnc" id="L508" title="All 2 branches missed.">            if (field instanceof PDSignatureField</span>
+<span class="nc bnc" id="L509" title="All 2 branches missed.">                    &amp;&amp; field.getCOSObject().equals(signatureField.getCOSObject()))</span>
+            {
+<span class="nc" id="L511">                return true;</span>
+            }
+<span class="nc" id="L513">        }</span>
+<span class="nc" id="L514">        return false;</span>
+    }
+
+    /**
+     * Check if the widget already exists in the annotation list.
+     *
+     * @param annotations the list of PDAnnotation fields.
+     * @param widget the annotation widget.
+     * @return true if the widget already existed in the annotation list, false if not.
+     */
+    private boolean checkSignatureAnnotation(List&lt;PDAnnotation&gt; annotations, PDAnnotationWidget widget)
+    {
+<span class="nc bnc" id="L526" title="All 2 branches missed.">        for (PDAnnotation annotation : annotations)</span>
+        {
+<span class="nc bnc" id="L528" title="All 2 branches missed.">            if (annotation.getCOSObject().equals(widget.getCOSObject()))</span>
+            {
+<span class="nc" id="L530">                return true;</span>
+            }
+<span class="nc" id="L532">        }</span>
+<span class="nc" id="L533">        return false;</span>
+    }
+
+    private void prepareNonVisibleSignature(PDAnnotationWidget firstWidget)
+    {
+        // &quot;Signature fields that are not intended to be visible shall
+        // have an annotation rectangle that has zero height and width.&quot;
+        // Set rectangle for non-visual signature to rectangle array [ 0 0 0 0 ]
+<span class="nc" id="L541">        firstWidget.setRectangle(new PDRectangle());</span>
+        
+        // The visual appearance must also exist for an invisible signature but may be empty.
+<span class="nc" id="L544">        PDAppearanceDictionary appearanceDictionary = new PDAppearanceDictionary();</span>
+<span class="nc" id="L545">        PDAppearanceStream appearanceStream = new PDAppearanceStream(this);</span>
+<span class="nc" id="L546">        appearanceStream.setBBox(new PDRectangle());</span>
+<span class="nc" id="L547">        appearanceDictionary.setNormalAppearance(appearanceStream);</span>
+<span class="nc" id="L548">        firstWidget.setAppearance(appearanceDictionary);</span>
+<span class="nc" id="L549">    }</span>
+
+    private void prepareVisibleSignature(PDAnnotationWidget firstWidget, PDAcroForm acroForm, 
+            COSDocument visualSignature)
+    {
+        // Obtain visual signature object
+<span class="nc" id="L555">        boolean annotFound = false;</span>
+<span class="nc" id="L556">        boolean sigFieldFound = false;</span>
+        // get all objects
+<span class="nc" id="L558">        List&lt;COSObject&gt; cosObjects = visualSignature.getXrefTable().keySet().stream() //</span>
+<span class="nc" id="L559">                .map(visualSignature::getObjectFromPool) //</span>
+<span class="nc" id="L560">                .collect(Collectors.toList());</span>
+<span class="nc bnc" id="L561" title="All 2 branches missed.">        for (COSObject cosObject : cosObjects)</span>
+        {
+<span class="nc" id="L563">            COSBase base = cosObject.getObject();</span>
+<span class="nc bnc" id="L564" title="All 2 branches missed.">            if (base instanceof COSDictionary)</span>
+            {
+<span class="nc" id="L566">                COSDictionary cosBaseDict = (COSDictionary) base;</span>
+                // Search for signature annotation
+<span class="nc bnc" id="L568" title="All 4 branches missed.">                if (!annotFound &amp;&amp; COSName.ANNOT.equals(cosBaseDict.getCOSName(COSName.TYPE)))</span>
+                {
+<span class="nc" id="L570">                    assignSignatureRectangle(firstWidget, cosBaseDict);</span>
+<span class="nc" id="L571">                    annotFound = true;</span>
+                }
+                // Search for signature field
+<span class="nc" id="L574">                COSDictionary apDict = cosBaseDict.getCOSDictionary(COSName.AP);</span>
+<span class="nc bnc" id="L575" title="All 4 branches missed.">                if (apDict != null &amp;&amp; !sigFieldFound</span>
+<span class="nc bnc" id="L576" title="All 2 branches missed.">                        &amp;&amp; COSName.SIG.equals(cosBaseDict.getCOSName(COSName.FT)))</span>
+                {
+<span class="nc" id="L578">                    assignAppearanceDictionary(firstWidget, apDict);</span>
+<span class="nc" id="L579">                    assignAcroFormDefaultResource(acroForm, cosBaseDict);</span>
+<span class="nc" id="L580">                    sigFieldFound = true;</span>
+                }
+<span class="nc bnc" id="L582" title="All 4 branches missed.">                if (annotFound &amp;&amp; sigFieldFound)</span>
+                {
+<span class="nc" id="L584">                    break;</span>
+                }
+            }
+<span class="nc" id="L587">        }</span>
+<span class="nc bnc" id="L588" title="All 4 branches missed.">        if (!annotFound || !sigFieldFound)</span>
+        {
+<span class="nc" id="L590">            throw new IllegalArgumentException(&quot;Template is missing required objects&quot;);</span>
+        }
+<span class="nc" id="L592">    }</span>
+
+    private void assignSignatureRectangle(PDAnnotationWidget firstWidget, COSDictionary annotDict)
+    {
+        // Read and set the rectangle for visual signature
+<span class="nc" id="L597">        PDRectangle existingRectangle = firstWidget.getRectangle();</span>
+
+        //in case of an existing field keep the original rect
+<span class="nc bnc" id="L600" title="All 4 branches missed.">        if (existingRectangle == null || existingRectangle.getCOSArray().size() != 4)</span>
+        {
+<span class="nc" id="L602">            COSArray rectArray = annotDict.getCOSArray(COSName.RECT);</span>
+<span class="nc" id="L603">            PDRectangle rect = new PDRectangle(rectArray);</span>
+<span class="nc" id="L604">            firstWidget.setRectangle(rect);</span>
+        }
+<span class="nc" id="L606">    }</span>
+
+    private void assignAppearanceDictionary(PDAnnotationWidget firstWidget, COSDictionary apDict)
+    {
+        // read and set Appearance Dictionary
+<span class="nc" id="L611">        PDAppearanceDictionary ap = new PDAppearanceDictionary(apDict);</span>
+<span class="nc" id="L612">        apDict.setDirect(true);</span>
+<span class="nc" id="L613">        firstWidget.setAppearance(ap);</span>
+<span class="nc" id="L614">    }</span>
+
+    private void assignAcroFormDefaultResource(PDAcroForm acroForm, COSDictionary newDict)
+    {
+        // read and set/update AcroForm default resource dictionary /DR if available
+<span class="nc" id="L619">        COSDictionary newDR = newDict.getCOSDictionary(COSName.DR);</span>
+<span class="nc bnc" id="L620" title="All 2 branches missed.">        if (newDR != null)</span>
+        {
+<span class="nc" id="L622">            PDResources defaultResources = acroForm.getDefaultResources();</span>
+<span class="nc bnc" id="L623" title="All 2 branches missed.">            if (defaultResources == null)</span>
+            {
+<span class="nc" id="L625">                acroForm.getCOSObject().setItem(COSName.DR, newDR);</span>
+<span class="nc" id="L626">                newDR.setDirect(true);</span>
+<span class="nc" id="L627">                newDR.setNeedToBeUpdated(true);            </span>
+            }
+            else
+            {
+<span class="nc" id="L631">                COSDictionary oldDR = defaultResources.getCOSObject();</span>
+<span class="nc" id="L632">                COSDictionary newXObject = newDR.getCOSDictionary(COSName.XOBJECT);</span>
+<span class="nc" id="L633">                COSDictionary oldXObject = oldDR.getCOSDictionary(COSName.XOBJECT);</span>
+<span class="nc bnc" id="L634" title="All 4 branches missed.">                if (newXObject != null &amp;&amp; oldXObject != null)</span>
+                {
+<span class="nc" id="L636">                    oldXObject.addAll(newXObject);</span>
+<span class="nc" id="L637">                    oldDR.setNeedToBeUpdated(true);</span>
+                }
+            }
+        }
+<span class="nc" id="L641">    }</span>
+
+    /**
+     * Remove the page from the document. Do not use this method if other pages link to this one or
+     * if your document has a structure tree for accessibility unless you are able to fix these as
+     * well. In such cases it is better to use the splitter() class which will do these fixes.
+     *
+     * @param page The page to remove from the document.
+     */
+    public void removePage(PDPage page)
+    {
+<span class="nc" id="L652">        getPages().remove(page);</span>
+<span class="nc" id="L653">    }</span>
+
+    /**
+     * Remove the page from the document. Do not use this method if other pages link to this one or
+     * if your document has a structure tree for accessibility unless you are able to fix these as
+     * well. In such cases it is better to use the splitter() class which will do these fixes.
+     * 
+     * @param pageNumber 0 based index to page number.
+     */
+    public void removePage(int pageNumber)
+    {
+<span class="nc" id="L664">        getPages().remove(pageNumber);</span>
+<span class="nc" id="L665">    }</span>
+
+    /**
+     * This will import and copy the contents from another location. Currently the content stream is
+     * stored in a scratch file. The scratch file is associated with the document. If you are adding
+     * a page to this document from another document and want to copy the contents to this
+     * document's scratch file then use this method otherwise just use the {@link #addPage addPage()}
+     * method.
+     * &lt;p&gt;
+     * Unlike {@link #addPage addPage()}, this method creates a new PDPage object. If your page has
+     * annotations, and if these link to pages not in the target document, then the target document
+     * might become huge. What you need to do is to delete page references of such annotations. See
+     * &lt;a href=&quot;http://stackoverflow.com/a/35477351/535646&quot;&gt;here&lt;/a&gt; for how to do this.
+     * &lt;p&gt;
+     * Inherited (global) resources are ignored because these can contain resources not needed for
+     * this page which could bloat your document, see
+     * &lt;a href=&quot;https://issues.apache.org/jira/browse/PDFBOX-28&quot;&gt;PDFBOX-28&lt;/a&gt; and related issues.
+     * If you need them, call &lt;code&gt;importedPage.setResources(page.getResources());&lt;/code&gt;
+     * &lt;p&gt;
+     * This method should only be used to import a page from a loaded document, not from a generated
+     * document because these can contain unfinished parts, e.g. font subsetting information.
+     *
+     * @param page The page to import.
+     * @return The page that was imported.
+     *
+     * @throws IOException If there is an error copying the page.
+     */
+    public PDPage importPage(PDPage page) throws IOException
+    {
+        // BEWARE: when making changes here, make sure that these changes don't mess with the code
+        // in the splitter, and avoid making changes in the source document (as happened in PDFBOX-5809)
+<span class="nc" id="L696">        PDPage importedPage = new PDPage(new COSDictionary(page.getCOSObject()), resourceCache);</span>
+<span class="nc" id="L697">        importedPage.getCOSObject().removeItem(COSName.PARENT);</span>
+<span class="nc" id="L698">        PDStream dest = new PDStream(this, page.getContents(), COSName.FLATE_DECODE);</span>
+<span class="nc" id="L699">        importedPage.setContents(dest);</span>
+        // reset imported object keys to avoid overlapping object numbers
+<span class="nc" id="L701">        importedPage.getCOSObject().resetImportedObjectKeys();</span>
+<span class="nc" id="L702">        addPage(importedPage);</span>
+<span class="nc" id="L703">        importedPage.setCropBox(new PDRectangle(page.getCropBox().getCOSArray()));</span>
+<span class="nc" id="L704">        importedPage.setMediaBox(new PDRectangle(page.getMediaBox().getCOSArray()));</span>
+<span class="nc" id="L705">        importedPage.setRotation(page.getRotation());</span>
+<span class="nc bnc" id="L706" title="All 4 branches missed.">        if (page.getResources() != null &amp;&amp; !page.getCOSObject().containsKey(COSName.RESOURCES))</span>
+        {
+<span class="nc" id="L708">            LOG.warn(&quot;inherited resources of source document are not imported to destination page&quot;);</span>
+<span class="nc" id="L709">            LOG.warn(&quot;call importedPage.setResources(page.getResources()) to do this&quot;);</span>
+        }
+<span class="nc" id="L711">        return importedPage;</span>
+    }
+
+    /**
+     * This will get the low level document.
+     * 
+     * @return The document that this layer sits on top of.
+     */
+    public COSDocument getDocument()
+    {
+<span class="fc" id="L721">        return document;</span>
+    }
+
+    /**
+     * This will get the document info dictionary. If it doesn't exist, an empty document info
+     * dictionary is created in the document trailer.
+     * &lt;p&gt;
+     * In PDF 2.0 this is deprecated except for two entries, /CreationDate and /ModDate. For any other
+     * document level metadata, a metadata stream should be used instead, see
+     * {@link PDDocumentCatalog#getMetadata()}.
+     *
+     * @return The documents /Info dictionary, never null.
+     */
+    public PDDocumentInformation getDocumentInformation()
+    {
+<span class="nc bnc" id="L736" title="All 2 branches missed.">        if (documentInformation == null)</span>
+        {
+<span class="nc" id="L738">            COSDictionary trailer = document.getTrailer();</span>
+<span class="nc" id="L739">            COSDictionary infoDic = trailer.getCOSDictionary(COSName.INFO);</span>
+<span class="nc bnc" id="L740" title="All 2 branches missed.">            if (infoDic == null)</span>
+            {
+<span class="nc" id="L742">                infoDic = new COSDictionary();</span>
+<span class="nc" id="L743">                trailer.setItem(COSName.INFO, infoDic);</span>
+            }
+<span class="nc" id="L745">            documentInformation = new PDDocumentInformation(infoDic);</span>
+        }
+<span class="nc" id="L747">        return documentInformation;</span>
+    }
+
+    /**
+     * This will set the document information for this document.
+     * &lt;p&gt;
+     * In PDF 2.0 this is deprecated except for two entries, /CreationDate and /ModDate. For any other
+     * document level metadata, a metadata stream should be used instead, see
+     * {@link PDDocumentCatalog#setMetadata(org.apache.pdfbox.pdmodel.common.PDMetadata) PDDocumentCatalog#setMetadata(PDMetadata)}.
+     *
+     * @param info The updated document information.
+     */
+    public void setDocumentInformation(PDDocumentInformation info)
+    {
+<span class="nc" id="L761">        documentInformation = info;</span>
+<span class="nc" id="L762">        document.getTrailer().setItem(COSName.INFO, info.getCOSObject());</span>
+<span class="nc" id="L763">    }</span>
+
+    /**
+     * This will get the document CATALOG. This is guaranteed to not return null.
+     * 
+     * @return The documents /Root dictionary
+     */
+    public PDDocumentCatalog getDocumentCatalog()
+    {
+<span class="fc bfc" id="L772" title="All 2 branches covered.">        if (documentCatalog == null)</span>
+        {
+<span class="fc" id="L774">            COSDictionary trailer = document.getTrailer();</span>
+<span class="fc" id="L775">            COSDictionary dictionary = trailer.getCOSDictionary(COSName.ROOT);</span>
+<span class="pc bpc" id="L776" title="1 of 2 branches missed.">            if (dictionary != null)</span>
+            {
+<span class="fc" id="L778">                documentCatalog = new PDDocumentCatalog(this, dictionary);</span>
+            }
+            else
+            {
+<span class="nc" id="L782">                documentCatalog = new PDDocumentCatalog(this);</span>
+            }
+        }
+<span class="fc" id="L785">        return documentCatalog;</span>
+    }
+
+    /**
+     * This will tell if this document is encrypted or not.
+     * 
+     * @return true If this document is encrypted.
+     */
+    public boolean isEncrypted()
+    {
+<span class="fc" id="L795">        return document.isEncrypted();</span>
+    }
+
+    /**
+     * This will get the encryption dictionary for this document. This will still return the parameters if the document
+     * was decrypted. As the encryption architecture in PDF documents is pluggable this returns an abstract class,
+     * but the only supported subclass at this time is a
+     * PDStandardEncryption object.
+     *
+     * @return The encryption dictionary(most likely a PDStandardEncryption object)
+     */
+    public PDEncryption getEncryption()
+    {
+<span class="pc bpc" id="L808" title="2 of 4 branches missed.">        if (encryption == null &amp;&amp; isEncrypted())</span>
+        {
+<span class="nc" id="L810">            encryption = new PDEncryption(document.getEncryptionDictionary());</span>
+        }
+<span class="fc" id="L812">        return encryption;</span>
+    }
+
+    /**
+     * This will set the encryption dictionary for this document.
+     * 
+     * @param encryption The encryption dictionary(most likely a PDStandardEncryption object)
+     */
+    public void setEncryptionDictionary(PDEncryption encryption)
+    {
+<span class="fc" id="L822">        this.encryption = encryption;</span>
+<span class="fc" id="L823">    }</span>
+
+    /**
+     * This will return the last signature from the field tree. Note that this may not be the
+     * last in time when empty signature fields are created first but signed after other fields.
+     * 
+     * @return the last signature as &lt;code&gt;PDSignatureField&lt;/code&gt;.
+     */
+    public PDSignature getLastSignatureDictionary()
+    {
+<span class="nc" id="L833">        List&lt;PDSignature&gt; signatureDictionaries = getSignatureDictionaries();</span>
+<span class="nc" id="L834">        int size = signatureDictionaries.size();</span>
+<span class="nc bnc" id="L835" title="All 2 branches missed.">        if (size &gt; 0)</span>
+        {
+<span class="nc" id="L837">            return signatureDictionaries.get(size - 1);</span>
+        }
+<span class="nc" id="L839">        return null;</span>
+    }
+
+    /**
+     * Retrieve all signature fields from the document.
+     * 
+     * @return a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;PDSignatureField&lt;/code&gt;s
+     */
+    public List&lt;PDSignatureField&gt; getSignatureFields()
+    {
+<span class="nc" id="L849">        List&lt;PDSignatureField&gt; fields = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L850">        PDAcroForm acroForm = getDocumentCatalog().getAcroForm(null);</span>
+<span class="nc bnc" id="L851" title="All 2 branches missed.">        if (acroForm != null)</span>
+        {
+<span class="nc bnc" id="L853" title="All 2 branches missed.">            for (PDField field : acroForm.getFieldTree())</span>
+            {
+<span class="nc bnc" id="L855" title="All 2 branches missed.">                if (field instanceof PDSignatureField)</span>
+                {
+<span class="nc" id="L857">                    fields.add((PDSignatureField)field);</span>
+                }
+<span class="nc" id="L859">            }</span>
+        }
+<span class="nc" id="L861">        return fields;</span>
+    }
+
+    /**
+     * Retrieve all signature dictionaries from the document.
+     * 
+     * @return a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;PDSignatureField&lt;/code&gt;s
+     */
+    public List&lt;PDSignature&gt; getSignatureDictionaries()
+    {
+<span class="nc" id="L871">        List&lt;PDSignature&gt; signatures = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L872" title="All 2 branches missed.">        for (PDSignatureField field : getSignatureFields())</span>
+        {
+<span class="nc" id="L874">            COSDictionary value = field.getCOSObject().getCOSDictionary(COSName.V);</span>
+<span class="nc bnc" id="L875" title="All 2 branches missed.">            if (value != null)</span>
+            {
+<span class="nc" id="L877">                signatures.add(new PDSignature(value));</span>
+            }
+<span class="nc" id="L879">        }</span>
+<span class="nc" id="L880">        return signatures;</span>
+    }
+
+    /**
+     * For internal PDFBox use when creating PDF documents: register a TrueTypeFont to make sure it is closed when the
+     * PDDocument is closed to avoid memory leaks. Users don't have to call this method, it is done by the appropriate
+     * PDFont classes.
+     *
+     * @param ttf the TrueTypeFont to be registered
+     */
+    public void registerTrueTypeFontForClosing(TrueTypeFont ttf)
+    {
+<span class="nc" id="L892">        fontsToClose.add(ttf);</span>
+<span class="nc" id="L893">    }</span>
+
+    /**
+     * Returns the list of fonts which will be subset before the document is saved.
+     */
+    Set&lt;PDFont&gt; getFontsToSubset()
+    {
+<span class="nc" id="L900">        return fontsToSubset;</span>
+    }
+    
+    /**
+     * Save the document to a file using default compression.
+     * &lt;p&gt;
+     * Don't use the input file as target as this will produce a corrupted file.
+     * &lt;p&gt;
+     * If encryption has been activated (with {@link #protect(org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy)
+     * protect(ProtectionPolicy)}), do not use the document after saving because the contents are now encrypted.
+     * The same applies if your file was created from parts of another file and that
+     * one is to be used after saving.
+     *
+     * @param fileName The file to save as.
+     *
+     * @throws IOException if the output could not be written
+     */
+    public void save(String fileName) throws IOException
+    {
+<span class="nc" id="L919">        save(new File(fileName));</span>
+<span class="nc" id="L920">    }</span>
+
+    /**
+     * Save the document to a file using default compression.
+     * &lt;p&gt;
+     * Don't use the input file as target as this will produce a corrupted file.
+     * &lt;p&gt;
+     * If encryption has been activated (with {@link #protect(org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy)
+     * protect(ProtectionPolicy)}), do not use the document after saving because the contents are now encrypted.
+     * The same applies if your file was created from parts of another file and that
+     * one is to be used after saving.
+     * 
+     * @param file The file to save as.
+     *
+     * @throws IOException if the output could not be written
+     */
+    public void save(File file) throws IOException
+    {
+<span class="nc" id="L938">        save(file, CompressParameters.DEFAULT_COMPRESSION);</span>
+<span class="nc" id="L939">    }</span>
+
+    /**
+     * This will save the document to an output stream.
+     * &lt;p&gt;
+     * Don't use the input file as target as this will produce a corrupted file.
+     * &lt;p&gt;
+     * If encryption has been activated (with {@link #protect(org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy)
+     * protect(ProtectionPolicy)}), do not use the document after saving because the contents are now encrypted.
+     * The same applies if your file was created from parts of another file and that
+     * one is to be used after saving.
+     *
+     * @param output The stream to write to. It is recommended to wrap it in a {@link java.io.BufferedOutputStream},
+     * unless it is already buffered.
+     *
+     * @throws IOException if the output could not be written
+     */
+    public void save(OutputStream output) throws IOException
+    {
+<span class="nc" id="L958">        save(output, CompressParameters.DEFAULT_COMPRESSION);</span>
+<span class="nc" id="L959">    }</span>
+
+    /**
+     * Save the document using the given compression.
+     * &lt;p&gt;
+     * Don't use the input file as target as this will produce a corrupted file.
+     * &lt;p&gt;
+     * If encryption has been activated (with {@link #protect(org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy)
+     * protect(ProtectionPolicy)}), do not use the document after saving because the contents are now encrypted.
+     * The same applies if your file was created from parts of another file and that
+     * one is to be used after saving.
+     *
+     * @param file The file to save as.
+     * @param compressParameters The parameters for the document's compression.
+     * @throws IOException if the output could not be written
+     */
+    public void save(File file, CompressParameters compressParameters) throws IOException
+    {
+<span class="pc bpc" id="L977" title="3 of 4 branches missed.">        if (file.exists() &amp;&amp; file.length() &gt; 0)</span>
+        {
+<span class="nc" id="L979">            LOG.warn(</span>
+                    &quot;You are overwriting the existing file {}, this will produce a corrupted file if you're also reading from it&quot;,
+<span class="nc" id="L981">                    file.getName());</span>
+        }
+<span class="fc" id="L983">        try (BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(</span>
+                new FileOutputStream(file)))
+        {
+<span class="fc" id="L986">            save(bufferedOutputStream, compressParameters);</span>
+        }
+<span class="fc" id="L988">    }</span>
+
+    /**
+     * Save the document to a file using the given compression.
+     * &lt;p&gt;
+     * Don't use the input file as target as this will produce a corrupted file.
+     * &lt;p&gt;
+     * If encryption has been activated (with {@link #protect(org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy)
+     * protect(ProtectionPolicy)}), do not use the document after saving because the contents are now encrypted.
+     * The same applies if your file was created from parts of another file and that
+     * one is to be used after saving.
+     * 
+     * @param fileName The file to save as.
+     * @param compressParameters The parameters for the document's compression.
+     *
+     * @throws IOException if the output could not be written
+     */
+    public void save(String fileName, CompressParameters compressParameters) throws IOException
+    {
+<span class="nc" id="L1007">        save(new File(fileName), compressParameters);</span>
+<span class="nc" id="L1008">    }</span>
+
+    /**
+     * Save the document using the given compression.
+     * &lt;p&gt;
+     * Don't use the input file as target as this will produce a corrupted file.
+     * &lt;p&gt;
+     * If encryption has been activated (with {@link #protect(org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy)
+     * protect(ProtectionPolicy)}), do not use the document after saving because the contents are now encrypted.
+     * The same applies if your file was created from parts of another file and that
+     * one is to be used after saving.
+     *
+     * @param output The stream to write to. It is recommended to wrap it in a {@link java.io.BufferedOutputStream},
+     * unless it is already buffered.
+     * @param compressParameters The parameters for the document's compression.
+     * @throws IOException if the output could not be written
+     */
+    public void save(OutputStream output, CompressParameters compressParameters)
+            throws IOException
+    {
+<span class="fc bfc" id="L1028" title="All 2 branches covered.">        if (document.isClosed())</span>
+        {
+<span class="fc" id="L1030">            throw new IOException(&quot;Cannot save a document which has been closed&quot;);</span>
+        }
+
+        // object stream compression requires a cross reference stream.
+<span class="pc bpc" id="L1034" title="2 of 4 branches missed.">        document.setIsXRefStream(compressParameters != null //</span>
+                &amp;&amp; CompressParameters.NO_COMPRESSION != compressParameters);
+<span class="fc" id="L1036">        subsetDesignatedFonts();</span>
+
+        // save PDF
+<span class="fc" id="L1039">        COSWriter writer = new COSWriter(output, compressParameters);</span>
+<span class="fc" id="L1040">        writer.write(this);</span>
+<span class="fc" id="L1041">    }</span>
+
+    private void subsetDesignatedFonts() throws IOException
+    {
+        // subset designated fonts
+<span class="pc bpc" id="L1046" title="1 of 2 branches missed.">        for (PDFont font : fontsToSubset)</span>
+        {
+<span class="nc" id="L1048">            font.subset();</span>
+<span class="nc" id="L1049">        }</span>
+<span class="fc" id="L1050">        fontsToSubset.clear();</span>
+<span class="fc" id="L1051">    }</span>
+
+    /**
+     * Save the PDF as an incremental update. This is only possible if the PDF was loaded from a file or a stream, not
+     * if the document was created in PDFBox itself. There must be a path of objects that have
+     * {@link COSUpdateInfo#isNeedToBeUpdated()} set, starting from the document catalog. For signatures this is taken
+     * care by PDFBox itself.
+     * &lt;p&gt;
+     * Other usages of this method are for experienced users only. You will usually never need it. It is useful only if
+     * you are required to keep the current revision and append the changes. A typical use case is changing a signed
+     * file without invalidating the signature.
+     * &lt;p&gt;
+     * If your modification includes annotations, make sure these link back to their page by calling
+     * {@link PDAnnotation#setPage(PDPage)}. Although this is optional,
+     * not doing it
+     * &lt;a href=&quot;https://stackoverflow.com/questions/74836898/&quot;&gt;can cause trouble when PDFs get
+     * signed&lt;/a&gt;. (PDFBox already does this for signature widget annotations)
+     * &lt;p&gt;
+     * Another problem with page-based modifications can occur if the page tree isn't flat: there
+     * won't be an closed update path from the catalog to the page. To fix this, add code like this:
+     * &lt;pre&gt;{@code
+     * COSDictionary parent = page.getCOSObject().getCOSDictionary(COSName.PARENT);
+     * while (parent != null)
+     * {
+     *     parent.setNeedToBeUpdated(true);
+     *     parent = parent.getCOSDictionary(COSName.PARENT);
+     * }
+     * }&lt;/pre&gt;
+     * Don't use the input file as target as this will produce a corrupted file.
+     *
+     * @param output stream to write to. It &lt;i&gt;&lt;b&gt;must never&lt;/b&gt;&lt;/i&gt; point to the source
+     * file or that one will be harmed!
+     * @throws IOException if the output could not be written
+     * @throws IllegalStateException if the document was not loaded from a file or a stream.
+     */
+    public void saveIncremental(OutputStream output) throws IOException
+    {
+<span class="nc" id="L1088">        subsetDesignatedFonts();</span>
+<span class="nc bnc" id="L1089" title="All 2 branches missed.">        if (pdfSource == null)</span>
+        {
+<span class="nc" id="L1091">            throw new IllegalStateException(&quot;document was not loaded from a file or a stream&quot;);</span>
+        }
+<span class="nc" id="L1093">        COSWriter writer = new COSWriter(output, pdfSource);</span>
+<span class="nc" id="L1094">        writer.write(this, signInterface);</span>
+<span class="nc" id="L1095">    }</span>
+
+    /**
+     * Save the PDF as an incremental update. This is only possible if the PDF was loaded from a file or a stream, not
+     * if the document was created in PDFBox itself. This allows to include objects even if there is no path of objects
+     * that have {@link COSUpdateInfo#isNeedToBeUpdated()} set so the incremental update gets smaller. Only dictionaries
+     * are supported; if you need to update other objects classes, then add their parent dictionary.
+     * &lt;p&gt;
+     * This method is for experienced users only. You will usually never need it. It is useful only if you are required
+     * to keep the current revision and append the changes. A typical use case is changing a signed file without
+     * invalidating the signature. To know which objects are getting changed, you need to have some understanding of the
+     * PDF specification, and look at the saved file with an editor to verify that you are updating the correct objects.
+     * You should also inspect the page and document structures of the file with PDFDebugger.
+     * &lt;p&gt;
+     * If your modification includes annotations, make sure these link back to their page by calling
+     * {@link PDAnnotation#setPage(PDPage)}. Although this is optional,
+     * not doing it
+     * &lt;a href=&quot;https://stackoverflow.com/questions/74836898/&quot;&gt;can cause trouble when PDFs get
+     * signed&lt;/a&gt;. (PDFBox already does this for signature widget annotations)
+     * &lt;p&gt;
+     * Don't use the input file as target as this will produce a corrupted file.
+     *
+     * @param output stream to write to. It &lt;i&gt;&lt;b&gt;must never&lt;/b&gt;&lt;/i&gt; point to the source
+     * file or that one will be harmed!
+     * @param objectsToWrite objects that &lt;b&gt;must&lt;/b&gt; be part of the incremental saving.
+     * @throws IOException if the output could not be written
+     * @throws IllegalStateException if the document was not loaded from a file or a stream.
+     */
+    public void saveIncremental(OutputStream output, Set&lt;COSDictionary&gt; objectsToWrite) throws IOException
+    {
+<span class="nc" id="L1125">        subsetDesignatedFonts();</span>
+<span class="nc bnc" id="L1126" title="All 2 branches missed.">        if (pdfSource == null)</span>
+        {
+<span class="nc" id="L1128">            throw new IllegalStateException(&quot;document was not loaded from a file or a stream&quot;);</span>
+        }
+<span class="nc" id="L1130">        COSWriter writer = new COSWriter(output, pdfSource, objectsToWrite);</span>
+<span class="nc" id="L1131">        writer.write(this, signInterface);</span>
+<span class="nc" id="L1132">    }</span>
+
+    /**
+     * Save PDF incrementally without closing for external signature creation scenario. The general sequence is:
+     * 
+     * &lt;pre&gt;
+     *    PDDocument pdDocument = ...;
+     *    OutputStream outputStream = ...;
+     *    SignatureOptions signatureOptions = ...; // options to specify fine tuned signature options or null for defaults
+     *    PDSignature pdSignature = ...;
+     *
+     *    // add signature parameters to be used when creating signature dictionary
+     *    pdDocument.addSignature(pdSignature, signatureOptions);
+     *    // prepare PDF for signing and obtain helper class to be used
+     *    ExternalSigningSupport externalSigningSupport = pdDocument.saveIncrementalForExternalSigning(outputStream);
+     *    // get data to be signed
+     *    InputStream dataToBeSigned = externalSigningSupport.getContent();
+     *    // invoke signature service
+     *    byte[] signature = sign(dataToBeSigned);
+     *    // set resulted CMS signature
+     *    externalSigningSupport.setSignature(signature);
+     *
+     *    // last step is to close the document
+     *    pdDocument.close();
+     * &lt;/pre&gt;
+     * &lt;p&gt;
+     * Note that after calling this method, only {@code close()} method may invoked for {@code PDDocument} instance and
+     * only AFTER {@link ExternalSigningSupport} instance is used.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * Don't use the input file as target as this will produce a corrupted file.
+     *
+     * @param output stream to write the final PDF. It &lt;i&gt;&lt;b&gt;must
+     * never&lt;/b&gt;&lt;/i&gt; point to the source file or that one will be harmed!
+     * @return instance to be used for external signing and setting CMS signature
+     * @throws IOException if the output could not be written
+     * @throws IllegalStateException if the document was not loaded from a file or a stream or signature options were
+     * not set.
+     */
+    public ExternalSigningSupport saveIncrementalForExternalSigning(OutputStream output) throws IOException
+    {
+<span class="nc" id="L1173">        subsetDesignatedFonts();</span>
+<span class="nc bnc" id="L1174" title="All 2 branches missed.">        if (pdfSource == null)</span>
+        {
+<span class="nc" id="L1176">            throw new IllegalStateException(&quot;document was not loaded from a file or a stream&quot;);</span>
+        }
+        // PDFBOX-3978: getLastSignatureDictionary() not helpful if signing into a template
+        // that is not the last signature. So give higher priority to signature with update flag.
+<span class="nc" id="L1180">        PDSignature foundSignature = null;</span>
+<span class="nc bnc" id="L1181" title="All 2 branches missed.">        for (PDSignature sig : getSignatureDictionaries())</span>
+        {
+<span class="nc" id="L1183">            foundSignature = sig;</span>
+<span class="nc bnc" id="L1184" title="All 2 branches missed.">            if (sig.getCOSObject().isNeedToBeUpdated())</span>
+            {
+<span class="nc" id="L1186">                break;</span>
+            }
+<span class="nc" id="L1188">        }</span>
+
+<span class="nc bnc" id="L1190" title="All 2 branches missed.">        if (foundSignature == null)</span>
+        {
+<span class="nc" id="L1192">            throw new IllegalStateException(&quot;document does not contain signature fields&quot;);</span>
+        }
+
+<span class="nc" id="L1195">        int[] byteRange = foundSignature.getByteRange();</span>
+<span class="nc bnc" id="L1196" title="All 2 branches missed.">        if (!Arrays.equals(byteRange, RESERVE_BYTE_RANGE))</span>
+        {
+<span class="nc" id="L1198">            throw new IllegalStateException(&quot;signature reserve byte range has been changed &quot;</span>
+                    + &quot;after addSignature(), please set the byte range that existed after addSignature()&quot;);
+        }
+<span class="nc" id="L1201">        COSWriter writer = new COSWriter(output, pdfSource);</span>
+<span class="nc" id="L1202">        writer.write(this);</span>
+<span class="nc" id="L1203">        signingSupport = new SigningSupport(writer);</span>
+<span class="nc" id="L1204">        return signingSupport;</span>
+    }
+
+    /**
+     * Returns the page at the given 0-based index.
+     * &lt;p&gt;
+     * This method is too slow to get all the pages from a large PDF document
+     * (1000 pages or more). For such documents, use the iterator of
+     * {@link PDDocument#getPages()} instead.
+     *
+     * @param pageIndex the 0-based page index
+     * @return the page at the given index.
+     * 
+     * @throws IllegalStateException if the requested index isn't found or doesn't point to a valid
+     * page dictionary.
+     * @throws IndexOutOfBoundsException if the requested index is higher than the page count.
+     */
+    public PDPage getPage(int pageIndex) // todo: REPLACE most calls to this method with BELOW method
+    {
+<span class="nc" id="L1223">        return getDocumentCatalog().getPages().get(pageIndex);</span>
+    }
+
+    /**
+     * Returns the page tree.
+     * 
+     * @return the page tree
+     */
+    public PDPageTree getPages()
+    {
+<span class="fc" id="L1233">        return getDocumentCatalog().getPages();</span>
+    }
+
+    /**
+     * This will return the total page count of the PDF document.
+     * 
+     * @return The total number of pages in the PDF document.
+     */
+    public int getNumberOfPages()
+    {
+<span class="fc" id="L1243">        return getDocumentCatalog().getPages().getCount();</span>
+    }
+
+    /**
+     * This will close the underlying COSDocument object.
+     * 
+     * @throws IOException If there is an error releasing resources.
+     */
+    @Override
+    public void close() throws IOException
+    {
+<span class="pc bpc" id="L1254" title="1 of 2 branches missed.">        if (!document.isClosed())</span>
+        {
+             // Make sure that:
+            // - first Exception is kept
+            // - all IO resources are closed
+            // - there's a way to see which errors occurred
+
+<span class="fc" id="L1261">            IOException firstException = null;</span>
+
+            // close resources and COSWriter
+<span class="pc bpc" id="L1264" title="1 of 2 branches missed.">            if (signingSupport != null)</span>
+            {
+<span class="nc" id="L1266">                firstException = IOUtils.closeAndLogException(signingSupport, LOG, &quot;SigningSupport&quot;, firstException);</span>
+            }
+
+            // close all intermediate I/O streams
+<span class="fc" id="L1270">            firstException = IOUtils.closeAndLogException(document, LOG, &quot;COSDocument&quot;, firstException);</span>
+            
+            // close the source PDF stream, if we read from one
+<span class="pc bpc" id="L1273" title="1 of 2 branches missed.">            if (pdfSource != null)</span>
+            {
+<span class="fc" id="L1275">                firstException = IOUtils.closeAndLogException(pdfSource, LOG, &quot;RandomAccessRead pdfSource&quot;, firstException);</span>
+            }
+
+            // close fonts
+<span class="pc bpc" id="L1279" title="1 of 2 branches missed.">            for (TrueTypeFont ttf : fontsToClose)</span>
+            {
+<span class="nc" id="L1281">                firstException = IOUtils.closeAndLogException(ttf, LOG, &quot;TrueTypeFont&quot;, firstException);</span>
+<span class="nc" id="L1282">            }</span>
+
+            // rethrow first exception to keep method contract
+<span class="pc bpc" id="L1285" title="1 of 2 branches missed.">            if (firstException != null)</span>
+            {
+<span class="nc" id="L1287">                throw firstException;</span>
+            }
+        }
+<span class="fc" id="L1290">    }</span>
+
+    /**
+     * Protects the document with a protection policy. The document content will be really
+     * encrypted when it will be saved. This method only marks the document for encryption. It also
+     * calls {@link #setAllSecurityToBeRemoved(boolean)} with a false argument if it was set to true
+     * previously and logs a warning.
+     * &lt;p&gt;
+     * Do not use the document after saving, because the structures are encrypted.
+     * The same applies if your file was created from parts of another file and that
+     * one is to be used after saving.
+     *
+     * @see org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy
+     * @see org.apache.pdfbox.pdmodel.encryption.PublicKeyProtectionPolicy
+     *
+     * @param policy The protection policy.
+     * @throws IOException if there isn't any suitable security handler.
+     */
+    public void protect(ProtectionPolicy policy) throws IOException
+    {
+<span class="nc bnc" id="L1310" title="All 2 branches missed.">        if (isAllSecurityToBeRemoved())</span>
+        {
+<span class="nc" id="L1312">            LOG.warn(&quot;do not call setAllSecurityToBeRemoved(true) before calling protect(), &quot;</span>
+                    + &quot;as protect() implies setAllSecurityToBeRemoved(false)&quot;);
+<span class="nc" id="L1314">            setAllSecurityToBeRemoved(false);</span>
+        }
+        
+<span class="nc bnc" id="L1317" title="All 2 branches missed.">        if (!isEncrypted())</span>
+        {
+<span class="nc" id="L1319">            encryption = new PDEncryption();</span>
+        }
+
+<span class="nc" id="L1322">        SecurityHandler&lt;ProtectionPolicy&gt; securityHandler =</span>
+<span class="nc" id="L1323">                SecurityHandlerFactory.INSTANCE.newSecurityHandlerForPolicy(policy);</span>
+<span class="nc bnc" id="L1324" title="All 2 branches missed.">        if (securityHandler == null)</span>
+        {
+<span class="nc" id="L1326">            throw new IOException(&quot;No security handler for policy &quot; + policy);</span>
+        }
+
+<span class="nc" id="L1329">        getEncryption().setSecurityHandler(securityHandler);</span>
+<span class="nc" id="L1330">    }</span>
+
+    /**
+     * Returns the access permissions granted when the document was decrypted. If the document was not decrypted this
+     * method returns the access permission for a document owner (ie can do everything). The returned object is in read
+     * only mode so that permissions cannot be changed. Methods providing access to content should rely on this object
+     * to verify if the current user is allowed to proceed.
+     * 
+     * @return the access permissions for the current user on the document.
+     */
+    public AccessPermission getCurrentAccessPermission()
+    {
+<span class="nc bnc" id="L1342" title="All 2 branches missed.">        if (accessPermission == null)</span>
+        {
+<span class="nc" id="L1344">            accessPermission = AccessPermission.getOwnerAccessPermission();</span>
+        }
+<span class="nc" id="L1346">        return accessPermission;</span>
+    }
+
+    /**
+     * Indicates if all security is removed or not when writing the pdf.
+     * 
+     * @return returns true if all security shall be removed otherwise false
+     */
+    public boolean isAllSecurityToBeRemoved()
+    {
+<span class="fc" id="L1356">        return allSecurityToBeRemoved;</span>
+    }
+
+    /**
+     * Activates/Deactivates the removal of all security when writing the pdf.
+     * 
+     * @param removeAllSecurity remove all security if set to true
+     */
+    public void setAllSecurityToBeRemoved(boolean removeAllSecurity)
+    {
+<span class="nc" id="L1366">        allSecurityToBeRemoved = removeAllSecurity;</span>
+<span class="nc" id="L1367">    }</span>
+
+    /**
+     * Provides the document ID. This is not the trailer document ID but the time used to create it.
+     * Use {@link COSDocument#getDocumentID()} for the trailer document ID. Read
+     * &lt;a href=&quot;https://issues.apache.org/jira/browse/PDFBOX-1613&quot;&gt;PDFBOX-1613&lt;/a&gt; for more details
+     * about the purpose.
+     *
+     * @return the document ID
+     */
+    public Long getDocumentId()
+    {
+<span class="fc" id="L1379">        return documentId;</span>
+    }
+
+    /**
+     * Sets the document ID to the given value. This is not the trailer document ID but the time
+     * used to create it. Use {@link COSDocument#setDocumentID(COSArray)} for the trailer document ID. Read
+     * &lt;a href=&quot;https://issues.apache.org/jira/browse/PDFBOX-1613&quot;&gt;PDFBOX-1613&lt;/a&gt; for more details
+     * about the purpose.
+     *
+     * @param docId the new document ID
+     */
+    public void setDocumentId(Long docId)
+    {
+<span class="nc" id="L1392">        documentId = docId;</span>
+<span class="nc" id="L1393">    }</span>
+    
+    /**
+     * Returns the PDF specification version this document conforms to.
+     *
+     * @return the PDF version (e.g. 1.4f)
+     */
+    public float getVersion()
+    {
+<span class="nc" id="L1402">        float headerVersionFloat = getDocument().getVersion();</span>
+        // there may be a second version information in the document catalog starting with 1.4
+<span class="nc bnc" id="L1404" title="All 2 branches missed.">        if (headerVersionFloat &gt;= 1.4f)</span>
+        {
+<span class="nc" id="L1406">            String catalogVersion = getDocumentCatalog().getVersion();</span>
+<span class="nc" id="L1407">            float catalogVersionFloat = -1;</span>
+<span class="nc bnc" id="L1408" title="All 2 branches missed.">            if (catalogVersion != null)</span>
+            {
+                try
+                {
+<span class="nc" id="L1412">                    catalogVersionFloat = Float.parseFloat(catalogVersion);</span>
+                }
+<span class="nc" id="L1414">                catch(NumberFormatException exception)</span>
+                {
+<span class="nc" id="L1416">                    LOG.error(&quot;Can't extract the version number of the document catalog.&quot;, exception);</span>
+<span class="nc" id="L1417">                }</span>
+            }
+            // the most recent version is the correct one
+<span class="nc" id="L1420">            return Math.max(catalogVersionFloat, headerVersionFloat);</span>
+        }
+        else
+        {
+<span class="nc" id="L1424">            return headerVersionFloat;</span>
+        }
+    }
+
+    /**
+     * Sets the PDF specification version for this document.
+     *
+     * @param newVersion the new PDF version (e.g. 1.4f)
+     * 
+     */
+    public void setVersion(float newVersion)
+    {
+<span class="nc" id="L1436">        float currentVersion = getVersion();</span>
+        // nothing to do?
+<span class="nc bnc" id="L1438" title="All 2 branches missed.">        if (Float.compare(newVersion,currentVersion) == 0)</span>
+        {
+<span class="nc" id="L1440">            return;</span>
+        }
+        // the version can't be downgraded
+<span class="nc bnc" id="L1443" title="All 2 branches missed.">        if (newVersion &lt; currentVersion)</span>
+        {
+<span class="nc" id="L1445">            LOG.error(&quot;It's not allowed to downgrade the version of a pdf.&quot;);</span>
+<span class="nc" id="L1446">            return;</span>
+        }
+        // update the catalog version if the document version is &gt;= 1.4
+<span class="nc bnc" id="L1449" title="All 2 branches missed.">        if (getDocument().getVersion() &gt;= 1.4f)</span>
+        {
+<span class="nc" id="L1451">            getDocumentCatalog().setVersion(Float.toString(newVersion));</span>
+        }
+        else
+        {
+            // versions &lt; 1.4f have a version header only
+<span class="nc" id="L1456">            getDocument().setVersion(newVersion);</span>
+        }
+<span class="nc" id="L1458">    }</span>
+
+    /**
+     * Returns the resource cache associated with this document, or null if there is none.
+     * 
+     * @return the resource cache of the document
+     */
+    public ResourceCache getResourceCache()
+    {
+<span class="nc" id="L1467">        return resourceCache;</span>
+    }
+
+    /**
+     * Sets the resource cache associated with this document.
+     * 
+     * @param resourceCache A resource cache, or null.
+     */
+    public void setResourceCache(ResourceCache resourceCache)
+    {
+<span class="nc" id="L1477">        this.resourceCache = resourceCache;</span>
+<span class="nc" id="L1478">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

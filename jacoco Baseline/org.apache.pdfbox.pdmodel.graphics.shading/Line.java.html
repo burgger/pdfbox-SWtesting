@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Line.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.shading</a> &gt; <span class="el_source">Line.java</span></div><h1>Line.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2014 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.shading;
+
+import java.awt.Point;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * This class describes a rasterized line. This was done as part of GSoC2014,
+ * Tilman Hausherr is the mentor.
+ *
+ * @author Shaola Ren
+ */
+class Line
+{
+    private final Point point0;
+    private final Point point1;
+    private final float[] color0;
+    private final float[] color1;
+
+    protected final Set&lt;Point&gt; linePoints; // all the points in this rasterized line
+
+    /**
+     * Constructor of class Line.
+     *
+     * @param p0 one end of a line
+     * @param p1 the other end of the line
+     * @param c0 color of point p0
+     * @param c1 color of point p1
+     */
+    Line(Point p0, Point p1, float[] c0, float[] c1)
+<span class="nc" id="L46">    {</span>
+<span class="nc" id="L47">        point0 = p0;</span>
+<span class="nc" id="L48">        point1 = p1;</span>
+<span class="nc" id="L49">        color0 = c0.clone();</span>
+<span class="nc" id="L50">        color1 = c1.clone();</span>
+<span class="nc" id="L51">        linePoints = calcLine(point0.x, point0.y, point1.x, point1.y);</span>
+<span class="nc" id="L52">    }</span>
+
+    /**
+     * Calculate the points of a line with Bresenham's line algorithm
+     * &lt;a
+     * href=&quot;http://en.wikipedia.org/wiki/Bresenham's_line_algorithm&quot;&gt;Bresenham's
+     * line algorithm&lt;/a&gt;
+     *
+     * @param x0 coordinate
+     * @param y0 coordinate
+     * @param x1 coordinate
+     * @param y1 coordinate
+     * @return all the points on the rasterized line from (x0, y0) to (x1, y1)
+     */
+    private Set&lt;Point&gt; calcLine(int x0, int y0, int x1, int y1)
+    {
+<span class="nc" id="L68">        Set&lt;Point&gt; points = new HashSet&lt;&gt;(3);</span>
+<span class="nc" id="L69">        int dx = Math.abs(x1 - x0);</span>
+<span class="nc" id="L70">        int dy = Math.abs(y1 - y0);</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        int sx = x0 &lt; x1 ? 1 : -1;</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        int sy = y0 &lt; y1 ? 1 : -1;</span>
+<span class="nc" id="L73">        int err = dx - dy;</span>
+        while (true)
+        {
+<span class="nc" id="L76">            points.add(new Point(x0, y0));</span>
+<span class="nc bnc" id="L77" title="All 4 branches missed.">            if (x0 == x1 &amp;&amp; y0 == y1)</span>
+            {
+<span class="nc" id="L79">                break;</span>
+            }
+<span class="nc" id="L81">            int e2 = 2 * err;</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">            if (e2 &gt; -dy)</span>
+            {
+<span class="nc" id="L84">                err -= dy;</span>
+<span class="nc" id="L85">                x0 += sx;</span>
+            }
+<span class="nc bnc" id="L87" title="All 2 branches missed.">            if (e2 &lt; dx)</span>
+            {
+<span class="nc" id="L89">                err += dx;</span>
+<span class="nc" id="L90">                y0 += sy;</span>
+            }
+<span class="nc" id="L92">        }</span>
+<span class="nc" id="L93">        return points;</span>
+    }
+
+    /**
+     * Calculate the color of a point on a rasterized line by linear
+     * interpolation.
+     *
+     * @param p target point, p should always be contained in linePoints
+     * @return color
+     */
+    protected float[] calcColor(Point p)
+    {
+<span class="nc bnc" id="L105" title="All 4 branches missed.">        if (point0.x == point1.x &amp;&amp; point0.y == point1.y)</span>
+        {
+<span class="nc" id="L107">            return color0;</span>
+        }
+<span class="nc" id="L109">        int numberOfColorComponents = color0.length;</span>
+<span class="nc" id="L110">        float[] pc = new float[numberOfColorComponents];</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">        if (point0.x == point1.x)</span>
+        {
+<span class="nc" id="L113">            float l = point1.y - point0.y;</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">            for (int i = 0; i &lt; numberOfColorComponents; i++)</span>
+            {
+<span class="nc" id="L116">                pc[i] = (color0[i] * (point1.y - p.y) / l</span>
+                        + color1[i] * (p.y - point0.y) / l);
+            }
+<span class="nc" id="L119">        }</span>
+        else
+        {
+<span class="nc" id="L122">            float l = point1.x - point0.x;</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">            for (int i = 0; i &lt; numberOfColorComponents; i++)</span>
+            {
+<span class="nc" id="L125">                pc[i] = (color0[i] * (point1.x - p.x) / l</span>
+                        + color1[i] * (p.x - point0.x) / l);
+            }
+        }
+<span class="nc" id="L129">        return pc;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

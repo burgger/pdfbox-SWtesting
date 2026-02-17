@@ -1,0 +1,496 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFStreamParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdfparser</a> &gt; <span class="el_source">PDFStreamParser.java</span></div><h1>PDFStreamParser.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdfparser;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.contentstream.PDContentStream;
+import org.apache.pdfbox.contentstream.operator.Operator;
+import org.apache.pdfbox.contentstream.operator.OperatorName;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSBoolean;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNull;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+
+/**
+ * This will parse a PDF byte stream and extract operands and such.
+ *
+ * @author Ben Litchfield
+ */
+public class PDFStreamParser extends COSParser
+{
+    /**
+     * Log instance.
+     */
+<span class="nc" id="L48">    private static final Logger LOG = LogManager.getLogger(PDFStreamParser.class);</span>
+
+<span class="nc" id="L50">    private static final Pattern NUMBER_PATTERN = Pattern.compile(&quot;^\\d*\\.?\\d*$&quot;);</span>
+    private static final int MAX_BIN_CHAR_TEST_LENGTH = 10;
+<span class="nc" id="L52">    private final byte[] binCharTestArr = new byte[MAX_BIN_CHAR_TEST_LENGTH];</span>
+<span class="nc" id="L53">    private int inlineImageDepth = 0;</span>
+<span class="nc" id="L54">    private long inlineOffset = 0;</span>
+    
+    /**
+     * Constructor.
+     *
+     * @param pdContentstream The content stream to parse.
+     * @throws IOException If there is an error initializing the stream.
+     */
+    public PDFStreamParser(PDContentStream pdContentstream) throws IOException
+    {
+<span class="nc" id="L64">        super(pdContentstream.getContentsForStreamParsing());</span>
+<span class="nc" id="L65">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param bytes the bytes to parse.
+     * @throws IOException If there is an error initializing the stream.
+     */
+    public PDFStreamParser(byte[] bytes) throws IOException
+    {
+<span class="nc" id="L75">        super(new RandomAccessReadBuffer(bytes));</span>
+<span class="nc" id="L76">    }</span>
+
+    /**
+     * This will parse all the tokens in the stream. This will close the stream when it is finished parsing.
+     *
+     * @return All of the tokens in the stream.
+     * @throws IOException If there is an error while parsing the stream.
+     */
+    public List&lt;Object&gt; parse() throws IOException
+    {
+<span class="nc" id="L86">        List&lt;Object&gt; streamObjects = new ArrayList&lt;&gt;(100);</span>
+        Object token;
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        while( (token = parseNextToken()) != null )</span>
+        {
+<span class="nc" id="L90">            streamObjects.add( token );</span>
+        }
+<span class="nc" id="L92">        return streamObjects;</span>
+    }
+
+    /**
+     * This will parse the next token in the stream.
+     *
+     * @return The next token in the stream or null if there are no more tokens in the stream.
+     *
+     * @throws IOException If an io error occurs while parsing the stream.
+     */
+    public Object parseNextToken() throws IOException
+    {
+<span class="nc bnc" id="L104" title="All 2 branches missed.">        if (source.isClosed())</span>
+        {
+<span class="nc" id="L106">            return null;</span>
+        }
+<span class="nc" id="L108">        skipSpaces();</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        if (source.isEOF())</span>
+        {
+<span class="nc" id="L111">            close();</span>
+<span class="nc" id="L112">            return null;</span>
+        }
+<span class="nc" id="L114">        char c = (char) source.peek();</span>
+<span class="nc bnc" id="L115" title="All 11 branches missed.">        switch (c)</span>
+        {
+            case '&lt;':
+                // pull off first left bracket
+<span class="nc" id="L119">                source.read();</span>
+                // check for second left bracket
+<span class="nc" id="L121">                c = (char) source.peek();</span>
+
+<span class="nc bnc" id="L123" title="All 2 branches missed.">                if (c == '&lt;')</span>
+                {
+                    // put back first bracket
+<span class="nc" id="L126">                    source.rewind(1);</span>
+                    try
+                    {
+<span class="nc" id="L129">                        return parseCOSDictionary(true);</span>
+                    }
+<span class="nc" id="L131">                    catch (IOException exception)</span>
+                    {
+<span class="nc" id="L133">                        LOG.warn(&quot;Stop reading invalid dictionary from content stream at offset {}&quot;,</span>
+<span class="nc" id="L134">                                source.getPosition());</span>
+<span class="nc" id="L135">                        close();</span>
+<span class="nc" id="L136">                        return null;</span>
+                    }
+                }
+                else
+                {
+<span class="nc" id="L141">                    return parseCOSHexString();</span>
+                }
+            case '[':
+                // array
+                try
+                {
+<span class="nc" id="L147">                    return parseCOSArray();</span>
+                }
+<span class="nc" id="L149">                catch (IOException exception)</span>
+                {
+<span class="nc" id="L151">                    LOG.warn(&quot;Stop reading invalid array from content stream at offset {}&quot;,</span>
+<span class="nc" id="L152">                            source.getPosition());</span>
+<span class="nc" id="L153">                    close();</span>
+<span class="nc" id="L154">                    return null;</span>
+                }
+            case '(':
+                // string
+<span class="nc" id="L158">                return parseCOSLiteralString();</span>
+            case '/':
+                // name
+<span class="nc" id="L161">                return parseCOSName();</span>
+            case 'n':   
+                // null
+<span class="nc" id="L164">                String nullString = readString();</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">                if( nullString.equals( &quot;null&quot;) )</span>
+                {
+<span class="nc" id="L167">                    return COSNull.NULL;</span>
+                }
+                else
+                {
+<span class="nc" id="L171">                    return Operator.getOperator(nullString);</span>
+                }
+            case 't':
+            case 'f':
+<span class="nc" id="L175">                String next = readString();</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">                if( next.equals( &quot;true&quot; ) )</span>
+                {
+<span class="nc" id="L178">                    return COSBoolean.TRUE;</span>
+                }
+<span class="nc bnc" id="L180" title="All 2 branches missed.">                else if( next.equals( &quot;false&quot; ) )</span>
+                {
+<span class="nc" id="L182">                    return COSBoolean.FALSE;</span>
+                }
+                else
+                {
+<span class="nc" id="L186">                    return Operator.getOperator(next);</span>
+                }
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case '-':
+            case '+':
+            case '.':
+                /* We will be filling buf with the rest of the number.  Only
+                 * allow 1 &quot;.&quot; and &quot;-&quot; and &quot;+&quot; at start of number. */
+<span class="nc" id="L203">                StringBuilder buf = new StringBuilder();</span>
+<span class="nc" id="L204">                buf.append( c );</span>
+<span class="nc" id="L205">                source.read();</span>
+                
+                // Ignore double negative (this is consistent with Adobe Reader)
+<span class="nc bnc" id="L208" title="All 4 branches missed.">                if (c == '-' &amp;&amp; source.peek() == c)</span>
+                {
+<span class="nc" id="L210">                    source.read();</span>
+                }
+
+<span class="nc bnc" id="L213" title="All 2 branches missed.">                boolean dotNotRead = c != '.';</span>
+<span class="nc bnc" id="L214" title="All 8 branches missed.">                while (Character.isDigit(c = (char) source.peek()) || dotNotRead &amp;&amp; c == '.'</span>
+                        || c == '-')
+                {
+<span class="nc bnc" id="L217" title="All 2 branches missed.">                    if (c != '-')</span>
+                    {
+                        // PDFBOX-4064: ignore &quot;-&quot; in the middle of a number
+<span class="nc" id="L220">                        buf.append(c);</span>
+                    }
+<span class="nc" id="L222">                    source.read();</span>
+
+<span class="nc bnc" id="L224" title="All 4 branches missed.">                    if (dotNotRead &amp;&amp; c == '.')</span>
+                    {
+<span class="nc" id="L226">                        dotNotRead = false;</span>
+                    }
+                }
+<span class="nc" id="L229">                String s = buf.toString();</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">                if (&quot;+&quot;.equals(s))</span>
+                {
+                    // PDFBOX-5906
+<span class="nc" id="L233">                    LOG.warn(&quot;isolated '+' is ignored&quot;);</span>
+<span class="nc" id="L234">                    return COSNull.NULL;</span>
+                }
+<span class="nc" id="L236">                return COSNumber.get(s);</span>
+            case 'B':
+<span class="nc" id="L238">                String nextOperator = readString();</span>
+<span class="nc" id="L239">                Operator beginImageOP = Operator.getOperator(nextOperator);</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">                if (nextOperator.equals(OperatorName.BEGIN_INLINE_IMAGE))</span>
+                {
+<span class="nc" id="L242">                    inlineImageDepth++;</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">                    if (inlineImageDepth &gt; 1)</span>
+                    {
+                        // PDFBOX-6038
+<span class="nc" id="L246">                        throw new IOException(&quot;Nested '&quot; + OperatorName.BEGIN_INLINE_IMAGE +</span>
+<span class="nc" id="L247">                                &quot;' operator not allowed at offset &quot; + source.getPosition() + &quot;, first: &quot; + inlineOffset);</span>
+                    }
+                    else
+                    {
+<span class="nc" id="L251">                        inlineOffset = source.getPosition();</span>
+                    }
+<span class="nc" id="L253">                    COSDictionary imageParams = new COSDictionary();</span>
+<span class="nc" id="L254">                    beginImageOP.setImageParameters( imageParams );</span>
+<span class="nc" id="L255">                    Object nextToken = null;</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">                    while( (nextToken = parseNextToken()) instanceof COSName )</span>
+                    {
+<span class="nc" id="L258">                        Object value = parseNextToken();</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">                        if (!(value instanceof COSBase))</span>
+                        {
+<span class="nc" id="L261">                            LOG.warn(&quot;Unexpected token in inline image dictionary at offset {}&quot;,</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">                                    source.isClosed() ? &quot;EOF&quot; : source.getPosition());</span>
+<span class="nc" id="L263">                            break;</span>
+                        }
+<span class="nc" id="L265">                        imageParams.setItem( (COSName)nextToken, (COSBase)value );</span>
+<span class="nc" id="L266">                    }</span>
+                    //final token will be the image data, maybe??
+<span class="nc bnc" id="L268" title="All 2 branches missed.">                    if (nextToken instanceof Operator)</span>
+                    {
+<span class="nc" id="L270">                        Operator imageData = (Operator) nextToken;</span>
+<span class="nc bnc" id="L271" title="All 4 branches missed.">                        if (imageData.getImageData() == null || imageData.getImageData().length == 0)</span>
+                        {
+<span class="nc" id="L273">                            LOG.warn(&quot;empty inline image at stream offset {}&quot;,</span>
+<span class="nc bnc" id="L274" title="All 2 branches missed.">                                    (source.isClosed() ? &quot;EOF&quot; : source.getPosition()));</span>
+                        }
+<span class="nc" id="L276">                        beginImageOP.setImageData(imageData.getImageData());</span>
+<span class="nc" id="L277">                        inlineImageDepth--;</span>
+<span class="nc" id="L278">                    }</span>
+                    else
+                    {
+<span class="nc" id="L281">                        LOG.warn(&quot;nextToken {} at position {}, expected {}?!&quot;, </span>
+<span class="nc bnc" id="L282" title="All 2 branches missed.">                                nextToken, (source.isClosed() ? &quot;EOF&quot; : source.getPosition()), </span>
+                                OperatorName.BEGIN_INLINE_IMAGE_DATA);
+                    }
+                }
+<span class="nc" id="L286">                return beginImageOP;</span>
+            case 'I':
+                //Special case for ID operator
+<span class="nc" id="L289">                String id = Character.toString((char) source.read()) + (char) source.read();</span>
+<span class="nc bnc" id="L290" title="All 2 branches missed.">                if (!id.equals(OperatorName.BEGIN_INLINE_IMAGE_DATA))</span>
+                {
+<span class="nc" id="L292">                    long currentPosition = source.getPosition();</span>
+<span class="nc" id="L293">                    close();</span>
+<span class="nc" id="L294">                    throw new IOException( &quot;Error: Expected operator 'ID' actual='&quot; + id +</span>
+                            &quot;' at stream offset &quot; + currentPosition);
+                }
+<span class="nc" id="L297">                ByteArrayOutputStream imageData = new ByteArrayOutputStream();</span>
+                // skip one line break (CR, LF or CRLF) or any one-byte whitespace
+<span class="nc bnc" id="L299" title="All 4 branches missed.">                if (!skipLinebreak() &amp;&amp; isWhitespace())</span>
+                {
+                    // pull off the whitespace character
+<span class="nc" id="L302">                    source.read();</span>
+                }
+<span class="nc" id="L304">                int lastByte = source.read();</span>
+<span class="nc" id="L305">                int currentByte = source.read();</span>
+                // PDF spec is kinda unclear about this. Should a whitespace
+                // always appear before EI? Not sure, so that we just read
+                // until EI&lt;whitespace&gt;.
+                // Be aware not all kind of whitespaces are allowed here. see PDFBOX-1561
+<span class="nc bnc" id="L310" title="All 4 branches missed.">                while( !(lastByte == 'E' &amp;&amp;</span>
+                         currentByte == 'I' &amp;&amp;
+<span class="nc bnc" id="L312" title="All 2 branches missed.">                         hasNextSpaceOrReturn() &amp;&amp;</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">                    hasNoFollowingBinData()) &amp;&amp;</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">                    !isEOF())</span>
+                {
+<span class="nc" id="L316">                    imageData.write( lastByte );</span>
+<span class="nc" id="L317">                    lastByte = currentByte;</span>
+<span class="nc" id="L318">                    currentByte = source.read();</span>
+                }
+                // the EI operator isn't unread, as it won't be processed anyway
+<span class="nc" id="L321">                Operator beginImageDataOP = Operator</span>
+<span class="nc" id="L322">                        .getOperator(OperatorName.BEGIN_INLINE_IMAGE_DATA);</span>
+                // save the image data to the operator, so that it can be accessed later
+<span class="nc" id="L324">                beginImageDataOP.setImageData(imageData.toByteArray());</span>
+<span class="nc" id="L325">                return beginImageDataOP;</span>
+            case ']':
+                // some ']' around without its previous '['
+                // this means a PDF is somewhat corrupt but we will continue to parse.
+<span class="nc" id="L329">                source.read();</span>
+                
+                // must be a better solution than null...
+<span class="nc" id="L332">                return COSNull.NULL;</span>
+            default:
+                // we must be an operator
+<span class="nc" id="L335">                String operator = readOperator().trim();</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">                if (!operator.isEmpty())</span>
+                {
+<span class="nc" id="L338">                    return Operator.getOperator(operator);</span>
+                }
+        }
+<span class="nc" id="L341">        return null;</span>
+    }
+
+    /**
+     * Looks up an amount of bytes if they contain only ASCII characters (no
+     * control sequences etc.), and that these ASCII characters begin with a
+     * sequence of 1-3 non-blank characters between blanks
+     *
+     * @return &lt;code&gt;true&lt;/code&gt; if next bytes are probably printable ASCII
+     * characters starting with a PDF operator, otherwise &lt;code&gt;false&lt;/code&gt;
+     */
+    private boolean hasNoFollowingBinData() throws IOException
+    {
+        // as suggested in PDFBOX-1164
+<span class="nc" id="L355">        final int readBytes = source.read(binCharTestArr, 0, MAX_BIN_CHAR_TEST_LENGTH);</span>
+<span class="nc" id="L356">        boolean noBinData = true;</span>
+<span class="nc" id="L357">        int startOpIdx = -1;</span>
+<span class="nc" id="L358">        int endOpIdx = -1;</span>
+<span class="nc" id="L359">        String s = &quot;&quot;;</span>
+
+<span class="nc" id="L361">        LOG.debug(&quot;String after EI: '{}'&quot;, () -&gt; new String(binCharTestArr, StandardCharsets.US_ASCII));</span>
+
+<span class="nc bnc" id="L363" title="All 2 branches missed.">        if (readBytes &gt; 0)</span>
+        {
+<span class="nc bnc" id="L365" title="All 2 branches missed.">            for (int bIdx = 0; bIdx &lt; readBytes; bIdx++)</span>
+            {
+<span class="nc" id="L367">                final byte b = binCharTestArr[bIdx];</span>
+<span class="nc bnc" id="L368" title="All 10 branches missed.">                if (b != 0 &amp;&amp; b &lt; 0x09 || b &gt; 0x0a &amp;&amp; b &lt; 0x20 &amp;&amp; b != 0x0d)</span>
+                {
+                    // control character or &gt; 0x7f -&gt; we have binary data
+<span class="nc" id="L371">                    noBinData = false;</span>
+<span class="nc" id="L372">                    break;</span>
+                }
+                // find the start of a PDF operator
+<span class="nc bnc" id="L375" title="All 12 branches missed.">                if (startOpIdx == -1 &amp;&amp; !(b == 0 || b == 9 || b == 0x20 || b == 0x0a || b == 0x0d))</span>
+                {
+<span class="nc" id="L377">                    startOpIdx = bIdx;</span>
+                }
+<span class="nc bnc" id="L379" title="All 14 branches missed.">                else if (startOpIdx != -1 &amp;&amp; endOpIdx == -1 &amp;&amp;</span>
+                         (b == 0 || b == 9 || b == 0x20 || b == 0x0a || b == 0x0d))
+                {
+<span class="nc" id="L382">                    endOpIdx = bIdx;</span>
+                }
+            }
+
+            // PDFBOX-3742: just assuming that 1-3 non blanks is a PDF operator isn't enough
+<span class="nc bnc" id="L387" title="All 6 branches missed.">            if (noBinData &amp;&amp; endOpIdx != -1 &amp;&amp; startOpIdx != -1)</span>
+            {
+                // usually, the operator here is Q, sometimes EMC (PDFBOX-2376), S (PDFBOX-3784),
+                // or a number (PDFBOX-5957)
+<span class="nc" id="L391">                s = new String(binCharTestArr, startOpIdx, endOpIdx - startOpIdx, StandardCharsets.US_ASCII);</span>
+<span class="nc bnc" id="L392" title="All 6 branches missed.">                if (!&quot;Q&quot;.equals(s) &amp;&amp; !&quot;EMC&quot;.equals(s) &amp;&amp; !&quot;S&quot;.equals(s) &amp;&amp;</span>
+<span class="nc bnc" id="L393" title="All 2 branches missed.">                    !NUMBER_PATTERN.matcher(s).find())</span>
+                {
+                    // operator is not Q, not EMC, not S, nor a number -&gt; assume binary data
+<span class="nc" id="L396">                    noBinData = false;</span>
+                }
+            }
+
+            // only if not close to EOF
+<span class="nc bnc" id="L401" title="All 6 branches missed.">            if (noBinData &amp;&amp; startOpIdx != -1 &amp;&amp; readBytes == MAX_BIN_CHAR_TEST_LENGTH) </span>
+            {
+<span class="nc bnc" id="L403" title="All 2 branches missed.">                if (endOpIdx == -1)</span>
+                {
+<span class="nc" id="L405">                    endOpIdx = MAX_BIN_CHAR_TEST_LENGTH;</span>
+<span class="nc" id="L406">                    s = new String(binCharTestArr, startOpIdx, endOpIdx - startOpIdx, StandardCharsets.US_ASCII);</span>
+                }
+<span class="nc" id="L408">                LOG.debug(&quot;startOpIdx: {} endOpIdx: {} s = '{}'&quot;, startOpIdx, endOpIdx, s);</span>
+                // look for token of 3 chars max or a number
+<span class="nc bnc" id="L410" title="All 4 branches missed.">                if (endOpIdx - startOpIdx &gt; 3 &amp;&amp; !NUMBER_PATTERN.matcher(s).find())</span>
+                {
+<span class="nc" id="L412">                    noBinData = false; // &quot;operator&quot; too long, assume binary data</span>
+                }
+            }
+<span class="nc" id="L415">            source.rewind(readBytes);</span>
+        }
+<span class="nc bnc" id="L417" title="All 2 branches missed.">        if (!noBinData)</span>
+        {
+<span class="nc" id="L419">            LOG.warn(</span>
+                    &quot;ignoring 'EI' assumed to be in the middle of inline image at stream offset {}, s = '{}'&quot;,
+<span class="nc" id="L421">                    source.getPosition(), s);</span>
+        }
+<span class="nc" id="L423">        return noBinData;</span>
+    }
+
+    /**
+     * This will read an operator from the stream.
+     *
+     * @return The operator that was read from the stream.
+     *
+     * @throws IOException If there is an error reading from the stream.
+     */
+    private String readOperator() throws IOException
+    {
+<span class="nc" id="L435">        skipSpaces();</span>
+
+        //average string size is around 2 and the normal string buffer size is
+        //about 16 so lets save some space.
+<span class="nc" id="L439">        StringBuilder buffer = new StringBuilder(4);</span>
+<span class="nc" id="L440">        int nextChar = source.peek();</span>
+<span class="nc bnc" id="L441" title="All 2 branches missed.">        while(</span>
+            nextChar != -1 &amp;&amp; // EOF
+<span class="nc bnc" id="L443" title="All 16 branches missed.">            !isWhitespace(nextChar) &amp;&amp;</span>
+            nextChar != '[' &amp;&amp;
+            nextChar != '&lt;' &amp;&amp;
+            nextChar != '(' &amp;&amp;
+            nextChar != '/' &amp;&amp;
+            nextChar != '%' &amp;&amp;
+            (nextChar &lt; '0' ||
+             nextChar &gt; '9' ) )
+        {
+<span class="nc" id="L452">            char currentChar = (char) source.read();</span>
+<span class="nc" id="L453">            nextChar = source.peek();</span>
+<span class="nc" id="L454">            buffer.append( currentChar );</span>
+            // Type3 Glyph description has operators with a number in the name
+<span class="nc bnc" id="L456" title="All 6 branches missed.">            if (currentChar == 'd' &amp;&amp; (nextChar == '0' || nextChar == '1') ) </span>
+            {
+<span class="nc" id="L458">                buffer.append((char) source.read());</span>
+<span class="nc" id="L459">                nextChar = source.peek();</span>
+            }
+<span class="nc" id="L461">        }</span>
+<span class="nc" id="L462">        return buffer.toString();</span>
+    }
+    
+    
+    private boolean isSpaceOrReturn( int c )
+    {
+<span class="nc bnc" id="L468" title="All 6 branches missed.">        return c == 10 || c == 13 || c == 32;</span>
+    }
+
+    /**
+     * Checks if the next char is a space or a return.
+     * 
+     * @return true if the next char is a space or a return
+     * @throws IOException if something went wrong
+     */
+    private boolean hasNextSpaceOrReturn() throws IOException
+    {
+<span class="nc" id="L479">        return isSpaceOrReturn(source.peek());</span>
+    }
+
+    /**
+     * Close the underlying resource.
+     * 
+     * @throws IOException if something went wrong
+     */
+    public void close() throws IOException
+    {
+<span class="nc bnc" id="L489" title="All 4 branches missed.">        if (source != null &amp;&amp; !source.isClosed())</span>
+        {
+<span class="nc" id="L491">            source.close();</span>
+        }
+<span class="nc" id="L493">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

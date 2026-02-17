@@ -1,0 +1,608 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDDeviceN.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.color</a> &gt; <span class="el_source">PDDeviceN.java</span></div><h1>PDDeviceN.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.color;
+
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
+import java.awt.image.Raster;
+import java.awt.image.WritableRaster;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNull;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.common.function.PDFunction;
+
+/**
+ * DeviceN colour spaces may contain an arbitrary number of colour components.
+ * DeviceN represents a colour space containing multiple components that correspond to colorants
+ * of some target device. As with Separation colour spaces, readers are able to approximate the
+ * colorants if they are not available on the current output device, such as a display
+ *
+ * @author John Hewson
+ * @author Ben Litchfield
+ */
+public class PDDeviceN extends PDSpecialColorSpace
+{
+    // array indexes
+    private static final int COLORANT_NAMES = 1;
+    private static final int ALTERNATE_CS = 2;
+    private static final int TINT_TRANSFORM = 3;
+    private static final int DEVICEN_ATTRIBUTES = 4;
+
+    // fields
+<span class="nc" id="L58">    private PDColorSpace alternateColorSpace = null;</span>
+<span class="nc" id="L59">    private PDFunction tintTransform = null;</span>
+    private PDDeviceNAttributes attributes;
+    private PDColor initialColor;
+
+    // color conversion cache
+    private int numColorants;
+    private int[] colorantToComponent;
+    private PDColorSpace processColorSpace;
+    private PDSeparation[] spotColorSpaces;
+
+    /**
+     * Creates a new DeviceN color space.
+     */
+    public PDDeviceN()
+<span class="nc" id="L73">    {</span>
+<span class="nc" id="L74">        array = new COSArray();</span>
+<span class="nc" id="L75">        array.add(COSName.DEVICEN);</span>
+
+        // empty placeholder
+<span class="nc" id="L78">        array.add(COSNull.NULL);</span>
+<span class="nc" id="L79">        array.add(COSNull.NULL);</span>
+<span class="nc" id="L80">        array.add(COSNull.NULL);</span>
+<span class="nc" id="L81">    }</span>
+
+    /**
+     * Creates a new DeviceN color space from the given COS array.
+     * 
+     * @param deviceN an array containing the color space information
+     * @param resources resources, can be null.
+     * 
+     * @throws IOException if the colorspace could not be created
+     */
+    public PDDeviceN(COSArray deviceN, PDResources resources) throws IOException
+<span class="nc" id="L92">    {</span>
+<span class="nc" id="L93">        array = deviceN;</span>
+<span class="nc" id="L94">        alternateColorSpace = PDColorSpace.create(array.getObject(ALTERNATE_CS), resources);</span>
+<span class="nc" id="L95">        tintTransform = PDFunction.create(array.getObject(TINT_TRANSFORM));</span>
+
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        if (array.size() &gt; DEVICEN_ATTRIBUTES)</span>
+        {
+<span class="nc" id="L99">            attributes = new PDDeviceNAttributes((COSDictionary)array.getObject(DEVICEN_ATTRIBUTES));</span>
+        }
+<span class="nc" id="L101">        initColorConversionCache(resources);</span>
+
+        // set initial color space
+<span class="nc" id="L104">        int n = getNumberOfComponents();</span>
+<span class="nc" id="L105">        float[] initial = new float[n];</span>
+<span class="nc" id="L106">        Arrays.fill(initial, 1);</span>
+<span class="nc" id="L107">        initialColor = new PDColor(initial, this);</span>
+<span class="nc" id="L108">    }</span>
+
+    // initializes the color conversion cache
+    private void initColorConversionCache(PDResources resources) throws IOException
+    {
+        // there's nothing to cache for non-attribute spaces
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        if (attributes == null)</span>
+        {
+<span class="nc" id="L116">            return;</span>
+        }
+
+        // colorant names
+<span class="nc" id="L120">        List&lt;String&gt; colorantNames = getColorantNames();</span>
+<span class="nc" id="L121">        numColorants = colorantNames.size();</span>
+
+        // process components
+<span class="nc" id="L124">        colorantToComponent = new int[numColorants];</span>
+<span class="nc" id="L125">        PDDeviceNProcess process = attributes.getProcess();</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">        if (process != null)</span>
+        {
+<span class="nc" id="L128">            List&lt;String&gt; components = process.getComponents();</span>
+
+            // map each colorant name to the corresponding process component name (if any)
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            for (int c = 0; c &lt; numColorants; c++)</span>
+            {
+<span class="nc" id="L133">                colorantToComponent[c] = components.indexOf(colorantNames.get(c));</span>
+            }
+
+            // process color space
+<span class="nc" id="L137">            processColorSpace = process.getColorSpace();</span>
+<span class="nc" id="L138">        }</span>
+        else
+        {
+<span class="nc bnc" id="L141" title="All 2 branches missed.">            for (int c = 0; c &lt; numColorants; c++)</span>
+            {
+<span class="nc" id="L143">                colorantToComponent[c] = -1;</span>
+            }
+        }
+
+        // spot colorants
+<span class="nc" id="L148">        spotColorSpaces = new PDSeparation[numColorants];</span>
+
+        // spot color spaces
+<span class="nc" id="L151">        Map&lt;String, PDSeparation&gt; spotColorants = attributes.getColorants(resources);</span>
+
+        // map each colorant to the corresponding spot color space
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        for (int c = 0; c &lt; numColorants; c++)</span>
+        {
+<span class="nc" id="L156">            String name = colorantNames.get(c);</span>
+<span class="nc" id="L157">            PDSeparation spot = spotColorants.get(name);</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">            if (spot != null)</span>
+            {
+                // spot colorant
+<span class="nc" id="L161">                spotColorSpaces[c] = spot;</span>
+
+                // spot colors may replace process colors with same name
+                // providing that the subtype is not NChannel.
+<span class="nc bnc" id="L165" title="All 2 branches missed.">                if (!isNChannel())</span>
+                {
+<span class="nc" id="L167">                    colorantToComponent[c] = -1;</span>
+                }
+            }
+            else
+            {
+                // process colorant
+<span class="nc" id="L173">                spotColorSpaces[c] = null;</span>
+            }
+        }
+<span class="nc" id="L176">    }</span>
+
+    @Override
+    public BufferedImage toRGBImage(WritableRaster raster) throws IOException
+    {
+<span class="nc bnc" id="L181" title="All 2 branches missed.">        if (attributes != null)</span>
+        {
+<span class="nc" id="L183">            return toRGBWithAttributes(raster);</span>
+        }
+        else
+        {
+<span class="nc" id="L187">            return toRGBWithTintTransform(raster);</span>
+        }
+    }
+
+    //
+    // WARNING: this method is performance sensitive, modify with care!
+    //
+    private BufferedImage toRGBWithAttributes(WritableRaster raster) throws IOException
+    {
+<span class="nc" id="L196">        int width = raster.getWidth();</span>
+<span class="nc" id="L197">        int height = raster.getHeight();</span>
+
+<span class="nc" id="L199">        BufferedImage rgbImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);</span>
+<span class="nc" id="L200">        WritableRaster rgbRaster = rgbImage.getRaster();</span>
+
+        // white background
+<span class="nc" id="L203">        Graphics2D g = rgbImage.createGraphics();</span>
+<span class="nc" id="L204">        g.setBackground(Color.WHITE);</span>
+<span class="nc" id="L205">        g.clearRect(0, 0, width, height);</span>
+<span class="nc" id="L206">        g.dispose();</span>
+
+        // look up each colorant
+<span class="nc bnc" id="L209" title="All 2 branches missed.">        for (int c = 0; c &lt; numColorants; c++)</span>
+        {
+            PDColorSpace componentColorSpace;
+<span class="nc bnc" id="L212" title="All 2 branches missed.">            if (colorantToComponent[c] &gt;= 0)</span>
+            {
+                // process color
+<span class="nc" id="L215">                componentColorSpace = processColorSpace;</span>
+            }
+<span class="nc bnc" id="L217" title="All 2 branches missed.">            else if (spotColorSpaces[c] == null)</span>
+            {
+                // TODO this happens in the Altona Visual test, is there a better workaround?
+                // missing spot color, fallback to using tintTransform
+<span class="nc" id="L221">                return toRGBWithTintTransform(raster);</span>
+            }
+            else
+            {
+                // spot color
+<span class="nc" id="L226">                componentColorSpace = spotColorSpaces[c];</span>
+            }
+
+<span class="nc" id="L229">            int numberOfComponents = componentColorSpace.getNumberOfComponents();</span>
+            // copy single-component to its own raster in the component color space
+<span class="nc" id="L231">            WritableRaster componentRaster = Raster.createBandedRaster(DataBuffer.TYPE_BYTE,</span>
+                width, height, numberOfComponents, new Point(0, 0));
+
+<span class="nc" id="L234">            int[] samples = new int[numColorants];</span>
+<span class="nc" id="L235">            int[] componentSamples = new int[numberOfComponents];</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">            boolean isProcessColorant = colorantToComponent[c] &gt;= 0;</span>
+<span class="nc" id="L237">            int componentIndex = colorantToComponent[c];</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">            for (int y = 0; y &lt; height; y++)</span>
+            {
+<span class="nc bnc" id="L240" title="All 2 branches missed.">                for (int x = 0; x &lt; width; x++)</span>
+                {
+<span class="nc" id="L242">                    raster.getPixel(x, y, samples);</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">                    if (isProcessColorant)</span>
+                    {
+                        // process color
+<span class="nc" id="L246">                        componentSamples[componentIndex] = samples[c];</span>
+                    }
+                    else
+                    {
+                        // spot color
+<span class="nc" id="L251">                        componentSamples[0] = samples[c];</span>
+                    }
+<span class="nc" id="L253">                    componentRaster.setPixel(x, y, componentSamples);</span>
+                }
+            }
+
+            // convert single-component raster to RGB
+<span class="nc" id="L258">            BufferedImage rgbComponentImage = componentColorSpace.toRGBImage(componentRaster);</span>
+<span class="nc" id="L259">            WritableRaster rgbComponentRaster = rgbComponentImage.getRaster();</span>
+
+            // combine the RGB component with the RGB composite raster
+<span class="nc" id="L262">            int[] rgbChannel = new int[3];</span>
+<span class="nc" id="L263">            int[] rgbComposite = new int[3];</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">            for (int y = 0; y &lt; height; y++)</span>
+            {
+<span class="nc bnc" id="L266" title="All 2 branches missed.">                for (int x = 0; x &lt; width; x++)</span>
+                {
+<span class="nc" id="L268">                    rgbComponentRaster.getPixel(x, y, rgbChannel);</span>
+<span class="nc" id="L269">                    rgbRaster.getPixel(x, y, rgbComposite);</span>
+
+                    // multiply (blend mode)
+<span class="nc" id="L272">                    rgbChannel[0] = rgbChannel[0] * rgbComposite[0] &gt;&gt; 8;</span>
+<span class="nc" id="L273">                    rgbChannel[1] = rgbChannel[1] * rgbComposite[1] &gt;&gt; 8;</span>
+<span class="nc" id="L274">                    rgbChannel[2] = rgbChannel[2] * rgbComposite[2] &gt;&gt; 8;</span>
+
+<span class="nc" id="L276">                    rgbRaster.setPixel(x, y, rgbChannel);</span>
+                }
+            }
+        }
+
+<span class="nc" id="L281">        return rgbImage;</span>
+    }
+
+    //
+    // WARNING: this method is performance sensitive, modify with care!
+    //
+    private BufferedImage toRGBWithTintTransform(WritableRaster raster) throws IOException
+    {
+        // cache color mappings
+<span class="nc" id="L290">        Map&lt;String, int[]&gt; map1 = new HashMap&lt;&gt;();</span>
+        String key;
+<span class="nc" id="L292">        StringBuilder keyBuilder = new StringBuilder();</span>
+
+<span class="nc" id="L294">        int width = raster.getWidth();</span>
+<span class="nc" id="L295">        int height = raster.getHeight();</span>
+
+        // use the tint transform to convert the sample into
+        // the alternate color space (this is usually 1:many)
+<span class="nc" id="L299">        BufferedImage rgbImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);</span>
+<span class="nc" id="L300">        WritableRaster rgbRaster = rgbImage.getRaster();</span>
+<span class="nc" id="L301">        int[] rgb = new int[3];</span>
+<span class="nc" id="L302">        int numSrcComponents = getColorantNames().size();</span>
+<span class="nc" id="L303">        float[] src = new float[numSrcComponents];</span>
+<span class="nc bnc" id="L304" title="All 2 branches missed.">        for (int y = 0; y &lt; height; y++)</span>
+        {
+<span class="nc bnc" id="L306" title="All 2 branches missed.">            for (int x = 0; x &lt; width; x++)</span>
+            {
+<span class="nc" id="L308">                raster.getPixel(x, y, src);</span>
+                // use a string representation as key
+<span class="nc" id="L310">                keyBuilder.append(src[0]);</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">                for (int s = 1; s &lt; numSrcComponents; s++)</span>
+                {
+<span class="nc" id="L313">                    keyBuilder.append('#').append(src[s]);</span>
+                }
+<span class="nc" id="L315">                key = keyBuilder.toString();</span>
+<span class="nc" id="L316">                keyBuilder.setLength(0);</span>
+<span class="nc" id="L317">                int[] pxl = map1.get(key);</span>
+<span class="nc bnc" id="L318" title="All 2 branches missed.">                if (pxl != null)</span>
+                {
+<span class="nc" id="L320">                    rgbRaster.setPixel(x, y, pxl);</span>
+<span class="nc" id="L321">                    continue;</span>
+                }
+                // scale to 0..1
+<span class="nc bnc" id="L324" title="All 2 branches missed.">                for (int s = 0; s &lt; numSrcComponents; s++)</span>
+                {
+<span class="nc" id="L326">                    src[s] = src[s] / 255;</span>
+                }
+
+                // convert to alternate color space via tint transform
+<span class="nc" id="L330">                float[] result = tintTransform.eval(src);</span>
+                
+                // convert from alternate color space to RGB
+<span class="nc" id="L333">                float[] rgbFloat = alternateColorSpace.toRGB(result);</span>
+
+                // scale to 0..255
+<span class="nc" id="L336">                rgb[0] = (int) (rgbFloat[0] * 255f);</span>
+<span class="nc" id="L337">                rgb[1] = (int) (rgbFloat[1] * 255f);</span>
+<span class="nc" id="L338">                rgb[2] = (int) (rgbFloat[2] * 255f);</span>
+
+                // must clone because rgb is reused
+<span class="nc" id="L341">                map1.put(key, rgb.clone());</span>
+
+<span class="nc" id="L343">                rgbRaster.setPixel(x, y, rgb);</span>
+            }
+        }
+<span class="nc" id="L346">        return rgbImage;</span>
+    }
+
+    @Override
+    public float[] toRGB(float[] value) throws IOException
+    {
+<span class="nc bnc" id="L352" title="All 2 branches missed.">        if (attributes != null)</span>
+        {
+<span class="nc" id="L354">            return toRGBWithAttributes(value);</span>
+        }
+        else
+        {
+<span class="nc" id="L358">            return toRGBWithTintTransform(value);</span>
+        }
+    }
+
+    private float[] toRGBWithAttributes(float[] value) throws IOException
+    {
+<span class="nc" id="L364">        float[] rgbValue = { 1, 1, 1 };</span>
+
+        // look up each colorant
+<span class="nc bnc" id="L367" title="All 2 branches missed.">        for (int c = 0; c &lt; numColorants; c++)</span>
+        {
+            PDColorSpace componentColorSpace;
+<span class="nc bnc" id="L370" title="All 2 branches missed.">            boolean isProcessColorant = colorantToComponent[c] &gt;= 0;</span>
+<span class="nc bnc" id="L371" title="All 2 branches missed.">            if (isProcessColorant)</span>
+            {
+                // process color
+<span class="nc" id="L374">                componentColorSpace = processColorSpace;</span>
+            }
+<span class="nc bnc" id="L376" title="All 2 branches missed.">            else if (spotColorSpaces[c] == null)</span>
+            {
+                // TODO this happens in the Altona Visual test, is there a better workaround?
+                // missing spot color, fallback to using tintTransform
+<span class="nc" id="L380">                return toRGBWithTintTransform(value);</span>
+            }
+            else
+            {
+                // spot color
+<span class="nc" id="L385">                componentColorSpace = spotColorSpaces[c];</span>
+            }
+
+            // get the single component
+<span class="nc" id="L389">            float[] componentSamples = new float[componentColorSpace.getNumberOfComponents()];</span>
+
+<span class="nc bnc" id="L391" title="All 2 branches missed.">            if (isProcessColorant)</span>
+            {
+                // process color
+<span class="nc" id="L394">                int componentIndex = colorantToComponent[c];</span>
+<span class="nc" id="L395">                componentSamples[componentIndex] = value[c];</span>
+<span class="nc" id="L396">            }</span>
+            else
+            {
+                // spot color
+<span class="nc" id="L400">                componentSamples[0] = value[c];</span>
+            }
+
+            // convert single component to RGB
+<span class="nc" id="L404">            float[] rgbComponent = componentColorSpace.toRGB(componentSamples);</span>
+
+            // combine the RGB component value with the RGB composite value
+
+            // multiply (blend mode)
+<span class="nc" id="L409">            rgbValue[0] *= rgbComponent[0];</span>
+<span class="nc" id="L410">            rgbValue[1] *= rgbComponent[1];</span>
+<span class="nc" id="L411">            rgbValue[2] *= rgbComponent[2];</span>
+        }
+
+<span class="nc" id="L414">        return rgbValue;</span>
+    }
+
+    private float[] toRGBWithTintTransform(float[] value) throws IOException
+    {
+        // use the tint transform to convert the sample into
+        // the alternate color space (this is usually 1:many)
+<span class="nc" id="L421">        float[] altValue = tintTransform.eval(value);</span>
+
+        // convert the alternate color space to RGB
+<span class="nc" id="L424">        return alternateColorSpace.toRGB(altValue);</span>
+    }
+
+    @Override
+    public BufferedImage toRawImage(WritableRaster raster)
+    {
+        // We don't know how to convert that.
+<span class="nc" id="L431">        return null;</span>
+    }
+
+    /**
+     * Returns true if this color space has the NChannel subtype.
+     * @return true if subtype is NChannel
+     */
+    public boolean isNChannel()
+    {
+<span class="nc bnc" id="L440" title="All 4 branches missed.">        return attributes != null &amp;&amp; attributes.isNChannel();</span>
+    }
+
+    @Override
+    public String getName()
+    {
+<span class="nc" id="L446">        return COSName.DEVICEN.getName();</span>
+    }
+
+    @Override
+    public final int getNumberOfComponents()
+    {
+<span class="nc" id="L452">        return getColorantNames().size();</span>
+    }
+
+    @Override
+    public float[] getDefaultDecode(int bitsPerComponent)
+    {
+<span class="nc" id="L458">        int n = getNumberOfComponents();</span>
+<span class="nc" id="L459">        float[] decode = new float[n * 2];</span>
+<span class="nc bnc" id="L460" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++)</span>
+        {
+<span class="nc" id="L462">            decode[i * 2 + 1] = 1;</span>
+        }
+<span class="nc" id="L464">        return decode;</span>
+    }
+
+    @Override
+    public PDColor getInitialColor()
+    {
+<span class="nc" id="L470">        return initialColor;</span>
+    }
+
+    /**
+     * Returns the list of colorants.
+     * @return the list of colorants
+     */
+    public List&lt;String&gt; getColorantNames()
+    {
+<span class="nc" id="L479">        return ((COSArray) array.getObject(COLORANT_NAMES)).toCOSNameStringList();</span>
+    }
+
+    /**
+     * Returns the attributes associated with the DeviceN color space.
+     * @return the DeviceN attributes
+     */
+    public PDDeviceNAttributes getAttributes()
+    {
+<span class="nc" id="L488">        return attributes;</span>
+    }
+
+    /**
+     * Sets the list of colorants
+     * @param names the list of colorants
+     */
+    public void setColorantNames(List&lt;String&gt; names)
+    {
+<span class="nc" id="L497">        COSArray namesArray = COSArray.ofCOSNames(names);</span>
+<span class="nc" id="L498">        array.set(COLORANT_NAMES, namesArray);</span>
+<span class="nc" id="L499">    }</span>
+
+    /**
+     * Sets the color space attributes.
+     * If null is passed in then all attribute will be removed.
+     * @param attributes the color space attributes, or null
+     */
+    public void setAttributes(PDDeviceNAttributes attributes)
+    {
+<span class="nc" id="L508">        this.attributes = attributes;</span>
+<span class="nc bnc" id="L509" title="All 2 branches missed.">        if (attributes == null)</span>
+        {
+<span class="nc" id="L511">            array.remove(DEVICEN_ATTRIBUTES);</span>
+        }
+        else
+        {
+            // make sure array is large enough
+<span class="nc bnc" id="L516" title="All 2 branches missed.">            while (array.size() &lt;= DEVICEN_ATTRIBUTES)</span>
+            {
+<span class="nc" id="L518">                array.add(COSNull.NULL);</span>
+            }
+<span class="nc" id="L520">            array.set(DEVICEN_ATTRIBUTES, attributes.getCOSDictionary());</span>
+        }
+<span class="nc" id="L522">    }</span>
+ 
+    /**
+     * This will get the alternate color space for this separation.
+     *
+     * @return The alternate color space.
+     *
+     * @throws IOException If there is an error getting the alternate color
+     * space.
+     */
+    public PDColorSpace getAlternateColorSpace() throws IOException
+    {
+<span class="nc bnc" id="L534" title="All 2 branches missed.">        if (alternateColorSpace == null)</span>
+        {
+<span class="nc" id="L536">            alternateColorSpace = PDColorSpace.create(array.getObject(ALTERNATE_CS));</span>
+        }
+<span class="nc" id="L538">        return alternateColorSpace;</span>
+    }
+
+    /**
+     * This will set the alternate color space.
+     *
+     * @param cs The alternate color space.
+     */
+    public void setAlternateColorSpace(PDColorSpace cs)
+    {
+<span class="nc" id="L548">        alternateColorSpace = cs;</span>
+<span class="nc" id="L549">        COSBase space = null;</span>
+<span class="nc bnc" id="L550" title="All 2 branches missed.">        if (cs != null)</span>
+        {
+<span class="nc" id="L552">            space = cs.getCOSObject();</span>
+        }
+<span class="nc" id="L554">        array.set(ALTERNATE_CS, space);</span>
+<span class="nc" id="L555">    }</span>
+
+    /**
+     * This will get the tint transform function.
+     *
+     * @return The tint transform function.
+     *
+     * @throws IOException if there is an error creating the function.
+     */
+    public PDFunction getTintTransform() throws IOException
+    {
+<span class="nc bnc" id="L566" title="All 2 branches missed.">        if (tintTransform == null)</span>
+        {
+<span class="nc" id="L568">            tintTransform = PDFunction.create(array.getObject(TINT_TRANSFORM));</span>
+        }
+<span class="nc" id="L570">        return tintTransform;</span>
+    }
+
+    /**
+     * This will set the tint transform function.
+     *
+     * @param tint The tint transform function.
+     */
+    public void setTintTransform(PDFunction tint)
+    {
+<span class="nc" id="L580">        tintTransform = tint;</span>
+<span class="nc" id="L581">        array.set(TINT_TRANSFORM, tint);</span>
+<span class="nc" id="L582">    }</span>
+
+
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L588">        StringBuilder sb = new StringBuilder(getName());</span>
+<span class="nc" id="L589">        sb.append('{');</span>
+<span class="nc bnc" id="L590" title="All 2 branches missed.">        for (String col : getColorantNames())</span>
+        {
+<span class="nc" id="L592">            sb.append('\&quot;');</span>
+<span class="nc" id="L593">            sb.append(col);</span>
+<span class="nc" id="L594">            sb.append(&quot;\&quot; &quot;);</span>
+<span class="nc" id="L595">        }</span>
+<span class="nc" id="L596">        sb.append(alternateColorSpace.getName());</span>
+<span class="nc" id="L597">        sb.append(' ');</span>
+<span class="nc" id="L598">        sb.append(tintTransform);</span>
+<span class="nc" id="L599">        sb.append(' ');</span>
+<span class="nc bnc" id="L600" title="All 2 branches missed.">        if (attributes != null)</span>
+        {
+<span class="nc" id="L602">            sb.append(attributes);</span>
+        }
+<span class="nc" id="L604">        sb.append('}');</span>
+<span class="nc" id="L605">        return sb.toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

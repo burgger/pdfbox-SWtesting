@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InstructionSequence.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.common.function.type4</a> &gt; <span class="el_source">InstructionSequence.java</span></div><h1>InstructionSequence.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.common.function.type4;
+
+import java.util.List;
+import java.util.Stack;
+
+/**
+ * Represents an instruction sequence, a combination of values, operands and nested procedures.
+ *
+ */
+<span class="nc" id="L26">public class InstructionSequence</span>
+{
+
+<span class="nc" id="L29">    private final List&lt;Object&gt; instructions = new java.util.ArrayList&lt;&gt;();</span>
+
+    /**
+     * Add a name (ex. an operator)
+     * @param name the name
+     */
+    public void addName(String name)
+    {
+<span class="nc" id="L37">        this.instructions.add(name);</span>
+<span class="nc" id="L38">    }</span>
+
+    /**
+     * Adds an int value.
+     * @param value the value
+     */
+    public void addInteger(int value)
+    {
+<span class="nc" id="L46">        this.instructions.add(value);</span>
+<span class="nc" id="L47">    }</span>
+
+    /**
+     * Adds a real value.
+     * @param value the value
+     */
+    public void addReal(float value)
+    {
+<span class="nc" id="L55">        this.instructions.add(value);</span>
+<span class="nc" id="L56">    }</span>
+
+    /**
+     * Adds a bool value.
+     * @param value the value
+     */
+    public void addBoolean(boolean value)
+    {
+<span class="nc" id="L64">        this.instructions.add(value);</span>
+<span class="nc" id="L65">    }</span>
+
+    /**
+     * Adds a proc (sub-sequence of instructions).
+     * @param child the child proc
+     */
+    public void addProc(InstructionSequence child)
+    {
+<span class="nc" id="L73">        this.instructions.add(child);</span>
+<span class="nc" id="L74">    }</span>
+
+    /**
+     * Executes the instruction sequence.
+     * @param context the execution context
+     */
+    public void execute(ExecutionContext context)
+    {
+<span class="nc" id="L82">        Stack&lt;Object&gt; stack = context.getStack();</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        for (Object o : instructions)</span>
+        {
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            if (o instanceof String)</span>
+            {
+<span class="nc" id="L87">                String name = (String)o;</span>
+<span class="nc" id="L88">                Operator cmd = context.getOperators().getOperator(name);</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">                if (cmd != null)</span>
+                {
+<span class="nc" id="L91">                    cmd.execute(context);</span>
+                }
+                else
+                {
+<span class="nc" id="L95">                    throw new UnsupportedOperationException(&quot;Unknown operator or name: &quot; + name);</span>
+                }
+<span class="nc" id="L97">            }</span>
+            else
+            {
+<span class="nc" id="L100">                stack.push(o);</span>
+            }
+<span class="nc" id="L102">        }</span>
+
+        //Handles top-level procs that simply need to be executed
+<span class="nc bnc" id="L105" title="All 4 branches missed.">        while (!stack.isEmpty() &amp;&amp; stack.peek() instanceof InstructionSequence)</span>
+        {
+<span class="nc" id="L107">            InstructionSequence nested = (InstructionSequence)stack.pop();</span>
+<span class="nc" id="L108">            nested.execute(context);</span>
+<span class="nc" id="L109">        }</span>
+<span class="nc" id="L110">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

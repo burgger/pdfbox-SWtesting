@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DrawObject.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.contentstream.operator.graphics</a> &gt; <span class="el_source">DrawObject.java</span></div><h1>DrawObject.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.contentstream.operator.graphics;
+
+import java.io.IOException;
+import java.util.List;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.contentstream.PDFGraphicsStreamEngine;
+import org.apache.pdfbox.contentstream.operator.MissingOperandException;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.MissingResourceException;
+import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
+import org.apache.pdfbox.pdmodel.graphics.form.PDTransparencyGroup;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.pdmodel.graphics.PDXObject;
+import org.apache.pdfbox.contentstream.operator.Operator;
+import org.apache.pdfbox.contentstream.operator.OperatorName;
+
+/**
+ * Do: Draws an XObject.
+ *
+ * @author Ben Litchfield
+ * @author John Hewson
+ */
+public final class DrawObject extends GraphicsOperatorProcessor
+{
+<span class="nc" id="L44">    private static final Logger LOG = LogManager.getLogger(DrawObject.class);</span>
+
+    public DrawObject(PDFGraphicsStreamEngine context)
+    {
+<span class="nc" id="L48">        super(context);</span>
+<span class="nc" id="L49">    }</span>
+
+    @Override
+    public void process(Operator operator, List&lt;COSBase&gt; operands) throws IOException
+    {
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        if (operands.isEmpty())</span>
+        {
+<span class="nc" id="L56">            throw new MissingOperandException(operator, operands);</span>
+        }
+<span class="nc" id="L58">        COSBase base0 = operands.get(0);</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        if (!(base0 instanceof COSName))</span>
+        {
+<span class="nc" id="L61">            return;</span>
+        }
+<span class="nc" id="L63">        COSName objectName = (COSName) base0;</span>
+<span class="nc" id="L64">        PDFGraphicsStreamEngine context = getGraphicsContext();</span>
+<span class="nc" id="L65">        PDXObject xobject = context.getResources().getXObject(objectName);</span>
+
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        if (xobject == null)</span>
+        {
+<span class="nc" id="L69">            throw new MissingResourceException(&quot;Missing XObject: &quot; + objectName.getName());</span>
+        }
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        else if (xobject instanceof PDImageXObject)</span>
+        {
+<span class="nc" id="L73">            PDImageXObject image = (PDImageXObject) xobject;</span>
+<span class="nc bnc" id="L74" title="All 4 branches missed.">            if (!image.isStencil() &amp;&amp; !context.isShouldProcessColorOperators())</span>
+            {
+<span class="nc" id="L76">                return;</span>
+            }
+<span class="nc" id="L78">            context.drawImage(image);</span>
+<span class="nc" id="L79">        }</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        else if (xobject instanceof PDFormXObject)</span>
+        {
+            try
+            {
+<span class="nc" id="L84">                context.increaseLevel();</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">                if (context.getLevel() &gt; 50)</span>
+                {
+<span class="nc" id="L87">                    LOG.error(&quot;recursion is too deep, skipping form XObject&quot;);</span>
+<span class="nc" id="L88">                    return;</span>
+                }
+<span class="nc bnc" id="L90" title="All 2 branches missed.">                if (xobject instanceof PDTransparencyGroup)</span>
+                {
+<span class="nc" id="L92">                    context.showTransparencyGroup((PDTransparencyGroup) xobject);</span>
+                }
+                else
+                {
+<span class="nc" id="L96">                    context.showForm((PDFormXObject) xobject);</span>
+                }
+            }
+            finally
+            {
+<span class="nc" id="L101">                context.decreaseLevel();</span>
+            }
+        }
+<span class="nc" id="L104">    }</span>
+
+    @Override
+    public String getName()
+    {
+<span class="nc" id="L109">        return OperatorName.DRAW_OBJECT;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

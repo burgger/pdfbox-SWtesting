@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDRectangle.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.common</a> &gt; <span class="el_source">PDRectangle.java</span></div><h1>PDRectangle.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.common;
+
+import java.awt.geom.GeneralPath;
+import java.awt.geom.Point2D;
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSNumber;
+
+import org.apache.fontbox.util.BoundingBox;
+
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * A rectangle in a PDF document.
+ *
+ * @author Ben Litchfield
+ */
+public class PDRectangle implements COSObjectable
+{
+    /** user space units per inch */
+    private static final float POINTS_PER_INCH = 72;
+    
+    /** user space units per millimeter */
+    private static final float POINTS_PER_MM = 1 / (10 * 2.54f) * POINTS_PER_INCH;
+
+    /** An immutable rectangle the size of U.S. Letter, 8.5&quot; x 11&quot;. */
+    @SuppressWarnings(&quot;java:S2390&quot;) // see also https://jira.sonarsource.com/browse/SONARJAVA-3580
+<span class="fc" id="L48">    public static final PDRectangle LETTER = new PDImmutableRectangle(8.5f * POINTS_PER_INCH,</span>
+                                                            11f *POINTS_PER_INCH);
+    /**  An immutable rectangle the size of U.S. Tabloid, 11&quot; x 17&quot;. */
+    @SuppressWarnings(&quot;java:S2390&quot;)
+<span class="fc" id="L52">    public static final PDRectangle TABLOID = new PDImmutableRectangle(11f * POINTS_PER_INCH,</span>
+                                                            17f * POINTS_PER_INCH);
+    /**  An immutable rectangle the size of U.S. Legal, 8.5&quot; x 14&quot;. */
+    @SuppressWarnings(&quot;java:S2390&quot;)
+<span class="fc" id="L56">    public static final PDRectangle LEGAL = new PDImmutableRectangle(8.5f * POINTS_PER_INCH,</span>
+                                                            14f * POINTS_PER_INCH);
+    /**  An immutable rectangle the size of A0 Paper. */
+    @SuppressWarnings(&quot;java:S2390&quot;)
+<span class="fc" id="L60">    public static final PDRectangle A0 = new PDImmutableRectangle(841 * POINTS_PER_MM, 1189 * POINTS_PER_MM);</span>
+
+    /** An immutable rectangle the size of A1 Paper. */
+    @SuppressWarnings(&quot;java:S2390&quot;)
+<span class="fc" id="L64">    public static final PDRectangle A1 = new PDImmutableRectangle(594 * POINTS_PER_MM, 841 * POINTS_PER_MM);</span>
+
+    /**  An immutable rectangle the size of A2 Paper. */
+    @SuppressWarnings(&quot;java:S2390&quot;)
+<span class="fc" id="L68">    public static final PDRectangle A2 = new PDImmutableRectangle(420 * POINTS_PER_MM, 594 * POINTS_PER_MM);</span>
+
+    /** An immutable rectangle the size of A3 Paper.  */
+    @SuppressWarnings(&quot;java:S2390&quot;)
+<span class="fc" id="L72">    public static final PDRectangle A3 = new PDImmutableRectangle(297 * POINTS_PER_MM, 420 * POINTS_PER_MM);</span>
+
+    /**  An immutable rectangle the size of A4 Paper. */
+    @SuppressWarnings(&quot;java:S2390&quot;)
+<span class="fc" id="L76">    public static final PDRectangle A4 = new PDImmutableRectangle(210 * POINTS_PER_MM, 297 * POINTS_PER_MM);</span>
+
+    /** An immutable rectangle the size of A5 Paper. */
+    @SuppressWarnings(&quot;java:S2390&quot;)
+<span class="fc" id="L80">    public static final PDRectangle A5 = new PDImmutableRectangle(148 * POINTS_PER_MM, 210 * POINTS_PER_MM);</span>
+
+    /**  An immutable rectangle the size of A6 Paper. */
+    @SuppressWarnings(&quot;java:S2390&quot;)
+<span class="fc" id="L84">    public static final PDRectangle A6 = new PDImmutableRectangle(105 * POINTS_PER_MM, 148 * POINTS_PER_MM);</span>
+
+    private final COSArray rectArray;
+
+    /**
+     * Constructor.
+     *
+     * Initializes to 0,0,0,0
+     */
+    public PDRectangle()
+    {
+<span class="nc" id="L95">        this(0.0f, 0.0f, 0.0f, 0.0f);</span>
+<span class="nc" id="L96">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param width The width of the rectangle.
+     * @param height The height of the rectangle.
+     */
+    public PDRectangle( float width, float height )
+    {
+<span class="fc" id="L106">        this(0.0f, 0.0f, width, height);</span>
+<span class="fc" id="L107">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param x the x coordinate of the rectangle
+     * @param y the y coordinate of the rectangle
+     * @param width The width of the rectangle.
+     * @param height The height of the rectangle.
+     */
+    public PDRectangle( float x, float y, float width, float height )
+<span class="fc" id="L118">    {</span>
+<span class="fc" id="L119">        rectArray = new COSArray(List.of(</span>
+            new COSFloat( x ),
+            new COSFloat( y ),
+            new COSFloat( x + width ),
+            new COSFloat( y + height )
+        ));
+<span class="fc" id="L125">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param box the bounding box to be used for the rectangle
+     */
+    public PDRectangle( BoundingBox box )
+<span class="nc" id="L133">    {</span>
+<span class="nc" id="L134">        rectArray = new COSArray(List.of(</span>
+<span class="nc" id="L135">            new COSFloat( box.getLowerLeftX() ),</span>
+<span class="nc" id="L136">            new COSFloat( box.getLowerLeftY() ),</span>
+<span class="nc" id="L137">            new COSFloat( box.getUpperRightX() ),</span>
+<span class="nc" id="L138">            new COSFloat( box.getUpperRightY() )</span>
+        ));
+<span class="nc" id="L140">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param array An array of numbers as specified in the PDF Reference for a rectangle type.
+     */
+    public PDRectangle( COSArray array )
+<span class="nc" id="L148">    {</span>
+<span class="nc" id="L149">        float[] values = Arrays.copyOf(array.toFloatArray(), 4);</span>
+        // replace huge values, most likely those are invalid due to a malformed pdf
+<span class="nc bnc" id="L151" title="All 2 branches missed.">        for (int i = 0; i &lt; values.length; i++)</span>
+        {
+<span class="nc bnc" id="L153" title="All 2 branches missed.">            if (Math.abs(values[i]) &gt; Integer.MAX_VALUE)</span>
+            {
+<span class="nc bnc" id="L155" title="All 2 branches missed.">                values[i] = values[i] &gt; 0 ? Integer.MAX_VALUE : -Integer.MAX_VALUE;</span>
+            }
+        }
+<span class="nc" id="L158">        rectArray = new COSArray(List.of(</span>
+            // we have to start with the lower left corner
+<span class="nc" id="L160">            new COSFloat( Math.min(values[0],values[2] )),</span>
+<span class="nc" id="L161">            new COSFloat( Math.min(values[1],values[3] )),</span>
+<span class="nc" id="L162">            new COSFloat( Math.max(values[0],values[2] )),</span>
+<span class="nc" id="L163">            new COSFloat( Math.max(values[1],values[3] ))</span>
+        ));
+<span class="nc" id="L165">    }</span>
+
+    /**
+     * Method to determine if the x/y point is inside this rectangle.
+     * @param x The x-coordinate to test.
+     * @param y The y-coordinate to test.
+     * @return True if the point is inside this rectangle.
+     */
+    public boolean contains( float x, float y )
+    {
+<span class="nc" id="L175">        float llx = getLowerLeftX();</span>
+<span class="nc" id="L176">        float urx = getUpperRightX();</span>
+<span class="nc" id="L177">        float lly = getLowerLeftY();</span>
+<span class="nc" id="L178">        float ury = getUpperRightY();</span>
+<span class="nc bnc" id="L179" title="All 8 branches missed.">        return x &gt;= llx &amp;&amp; x &lt;= urx &amp;&amp;</span>
+               y &gt;= lly &amp;&amp; y &lt;= ury;
+    }
+
+    /**
+     * This will create a translated rectangle based off of this rectangle, such
+     * that the new rectangle retains the same dimensions(height/width), but the
+     * lower left x,y values are zero. &lt;br&gt;
+     * 100, 100, 400, 400 (llx, lly, urx, ury ) &lt;br&gt;
+     * will be translated to 0,0,300,300
+     *
+     * @return A new rectangle that has been translated back to the origin.
+     */
+    public PDRectangle createRetranslatedRectangle()
+    {
+<span class="nc" id="L194">        PDRectangle retval = new PDRectangle();</span>
+<span class="nc" id="L195">        retval.setUpperRightX( getWidth() );</span>
+<span class="nc" id="L196">        retval.setUpperRightY( getHeight() );</span>
+<span class="nc" id="L197">        return retval;</span>
+    }
+
+    /**
+     * This will get the underlying array for this rectangle.
+     *
+     * @return The cos array.
+     */
+    public COSArray getCOSArray()
+    {
+<span class="nc" id="L207">        return rectArray;</span>
+    }
+
+    /**
+     * This will get the lower left x coordinate.
+     *
+     * @return The lower left x.
+     */
+    public float getLowerLeftX()
+    {
+<span class="nc" id="L217">        return ((COSNumber)rectArray.get(0)).floatValue();</span>
+    }
+
+    /**
+     * This will set the lower left x coordinate.
+     *
+     * @param value The lower left x.
+     */
+    public void setLowerLeftX(float value)
+    {
+<span class="nc" id="L227">        rectArray.set(0, new COSFloat( value ) );</span>
+<span class="nc" id="L228">    }</span>
+
+    /**
+     * This will get the lower left y coordinate.
+     *
+     * @return The lower left y.
+     */
+    public float getLowerLeftY()
+    {
+<span class="nc" id="L237">        return ((COSNumber)rectArray.get(1)).floatValue();</span>
+    }
+
+    /**
+     * This will set the lower left y coordinate.
+     *
+     * @param value The lower left y.
+     */
+    public void setLowerLeftY(float value)
+    {
+<span class="nc" id="L247">        rectArray.set(1, new COSFloat( value ) );</span>
+<span class="nc" id="L248">    }</span>
+
+    /**
+     * This will get the upper right x coordinate.
+     *
+     * @return The upper right x .
+     */
+    public float getUpperRightX()
+    {
+<span class="nc" id="L257">        return ((COSNumber)rectArray.get(2)).floatValue();</span>
+    }
+
+    /**
+     * This will set the upper right x coordinate.
+     *
+     * @param value The upper right x .
+     */
+    public void setUpperRightX(float value)
+    {
+<span class="nc" id="L267">        rectArray.set(2, new COSFloat( value ) );</span>
+<span class="nc" id="L268">    }</span>
+
+    /**
+     * This will get the upper right y coordinate.
+     *
+     * @return The upper right y.
+     */
+    public float getUpperRightY()
+    {
+<span class="nc" id="L277">        return ((COSNumber)rectArray.get(3)).floatValue();</span>
+    }
+
+    /**
+     * This will set the upper right y coordinate.
+     *
+     * @param value The upper right y.
+     */
+    public void setUpperRightY(float value)
+    {
+<span class="nc" id="L287">        rectArray.set(3, new COSFloat( value ) );</span>
+<span class="nc" id="L288">    }</span>
+
+    /**
+     * This will get the width of this rectangle as calculated by
+     * upperRightX - lowerLeftX.
+     *
+     * @return The width of this rectangle.
+     */
+    public float getWidth()
+    {
+<span class="nc" id="L298">        return getUpperRightX() - getLowerLeftX();</span>
+    }
+
+    /**
+     * This will get the height of this rectangle as calculated by
+     * upperRightY - lowerLeftY.
+     *
+     * @return The height of this rectangle.
+     */
+    public float getHeight()
+    {
+<span class="nc" id="L309">        return getUpperRightY() - getLowerLeftY();</span>
+    }
+
+    /**
+     * Returns a path which represents this rectangle having been transformed by the given matrix. Note that the
+     * resulting path need not be rectangular.
+     * 
+     * @param matrix the matrix to be used for the transformation
+     * @return the transformed rectangle
+     */
+    public GeneralPath transform(Matrix matrix)
+    {
+<span class="nc" id="L321">        float x1 = getLowerLeftX();</span>
+<span class="nc" id="L322">        float y1 = getLowerLeftY();</span>
+<span class="nc" id="L323">        float x2 = getUpperRightX();</span>
+<span class="nc" id="L324">        float y2 = getUpperRightY();</span>
+
+<span class="nc" id="L326">        Point2D.Float p0 = matrix.transformPoint(x1, y1);</span>
+<span class="nc" id="L327">        Point2D.Float p1 = matrix.transformPoint(x2, y1);</span>
+<span class="nc" id="L328">        Point2D.Float p2 = matrix.transformPoint(x2, y2);</span>
+<span class="nc" id="L329">        Point2D.Float p3 = matrix.transformPoint(x1, y2);</span>
+
+<span class="nc" id="L331">        GeneralPath path = new GeneralPath();</span>
+<span class="nc" id="L332">        path.moveTo(p0.getX(), p0.getY());</span>
+<span class="nc" id="L333">        path.lineTo(p1.getX(), p1.getY());</span>
+<span class="nc" id="L334">        path.lineTo(p2.getX(), p2.getY());</span>
+<span class="nc" id="L335">        path.lineTo(p3.getX(), p3.getY());</span>
+<span class="nc" id="L336">        path.closePath();</span>
+<span class="nc" id="L337">        return path;</span>
+    }
+
+    /**
+     * Convert this standard java object to a COS object.
+     *
+     * @return The cos object that matches this Java object.
+     */
+    @Override
+    public COSBase getCOSObject()
+    {
+<span class="fc" id="L348">        return rectArray;</span>
+    }
+
+    /**
+     * Returns a general path equivalent to this rectangle. This method avoids the problems caused by Rectangle2D not
+     * working well with -ve rectangles.
+     * 
+     * @return a general path equivalent to this rectangle
+     */
+    public GeneralPath toGeneralPath()
+    {
+<span class="nc" id="L359">        float x1 = getLowerLeftX();</span>
+<span class="nc" id="L360">        float y1 = getLowerLeftY();</span>
+<span class="nc" id="L361">        float x2 = getUpperRightX();</span>
+<span class="nc" id="L362">        float y2 = getUpperRightY();</span>
+<span class="nc" id="L363">        GeneralPath path = new GeneralPath();</span>
+<span class="nc" id="L364">        path.moveTo(x1, y1);</span>
+<span class="nc" id="L365">        path.lineTo(x2, y1);</span>
+<span class="nc" id="L366">        path.lineTo(x2, y2);</span>
+<span class="nc" id="L367">        path.lineTo(x1, y2);</span>
+<span class="nc" id="L368">        path.closePath();</span>
+<span class="nc" id="L369">        return path;</span>
+    }
+
+    /**
+     * This will return a string representation of this rectangle.
+     *
+     * @return This object as a string.
+     */
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L380">        return &quot;[&quot; + getLowerLeftX() + &quot;,&quot; + getLowerLeftY() + &quot;,&quot; +</span>
+<span class="nc" id="L381">                     getUpperRightX() + &quot;,&quot; + getUpperRightY() +&quot;]&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

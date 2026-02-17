@@ -1,0 +1,716 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LosslessFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.image</a> &gt; <span class="el_source">LosslessFactory.java</span></div><h1>LosslessFactory.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2014 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.image;
+
+import java.awt.Transparency;
+import java.awt.color.ColorSpace;
+import java.awt.color.ICC_ColorSpace;
+import java.awt.color.ICC_Profile;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
+import java.awt.image.Raster;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.filter.Filter;
+import org.apache.pdfbox.filter.FilterFactory;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceCMYK;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceColorSpace;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceGray;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
+import org.apache.pdfbox.pdmodel.graphics.color.PDICCBased;
+
+/**
+ * Factory for creating a PDImageXObject containing a lossless compressed image.
+ *
+ * @author Tilman Hausherr
+ */
+public final class LosslessFactory
+{
+    /** 
+     * Internal, only for benchmark purpose
+     */
+    static final boolean USE_PREDICTOR_ENCODER = true;
+
+    private LosslessFactory()
+    {
+    }
+
+    /**
+     * Creates a new lossless encoded image XObject from a BufferedImage.
+     * &lt;p&gt;
+     * &lt;u&gt;New for advanced users from 2.0.12 on:&lt;/u&gt;&lt;br&gt;
+     * If you created your image with a non standard ICC colorspace, it will be
+     * preserved. (If you load images in java using ImageIO then no need to read
+     * this segment) However a new colorspace will be created for each image. So
+     * if you create a PDF with several such images, consider replacing the
+     * colorspace with a common object to save space. This is done with
+     * {@link PDImageXObject#getColorSpace()} and
+     * {@link PDImageXObject#setColorSpace(org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace) PDImageXObject.setColorSpace()}
+     *
+     * @param document the document where the image will be created
+     * @param image the BufferedImage to embed
+     * @return a new image XObject
+     * @throws IOException if something goes wrong
+     */
+    public static PDImageXObject createFromImage(PDDocument document, BufferedImage image)
+            throws IOException
+    {
+<span class="nc bnc" id="L82" title="All 2 branches missed.">        if (isGrayImage(image))</span>
+        {
+<span class="nc" id="L84">            return createFromGrayImage(image, document);</span>
+        }
+
+        // We try to encode the image with predictor
+        if (USE_PREDICTOR_ENCODER)
+        {
+<span class="nc" id="L90">            PDImageXObject pdImageXObject = new PredictorEncoder(document, image).encode();</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">            if (pdImageXObject != null)</span>
+            {
+<span class="nc bnc" id="L93" title="All 2 branches missed.">                if (pdImageXObject.getColorSpace() == PDDeviceRGB.INSTANCE &amp;&amp;</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">                    pdImageXObject.getBitsPerComponent() &lt; 16 &amp;&amp;</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">                    image.getWidth() * image.getHeight() &lt;= 50 * 50)</span>
+                {
+                    // also create classic compressed image, compare sizes
+<span class="nc" id="L98">                    PDImageXObject pdImageXObjectClassic = createFromRGBImage(image, document);</span>
+<span class="nc" id="L99">                    if (pdImageXObjectClassic.getCOSObject().getLength() &lt; </span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">                        pdImageXObject.getCOSObject().getLength())</span>
+                    {
+<span class="nc" id="L102">                        pdImageXObject.getCOSObject().close();</span>
+<span class="nc" id="L103">                        return pdImageXObjectClassic;</span>
+                    }
+                    else
+                    {
+<span class="nc" id="L107">                        pdImageXObjectClassic.getCOSObject().close();</span>
+                    }
+                }
+<span class="nc" id="L110">                return pdImageXObject;</span>
+            }
+        }
+
+        // Fallback: We export the image as 8-bit sRGB and might lose color information
+<span class="nc" id="L115">        return createFromRGBImage(image, document);</span>
+    }
+
+    private static boolean isGrayImage(BufferedImage image)
+    {
+<span class="nc bnc" id="L120" title="All 2 branches missed.">        if (image.getTransparency() != Transparency.OPAQUE)</span>
+        {
+<span class="nc" id="L122">            return false;</span>
+        }
+<span class="nc bnc" id="L124" title="All 4 branches missed.">        if (image.getType() == BufferedImage.TYPE_BYTE_GRAY &amp;&amp; image.getColorModel().getPixelSize() &lt;= 8)</span>
+        {
+<span class="nc" id="L126">            return true;</span>
+        }
+<span class="nc bnc" id="L128" title="All 4 branches missed.">        if (image.getType() == BufferedImage.TYPE_BYTE_BINARY &amp;&amp; image.getColorModel().getPixelSize() == 1)</span>
+        {
+<span class="nc" id="L130">            return true;</span>
+        }
+<span class="nc" id="L132">        return false;</span>
+    }
+
+    // grayscale images need one color per sample
+    private static PDImageXObject createFromGrayImage(BufferedImage image, PDDocument document)
+            throws IOException
+    {
+<span class="nc" id="L139">        int height = image.getHeight();</span>
+<span class="nc" id="L140">        int width = image.getWidth();</span>
+<span class="nc" id="L141">        int[] rgbLineBuffer = new int[width];</span>
+<span class="nc" id="L142">        int bpc = image.getColorModel().getPixelSize();</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        ByteArrayOutputStream baos = new ByteArrayOutputStream(((width*bpc/8)+(width*bpc%8 != 0 ? 1:0))*height);</span>
+<span class="nc" id="L144">        try (MemoryCacheImageOutputStream mcios = new MemoryCacheImageOutputStream(baos))</span>
+        {
+<span class="nc bnc" id="L146" title="All 2 branches missed.">            for (int y = 0; y &lt; height; ++y)</span>
+            {
+<span class="nc bnc" id="L148" title="All 2 branches missed.">                for (int pixel : image.getRGB(0, y, width, 1, rgbLineBuffer, 0, width))</span>
+                {
+<span class="nc" id="L150">                    mcios.writeBits(pixel &amp; 0xFF, bpc);</span>
+                }
+<span class="nc" id="L152">                int bitOffset = mcios.getBitOffset();</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">                if (bitOffset != 0)</span>
+                {
+<span class="nc" id="L155">                    mcios.writeBits(0, 8 - bitOffset);</span>
+                }
+            }
+<span class="nc" id="L158">            mcios.flush();</span>
+        }
+<span class="nc" id="L160">        return prepareImageXObject(document, baos.toByteArray(),</span>
+<span class="nc" id="L161">                image.getWidth(), image.getHeight(), bpc, PDDeviceGray.INSTANCE);</span>
+    }
+
+    private static PDImageXObject createFromRGBImage(BufferedImage image, PDDocument document) throws IOException
+    {
+<span class="nc" id="L166">        int height = image.getHeight();</span>
+<span class="nc" id="L167">        int width = image.getWidth();</span>
+<span class="nc" id="L168">        int[] rgbLineBuffer = new int[width];</span>
+<span class="nc" id="L169">        int bpc = 8;</span>
+<span class="nc" id="L170">        PDDeviceColorSpace deviceColorSpace = PDDeviceRGB.INSTANCE;</span>
+<span class="nc" id="L171">        byte[] imageData = new byte[width * height * 3];</span>
+<span class="nc" id="L172">        int byteIdx = 0;</span>
+<span class="nc" id="L173">        int alphaByteIdx = 0;</span>
+<span class="nc" id="L174">        int alphaBitPos = 7;</span>
+<span class="nc" id="L175">        int transparency = image.getTransparency();</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">        int apbc = transparency == Transparency.BITMASK ? 1 : 8;</span>
+        byte[] alphaImageData;
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        if (transparency != Transparency.OPAQUE)</span>
+        {
+<span class="nc bnc" id="L180" title="All 2 branches missed.">            alphaImageData = new byte[((width * apbc / 8) + (width * apbc % 8 != 0 ? 1 : 0)) * height];</span>
+        }
+        else
+        {
+<span class="nc" id="L184">            alphaImageData = new byte[0];</span>
+        }
+<span class="nc bnc" id="L186" title="All 2 branches missed.">        for (int y = 0; y &lt; height; ++y)</span>
+        {
+<span class="nc bnc" id="L188" title="All 2 branches missed.">            for (int pixel : image.getRGB(0, y, width, 1, rgbLineBuffer, 0, width))</span>
+            {
+<span class="nc" id="L190">                imageData[byteIdx++] = (byte) ((pixel &gt;&gt; 16) &amp; 0xFF);</span>
+<span class="nc" id="L191">                imageData[byteIdx++] = (byte) ((pixel &gt;&gt; 8) &amp; 0xFF);</span>
+<span class="nc" id="L192">                imageData[byteIdx++] = (byte) (pixel &amp; 0xFF);</span>
+
+                // we have the alpha right here, so no need to do it separately
+                // as done prior April 2018
+<span class="nc bnc" id="L196" title="All 2 branches missed.">                if (transparency == Transparency.BITMASK)</span>
+                {
+                    // write a bit
+<span class="nc" id="L199">                    alphaImageData[alphaByteIdx] |= ((pixel &gt;&gt; 24) &amp; 1) &lt;&lt; alphaBitPos;</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">                    if (--alphaBitPos &lt; 0)</span>
+                    {
+<span class="nc" id="L202">                        alphaBitPos = 7;</span>
+<span class="nc" id="L203">                        ++alphaByteIdx;</span>
+                    }
+                }
+<span class="nc bnc" id="L206" title="All 2 branches missed.">                else if (transparency != Transparency.OPAQUE)</span>
+                {
+                    // write a byte
+<span class="nc" id="L209">                    alphaImageData[alphaByteIdx++] = (byte) ((pixel &gt;&gt; 24) &amp; 0xFF);</span>
+                }
+            }
+
+            // skip boundary if needed
+<span class="nc bnc" id="L214" title="All 4 branches missed.">            if (transparency == Transparency.BITMASK &amp;&amp; alphaBitPos != 7)</span>
+            {
+<span class="nc" id="L216">                alphaBitPos = 7;</span>
+<span class="nc" id="L217">                ++alphaByteIdx;</span>
+            }
+        }
+<span class="nc" id="L220">        PDImageXObject pdImage = prepareImageXObject(document, imageData,</span>
+<span class="nc" id="L221">                image.getWidth(), image.getHeight(), bpc, deviceColorSpace);      </span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">        if (transparency != Transparency.OPAQUE)</span>
+        {
+<span class="nc" id="L224">            PDImageXObject pdMask = prepareImageXObject(document, alphaImageData,</span>
+<span class="nc" id="L225">                    image.getWidth(), image.getHeight(), apbc, PDDeviceGray.INSTANCE);</span>
+<span class="nc" id="L226">            pdImage.getCOSObject().setItem(COSName.SMASK, pdMask);</span>
+        }
+<span class="nc" id="L228">        return pdImage;</span>
+    }
+
+    /**
+     * Create a PDImageXObject using the Flate filter.
+     * 
+     * @param document The document.
+     * @param byteArray array with data.
+     * @param width the image width
+     * @param height the image height
+     * @param bitsPerComponent the bits per component
+     * @param initColorSpace the color space
+     * @return the newly created PDImageXObject with the data compressed.
+     * @throws IOException 
+     */
+    static PDImageXObject prepareImageXObject(PDDocument document,
+            byte [] byteArray, int width, int height, int bitsPerComponent, 
+            PDColorSpace initColorSpace) throws IOException
+    {
+        //pre-size the output stream to half of the input
+<span class="nc" id="L248">        ByteArrayOutputStream baos = new ByteArrayOutputStream(byteArray.length/2);</span>
+
+<span class="nc" id="L250">        Filter filter = FilterFactory.INSTANCE.getFilter(COSName.FLATE_DECODE);</span>
+<span class="nc" id="L251">        filter.encode(new ByteArrayInputStream(byteArray), baos, new COSDictionary(), 0);</span>
+
+<span class="nc" id="L253">        ByteArrayInputStream encodedByteStream = new ByteArrayInputStream(baos.toByteArray());</span>
+<span class="nc" id="L254">        return new PDImageXObject(document, encodedByteStream, COSName.FLATE_DECODE, </span>
+                width, height, bitsPerComponent, initColorSpace);
+    }
+
+    private static class PredictorEncoder
+    {
+        private final PDDocument document;
+        private final BufferedImage image;
+        private final int componentsPerPixel;
+        private final int transferType;
+        private final int bytesPerComponent;
+        private final int bytesPerPixel;
+
+        private final int height;
+        private final int width;
+
+        private final byte[] dataRawRowNone;
+        private final byte[] dataRawRowSub;
+        private final byte[] dataRawRowUp;
+        private final byte[] dataRawRowAverage;
+        private final byte[] dataRawRowPaeth;
+
+        final int imageType;
+        final boolean hasAlpha;
+        final byte[] alphaImageData;
+
+        final byte[] aValues;
+        final byte[] cValues;
+        final byte[] bValues;
+        final byte[] xValues;
+        final byte[] tmpResultValues;
+
+        /**
+         * Initialize the encoder and set all final fields
+         */
+        PredictorEncoder(PDDocument document, BufferedImage image)
+<span class="nc" id="L290">        {</span>
+<span class="nc" id="L291">            this.document = document;</span>
+<span class="nc" id="L292">            this.image = image;</span>
+
+            // The raw count of components per pixel including optional alpha
+<span class="nc" id="L295">            this.componentsPerPixel = image.getColorModel().getNumComponents();</span>
+<span class="nc" id="L296">            this.transferType = image.getRaster().getTransferType();</span>
+<span class="nc bnc" id="L297" title="All 4 branches missed.">            this.bytesPerComponent = (transferType == DataBuffer.TYPE_SHORT</span>
+<span class="nc" id="L298">                    || transferType == DataBuffer.TYPE_USHORT) ? 2 : 1;</span>
+
+            // Only the bytes we need in the output (excluding alpha)
+<span class="nc" id="L301">            this.bytesPerPixel = image.getColorModel().getNumColorComponents() * bytesPerComponent;</span>
+
+<span class="nc" id="L303">            this.height = image.getHeight();</span>
+<span class="nc" id="L304">            this.width = image.getWidth();</span>
+<span class="nc" id="L305">            this.imageType = image.getType();</span>
+<span class="nc" id="L306">            this.hasAlpha = image.getColorModel().getNumComponents() != image.getColorModel()</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">                    .getNumColorComponents();</span>
+<span class="nc bnc" id="L308" title="All 2 branches missed.">            this.alphaImageData = hasAlpha ? new byte[width * height * bytesPerComponent] : null;</span>
+
+            // The rows have 1-byte encoding marker and width * BYTES_PER_PIXEL pixel-bytes
+<span class="nc" id="L311">            int dataRowByteCount = width * bytesPerPixel + 1;</span>
+<span class="nc" id="L312">            this.dataRawRowNone = new byte[dataRowByteCount];</span>
+<span class="nc" id="L313">            this.dataRawRowSub = new byte[dataRowByteCount];</span>
+<span class="nc" id="L314">            this.dataRawRowUp = new byte[dataRowByteCount];</span>
+<span class="nc" id="L315">            this.dataRawRowAverage = new byte[dataRowByteCount];</span>
+<span class="nc" id="L316">            this.dataRawRowPaeth = new byte[dataRowByteCount];</span>
+
+            // Write the encoding markers
+<span class="nc" id="L319">            dataRawRowNone[0] = 0;</span>
+<span class="nc" id="L320">            dataRawRowSub[0] = 1;</span>
+<span class="nc" id="L321">            dataRawRowUp[0] = 2;</span>
+<span class="nc" id="L322">            dataRawRowAverage[0] = 3;</span>
+<span class="nc" id="L323">            dataRawRowPaeth[0] = 4;</span>
+
+            // c | b
+            // -----
+            // a | x
+            //
+            // x =&gt; current pixel
+<span class="nc" id="L330">            this.aValues = new byte[bytesPerPixel];</span>
+<span class="nc" id="L331">            this.cValues = new byte[bytesPerPixel];</span>
+<span class="nc" id="L332">            this.bValues = new byte[bytesPerPixel];</span>
+<span class="nc" id="L333">            this.xValues = new byte[bytesPerPixel];</span>
+<span class="nc" id="L334">            this.tmpResultValues = new byte[bytesPerPixel];</span>
+<span class="nc" id="L335">        }</span>
+
+        /**
+         * Tries to compress the image using a predictor.
+         *
+         * @return the image or null if it is not possible to encoded the image (e.g. not supported
+         * raster format etc.)
+         */
+        PDImageXObject encode() throws IOException
+        {
+<span class="nc" id="L345">            Raster imageRaster = image.getRaster();</span>
+            final int elementsInRowPerPixel;
+
+            // These variables store a row of the image each, the exact type depends
+            // on the image encoding. Can be a int[], short[] or byte[]
+            Object prevRow;
+            Object transferRow;
+
+<span class="nc bnc" id="L353" title="All 4 branches missed.">            switch (imageType)</span>
+            {
+                case BufferedImage.TYPE_CUSTOM:
+<span class="nc bnc" id="L356" title="All 3 branches missed.">                    switch (imageRaster.getTransferType())</span>
+                    {
+                        case DataBuffer.TYPE_USHORT:
+<span class="nc" id="L359">                            elementsInRowPerPixel = componentsPerPixel;</span>
+<span class="nc" id="L360">                            prevRow = new short[width * elementsInRowPerPixel];</span>
+<span class="nc" id="L361">                            transferRow = new short[width * elementsInRowPerPixel];</span>
+<span class="nc" id="L362">                            break;</span>
+                        case DataBuffer.TYPE_BYTE:
+<span class="nc" id="L364">                            elementsInRowPerPixel = componentsPerPixel;</span>
+<span class="nc" id="L365">                            prevRow = new byte[width * elementsInRowPerPixel];</span>
+<span class="nc" id="L366">                            transferRow = new byte[width * elementsInRowPerPixel];</span>
+<span class="nc" id="L367">                            break;</span>
+                        default:
+<span class="nc" id="L369">                            return null;</span>
+                    }
+                    break;
+
+                case BufferedImage.TYPE_3BYTE_BGR:
+                case BufferedImage.TYPE_4BYTE_ABGR:
+<span class="nc" id="L375">                    elementsInRowPerPixel = componentsPerPixel;</span>
+<span class="nc" id="L376">                    prevRow = new byte[width * elementsInRowPerPixel];</span>
+<span class="nc" id="L377">                    transferRow = new byte[width * elementsInRowPerPixel];</span>
+<span class="nc" id="L378">                    break;</span>
+
+                case BufferedImage.TYPE_INT_BGR:
+                case BufferedImage.TYPE_INT_ARGB:
+                case BufferedImage.TYPE_INT_RGB:
+<span class="nc" id="L383">                    elementsInRowPerPixel = 1;</span>
+<span class="nc" id="L384">                    prevRow = new int[width * elementsInRowPerPixel];</span>
+<span class="nc" id="L385">                    transferRow = new int[width * elementsInRowPerPixel];</span>
+<span class="nc" id="L386">                    break;</span>
+
+                default:
+                    // We can not handle this unknown format
+<span class="nc" id="L390">                    return null;</span>
+            }
+
+<span class="nc" id="L393">            final int elementsInTransferRow = width * elementsInRowPerPixel;</span>
+
+            // pre-size the output stream to half of the maximum size
+<span class="nc" id="L396">            ByteArrayOutputStream stream = new ByteArrayOutputStream(</span>
+                    height * width * bytesPerPixel / 2);
+<span class="nc" id="L398">            Deflater deflater = new Deflater(Filter.getCompressionLevel());</span>
+<span class="nc" id="L399">            DeflaterOutputStream zip = new DeflaterOutputStream(stream, deflater);</span>
+
+<span class="nc" id="L401">            int alphaPtr = 0;</span>
+
+<span class="nc bnc" id="L403" title="All 2 branches missed.">            for (int rowNum = 0; rowNum &lt; height; rowNum++)</span>
+            {
+<span class="nc" id="L405">                imageRaster.getDataElements(0, rowNum, width, 1, transferRow);</span>
+
+                // We start to write at index one, as the predictor marker is in index zero
+<span class="nc" id="L408">                int writerPtr = 1;</span>
+<span class="nc" id="L409">                Arrays.fill(aValues, (byte) 0);</span>
+<span class="nc" id="L410">                Arrays.fill(cValues, (byte) 0);</span>
+
+                final byte[] transferRowByte;
+                final byte[] prevRowByte;
+                final int[] transferRowInt;
+                final int[] prevRowInt;
+                final short[] transferRowShort;
+                final short[] prevRowShort;
+
+<span class="nc bnc" id="L419" title="All 2 branches missed.">                if (transferRow instanceof byte[])</span>
+                {
+<span class="nc" id="L421">                    transferRowByte = (byte[]) transferRow;</span>
+<span class="nc" id="L422">                    prevRowByte = (byte[]) prevRow;</span>
+<span class="nc" id="L423">                    transferRowInt = prevRowInt = null;</span>
+<span class="nc" id="L424">                    transferRowShort = prevRowShort = null;</span>
+                }
+<span class="nc bnc" id="L426" title="All 2 branches missed.">                else if (transferRow instanceof int[])</span>
+                {
+<span class="nc" id="L428">                    transferRowInt = (int[]) transferRow;</span>
+<span class="nc" id="L429">                    prevRowInt = (int[]) prevRow;</span>
+<span class="nc" id="L430">                    transferRowShort = prevRowShort = null;</span>
+<span class="nc" id="L431">                    transferRowByte = prevRowByte = null;</span>
+                }
+                else
+                {
+                    // This must be short[]
+<span class="nc" id="L436">                    transferRowShort = (short[]) transferRow;</span>
+<span class="nc" id="L437">                    prevRowShort = (short[]) prevRow;</span>
+<span class="nc" id="L438">                    transferRowInt = prevRowInt = null;</span>
+<span class="nc" id="L439">                    transferRowByte = prevRowByte = null;</span>
+                }
+
+<span class="nc bnc" id="L442" title="All 2 branches missed.">                for (int indexInTransferRow = 0; indexInTransferRow &lt; elementsInTransferRow;</span>
+<span class="nc" id="L443">                        indexInTransferRow += elementsInRowPerPixel, alphaPtr += bytesPerComponent)</span>
+                {
+                    // Copy the pixel values into the byte array
+<span class="nc bnc" id="L446" title="All 2 branches missed.">                    if (transferRowByte != null)</span>
+                    {
+<span class="nc" id="L448">                        copyImageBytes(transferRowByte, indexInTransferRow, xValues, alphaImageData,</span>
+                                alphaPtr);
+<span class="nc" id="L450">                        copyImageBytes(prevRowByte, indexInTransferRow, bValues, null, 0);</span>
+                    }
+<span class="nc bnc" id="L452" title="All 2 branches missed.">                    else if (transferRowInt != null)</span>
+                    {
+<span class="nc" id="L454">                        copyIntToBytes(transferRowInt, indexInTransferRow, xValues, alphaImageData,</span>
+                                alphaPtr);
+<span class="nc" id="L456">                        copyIntToBytes(prevRowInt, indexInTransferRow, bValues, null, 0);</span>
+                    }
+                    else
+                    {
+                        // This must be short[]
+<span class="nc" id="L461">                        copyShortsToBytes(transferRowShort, indexInTransferRow, xValues, alphaImageData, alphaPtr);</span>
+<span class="nc" id="L462">                        copyShortsToBytes(prevRowShort, indexInTransferRow, bValues, null, 0);</span>
+                    }
+
+                    // Encode the pixel values in the different encodings
+<span class="nc" id="L466">                    int length = xValues.length;</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">                    for (int bytePtr = 0; bytePtr &lt; length; bytePtr++)</span>
+                    {
+<span class="nc" id="L469">                        int x = xValues[bytePtr] &amp; 0xFF;</span>
+<span class="nc" id="L470">                        int a = aValues[bytePtr] &amp; 0xFF;</span>
+<span class="nc" id="L471">                        int b = bValues[bytePtr] &amp; 0xFF;</span>
+<span class="nc" id="L472">                        int c = cValues[bytePtr] &amp; 0xFF;</span>
+<span class="nc" id="L473">                        dataRawRowNone[writerPtr] = (byte) x;</span>
+<span class="nc" id="L474">                        dataRawRowSub[writerPtr] = pngFilterSub(x, a);</span>
+<span class="nc" id="L475">                        dataRawRowUp[writerPtr] = pngFilterUp(x, b);</span>
+<span class="nc" id="L476">                        dataRawRowAverage[writerPtr] = pngFilterAverage(x, a, b);</span>
+<span class="nc" id="L477">                        dataRawRowPaeth[writerPtr] = pngFilterPaeth(x, a, b, c);</span>
+<span class="nc" id="L478">                        writerPtr++;</span>
+                    }
+
+                    //  We shift the values into the prev / upper left values for the next pixel
+<span class="nc" id="L482">                    System.arraycopy(xValues, 0, aValues, 0, bytesPerPixel);</span>
+<span class="nc" id="L483">                    System.arraycopy(bValues, 0, cValues, 0, bytesPerPixel);</span>
+                }
+
+<span class="nc" id="L486">                byte[] rowToWrite = chooseDataRowToWrite();</span>
+
+                // Write and compress the row as long it is hot (CPU cache wise)
+<span class="nc" id="L489">                zip.write(rowToWrite, 0, rowToWrite.length);</span>
+
+                // We swap prev and transfer row, so that we have the prev row for the next row.
+<span class="nc" id="L492">                Object temp = prevRow;</span>
+<span class="nc" id="L493">                prevRow = transferRow;</span>
+<span class="nc" id="L494">                transferRow = temp;</span>
+            }
+<span class="nc" id="L496">            zip.close();</span>
+<span class="nc" id="L497">            deflater.end();</span>
+
+<span class="nc" id="L499">            return preparePredictorPDImage(stream, bytesPerComponent * 8);</span>
+        }
+
+        private void copyIntToBytes(int[] transferRow, int indexInTranferRow, byte[] targetValues,
+                byte[] alphaImageData, int alphaPtr)
+        {
+<span class="nc" id="L505">            int val = transferRow[indexInTranferRow];</span>
+<span class="nc" id="L506">            byte b0 = (byte) (val &amp; 0xFF);</span>
+<span class="nc" id="L507">            byte b1 = (byte) ((val &gt;&gt; 8) &amp; 0xFF);</span>
+<span class="nc" id="L508">            byte b2 = (byte) ((val &gt;&gt; 16) &amp; 0xFF);</span>
+
+<span class="nc bnc" id="L510" title="All 4 branches missed.">            switch (imageType)</span>
+            {
+                case BufferedImage.TYPE_INT_BGR:
+<span class="nc" id="L513">                    targetValues[0] = b0;</span>
+<span class="nc" id="L514">                    targetValues[1] = b1;</span>
+<span class="nc" id="L515">                    targetValues[2] = b2;</span>
+<span class="nc" id="L516">                    break;</span>
+
+                case BufferedImage.TYPE_INT_ARGB:
+<span class="nc" id="L519">                    targetValues[0] = b2;</span>
+<span class="nc" id="L520">                    targetValues[1] = b1;</span>
+<span class="nc" id="L521">                    targetValues[2] = b0;</span>
+<span class="nc bnc" id="L522" title="All 2 branches missed.">                    if (alphaImageData != null)</span>
+                    {
+<span class="nc" id="L524">                        byte b3 = (byte) ((val &gt;&gt; 24) &amp; 0xFF);</span>
+<span class="nc" id="L525">                        alphaImageData[alphaPtr] = b3;</span>
+<span class="nc" id="L526">                    }</span>
+                    break;
+                case BufferedImage.TYPE_INT_RGB:
+<span class="nc" id="L529">                    targetValues[0] = b2;</span>
+<span class="nc" id="L530">                    targetValues[1] = b1;</span>
+<span class="nc" id="L531">                    targetValues[2] = b0;</span>
+<span class="nc" id="L532">                    break;</span>
+                default:
+                    break;
+            }
+<span class="nc" id="L536">        }</span>
+
+        private void copyImageBytes(byte[] transferRow, int indexInTranferRow, byte[] targetValues,
+                byte[] alphaImageData, int alphaPtr)
+        {
+<span class="nc" id="L541">            System.arraycopy(transferRow, indexInTranferRow, targetValues, 0, targetValues.length);</span>
+<span class="nc bnc" id="L542" title="All 2 branches missed.">            if (alphaImageData != null)</span>
+            {
+<span class="nc" id="L544">                alphaImageData[alphaPtr] = transferRow[indexInTranferRow + targetValues.length];</span>
+            }
+<span class="nc" id="L546">        }</span>
+
+        private static void copyShortsToBytes(short[] transferRow, int indexInTranferRow,
+                byte[] targetValues, byte[] alphaImageData, int alphaPtr)
+        {
+<span class="nc" id="L551">            int itr = indexInTranferRow;</span>
+<span class="nc bnc" id="L552" title="All 2 branches missed.">            for (int i = 0; i &lt; targetValues.length - 1; i += 2)</span>
+            {
+<span class="nc" id="L554">                short val = transferRow[itr++];</span>
+<span class="nc" id="L555">                targetValues[i] = (byte) ((val &gt;&gt; 8) &amp; 0xFF);</span>
+<span class="nc" id="L556">                targetValues[i + 1] = (byte) (val &amp; 0xFF);</span>
+            }
+<span class="nc bnc" id="L558" title="All 2 branches missed.">            if (alphaImageData != null)</span>
+            {
+<span class="nc" id="L560">                short alpha = transferRow[itr];</span>
+<span class="nc" id="L561">                alphaImageData[alphaPtr] = (byte) ((alpha &gt;&gt; 8) &amp; 0xFF);</span>
+<span class="nc" id="L562">                alphaImageData[alphaPtr + 1] = (byte) (alpha &amp; 0xFF);</span>
+            }
+<span class="nc" id="L564">        }</span>
+
+        private PDImageXObject preparePredictorPDImage(ByteArrayOutputStream stream,
+                int bitsPerComponent) throws IOException
+        {
+<span class="nc" id="L569">            int h = image.getHeight();</span>
+<span class="nc" id="L570">            int w = image.getWidth();</span>
+
+<span class="nc" id="L572">            ColorSpace srcCspace = image.getColorModel().getColorSpace();</span>
+<span class="nc" id="L573">            int srcCspaceType = srcCspace.getType();</span>
+<span class="nc bnc" id="L574" title="All 2 branches missed.">            PDColorSpace pdColorSpace = srcCspaceType == ColorSpace.TYPE_CMYK</span>
+<span class="nc" id="L575">                    ? PDDeviceCMYK.INSTANCE</span>
+<span class="nc bnc" id="L576" title="All 2 branches missed.">                    : (srcCspaceType == ColorSpace.TYPE_GRAY</span>
+<span class="nc" id="L577">                            ? PDDeviceGray.INSTANCE : PDDeviceRGB.INSTANCE);</span>
+
+            // Encode the image profile if the image has one
+<span class="nc bnc" id="L580" title="All 2 branches missed.">            if (srcCspace instanceof ICC_ColorSpace)</span>
+            {
+<span class="nc" id="L582">                ICC_Profile profile = ((ICC_ColorSpace) srcCspace).getProfile();</span>
+                // We only encode a color profile if it is not sRGB
+<span class="nc bnc" id="L584" title="All 2 branches missed.">                if (profile != ICC_Profile.getInstance(ColorSpace.CS_sRGB))</span>
+                {
+<span class="nc" id="L586">                    PDICCBased pdProfile = new PDICCBased(document);</span>
+<span class="nc" id="L587">                    try (OutputStream outputStream = pdProfile.getPDStream()</span>
+<span class="nc" id="L588">                            .createOutputStream(COSName.FLATE_DECODE))</span>
+                    {
+<span class="nc" id="L590">                        outputStream.write(profile.getData());</span>
+                    }
+<span class="nc" id="L592">                    pdProfile.getPDStream().getCOSObject().setInt(COSName.N,</span>
+<span class="nc" id="L593">                            srcCspace.getNumComponents());</span>
+<span class="nc" id="L594">                    pdProfile.getPDStream().getCOSObject().setItem(COSName.ALTERNATE,</span>
+<span class="nc bnc" id="L595" title="All 2 branches missed.">                            srcCspaceType == ColorSpace.TYPE_GRAY ? COSName.DEVICEGRAY</span>
+<span class="nc bnc" id="L596" title="All 2 branches missed.">                                    : (srcCspaceType == ColorSpace.TYPE_CMYK ? COSName.DEVICECMYK</span>
+<span class="nc" id="L597">                                            : COSName.DEVICERGB));</span>
+<span class="nc" id="L598">                    pdColorSpace = pdProfile;</span>
+                }
+            }
+
+<span class="nc" id="L602">            PDImageXObject imageXObject = new PDImageXObject(document,</span>
+<span class="nc" id="L603">                    new ByteArrayInputStream(stream.toByteArray()), COSName.FLATE_DECODE, w,</span>
+                    h, bitsPerComponent, pdColorSpace);
+
+<span class="nc" id="L606">            COSDictionary decodeParms = new COSDictionary();</span>
+<span class="nc" id="L607">            decodeParms.setItem(COSName.BITS_PER_COMPONENT, COSInteger.get(bitsPerComponent));</span>
+<span class="nc" id="L608">            decodeParms.setItem(COSName.PREDICTOR, COSInteger.get(15));</span>
+<span class="nc" id="L609">            decodeParms.setItem(COSName.COLUMNS, COSInteger.get(w));</span>
+<span class="nc" id="L610">            decodeParms.setItem(COSName.COLORS, COSInteger.get(srcCspace.getNumComponents()));</span>
+<span class="nc" id="L611">            imageXObject.getCOSObject().setItem(COSName.DECODE_PARMS, decodeParms);</span>
+
+<span class="nc bnc" id="L613" title="All 2 branches missed.">            if (image.getTransparency() != Transparency.OPAQUE)</span>
+            {
+<span class="nc" id="L615">                PDImageXObject pdMask = prepareImageXObject(document, alphaImageData,</span>
+<span class="nc" id="L616">                        image.getWidth(), image.getHeight(), 8 * bytesPerComponent, PDDeviceGray.INSTANCE);</span>
+<span class="nc" id="L617">                imageXObject.getCOSObject().setItem(COSName.SMASK, pdMask);</span>
+            }
+<span class="nc" id="L619">            return imageXObject;</span>
+        }
+
+        /**
+         * We look which row encoding is the &quot;best&quot; one, ie. has the lowest sum. We don't implement
+         * anything fancier to choose the right row encoding. This is just the recommend algorithm
+         * in the spec. The get the perfect encoding you would need to do a brute force check how
+         * all the different encoded rows compress in the zip stream together. You have would have
+         * to check 5*image-height permutations...
+         *
+         * @return the &quot;best&quot; row encoding of the row encodings
+         */
+        private byte[] chooseDataRowToWrite()
+        {
+<span class="nc" id="L633">            byte[] rowToWrite = dataRawRowNone;</span>
+<span class="nc" id="L634">            long estCompressSum = estCompressSum(dataRawRowNone);</span>
+<span class="nc" id="L635">            long estCompressSumSub = estCompressSum(dataRawRowSub);</span>
+<span class="nc" id="L636">            long estCompressSumUp = estCompressSum(dataRawRowUp);</span>
+<span class="nc" id="L637">            long estCompressSumAvg = estCompressSum(dataRawRowAverage);</span>
+<span class="nc" id="L638">            long estCompressSumPaeth = estCompressSum(dataRawRowPaeth);</span>
+<span class="nc bnc" id="L639" title="All 2 branches missed.">            if (estCompressSum &gt; estCompressSumSub)</span>
+            {
+<span class="nc" id="L641">                rowToWrite = dataRawRowSub;</span>
+<span class="nc" id="L642">                estCompressSum = estCompressSumSub;</span>
+            }
+<span class="nc bnc" id="L644" title="All 2 branches missed.">            if (estCompressSum &gt; estCompressSumUp)</span>
+            {
+<span class="nc" id="L646">                rowToWrite = dataRawRowUp;</span>
+<span class="nc" id="L647">                estCompressSum = estCompressSumUp;</span>
+            }
+<span class="nc bnc" id="L649" title="All 2 branches missed.">            if (estCompressSum &gt; estCompressSumAvg)</span>
+            {
+<span class="nc" id="L651">                rowToWrite = dataRawRowAverage;</span>
+<span class="nc" id="L652">                estCompressSum = estCompressSumAvg;</span>
+            }
+<span class="nc bnc" id="L654" title="All 2 branches missed.">            if (estCompressSum &gt; estCompressSumPaeth)</span>
+            {
+<span class="nc" id="L656">                rowToWrite = dataRawRowPaeth;</span>
+            }
+<span class="nc" id="L658">            return rowToWrite;</span>
+        }
+
+        /*
+         * PNG Filters, see https://www.w3.org/TR/PNG-Filters.html
+         */
+        private static byte pngFilterSub(int x, int a)
+        {
+<span class="nc" id="L666">            return (byte) ((x &amp; 0xFF) - (a &amp; 0xFF));</span>
+        }
+
+        private static byte pngFilterUp(int x, int b)
+        {
+            // Same as pngFilterSub, just called with the prior row
+<span class="nc" id="L672">            return pngFilterSub(x, b);</span>
+        }
+
+        private static byte pngFilterAverage(int x, int a, int b)
+        {
+<span class="nc" id="L677">            return (byte) (x - ((b + a) / 2));</span>
+        }
+
+        private static byte pngFilterPaeth(int x, int a, int b, int c)
+        {
+<span class="nc" id="L682">            int p = a + b - c;</span>
+<span class="nc" id="L683">            int pa = Math.abs(p - a);</span>
+<span class="nc" id="L684">            int pb = Math.abs(p - b);</span>
+<span class="nc" id="L685">            int pc = Math.abs(p - c);</span>
+            final int pr;
+<span class="nc bnc" id="L687" title="All 4 branches missed.">            if (pa &lt;= pb &amp;&amp; pa &lt;= pc)</span>
+            {
+<span class="nc" id="L689">                pr = a;</span>
+            }
+<span class="nc bnc" id="L691" title="All 2 branches missed.">            else if (pb &lt;= pc)</span>
+            {
+<span class="nc" id="L693">                pr = b;</span>
+            }
+            else
+            {
+<span class="nc" id="L697">                pr = c;</span>
+            }
+
+<span class="nc" id="L700">            int r = x - pr;</span>
+<span class="nc" id="L701">            return (byte) (r);</span>
+        }
+
+        private static long estCompressSum(byte[] dataRawRowSub)
+        {
+<span class="nc" id="L706">            long sum = 0;</span>
+<span class="nc bnc" id="L707" title="All 2 branches missed.">            for (byte aDataRawRowSub : dataRawRowSub)</span>
+            {
+                // https://www.w3.org/TR/PNG-Encoders.html#E.Filter-selection
+<span class="nc" id="L710">                sum += Math.abs(aDataRawRowSub);</span>
+            }
+<span class="nc" id="L712">            return sum;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

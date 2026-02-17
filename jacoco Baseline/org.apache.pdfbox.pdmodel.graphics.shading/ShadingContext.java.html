@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ShadingContext.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.shading</a> &gt; <span class="el_source">ShadingContext.java</span></div><h1>ShadingContext.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2014 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.shading;
+
+import java.awt.PaintContext;
+import java.awt.Transparency;
+import java.awt.color.ColorSpace;
+import java.awt.geom.AffineTransform;
+import java.awt.image.ColorModel;
+import java.awt.image.ComponentColorModel;
+import java.awt.image.DataBuffer;
+import java.io.IOException;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * A base class to handle what is common to all shading types.
+ *
+ * @author Shaola Ren
+ * @author Tilman Hausherr
+ */
+public abstract class ShadingContext implements PaintContext
+{
+    private float[] background;
+    private int rgbBackground;
+    private final PDShading shading;
+    private ColorModel outputColorModel;
+    private PDColorSpace shadingColorSpace;
+
+    /**
+     * Constructor.
+     *
+     * @param shading the shading type to be used
+     * @param cm the color model to be used
+     * @param xform transformation for user to device space
+     * @param matrix the pattern matrix concatenated with that of the parent content stream
+     * @throws java.io.IOException if there is an error getting the color space
+     * or doing background color conversion.
+     */
+    protected ShadingContext(PDShading shading, ColorModel cm, AffineTransform xform,
+                          Matrix matrix) throws IOException
+<span class="nc" id="L56">    {</span>
+<span class="nc" id="L57">        this.shading = shading;</span>
+<span class="nc" id="L58">        shadingColorSpace = shading.getColorSpace();</span>
+
+        // create the output color model using RGB+alpha as color space
+<span class="nc" id="L61">        ColorSpace outputCS = ColorSpace.getInstance(ColorSpace.CS_sRGB);</span>
+<span class="nc" id="L62">        outputColorModel = new ComponentColorModel(outputCS, true, false, Transparency.TRANSLUCENT,</span>
+                DataBuffer.TYPE_BYTE);
+
+        // get background values if available
+<span class="nc" id="L66">        COSArray bg = shading.getBackground();</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        if (bg != null)</span>
+        {
+<span class="nc" id="L69">            background = bg.toFloatArray();</span>
+<span class="nc" id="L70">            rgbBackground = convertToRGB(background);</span>
+        }
+<span class="nc" id="L72">    }</span>
+
+    PDColorSpace getShadingColorSpace()
+    {
+<span class="nc" id="L76">        return shadingColorSpace;</span>
+    }
+
+    PDShading getShading()
+    {
+<span class="nc" id="L81">        return shading;</span>
+    }
+
+    float[] getBackground()
+    {
+<span class="nc" id="L86">        return background;</span>
+    }
+
+    int getRgbBackground()
+    {
+<span class="nc" id="L91">        return rgbBackground;</span>
+    }
+
+    /**
+     * Convert color values from shading colorspace to RGB color values encoded
+     * into an integer.
+     *
+     * @param values color values in shading colorspace.
+     * @return RGB values encoded in an integer.
+     * @throws java.io.IOException if the color conversion fails.
+     */
+    final int convertToRGB(float[] values) throws IOException
+    {
+        int normRGBValues;
+
+<span class="nc" id="L106">        float[] rgbValues = shadingColorSpace.toRGB(values);</span>
+<span class="nc" id="L107">        normRGBValues = (int) (rgbValues[0] * 255);</span>
+<span class="nc" id="L108">        normRGBValues |= (int) (rgbValues[1] * 255) &lt;&lt; 8;</span>
+<span class="nc" id="L109">        normRGBValues |= (int) (rgbValues[2] * 255) &lt;&lt; 16;</span>
+
+<span class="nc" id="L111">        return normRGBValues;</span>
+    }
+    
+    @Override
+    public ColorModel getColorModel()
+    {
+<span class="nc" id="L117">        return outputColorModel;</span>
+    }
+
+    @Override
+    public void dispose()
+    {
+<span class="nc" id="L123">        outputColorModel = null;</span>
+<span class="nc" id="L124">        shadingColorSpace = null;</span>
+<span class="nc" id="L125">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

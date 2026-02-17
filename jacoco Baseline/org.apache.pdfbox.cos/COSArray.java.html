@@ -1,0 +1,850 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>COSArray.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.cos</a> &gt; <span class="el_source">COSArray.java</span></div><h1>COSArray.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.cos;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * An array of PDFBase objects as part of the PDF document.
+ *
+ * @author Ben Litchfield
+ */
+public class COSArray extends COSBase implements Iterable&lt;COSBase&gt;, COSUpdateInfo
+{
+    private final ArrayList&lt;COSBase&gt; objects;
+    private final COSUpdateState updateState;
+
+    public static COSArray of(float... floats)
+    {
+<span class="nc" id="L40">        ArrayList&lt;COSBase&gt; objects = new ArrayList&lt;&gt;(floats.length);</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        for (float f : floats)</span>
+        {
+<span class="nc" id="L43">            objects.add(new COSFloat(f));</span>
+        }
+<span class="nc" id="L45">        return new COSArray(objects, true);</span>
+    }
+
+    /**
+     * Constructor.
+     */
+    public COSArray()
+    {
+<span class="fc" id="L53">        this(new ArrayList&lt;&gt;(), true);</span>
+<span class="fc" id="L54">    }</span>
+
+    /**
+     * Use the given list to initialize the COSArray.
+     * 
+     * @param cosObjectables the initial list of COSObjectables
+     */
+    public COSArray(List&lt;? extends COSObjectable&gt; cosObjectables)
+    {
+<span class="fc" id="L63">        this(</span>
+<span class="fc" id="L64">            cosObjectables.stream()</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">            .map(co -&gt; co == null ? null : co.getCOSObject())</span>
+<span class="fc" id="L66">            .collect(Collectors.toCollection(ArrayList::new)),</span>
+            true
+        );
+<span class="fc" id="L69">    }</span>
+
+    private COSArray(ArrayList&lt;COSBase&gt; cosObjects, boolean direct)
+<span class="fc" id="L72">    {</span>
+<span class="fc" id="L73">        objects = cosObjects;</span>
+<span class="fc" id="L74">        updateState = new COSUpdateState(this);</span>
+<span class="fc" id="L75">        setDirect(direct);</span>
+<span class="fc" id="L76">    }</span>
+
+    /**
+     * This will add an object to the array.
+     *
+     * @param object The object to add to the array.
+     */
+    public void add( COSBase object )
+    {
+<span class="fc" id="L85">        COSBase objectToAdd = maybeWrap(object);</span>
+<span class="fc" id="L86">        objects.add(objectToAdd);</span>
+<span class="fc" id="L87">        getUpdateState().update(objectToAdd);</span>
+<span class="fc" id="L88">    }</span>
+
+    /**
+     * This will add an object to the array.
+     *
+     * @param object The object to add to the array.
+     */
+    public void add( COSObjectable object )
+    {
+<span class="nc" id="L97">        COSBase base = null;</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        if (object != null)</span>
+        {
+<span class="nc" id="L100">            base = object.getCOSObject();</span>
+        }
+<span class="nc" id="L102">        add(base);</span>
+<span class="nc" id="L103">    }</span>
+
+    /**
+     * Add the specified object at the ith location and push the rest to the
+     * right.
+     *
+     * @param i The index to add at.
+     * @param object The object to add at that index.
+     */
+    public void add( int i, COSBase object)
+    {
+<span class="nc" id="L114">        COSBase objectToAdd = maybeWrap(object);</span>
+<span class="nc" id="L115">        objects.add(i, objectToAdd);</span>
+<span class="nc" id="L116">        getUpdateState().update(objectToAdd);</span>
+<span class="nc" id="L117">    }</span>
+
+    /**
+     * This will remove all of the objects in the collection.
+     */
+    public void clear()
+    {
+<span class="nc" id="L124">        objects.clear();</span>
+<span class="nc" id="L125">        getUpdateState().update();</span>
+<span class="nc" id="L126">    }</span>
+
+    /**
+     * This will remove all of the objects in the collection.
+     *
+     * @param objectsList The list of objects to remove from the collection.
+     */
+    public void removeAll( Collection&lt;COSBase&gt; objectsList )
+    {
+<span class="nc" id="L135">        objects.removeAll( objectsList );</span>
+<span class="nc" id="L136">        getUpdateState().update();</span>
+<span class="nc" id="L137">    }</span>
+
+    /**
+     * This will retain all of the objects in the collection.
+     *
+     * @param objectsList The list of objects to retain from the collection.
+     */
+    public void retainAll( Collection&lt;COSBase&gt; objectsList )
+    {
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        if (objects.retainAll(objectsList))</span>
+        {
+<span class="nc" id="L148">            getUpdateState().update();</span>
+        }
+<span class="nc" id="L150">    }</span>
+
+    /**
+     * This will add an object to the array.
+     *
+     * @param objectsList The object to add to the array.
+     */
+    public void addAll( Collection&lt;COSBase&gt; objectsList )
+    {
+<span class="nc bnc" id="L159" title="All 2 branches missed.">        if (objects.addAll(objectsList))</span>
+        {
+<span class="nc" id="L161">            getUpdateState().update(objectsList);</span>
+        }
+<span class="nc" id="L163">    }</span>
+
+    /**
+     * This will add all objects to this array.
+     *
+     * @param objectList The list of objects to add.
+     */
+    public void addAll( COSArray objectList )
+    {
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        if( objectList != null )</span>
+        {
+<span class="nc bnc" id="L174" title="All 2 branches missed.">            if (objects.addAll(objectList.objects))</span>
+            {
+<span class="nc" id="L176">                getUpdateState().update(objectList);</span>
+            }
+        }
+<span class="nc" id="L179">    }</span>
+
+    /**
+     * Add the specified object at the ith location and push the rest to the
+     * right.
+     *
+     * @param i The index to add at.
+     * @param objectList The object to add at that index.
+     */
+    public void addAll( int i, Collection&lt;COSBase&gt; objectList )
+    {
+<span class="nc bnc" id="L190" title="All 2 branches missed.">        if (objects.addAll(i, objectList))</span>
+        {
+<span class="nc" id="L192">            getUpdateState().update(objectList);</span>
+        }
+<span class="nc" id="L194">    }</span>
+
+    /**
+     * This will set an object at a specific index.
+     *
+     * @param index zero based index into array.
+     * @param object The object to set.
+     */
+    public void set( int index, COSBase object )
+    {
+<span class="nc" id="L204">        COSBase objectToAdd = maybeWrap(object);</span>
+<span class="nc" id="L205">        objects.set(index, objectToAdd);</span>
+<span class="nc" id="L206">        getUpdateState().update(objectToAdd);</span>
+<span class="nc" id="L207">    }</span>
+
+    /**
+     * This will set an object at a specific index.
+     *
+     * @param index zero based index into array.
+     * @param intVal The object to set.
+     */
+    public void set( int index, int intVal )
+    {
+<span class="nc" id="L217">        objects.set( index, COSInteger.get(intVal));</span>
+<span class="nc" id="L218">        getUpdateState().update();</span>
+<span class="nc" id="L219">    }</span>
+
+    /**
+     * This will set an object at a specific index.
+     *
+     * @param index zero based index into array.
+     * @param object The object to set.
+     */
+    public void set( int index, COSObjectable object )
+    {
+<span class="nc" id="L229">        COSBase base = null;</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">        if( object != null )</span>
+        {
+<span class="nc" id="L232">            base = object.getCOSObject();</span>
+        }
+<span class="nc" id="L234">        set(index, base);</span>
+<span class="nc" id="L235">    }</span>
+
+    /**
+     * This will get an object from the array.  This will dereference the object.
+     * If the object is COSNull then null will be returned.
+     *
+     * @param index The index into the array to get the object.
+     *
+     * @return The object at the requested index.
+     */
+    public COSBase getObject( int index )
+    {
+<span class="nc" id="L247">        COSBase obj = objects.get( index );</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">        if( obj instanceof COSObject )</span>
+        {
+<span class="nc" id="L250">            obj = ((COSObject)obj).getObject();</span>
+        }
+<span class="nc bnc" id="L252" title="All 2 branches missed.">        if (obj instanceof COSNull)</span>
+        {
+<span class="nc" id="L254">            obj = null;</span>
+        }
+<span class="nc" id="L256">        return obj;</span>
+    }
+
+    /**
+     * This will get an object from the array.  This will NOT dereference
+     * the COS object.
+     *
+     * @param index The index into the array to get the object.
+     *
+     * @return The object at the requested index.
+     */
+    public COSBase get( int index )
+    {
+<span class="fc" id="L269">        return objects.get( index );</span>
+    }
+
+    /**
+     * Get the value of the array as an integer.
+     *
+     * @param index The index into the list.
+     *
+     * @return The value at that index or -1 if does not exist.
+     */
+    public int getInt( int index )
+    {
+<span class="nc" id="L281">        return getInt( index, -1 );</span>
+    }
+
+    /**
+     * Get the value of the array as an integer, return the default if it does not exist.
+     *
+     * @param index The value of the array.
+     * @param defaultValue The value to return if the value is null.
+     * @return The value at the index or the defaultValue.
+     */
+    public int getInt( int index, int defaultValue )
+    {
+<span class="nc" id="L293">        int retval = defaultValue;</span>
+<span class="nc bnc" id="L294" title="All 2 branches missed.">        if ( index &lt; size() )</span>
+        {
+<span class="nc" id="L296">            Object obj = objects.get( index );</span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">            if( obj instanceof COSNumber )</span>
+            {
+<span class="nc" id="L299">                retval = ((COSNumber)obj).intValue();</span>
+            }
+        }
+<span class="nc" id="L302">        return retval;</span>
+    }
+
+    /**
+     * Set the value in the array as an integer.
+     *
+     * @param index The index into the array.
+     * @param value The value to set.
+     */
+    public void setInt( int index, int value )
+    {
+<span class="nc" id="L313">        set( index, COSInteger.get( value ) );</span>
+<span class="nc" id="L314">    }</span>
+
+    /**
+     * Set the value in the array as a name.
+     * @param index The index into the array.
+     * @param name The name to set in the array.
+     */
+    public void setName( int index, String name )
+    {
+<span class="nc" id="L323">        set( index, COSName.getPDFName( name ) );</span>
+<span class="nc" id="L324">    }</span>
+
+    /**
+     * Get the value of the array as a string.
+     *
+     * @param index The index into the array.
+     * @return The name converted to a string or null if it does not exist.
+     */
+    public String getName( int index )
+    {
+<span class="nc" id="L334">        return getName( index, null );</span>
+    }
+
+    /**
+     * Get an entry in the array that is expected to be a COSName.
+     * @param index The index into the array.
+     * @param defaultValue The value to return if it is null.
+     * @return The value at the index or defaultValue if none is found.
+     */
+    public String getName( int index, String defaultValue )
+    {
+<span class="nc" id="L345">        String retval = defaultValue;</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">        if( index &lt; size() )</span>
+        {
+<span class="nc" id="L348">            Object obj = objects.get( index );</span>
+<span class="nc bnc" id="L349" title="All 2 branches missed.">            if( obj instanceof COSName )</span>
+            {
+<span class="nc" id="L351">                retval = ((COSName)obj).getName();</span>
+            }
+        }
+<span class="nc" id="L354">        return retval;</span>
+    }
+
+    /**
+     * Set the value in the array as a string.
+     * @param index The index into the array.
+     * @param string The string to set in the array.
+     */
+    public void setString( int index, String string )
+    {
+<span class="nc bnc" id="L364" title="All 2 branches missed.">        if ( string != null )</span>
+        {
+<span class="nc" id="L366">            set( index, new COSString( string ) );</span>
+        }
+        else
+        {
+<span class="nc" id="L370">            set( index, null );</span>
+        }
+<span class="nc" id="L372">    }   </span>
+
+    /**
+     * Get the value of the array as a string.
+     *
+     * @param index The index into the array.
+     * @return The string or null if it does not exist.
+     */
+    public String getString( int index )
+    {
+<span class="nc" id="L382">        return getString( index, null );</span>
+    }
+
+    /**
+     * Get an entry in the array that is expected to be a COSName.
+     * @param index The index into the array.
+     * @param defaultValue The value to return if it is null.
+     * @return The value at the index or defaultValue if none is found.
+     */
+    public String getString( int index, String defaultValue )
+    {
+<span class="nc" id="L393">        String retval = defaultValue;</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">        if( index &lt; size() )</span>
+        {
+<span class="nc" id="L396">            Object obj = objects.get( index );</span>
+<span class="nc bnc" id="L397" title="All 2 branches missed.">            if( obj instanceof COSString )</span>
+            {
+<span class="nc" id="L399">                retval = ((COSString)obj).getString();</span>
+            }
+        }
+<span class="nc" id="L402">        return retval;</span>
+    }
+
+    /**
+     * This will get the size of this array.
+     *
+     * @return The number of elements in the array.
+     */
+    public int size()
+    {
+<span class="fc" id="L412">        return objects.size();</span>
+    }
+
+    /**
+     * Returns true if the container is empty, false otherwise.
+     *
+     * @return true if the container is empty, false otherwise
+     */
+    public boolean isEmpty()
+    {
+<span class="nc" id="L422">        return objects.isEmpty();</span>
+    }
+
+    /**
+     * This will remove an element from the array.
+     *
+     * @param i The index of the object to remove.
+     *
+     * @return The object that was removed.
+     */
+    public COSBase remove( int i )
+    {
+<span class="fc" id="L434">        COSBase removedEntry = objects.remove( i );</span>
+<span class="fc" id="L435">        getUpdateState().update();</span>
+<span class="fc" id="L436">        return removedEntry;</span>
+    }
+
+    /**
+     * This will remove an element from the array.
+     *
+     * @param o The object to remove.
+     *
+     * @return &lt;code&gt;true&lt;/code&gt; if the object was removed, &lt;code&gt;false&lt;/code&gt;
+     *  otherwise
+     */
+    public boolean remove( COSBase o )
+    {
+<span class="nc" id="L449">        boolean removed = objects.remove(o);</span>
+<span class="nc bnc" id="L450" title="All 2 branches missed.">        if (removed)</span>
+        {
+<span class="nc" id="L452">            getUpdateState().update();</span>
+        }
+<span class="nc" id="L454">        return removed;</span>
+    }
+
+    /**
+     * This will remove an element from the array.
+     * This method will also remove a reference to the object.
+     *
+     * @param o The object to remove.
+     * @return &lt;code&gt;true&lt;/code&gt; if the object was removed, &lt;code&gt;false&lt;/code&gt;
+     *  otherwise
+     */
+    public boolean removeObject(COSBase o)
+    {
+<span class="nc" id="L467">        boolean removed = this.remove(o);</span>
+<span class="nc bnc" id="L468" title="All 2 branches missed.">        if (!removed)</span>
+        {
+<span class="nc bnc" id="L470" title="All 2 branches missed.">            for (int i = 0; i &lt; this.size(); i++)</span>
+            {
+<span class="nc" id="L472">                COSBase entry = this.get(i);</span>
+<span class="nc bnc" id="L473" title="All 2 branches missed.">                if (entry instanceof COSObject)</span>
+                {
+<span class="nc" id="L475">                    COSObject objEntry = (COSObject) entry;</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">                    if (objEntry.getObject().equals(o))</span>
+                    {
+<span class="nc" id="L478">                        return this.remove(entry);</span>
+                    }
+                }
+            }
+        }
+<span class="nc" id="L483">        return removed;</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L492">        return &quot;COSArray{&quot; + objects + &quot;}&quot;;</span>
+    }
+
+    /**
+     * Get access to the list.
+     *
+     * @return an iterator over the array elements
+     */
+    @Override
+    public Iterator&lt;COSBase&gt; iterator()
+    {
+<span class="fc" id="L503">        return objects.iterator();</span>
+    }
+
+    /**
+     * This will return the index of the entry or -1 if it is not found.
+     *
+     * @param object The object to search for.
+     * @return The index of the object or -1.
+     */
+    public int indexOf(COSBase object)
+    {
+<span class="nc bnc" id="L514" title="All 2 branches missed.">        for (int i = 0; i &lt; size(); i++)</span>
+        {
+<span class="nc" id="L516">            COSBase item = get(i);</span>
+<span class="nc bnc" id="L517" title="All 2 branches missed.">            if (item == null)</span>
+            {
+<span class="nc bnc" id="L519" title="All 2 branches missed.">                if (object == null)</span>
+                {
+<span class="nc" id="L521">                    return i;</span>
+                }
+            }
+<span class="nc bnc" id="L524" title="All 2 branches missed.">            else if (item.equals(object))</span>
+            {
+<span class="nc" id="L526">                return i;</span>
+            }
+        }
+<span class="nc" id="L529">        return -1;</span>
+    }
+
+    /**
+     * This will return the index of the entry or -1 if it is not found.
+     * This method will also find references to indirect objects.
+     *
+     * @param object The object to search for.
+     * @return The index of the object or -1.
+     */
+    public int indexOfObject(COSBase object)
+    {
+<span class="nc bnc" id="L541" title="All 2 branches missed.">        for (int i = 0; i &lt; this.size(); i++)</span>
+        {
+<span class="nc" id="L543">            COSBase item = this.get(i);</span>
+<span class="nc bnc" id="L544" title="All 2 branches missed.">            if (item == null)</span>
+            {
+<span class="nc bnc" id="L546" title="All 2 branches missed.">                if (item == object)</span>
+                {
+<span class="nc" id="L548">                    return i;</span>
+                }
+            }
+<span class="nc bnc" id="L551" title="All 2 branches missed.">            else if (item.equals(object))</span>
+            {
+<span class="nc" id="L553">                return i;</span>
+            }
+<span class="nc bnc" id="L555" title="All 2 branches missed.">            else if (item instanceof COSObject)</span>
+            {
+<span class="nc" id="L557">                COSBase cosBase = ((COSObject) item).getObject();</span>
+<span class="nc bnc" id="L558" title="All 4 branches missed.">                if (cosBase != null &amp;&amp; cosBase.equals(object))</span>
+                {
+<span class="nc" id="L560">                    return i;</span>
+                }
+            }
+        }
+<span class="nc" id="L564">        return -1;</span>
+    }
+
+    /**
+     * This will add null values until the size of the array is at least
+     * as large as the parameter.  If the array is already larger than the
+     * parameter then nothing is done.
+     *
+     * @param size The desired size of the array.
+     */
+    public void growToSize( int size )
+    {
+<span class="nc" id="L576">        growToSize( size, null );</span>
+<span class="nc" id="L577">    }</span>
+
+    /**
+     * This will add the object until the size of the array is at least
+     * as large as the parameter.  If the array is already larger than the
+     * parameter then nothing is done.
+     *
+     * @param size The desired size of the array.
+     * @param object The object to fill the array with.
+     */
+    public void growToSize( int size, COSBase object )
+    {
+<span class="nc" id="L589">        objects.ensureCapacity(size);</span>
+<span class="nc bnc" id="L590" title="All 2 branches missed.">        while( size() &lt; size )</span>
+        {
+<span class="nc" id="L592">            add( object );</span>
+        }
+<span class="nc" id="L594">        getUpdateState().update();</span>
+<span class="nc" id="L595">    }</span>
+
+    /**
+     * Visitor pattern double dispatch method.
+     *
+     * @param visitor The object to notify when visiting this object.
+     * @throws IOException If an error occurs while visiting this object.
+     */
+    @Override
+    public void accept(ICOSVisitor visitor) throws IOException
+    {
+<span class="fc" id="L606">        visitor.visitFromArray(this);</span>
+<span class="fc" id="L607">    }</span>
+
+    /**
+     * This will take an COSArray of numbers and convert it to a float[].
+     *
+     * @return This COSArray as an array of float numbers.
+     */
+    public float[] toFloatArray()
+    {
+<span class="nc" id="L616">        float[] retval = new float[size()];</span>
+<span class="nc bnc" id="L617" title="All 2 branches missed.">        for (int i = 0; i &lt; retval.length; i++)</span>
+        {
+<span class="nc" id="L619">            COSBase base = getObject(i);</span>
+<span class="nc bnc" id="L620" title="All 2 branches missed.">            retval[i] = base instanceof COSNumber ? ((COSNumber) base).floatValue() : 0;</span>
+        }
+<span class="nc" id="L622">        return retval;</span>
+    }
+
+    /**
+     * Clear the current contents of the COSArray and set it with the float[].
+     *
+     * @param value The new value of the float array.
+     */
+    public void setFloatArray( float[] value )
+    {
+<span class="nc" id="L632">        this.clear();</span>
+<span class="nc bnc" id="L633" title="All 2 branches missed.">        for (float aValue : value)</span>
+        {
+<span class="nc" id="L635">            add(new COSFloat(aValue));</span>
+        }
+<span class="nc" id="L637">    }</span>
+
+    /**
+     *  Return contents of COSArray as a Java List.
+     *
+     *  @return the COSArray as List
+     */
+    public List&lt;? extends COSBase&gt; toList()
+    {
+<span class="nc" id="L646">        return new ArrayList&lt;&gt;(objects);</span>
+    }
+
+    /**
+     * This will return a list of names if the COSArray consists of COSNames only.
+     * 
+     * @return the list of names of the COSArray of COSNames
+     */
+    public List&lt;String&gt; toCOSNameStringList()
+    {
+<span class="nc" id="L656">        return objects.stream() //</span>
+<span class="nc" id="L657">                .map(o -&gt; ((COSName) o).getName()) //</span>
+<span class="nc" id="L658">                .collect(Collectors.toList());</span>
+    }
+
+    /**
+     * This will return a list of names if the COSArray consists of COSStrings only.
+     * 
+     * @return the list of names of the COSArray of COSStrings
+     */
+    public List&lt;String&gt; toCOSStringStringList()
+    {
+<span class="nc" id="L668">        return objects.stream() //</span>
+<span class="nc" id="L669">                .map(o -&gt; ((COSString) o).getString()) //</span>
+<span class="nc" id="L670">                .collect(Collectors.toList());</span>
+    }
+
+    /**
+     * This will return a list of float values if the COSArray consists of COSNumbers only.
+     * 
+     * @return the list of float values of the COSArray of COSNumbers
+     */
+    public List&lt;Float&gt; toCOSNumberFloatList()
+    {
+<span class="nc" id="L680">        List&lt;Float&gt; numbers = new ArrayList&lt;&gt;(size());</span>
+<span class="nc bnc" id="L681" title="All 2 branches missed.">        for (int i = 0; i &lt; size(); i++)</span>
+        {
+<span class="nc" id="L683">            COSBase num = getObject(i);</span>
+<span class="nc bnc" id="L684" title="All 2 branches missed.">            if (num instanceof COSNumber)</span>
+            {
+<span class="nc" id="L686">                numbers.add(((COSNumber) num).floatValue());</span>
+            }
+            else
+            {
+<span class="nc" id="L690">                numbers.add(null);</span>
+            }
+        }
+<span class="nc" id="L693">        return numbers;</span>
+    }
+
+    /**
+     * This will return a list of int values if the COSArray consists of COSNumbers only.
+     * 
+     * @return the list of int values of the COSArray of COSNumbers
+     */
+    public List&lt;Integer&gt; toCOSNumberIntegerList()
+    {
+<span class="nc" id="L703">        List&lt;Integer&gt; numbers = new ArrayList&lt;&gt;(size());</span>
+<span class="nc bnc" id="L704" title="All 2 branches missed.">        for (int i = 0; i &lt; size(); i++)</span>
+        {
+<span class="nc" id="L706">            COSBase num = getObject(i);</span>
+<span class="nc bnc" id="L707" title="All 2 branches missed.">            if (num instanceof COSNumber)</span>
+            {
+<span class="nc" id="L709">                numbers.add(((COSNumber) num).intValue());</span>
+            }
+            else
+            {
+<span class="nc" id="L713">                numbers.add(null);</span>
+            }
+        }
+<span class="nc" id="L716">        return numbers;</span>
+    }
+
+    /**
+     * This will take a list of integer objects and return a COSArray of COSInteger objects.
+     *
+     * @param integer A list of integers
+     *
+     * @return An array of COSInteger objects
+     */
+    public static COSArray ofCOSIntegers(List&lt;Integer&gt; integer)
+    {
+<span class="nc" id="L728">        COSArray retval = new COSArray();</span>
+<span class="nc" id="L729">        integer.forEach(s -&gt; retval.add(COSInteger.get(s.longValue())));</span>
+<span class="nc" id="L730">        return retval;</span>
+    }
+
+    /**
+     * This will take a list of string objects and return a COSArray of COSName objects.
+     *
+     * @param strings A list of strings
+     *
+     * @return An array of COSName objects
+     */
+    public static COSArray ofCOSNames(List&lt;String&gt; strings)
+    {
+<span class="nc" id="L742">        COSArray retval = new COSArray();</span>
+<span class="nc" id="L743">        strings.forEach(s -&gt; retval.add(COSName.getPDFName(s)));</span>
+<span class="nc" id="L744">        return retval;</span>
+    }
+
+    /**
+     * This will take a list of string objects and return a COSArray of COSName objects.
+     *
+     * @param strings A list of strings
+     *
+     * @return An array of COSName objects
+     */
+    public static COSArray ofCOSStrings(List&lt;String&gt; strings)
+    {
+<span class="nc" id="L756">        COSArray retval = new COSArray();</span>
+<span class="nc" id="L757">        strings.forEach(s -&gt; retval.add(new COSString(s)));</span>
+<span class="nc" id="L758">        return retval;</span>
+    }
+    
+    /**
+     * Returns the current {@link COSUpdateState} of this {@link COSArray}.
+     *
+     * @return The current {@link COSUpdateState} of this {@link COSArray}.
+     * @see COSUpdateState
+     */
+    @Override
+    public COSUpdateState getUpdateState()
+    {
+<span class="fc" id="L770">        return updateState;</span>
+    }
+
+    /**
+     * Collects all indirect objects numbers within this COSArray and all included dictionaries. It is used to avoid
+     * overlapping object numbers when importing an existing page to another pdf.
+     * 
+     * Expert use only. You might run into an endless recursion if choosing a wrong starting point.
+     * 
+     * @param indirectObjects a collection of already found indirect objects.
+     * 
+     */
+    protected Collection&lt;COSObjectKey&gt; resetObjectKeys(Collection&lt;COSObjectKey&gt; indirectObjects)
+    {
+<span class="nc bnc" id="L784" title="All 2 branches missed.">        if (indirectObjects == null)</span>
+        {
+<span class="nc" id="L786">            return indirectObjects;</span>
+        }
+<span class="nc" id="L788">        COSObjectKey key = getKey();</span>
+<span class="nc bnc" id="L789" title="All 2 branches missed.">        if (key != null)</span>
+        {
+            // avoid endless recursions
+<span class="nc bnc" id="L792" title="All 2 branches missed.">            if (indirectObjects.contains(key))</span>
+            {
+<span class="nc" id="L794">                return indirectObjects;</span>
+            }
+<span class="nc" id="L796">            indirectObjects.add(key);</span>
+            // reset key
+<span class="nc" id="L798">            setKey(null);</span>
+        }
+<span class="nc bnc" id="L800" title="All 2 branches missed.">        for (COSBase cosBase : objects)</span>
+        {
+<span class="nc bnc" id="L802" title="All 2 branches missed.">            if (cosBase == null)</span>
+            {
+<span class="nc" id="L804">                continue;</span>
+            }
+<span class="nc bnc" id="L806" title="All 2 branches missed.">            COSObjectKey indirectObjectKey = cosBase instanceof COSObject ? cosBase.getKey() : null;</span>
+<span class="nc bnc" id="L807" title="All 2 branches missed.">            if (indirectObjectKey != null)</span>
+            {
+<span class="nc bnc" id="L809" title="All 2 branches missed.">                if (indirectObjects.contains(indirectObjectKey))</span>
+                {
+<span class="nc" id="L811">                    continue;</span>
+                }
+                // dereference object first
+<span class="nc" id="L814">                COSBase dereferencedObject = ((COSObject) cosBase).getObject();</span>
+                // reset key
+<span class="nc" id="L816">                cosBase.setKey(null);</span>
+<span class="nc" id="L817">                cosBase = dereferencedObject;</span>
+            }
+<span class="nc bnc" id="L819" title="All 2 branches missed.">            if (cosBase instanceof COSDictionary)</span>
+            {
+                // descend to included dictionary to reset all included indirect objects
+<span class="nc" id="L822">                ((COSDictionary) cosBase).resetObjectKeys(indirectObjects);</span>
+            }
+<span class="nc bnc" id="L824" title="All 2 branches missed.">            else if (cosBase instanceof COSArray)</span>
+            {
+                // descend to included array to reset all included indirect objects
+<span class="nc" id="L827">                ((COSArray) cosBase).resetObjectKeys(indirectObjects);</span>
+            }
+<span class="nc bnc" id="L829" title="All 2 branches missed.">            else if (indirectObjectKey != null)</span>
+            {
+                // add key for all indirect objects other than COSDictionary/COSArray
+<span class="nc" id="L832">                indirectObjects.add(indirectObjectKey);</span>
+            }
+<span class="nc" id="L834">        }</span>
+<span class="nc" id="L835">        return indirectObjects;</span>
+    }
+
+    // wrap indirect objects
+    private COSBase maybeWrap(COSBase object)
+    {
+<span class="fc" id="L841">        COSBase objectToAdd = object;</span>
+<span class="pc bpc" id="L842" title="2 of 6 branches missed.">        if ((object instanceof COSDictionary || object instanceof COSArray) &amp;&amp; !object.isDirect()</span>
+<span class="pc bpc" id="L843" title="1 of 2 branches missed.">                &amp;&amp; object.getKey() != null)</span>
+        {
+<span class="nc" id="L845">            objectToAdd = new COSObject(object, object.getKey());</span>
+        }
+<span class="fc" id="L847">        return objectToAdd;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

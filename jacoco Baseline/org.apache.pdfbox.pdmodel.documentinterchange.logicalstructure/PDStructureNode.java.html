@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDStructureNode.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure</a> &gt; <span class="el_source">PDStructureNode.java</span></div><h1>PDStructureNode.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.pdmodel.common.COSArrayList;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * A node in the structure tree.
+ * 
+ * @author Johannes Koch
+ */
+public abstract class PDStructureNode implements COSObjectable
+{
+
+    /**
+     * Constructor.
+     *
+     * @param type the type
+     */
+    protected PDStructureNode(String type)
+<span class="nc" id="L46">    {</span>
+<span class="nc" id="L47">        this.dictionary = new COSDictionary();</span>
+<span class="nc" id="L48">        this.dictionary.setName(COSName.TYPE, type);</span>
+<span class="nc" id="L49">    }</span>
+
+    /**
+     * Constructor for an existing structure node.
+     *
+     * @param dictionary The existing dictionary.
+     */
+    protected PDStructureNode(COSDictionary dictionary)
+<span class="nc" id="L57">    {</span>
+<span class="nc" id="L58">        this.dictionary = dictionary;</span>
+<span class="nc" id="L59">    }</span>
+
+    /**
+     * Creates a node in the structure tree. Can be either a structure tree root,
+     *  or a structure element.
+     * 
+     * @param node the node dictionary
+     * @return the structure node
+     */
+    public static PDStructureNode create(COSDictionary node)
+    {
+<span class="nc" id="L70">        String type = node.getNameAsString(COSName.TYPE);</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        if (&quot;StructTreeRoot&quot;.equals(type))</span>
+        {
+<span class="nc" id="L73">            return new PDStructureTreeRoot(node);</span>
+        }
+<span class="nc bnc" id="L75" title="All 4 branches missed.">        if (type == null || &quot;StructElem&quot;.equals(type))</span>
+        {
+<span class="nc" id="L77">            return new PDStructureElement(node);</span>
+        }
+<span class="nc" id="L79">        throw new IllegalArgumentException(&quot;Dictionary must not include a Type entry with a value that is neither StructTreeRoot nor StructElem.&quot;);</span>
+    }
+
+
+    private final COSDictionary dictionary;
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L91">        return dictionary;</span>
+    }
+
+    /**
+     * Returns the type.
+     * 
+     * @return the type
+     */
+    public String getType()
+    {
+<span class="nc" id="L101">        return this.getCOSObject().getNameAsString(COSName.TYPE);</span>
+    }
+
+    /**
+     * Returns a list of objects for the kids (K).
+     * 
+     * @return a list of objects for the kids, never null.
+     */
+    public List&lt;Object&gt; getKids()
+    {
+<span class="nc" id="L111">        List&lt;Object&gt; kidObjects = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L112">        COSBase k = this.getCOSObject().getDictionaryObject(COSName.K);</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        if (k instanceof COSArray)</span>
+        {
+<span class="nc bnc" id="L115" title="All 2 branches missed.">            for (COSBase kid : (COSArray) k)</span>
+            {
+<span class="nc" id="L117">                Object kidObject = this.createObject(kid);</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">                if (kidObject != null)</span>
+                {
+<span class="nc" id="L120">                    kidObjects.add(kidObject);</span>
+                }
+<span class="nc" id="L122">            }</span>
+        }
+        else
+        {
+<span class="nc" id="L126">            Object kidObject = this.createObject(k);</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">            if (kidObject != null)</span>
+            {
+<span class="nc" id="L129">                kidObjects.add(kidObject);</span>
+            }
+        }
+<span class="nc" id="L132">        return kidObjects;</span>
+    }
+
+    /**
+     * Sets the kids (K).
+     * 
+     * @param kids the kids
+     */
+    public void setKids(List&lt;Object&gt; kids)
+    {
+<span class="nc" id="L142">        this.getCOSObject().setItem(COSName.K,</span>
+<span class="nc" id="L143">            COSArrayList.converterToCOSArray(kids));</span>
+<span class="nc" id="L144">    }</span>
+
+    /**
+     * Appends a structure element kid and sets the parent property (/P) to this.
+     * 
+     * @param structureElement the structure element
+     */
+    public void appendKid(PDStructureElement structureElement)
+    {
+<span class="nc" id="L153">        this.appendObjectableKid(structureElement);</span>
+<span class="nc" id="L154">        structureElement.setParent(this);</span>
+<span class="nc" id="L155">    }</span>
+
+    /**
+     * Appends an objectable kid.
+     * 
+     * @param objectable the objectable
+     */
+    protected void appendObjectableKid(COSObjectable objectable)
+    {
+<span class="nc bnc" id="L164" title="All 2 branches missed.">        if (objectable == null)</span>
+        {
+<span class="nc" id="L166">            return;</span>
+        }
+<span class="nc" id="L168">        this.appendKid(objectable.getCOSObject());</span>
+<span class="nc" id="L169">    }</span>
+
+    /**
+     * Appends a COS base kid.
+     * 
+     * @param object the COS base
+     */
+    protected void appendKid(COSBase object)
+    {
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        if (object == null)</span>
+        {
+<span class="nc" id="L180">            return;</span>
+        }
+<span class="nc" id="L182">        COSBase k = this.getCOSObject().getDictionaryObject(COSName.K);</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">        if (k == null)</span>
+        {
+            // currently no kid: set new kid as kids
+<span class="nc" id="L186">            this.getCOSObject().setItem(COSName.K, object);</span>
+        }
+<span class="nc bnc" id="L188" title="All 2 branches missed.">        else if (k instanceof COSArray)</span>
+        {
+            // currently more than one kid: add new kid to existing array
+<span class="nc" id="L191">            COSArray array = (COSArray) k;</span>
+<span class="nc" id="L192">            array.add(object);</span>
+<span class="nc" id="L193">        }</span>
+        else
+        {
+            // currently one kid: put current and new kid into array and set array as kids
+<span class="nc" id="L197">            COSArray array = new COSArray(Arrays.asList(k, object));</span>
+<span class="nc" id="L198">            this.getCOSObject().setItem(COSName.K, array);</span>
+        }
+<span class="nc" id="L200">    }</span>
+
+    /**
+     * Inserts a structure element kid before a reference kid.
+     * 
+     * @param newKid the structure element
+     * @param refKid the reference kid
+     */
+    public void insertBefore(PDStructureElement newKid, Object refKid)
+    {
+<span class="nc" id="L210">        this.insertObjectableBefore(newKid, refKid);</span>
+<span class="nc" id="L211">    }</span>
+
+    /**
+     * Inserts an objectable kid before a reference kid.
+     * 
+     * @param newKid the objectable
+     * @param refKid the reference kid
+     */
+    protected void insertObjectableBefore(COSObjectable newKid, Object refKid)
+    {
+<span class="nc bnc" id="L221" title="All 2 branches missed.">        if (newKid == null)</span>
+        {
+<span class="nc" id="L223">            return;</span>
+        }
+<span class="nc" id="L225">        this.insertBefore(newKid.getCOSObject(), refKid);</span>
+<span class="nc" id="L226">    }</span>
+
+    /**
+     * Inserts an COS base kid before a reference kid.
+     * 
+     * @param newKid the COS base
+     * @param refKid the reference kid
+     */
+    protected void insertBefore(COSBase newKid, Object refKid)
+    {
+<span class="nc bnc" id="L236" title="All 4 branches missed.">        if (newKid == null || refKid == null)</span>
+        {
+<span class="nc" id="L238">            return;</span>
+        }
+<span class="nc" id="L240">        COSBase k = this.getCOSObject().getDictionaryObject(COSName.K);</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">        if (k == null)</span>
+        {
+<span class="nc" id="L243">            return;</span>
+        }
+<span class="nc" id="L245">        COSBase refKidBase = null;</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">        if (refKid instanceof COSObjectable)</span>
+        {
+<span class="nc" id="L248">            refKidBase = ((COSObjectable) refKid).getCOSObject();</span>
+        }
+<span class="nc bnc" id="L250" title="All 2 branches missed.">        if (k instanceof COSArray)</span>
+        {
+<span class="nc" id="L252">            COSArray array = (COSArray) k;</span>
+<span class="nc" id="L253">            int refIndex = array.indexOfObject(refKidBase);</span>
+<span class="nc" id="L254">            array.add(refIndex, newKid.getCOSObject());</span>
+<span class="nc" id="L255">        }</span>
+        else
+        {
+<span class="nc" id="L258">            boolean onlyKid = k.equals(refKidBase);</span>
+<span class="nc bnc" id="L259" title="All 4 branches missed.">            if (!onlyKid &amp;&amp; (k instanceof COSObject))</span>
+            {
+<span class="nc" id="L261">                COSBase kObj = ((COSObject) k).getObject();</span>
+<span class="nc" id="L262">                onlyKid = kObj.equals(refKidBase);</span>
+            }
+<span class="nc bnc" id="L264" title="All 2 branches missed.">            if (onlyKid)</span>
+            {
+<span class="nc" id="L266">                COSArray array = new COSArray(Arrays.asList(newKid, refKidBase));</span>
+<span class="nc" id="L267">                this.getCOSObject().setItem(COSName.K, array);</span>
+            }
+        }
+<span class="nc" id="L270">    }</span>
+
+    /**
+     * Removes a structure element kid and if successful also removes the parent property (/P).
+     *
+     * @param structureElement the structure element
+     * @return &lt;code&gt;true&lt;/code&gt; if the kid was removed, &lt;code&gt;false&lt;/code&gt; otherwise.
+     */
+    public boolean removeKid(PDStructureElement structureElement)
+    {
+<span class="nc" id="L280">        boolean removed = this.removeObjectableKid(structureElement);</span>
+<span class="nc bnc" id="L281" title="All 2 branches missed.">        if (removed)</span>
+        {
+<span class="nc" id="L283">            structureElement.setParent(null);</span>
+        }
+<span class="nc" id="L285">        return removed;</span>
+    }
+
+    /**
+     * Removes an objectable kid.
+     * 
+     * @param objectable the objectable
+     * @return &lt;code&gt;true&lt;/code&gt; if the kid was removed, &lt;code&gt;false&lt;/code&gt; otherwise
+     */
+    protected boolean removeObjectableKid(COSObjectable objectable)
+    {
+<span class="nc bnc" id="L296" title="All 2 branches missed.">        if (objectable == null)</span>
+        {
+<span class="nc" id="L298">            return false;</span>
+        }
+<span class="nc" id="L300">        return this.removeKid(objectable.getCOSObject());</span>
+    }
+
+    /**
+     * Removes a COS base kid.
+     * 
+     * @param object the COS base
+     * @return &lt;code&gt;true&lt;/code&gt; if the kid was removed, &lt;code&gt;false&lt;/code&gt; otherwise
+     */
+    protected boolean removeKid(COSBase object)
+    {
+<span class="nc bnc" id="L311" title="All 2 branches missed.">        if (object == null)</span>
+        {
+<span class="nc" id="L313">            return false;</span>
+        }
+<span class="nc" id="L315">        COSBase k = this.getCOSObject().getDictionaryObject(COSName.K);</span>
+<span class="nc bnc" id="L316" title="All 2 branches missed.">        if (k == null)</span>
+        {
+            // no kids: objectable is not a kid
+<span class="nc" id="L319">            return false;</span>
+        }
+<span class="nc bnc" id="L321" title="All 2 branches missed.">        else if (k instanceof COSArray)</span>
+        {
+            // currently more than one kid: remove kid from existing array
+<span class="nc" id="L324">            COSArray array = (COSArray) k;</span>
+<span class="nc" id="L325">            boolean removed = array.removeObject(object);</span>
+            // if now only one kid: set remaining kid as kids
+<span class="nc bnc" id="L327" title="All 2 branches missed.">            if (array.size() == 1)</span>
+            {
+<span class="nc" id="L329">                this.getCOSObject().setItem(COSName.K, array.getObject(0));</span>
+            }
+<span class="nc" id="L331">            return removed;</span>
+        }
+        else
+        {
+            // currently one kid: if current kid equals given object, remove kids entry
+<span class="nc" id="L336">            boolean onlyKid = k.equals(object);</span>
+<span class="nc bnc" id="L337" title="All 4 branches missed.">            if (!onlyKid &amp;&amp; (k instanceof COSObject))</span>
+            {
+<span class="nc" id="L339">                COSBase kObj = ((COSObject) k).getObject();</span>
+<span class="nc" id="L340">                onlyKid = kObj.equals(object);</span>
+            }
+<span class="nc bnc" id="L342" title="All 2 branches missed.">            if (onlyKid)</span>
+            {
+<span class="nc" id="L344">                this.getCOSObject().setItem(COSName.K, null);</span>
+<span class="nc" id="L345">                return true;</span>
+            }
+<span class="nc" id="L347">            return false;</span>
+        }
+    }
+
+    /**
+     * Creates an object for a kid of this structure node.
+     * The type of object depends on the type of the kid. It can be
+     * &lt;ul&gt;
+     * &lt;li&gt;a {@link PDStructureElement},&lt;/li&gt;
+     * &lt;li&gt;a {@link PDObjectReference},&lt;/li&gt;
+     * &lt;li&gt;a {@link PDMarkedContentReference},&lt;/li&gt;
+     * &lt;li&gt;an {@link Integer}&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * @param kid the kid
+     * @return the object
+     */
+    protected Object createObject(COSBase kid)
+    {
+<span class="nc" id="L366">        COSDictionary kidDic = null;</span>
+<span class="nc bnc" id="L367" title="All 2 branches missed.">        if (kid instanceof COSDictionary)</span>
+        {
+<span class="nc" id="L369">            kidDic = (COSDictionary) kid;</span>
+        }
+<span class="nc bnc" id="L371" title="All 2 branches missed.">        else if (kid instanceof COSObject)</span>
+        {
+<span class="nc" id="L373">            COSBase base = ((COSObject) kid).getObject();</span>
+<span class="nc bnc" id="L374" title="All 2 branches missed.">            if (base instanceof COSDictionary)</span>
+            {
+<span class="nc" id="L376">                kidDic = (COSDictionary) base;</span>
+            }
+        }
+<span class="nc bnc" id="L379" title="All 2 branches missed.">        if (kidDic != null)</span>
+        {
+<span class="nc" id="L381">            return createObjectFromDic(kidDic);</span>
+        }
+<span class="nc bnc" id="L383" title="All 2 branches missed.">        else if (kid instanceof COSInteger)</span>
+        {
+            // An integer marked-content identifier denoting a marked-content sequence
+<span class="nc" id="L386">            COSInteger mcid = (COSInteger) kid;</span>
+<span class="nc" id="L387">            return mcid.intValue();</span>
+        }
+<span class="nc" id="L389">        return null;</span>
+    }
+
+    private COSObjectable createObjectFromDic(COSDictionary kidDic)
+    {
+<span class="nc" id="L394">        String type = kidDic.getNameAsString(COSName.TYPE);</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">        if (type == null)</span>
+        {
+            // A structure element dictionary denoting another structure element
+<span class="nc" id="L398">            return new PDStructureElement(kidDic);</span>
+        }
+<span class="nc bnc" id="L400" title="All 4 branches missed.">        switch (type)</span>
+        {
+            case PDStructureElement.TYPE:
+                // A structure element dictionary denoting another structure element
+<span class="nc" id="L404">                return new PDStructureElement(kidDic);</span>
+            case PDObjectReference.TYPE:
+                // An object reference dictionary denoting a PDF object
+<span class="nc" id="L407">                return new PDObjectReference(kidDic);</span>
+            case PDMarkedContentReference.TYPE:
+                // A marked-content reference dictionary denoting a marked-content sequence
+<span class="nc" id="L410">                return new PDMarkedContentReference(kidDic);</span>
+            default:
+<span class="nc" id="L412">                return null;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

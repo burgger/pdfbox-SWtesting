@@ -1,0 +1,824 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FDFField.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.fdf</a> &gt; <span class="el_source">FDFField.java</span></div><h1>FDFField.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.fdf;
+
+import java.io.IOException;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.pdmodel.common.COSArrayList;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.interactive.action.PDAction;
+import org.apache.pdfbox.pdmodel.interactive.action.PDActionFactory;
+import org.apache.pdfbox.pdmodel.interactive.action.PDAdditionalActions;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceDictionary;
+import org.apache.pdfbox.util.XMLUtil;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/**
+ * This represents an FDF field that is part of the FDF document.
+ *
+ * @author Ben Litchfield
+ */
+public class FDFField implements COSObjectable
+{
+    private final COSDictionary field;
+
+    /**
+     * Default constructor.
+     */
+    public FDFField()
+<span class="nc" id="L55">    {</span>
+<span class="nc" id="L56">        field = new COSDictionary();</span>
+<span class="nc" id="L57">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param f The FDF field.
+     */
+    public FDFField(COSDictionary f)
+<span class="nc" id="L65">    {</span>
+<span class="nc" id="L66">        field = f;</span>
+<span class="nc" id="L67">    }</span>
+
+    /**
+     * This will create an FDF field from an XFDF XML document.
+     *
+     * @param fieldXML The XML document that contains the XFDF data.
+     * @throws IOException If there is an error reading from the dom.
+     */
+    public FDFField(Element fieldXML) throws IOException
+    {
+<span class="nc" id="L77">        this();</span>
+<span class="nc" id="L78">        this.setPartialFieldName(fieldXML.getAttribute(&quot;name&quot;));</span>
+<span class="nc" id="L79">        NodeList nodeList = fieldXML.getChildNodes();</span>
+<span class="nc" id="L80">        List&lt;FDFField&gt; kids = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        for (int i = 0; i &lt; nodeList.getLength(); i++)</span>
+        {
+<span class="nc" id="L83">            Node node = nodeList.item(i);</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">            if (node instanceof Element)</span>
+            {
+<span class="nc" id="L86">                Element child = (Element) node;</span>
+<span class="nc bnc" id="L87" title="All 4 branches missed.">                switch (child.getTagName())</span>
+                {
+                    case &quot;value&quot;:
+<span class="nc" id="L90">                        setValue(XMLUtil.getNodeValue(child));</span>
+<span class="nc" id="L91">                        break;</span>
+                    case &quot;value-richtext&quot;:
+<span class="nc" id="L93">                        setRichText(new COSString(XMLUtil.getNodeValue(child)));</span>
+<span class="nc" id="L94">                        break;</span>
+                    case &quot;field&quot;:
+<span class="nc" id="L96">                        kids.add(new FDFField(child));</span>
+<span class="nc" id="L97">                        break;</span>
+                    default:
+                        break;
+                }
+            }
+        }
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        if (!kids.isEmpty())</span>
+        {
+<span class="nc" id="L105">            setKids(kids);</span>
+        }
+
+<span class="nc" id="L108">    }</span>
+
+    /**
+     * This will write this element as an XML document.
+     *
+     * @param output The stream to write the xml to.
+     *
+     * @throws IOException If there is an error writing the XML.
+     */
+    public void writeXML(Writer output) throws IOException
+    {
+<span class="nc" id="L119">        output.write(&quot;&lt;field name=\&quot;&quot;);</span>
+<span class="nc" id="L120">        output.write(getPartialFieldName());</span>
+<span class="nc" id="L121">        output.write(&quot;\&quot;&gt;\n&quot;);</span>
+
+<span class="nc" id="L123">        Object value = getValue();</span>
+
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        if (value instanceof String)</span>
+        {
+<span class="nc" id="L127">            output.write(&quot;&lt;value&gt;&quot;);</span>
+<span class="nc" id="L128">            output.write(escapeXML((String) value));</span>
+<span class="nc" id="L129">            output.write(&quot;&lt;/value&gt;\n&quot;);</span>
+        }
+<span class="nc bnc" id="L131" title="All 2 branches missed.">        else if (value instanceof List)</span>
+        {
+<span class="nc" id="L133">            List&lt;String&gt; items = (List&lt;String&gt;) value;</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">            for (String item : items)</span>
+            {
+<span class="nc" id="L136">                output.write(&quot;&lt;value&gt;&quot;);</span>
+<span class="nc" id="L137">                output.write(escapeXML(item));</span>
+<span class="nc" id="L138">                output.write(&quot;&lt;/value&gt;\n&quot;);</span>
+<span class="nc" id="L139">            }</span>
+        }
+
+<span class="nc" id="L142">        String rt = getRichText();</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        if (rt != null)</span>
+        {
+<span class="nc" id="L145">            output.write(&quot;&lt;value-richtext&gt;&quot;);</span>
+<span class="nc" id="L146">            output.write(escapeXML(rt));</span>
+<span class="nc" id="L147">            output.write(&quot;&lt;/value-richtext&gt;\n&quot;);</span>
+        }
+<span class="nc" id="L149">        List&lt;FDFField&gt; kids = getKids();</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        if (kids != null)</span>
+        {
+<span class="nc bnc" id="L152" title="All 2 branches missed.">            for (FDFField kid : kids)</span>
+            {
+<span class="nc" id="L154">                kid.writeXML(output);</span>
+<span class="nc" id="L155">            }</span>
+        }
+<span class="nc" id="L157">        output.write(&quot;&lt;/field&gt;\n&quot;);</span>
+<span class="nc" id="L158">    }</span>
+
+    /**
+     * Convert this standard java object to a COS object.
+     *
+     * @return The cos object that matches this Java object.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L168">        return field;</span>
+    }
+
+    /**
+     * This will get the list of kids. This will return a list of FDFField objects.
+     * This will return null if the underlying list is null.
+     *
+     * @return The list of kids.
+     */
+    public List&lt;FDFField&gt; getKids()
+    {
+<span class="nc" id="L179">        COSArray kids = field.getCOSArray(COSName.KIDS);</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        if (kids != null)</span>
+        {
+<span class="nc" id="L182">            List&lt;FDFField&gt; actuals = new ArrayList&lt;&gt;(kids.size());</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">            for (int i = 0; i &lt; kids.size(); i++)</span>
+            {
+<span class="nc" id="L185">                actuals.add(new FDFField((COSDictionary) kids.getObject(i)));</span>
+            }
+<span class="nc" id="L187">            return new COSArrayList&lt;&gt;(actuals, kids);</span>
+        }
+<span class="nc" id="L189">        return null;</span>
+    }
+
+    /**
+     * This will set the list of kids.
+     *
+     * @param kids A list of FDFField objects.
+     */
+    public final void setKids(List&lt;FDFField&gt; kids)
+    {
+<span class="nc" id="L199">        field.setItem(COSName.KIDS, new COSArray(kids));</span>
+<span class="nc" id="L200">    }</span>
+
+    /**
+     * This will get the &quot;T&quot; entry in the field dictionary. A partial field name.
+     * Where the fully qualified field name is a concatenation of the parent's fully qualified
+     * field name and &quot;.&quot; as a separator. For example&lt;br&gt;
+     * Address.State&lt;br&gt;
+     * Address.City&lt;br&gt;
+     *
+     * @return The partial field name.
+     */
+    public String getPartialFieldName()
+    {
+<span class="nc" id="L213">        return field.getString(COSName.T);</span>
+    }
+
+    /**
+     * This will set the partial field name.
+     *
+     * @param partial The partial field name.
+     */
+    public void setPartialFieldName(String partial)
+    {
+<span class="nc" id="L223">        field.setString(COSName.T, partial);</span>
+<span class="nc" id="L224">    }</span>
+
+    /**
+     * This will get the value for the field. The return type will either be: &lt;ul&gt;
+     * &lt;li&gt;String: for Checkboxes, Radio Button, Textfields&lt;/li&gt;
+     * &lt;li&gt;List&amp;lt;String&amp;gt;: for a Choice Field&lt;/li&gt;
+     * &lt;/ul&gt;
+     * @return The value of the field.
+     * @throws IOException If there is an error getting the value.
+     */
+    public Object getValue() throws IOException
+    {
+<span class="nc" id="L236">        COSBase value = field.getDictionaryObject(COSName.V);</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">        if (value instanceof COSName)</span>
+        {
+<span class="nc" id="L239">            return ((COSName) value).getName();</span>
+        }
+<span class="nc bnc" id="L241" title="All 2 branches missed.">        else if (value instanceof COSArray)</span>
+        {
+<span class="nc" id="L243">            return ((COSArray) value).toCOSStringStringList();</span>
+        }
+<span class="nc bnc" id="L245" title="All 2 branches missed.">        else if (value instanceof COSString)</span>
+        {
+<span class="nc" id="L247">            return ((COSString) value).getString();</span>
+        }
+<span class="nc bnc" id="L249" title="All 2 branches missed.">        else if (value instanceof COSStream)</span>
+        {
+<span class="nc" id="L251">            return ((COSStream) value).toTextString();</span>
+        }
+<span class="nc bnc" id="L253" title="All 2 branches missed.">        else if (value != null)</span>
+        {
+<span class="nc" id="L255">            throw new IOException(&quot;Error: Unknown type for field import: &quot; + value);</span>
+        }
+        else
+        {
+<span class="nc" id="L259">            return null;</span>
+        }
+    }
+
+    /**
+     * Returns the COS value of this field.
+     *
+     * @return The COS value of the field, maybe &lt;code&gt;null&lt;/code&gt;.
+     * @throws IOException If there is an error getting the value.
+     */
+    public COSBase getCOSValue() throws IOException
+    {
+<span class="nc" id="L271">        COSBase value = field.getDictionaryObject(COSName.V);</span>
+<span class="nc bnc" id="L272" title="All 8 branches missed.">        if (value instanceof COSName //</span>
+                || value instanceof COSArray //
+                || value instanceof COSString //
+                || value instanceof COSStream)
+        {
+<span class="nc" id="L277">            return value;</span>
+        }
+<span class="nc bnc" id="L279" title="All 2 branches missed.">        if (value != null)</span>
+        {
+<span class="nc" id="L281">            throw new IOException(&quot;Error: Unknown type for field import: &quot; + value);</span>
+        }
+<span class="nc" id="L283">        return null;</span>
+    }
+
+    /**
+     * You should pass a String, or a List&amp;lt;String&amp;gt; to set the value.
+     *
+     * @param value The value that should populate when imported.
+     *
+     * @throws IOException If there is an error setting the value.
+     */
+    public void setValue(Object value) throws IOException
+    {
+<span class="nc" id="L295">        COSBase cos = null;</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">        if (value instanceof List)</span>
+        {
+<span class="nc" id="L298">            cos = COSArray.ofCOSStrings((List&lt;String&gt;) value);</span>
+        }
+<span class="nc bnc" id="L300" title="All 2 branches missed.">        else if (value instanceof String)</span>
+        {
+<span class="nc" id="L302">            cos = new COSString((String) value);</span>
+        }
+<span class="nc bnc" id="L304" title="All 2 branches missed.">        else if (value instanceof COSObjectable)</span>
+        {
+<span class="nc" id="L306">            cos = ((COSObjectable) value).getCOSObject();</span>
+        }
+<span class="nc bnc" id="L308" title="All 2 branches missed.">        else if (value != null)</span>
+        {
+<span class="nc" id="L310">            throw new IOException(&quot;Error: Unknown type for field import: &quot; + value);</span>
+        }
+<span class="nc" id="L312">        field.setItem(COSName.V, cos);</span>
+<span class="nc" id="L313">    }</span>
+
+    /**
+     * Sets the COS value of this field.
+     *
+     * @param value COS value.
+     */
+    public void setValue(COSBase value)
+    {
+<span class="nc" id="L322">        field.setItem(COSName.V, value);</span>
+<span class="nc" id="L323">    }</span>
+
+    /**
+     * This will get the 'Ff' entry of the FDF field dictionary.
+     * If it is not present then this method will return null.
+     *
+     * @return The field flags.
+     */
+    public Integer getFieldFlags()
+    {
+<span class="nc" id="L333">        Integer retval = null;</span>
+<span class="nc" id="L334">        COSNumber ff = (COSNumber) field.getDictionaryObject(COSName.FF);</span>
+<span class="nc bnc" id="L335" title="All 2 branches missed.">        if (ff != null)</span>
+        {
+<span class="nc" id="L337">            retval = ff.intValue();</span>
+        }
+<span class="nc" id="L339">        return retval;</span>
+    }
+
+    /**
+     * This will set the field flags that are associated with this field.
+     * The 'Ff' entry in the FDF field dictionary.
+     *
+     * @param ff The new value for the field flags.
+     */
+    public void setFieldFlags(Integer ff)
+    {
+<span class="nc" id="L350">        COSInteger value = null;</span>
+<span class="nc bnc" id="L351" title="All 2 branches missed.">        if (ff != null)</span>
+        {
+<span class="nc" id="L353">            value = COSInteger.get(ff);</span>
+        }
+<span class="nc" id="L355">        field.setItem(COSName.FF, value);</span>
+<span class="nc" id="L356">    }</span>
+
+    /**
+     * This will set the field flags that are associated with this field.
+     * The 'Ff' entry in the FDF field dictionary.
+     *
+     * @param ff The new value for the field flags.
+     */
+    public void setFieldFlags(int ff)
+    {
+<span class="nc" id="L366">        field.setInt(COSName.FF, ff);</span>
+<span class="nc" id="L367">    }</span>
+
+    /**
+     * This will get the 'SetFf' entry of the FDF field dictionary.
+     * If it is not present then this method will return null.
+     *
+     * @return The field flags.
+     */
+    public Integer getSetFieldFlags()
+    {
+<span class="nc" id="L377">        Integer retval = null;</span>
+<span class="nc" id="L378">        COSNumber ff = (COSNumber) field.getDictionaryObject(COSName.SET_FF);</span>
+<span class="nc bnc" id="L379" title="All 2 branches missed.">        if (ff != null)</span>
+        {
+<span class="nc" id="L381">            retval = ff.intValue();</span>
+        }
+<span class="nc" id="L383">        return retval;</span>
+    }
+
+    /**
+     * This will set the field flags that are associated with this field.
+     * The 'SetFf' entry in the FDF field dictionary.
+     *
+     * @param ff The new value for the &quot;set field flags&quot;.
+     */
+    public void setSetFieldFlags(Integer ff)
+    {
+<span class="nc" id="L394">        COSInteger value = null;</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">        if (ff != null)</span>
+        {
+<span class="nc" id="L397">            value = COSInteger.get(ff);</span>
+        }
+<span class="nc" id="L399">        field.setItem(COSName.SET_FF, value);</span>
+<span class="nc" id="L400">    }</span>
+
+    /**
+     * This will set the field flags that are associated with this field.
+     * The 'SetFf' entry in the FDF field dictionary.
+     *
+     * @param ff The new value for the &quot;set field flags&quot;.
+     */
+    public void setSetFieldFlags(int ff)
+    {
+<span class="nc" id="L410">        field.setInt(COSName.SET_FF, ff);</span>
+<span class="nc" id="L411">    }</span>
+
+    /**
+     * This will get the 'ClrFf' entry of the FDF field dictionary.
+     * If it is not present then this method will return null.
+     *
+     * @return The field flags.
+     */
+    public Integer getClearFieldFlags()
+    {
+<span class="nc" id="L421">        Integer retval = null;</span>
+<span class="nc" id="L422">        COSNumber ff = (COSNumber) field.getDictionaryObject(COSName.CLR_FF);</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">        if (ff != null)</span>
+        {
+<span class="nc" id="L425">            retval = ff.intValue();</span>
+        }
+<span class="nc" id="L427">        return retval;</span>
+    }
+
+    /**
+     * This will set the field flags that are associated with this field.
+     * The 'ClrFf' entry in the FDF field dictionary.
+     *
+     * @param ff The new value for the &quot;clear field flags&quot;.
+     */
+    public void setClearFieldFlags(Integer ff)
+    {
+<span class="nc" id="L438">        COSInteger value = null;</span>
+<span class="nc bnc" id="L439" title="All 2 branches missed.">        if (ff != null)</span>
+        {
+<span class="nc" id="L441">            value = COSInteger.get(ff);</span>
+        }
+<span class="nc" id="L443">        field.setItem(COSName.CLR_FF, value);</span>
+<span class="nc" id="L444">    }</span>
+
+    /**
+     * This will set the field flags that are associated with this field.
+     * The 'ClrFf' entry in the FDF field dictionary.
+     *
+     * @param ff The new value for the &quot;clear field flags&quot;.
+     */
+    public void setClearFieldFlags(int ff)
+    {
+<span class="nc" id="L454">        field.setInt(COSName.CLR_FF, ff);</span>
+<span class="nc" id="L455">    }</span>
+
+    /**
+     * This will get the 'F' entry of the FDF field dictionary.
+     * If it is not present then this method will return null.
+     *
+     * @return The widget field flags.
+     */
+    public Integer getWidgetFieldFlags()
+    {
+<span class="nc" id="L465">        Integer retval = null;</span>
+<span class="nc" id="L466">        COSNumber f = (COSNumber) field.getDictionaryObject(COSName.F);</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">        if (f != null)</span>
+        {
+<span class="nc" id="L469">            retval = f.intValue();</span>
+        }
+<span class="nc" id="L471">        return retval;</span>
+    }
+
+    /**
+     * This will set the widget field flags that are associated with this field.
+     * The 'F' entry in the FDF field dictionary.
+     *
+     * @param f The new value for the field flags.
+     */
+    public void setWidgetFieldFlags(Integer f)
+    {
+<span class="nc" id="L482">        COSInteger value = null;</span>
+<span class="nc bnc" id="L483" title="All 2 branches missed.">        if (f != null)</span>
+        {
+<span class="nc" id="L485">            value = COSInteger.get(f);</span>
+        }
+<span class="nc" id="L487">        field.setItem(COSName.F, value);</span>
+<span class="nc" id="L488">    }</span>
+
+    /**
+     * This will set the field flags that are associated with this field.
+     * The 'F' entry in the FDF field dictionary.
+     *
+     * @param f The new value for the field flags.
+     */
+    public void setWidgetFieldFlags(int f)
+    {
+<span class="nc" id="L498">        field.setInt(COSName.F, f);</span>
+<span class="nc" id="L499">    }</span>
+
+    /**
+     * This will get the 'SetF' entry of the FDF field dictionary.
+     * If it is not present then this method will return null.
+     *
+     * @return The field flags.
+     */
+    public Integer getSetWidgetFieldFlags()
+    {
+<span class="nc" id="L509">        Integer retval = null;</span>
+<span class="nc" id="L510">        COSNumber ff = (COSNumber) field.getDictionaryObject(COSName.SET_F);</span>
+<span class="nc bnc" id="L511" title="All 2 branches missed.">        if (ff != null)</span>
+        {
+<span class="nc" id="L513">            retval = ff.intValue();</span>
+        }
+<span class="nc" id="L515">        return retval;</span>
+    }
+
+    /**
+     * This will set the widget field flags that are associated with this field.
+     * The 'SetF' entry in the FDF field dictionary.
+     *
+     * @param ff The new value for the &quot;set widget field flags&quot;.
+     */
+    public void setSetWidgetFieldFlags(Integer ff)
+    {
+<span class="nc" id="L526">        COSInteger value = null;</span>
+<span class="nc bnc" id="L527" title="All 2 branches missed.">        if (ff != null)</span>
+        {
+<span class="nc" id="L529">            value = COSInteger.get(ff);</span>
+        }
+<span class="nc" id="L531">        field.setItem(COSName.SET_F, value);</span>
+<span class="nc" id="L532">    }</span>
+
+    /**
+     * This will set the widget field flags that are associated with this field.
+     * The 'SetF' entry in the FDF field dictionary.
+     *
+     * @param ff The new value for the &quot;set widget field flags&quot;.
+     */
+    public void setSetWidgetFieldFlags(int ff)
+    {
+<span class="nc" id="L542">        field.setInt(COSName.SET_F, ff);</span>
+<span class="nc" id="L543">    }</span>
+
+    /**
+     * This will get the 'ClrF' entry of the FDF field dictionary.
+     * If it is not present then this method will return null.
+     *
+     * @return The widget field flags.
+     */
+    public Integer getClearWidgetFieldFlags()
+    {
+<span class="nc" id="L553">        Integer retval = null;</span>
+<span class="nc" id="L554">        COSNumber ff = (COSNumber) field.getDictionaryObject(COSName.CLR_F);</span>
+<span class="nc bnc" id="L555" title="All 2 branches missed.">        if (ff != null)</span>
+        {
+<span class="nc" id="L557">            retval = ff.intValue();</span>
+        }
+<span class="nc" id="L559">        return retval;</span>
+    }
+
+    /**
+     * This will set the field flags that are associated with this field.
+     * The 'ClrF' entry in the FDF field dictionary.
+     *
+     * @param ff The new value for the &quot;clear widget field flags&quot;.
+     */
+    public void setClearWidgetFieldFlags(Integer ff)
+    {
+<span class="nc" id="L570">        COSInteger value = null;</span>
+<span class="nc bnc" id="L571" title="All 2 branches missed.">        if (ff != null)</span>
+        {
+<span class="nc" id="L573">            value = COSInteger.get(ff);</span>
+        }
+<span class="nc" id="L575">        field.setItem(COSName.CLR_F, value);</span>
+<span class="nc" id="L576">    }</span>
+
+    /**
+     * This will set the field flags that are associated with this field.
+     * The 'ClrF' entry in the FDF field dictionary.
+     *
+     * @param ff The new value for the &quot;clear field flags&quot;.
+     */
+    public void setClearWidgetFieldFlags(int ff)
+    {
+<span class="nc" id="L586">        field.setInt(COSName.CLR_F, ff);</span>
+<span class="nc" id="L587">    }</span>
+
+    /**
+     * This will get the appearance dictionary that specifies the appearance of a pushbutton field.
+     *
+     * @return The AP entry of this dictionary.
+     */
+    public PDAppearanceDictionary getAppearanceDictionary()
+    {
+<span class="nc" id="L596">        COSDictionary dict = field.getCOSDictionary(COSName.AP);</span>
+<span class="nc bnc" id="L597" title="All 2 branches missed.">        return dict != null ? new PDAppearanceDictionary(dict) : null;</span>
+    }
+
+    /**
+     * This will set the appearance dictionary.
+     *
+     * @param ap The appearance dictionary.
+     */
+    public void setAppearanceDictionary(PDAppearanceDictionary ap)
+    {
+<span class="nc" id="L607">        field.setItem(COSName.AP, ap);</span>
+<span class="nc" id="L608">    }</span>
+
+    /**
+     * This will get named page references.
+     *
+     * @return The named page references or &lt;code&gt;null&lt;/code&gt;.
+     */
+    public FDFNamedPageReference getAppearanceStreamReference()
+    {
+<span class="nc" id="L617">        COSDictionary ref = field.getCOSDictionary(COSName.AP_REF);</span>
+<span class="nc bnc" id="L618" title="All 2 branches missed.">        return ref != null ? new FDFNamedPageReference(ref) : null;</span>
+    }
+
+    /**
+     * This will set the named page references.
+     *
+     * @param ref The named page references.
+     */
+    public void setAppearanceStreamReference(FDFNamedPageReference ref)
+    {
+<span class="nc" id="L628">        field.setItem(COSName.AP_REF, ref);</span>
+<span class="nc" id="L629">    }</span>
+
+    /**
+     * This will get the icon fit that is associated with this field.
+     *
+     * @return The 'IF' entry.
+     */
+    public FDFIconFit getIconFit()
+    {
+<span class="nc" id="L638">        COSDictionary dic = field.getCOSDictionary(COSName.IF);</span>
+<span class="nc bnc" id="L639" title="All 2 branches missed.">        return dic != null ? new FDFIconFit(dic) : null;</span>
+    }
+
+    /**
+     * This will set the icon fit 'IF' entry.
+     *
+     * @param fit The icon fit object.
+     */
+    public void setIconFit(FDFIconFit fit)
+    {
+<span class="nc" id="L649">        field.setItem(COSName.IF, fit);</span>
+<span class="nc" id="L650">    }</span>
+
+    /**
+     * This will return a list of options for a choice field.
+     * The values in the list will be 1 of 2 types:&lt;ul&gt;
+     *     &lt;li&gt;&lt;code&gt;String&lt;/code&gt; &lt;/li&gt;
+     *     &lt;li&gt;{@link FDFOptionElement}&lt;/li&gt;
+     * &lt;/ul&gt;
+     *
+     * @return A list of all options.
+     */
+    public List&lt;Object&gt; getOptions()
+    {
+<span class="nc" id="L663">        COSArray array = field.getCOSArray(COSName.OPT);</span>
+<span class="nc bnc" id="L664" title="All 2 branches missed.">        if (array != null)</span>
+        {
+<span class="nc" id="L666">            List&lt;Object&gt; objects = new ArrayList&lt;&gt;(array.size());</span>
+<span class="nc bnc" id="L667" title="All 2 branches missed.">            for (int i = 0; i &lt; array.size(); i++)</span>
+            {
+<span class="nc" id="L669">                COSBase next = array.getObject(i);</span>
+<span class="nc bnc" id="L670" title="All 2 branches missed.">                if (next instanceof COSString)</span>
+                {
+<span class="nc" id="L672">                    objects.add(((COSString) next).getString());</span>
+                }
+                else
+                {
+<span class="nc" id="L676">                    COSArray value = (COSArray) next;</span>
+<span class="nc" id="L677">                    objects.add(new FDFOptionElement(value));</span>
+                }
+            }
+<span class="nc" id="L680">            return new COSArrayList&lt;&gt;(objects, array);</span>
+        }
+<span class="nc" id="L682">        return null;</span>
+    }
+
+    /**
+     * This will set the options for the choice field.
+     * The objects in the list should either be &lt;code&gt;String&lt;/code&gt; or {@link FDFOptionElement}.
+     *
+     * @param options The options to set.
+     */
+    public void setOptions(List&lt;Object&gt; options)
+    {
+<span class="nc" id="L693">        COSArray value = COSArrayList.converterToCOSArray(options);</span>
+<span class="nc" id="L694">        field.setItem(COSName.OPT, value);</span>
+<span class="nc" id="L695">    }</span>
+
+    /**
+     * This will get the action that is associated with this field.
+     *
+     * @return The 'A' entry in the FDF field dictionary.
+     */
+    public PDAction getAction()
+    {
+<span class="nc" id="L704">        return PDActionFactory.createAction(field.getCOSDictionary(COSName.A));</span>
+    }
+
+    /**
+     * This will set the action that is associated with this field.
+     *
+     * @param a The new action.
+     */
+    public void setAction(PDAction a)
+    {
+<span class="nc" id="L714">        field.setItem(COSName.A, a);</span>
+<span class="nc" id="L715">    }</span>
+
+    /**
+     * This will get a list of additional actions that will get executed based on events.
+     *
+     * @return The 'AA' entry in this FDF field dictionary or null.
+     */
+    public PDAdditionalActions getAdditionalActions()
+    {
+<span class="nc" id="L724">        COSDictionary dict = field.getCOSDictionary(COSName.AA);</span>
+<span class="nc bnc" id="L725" title="All 2 branches missed.">        return dict != null ? new PDAdditionalActions(dict) : null;</span>
+    }
+
+    /**
+     * This will set the additional actions that are associated with this field.
+     *
+     * @param aa The additional actions.
+     */
+    public void setAdditionalActions(PDAdditionalActions aa)
+    {
+<span class="nc" id="L735">        field.setItem(COSName.AA, aa);</span>
+<span class="nc" id="L736">    }</span>
+
+    /**
+     * This will set the rich text that is associated with this field.
+     *
+     * @return The rich text XHTML stream.
+     */
+    public String getRichText()
+    {
+<span class="nc" id="L745">        COSBase rv = field.getDictionaryObject(COSName.RV);</span>
+<span class="nc bnc" id="L746" title="All 2 branches missed.">        if (rv == null)</span>
+        {
+<span class="nc" id="L748">            return null;</span>
+        }
+<span class="nc bnc" id="L750" title="All 2 branches missed.">        else if (rv instanceof COSString)</span>
+        {
+<span class="nc" id="L752">            return ((COSString) rv).getString();</span>
+        }
+        else
+        {
+<span class="nc" id="L756">            return ((COSStream) rv).toTextString();</span>
+        }
+    }
+
+    /**
+     * This will set the rich text value.
+     *
+     * @param rv The rich text value for the stream.
+     */
+    public void setRichText(COSString rv)
+    {
+<span class="nc" id="L767">        field.setItem(COSName.RV, rv);</span>
+<span class="nc" id="L768">    }</span>
+
+    /**
+     * This will set the rich text value.
+     *
+     * @param rv The rich text value for the stream.
+     */
+    public void setRichText(COSStream rv)
+    {
+<span class="nc" id="L777">        field.setItem(COSName.RV, rv);</span>
+<span class="nc" id="L778">    }</span>
+
+    /**
+     * Escape special characters.
+     *
+     * @param input the string to be escaped.
+     *
+     * @return the resulting string
+     */
+    private String escapeXML(String input)
+    {
+<span class="nc" id="L789">        StringBuilder escapedXML = new StringBuilder();</span>
+<span class="nc bnc" id="L790" title="All 2 branches missed.">        for (int i = 0; i &lt; input.length(); i++)</span>
+        {
+<span class="nc" id="L792">            char c = input.charAt(i);</span>
+<span class="nc bnc" id="L793" title="All 6 branches missed.">            switch (c)</span>
+            {
+            case '&lt;':
+<span class="nc" id="L796">                escapedXML.append(&quot;&amp;lt;&quot;);</span>
+<span class="nc" id="L797">                break;</span>
+            case '&gt;':
+<span class="nc" id="L799">                escapedXML.append(&quot;&amp;gt;&quot;);</span>
+<span class="nc" id="L800">                break;</span>
+            case '\&quot;':
+<span class="nc" id="L802">                escapedXML.append(&quot;&amp;quot;&quot;);</span>
+<span class="nc" id="L803">                break;</span>
+            case '&amp;':
+<span class="nc" id="L805">                escapedXML.append(&quot;&amp;amp;&quot;);</span>
+<span class="nc" id="L806">                break;</span>
+            case '\'':
+<span class="nc" id="L808">                escapedXML.append(&quot;&amp;apos;&quot;);</span>
+<span class="nc" id="L809">                break;</span>
+            default:
+<span class="nc bnc" id="L811" title="All 2 branches missed.">                if (c &gt; 0x7e)</span>
+                {
+<span class="nc" id="L813">                    escapedXML.append(&quot;&amp;#&quot;).append((int) c).append(';');</span>
+                }
+                else
+                {
+<span class="nc" id="L817">                    escapedXML.append(c);</span>
+                }
+            }
+        }
+<span class="nc" id="L821">        return escapedXML.toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

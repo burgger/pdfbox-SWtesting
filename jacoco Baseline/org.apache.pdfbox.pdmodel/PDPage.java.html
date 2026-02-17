@@ -1,0 +1,896 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDPage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel</a> &gt; <span class="el_source">PDPage.java</span></div><h1>PDPage.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.contentstream.PDContentStream;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.filter.FlateFilterDecoderStream;
+import org.apache.pdfbox.io.RandomAccessInputStream;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.apache.pdfbox.io.NonSeekableRandomAccessReadInputStream;
+import org.apache.pdfbox.io.SequenceRandomAccessRead;
+import org.apache.pdfbox.pdmodel.common.COSArrayList;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.common.PDMetadata;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+import org.apache.pdfbox.pdmodel.graphics.PDXObject;
+import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
+import org.apache.pdfbox.pdmodel.interactive.action.PDPageAdditionalActions;
+import org.apache.pdfbox.pdmodel.interactive.annotation.AnnotationFilter;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.measurement.PDViewportDictionary;
+import org.apache.pdfbox.pdmodel.interactive.pagenavigation.PDThreadBead;
+import org.apache.pdfbox.pdmodel.interactive.pagenavigation.PDTransition;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * A page in a PDF document.
+ * 
+ * @author Ben Litchfield
+ */
+public class PDPage implements COSObjectable, PDContentStream
+{
+    /**
+     * Log instance
+     */
+<span class="fc" id="L70">    private static final Logger LOG = LogManager.getLogger(PDPage.class);</span>
+
+<span class="fc" id="L72">    private static final byte[] DELIMITER = { '\n' };</span>
+
+    private final COSDictionary page;
+    private PDResources pageResources;
+    private ResourceCache resourceCache;
+    private PDRectangle mediaBox;
+
+    /**
+     * Creates a new PDPage instance for embedding, with a size of U.S. Letter (8.5 x 11 inches).
+     */
+    public PDPage()
+    {
+<span class="fc" id="L84">        this(PDRectangle.LETTER);</span>
+<span class="fc" id="L85">    }</span>
+
+    /**
+     * Creates a new instance of PDPage for embedding.
+     * 
+     * @param mediaBox The MediaBox of the page.
+     */
+    public PDPage(PDRectangle mediaBox)
+<span class="fc" id="L93">    {</span>
+<span class="fc" id="L94">        page = new COSDictionary();</span>
+<span class="fc" id="L95">        page.setItem(COSName.TYPE, COSName.PAGE);</span>
+<span class="fc" id="L96">        page.setItem(COSName.MEDIA_BOX, mediaBox);</span>
+<span class="fc" id="L97">    }</span>
+
+    /**
+     * Creates a new instance of PDPage for reading.
+     * 
+     * @param pageDictionary A page dictionary in a PDF document.
+     */
+    public PDPage(COSDictionary pageDictionary)
+<span class="nc" id="L105">    {</span>
+<span class="nc" id="L106">        page = pageDictionary;</span>
+<span class="nc" id="L107">    }</span>
+
+    /**
+     * Creates a new instance of PDPage for reading.
+     *
+     * @param pageDictionary A page dictionary in a PDF document.
+     */
+    PDPage(COSDictionary pageDictionary, ResourceCache resourceCache)
+<span class="nc" id="L115">    {</span>
+<span class="nc" id="L116">        page = pageDictionary;</span>
+<span class="nc" id="L117">        this.resourceCache = resourceCache;</span>
+<span class="nc" id="L118">    }</span>
+
+    /**
+     * Remove all page resources from the cache to avoid relying on the implementation of the Cache. Does make sense
+     * after processing a page.
+     */
+    public void removePageResourceFromCache()
+    {
+<span class="nc bnc" id="L126" title="All 2 branches missed.">        if (resourceCache == null)</span>
+        {
+<span class="nc" id="L128">            return;</span>
+        }
+        // limit purge operation to page resources, don't remove inherited resources
+<span class="nc" id="L131">        removeResources(page.getCOSDictionary(COSName.RESOURCES));</span>
+<span class="nc" id="L132">    }</span>
+
+    private void removeResources(COSDictionary resources)
+    {
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        if (resources == null)</span>
+        {
+<span class="nc" id="L138">            return;</span>
+        }
+<span class="nc" id="L140">        getIndirectResourceObjects(resources, COSName.COLORSPACE)</span>
+<span class="nc" id="L141">                .forEach(resourceCache::removeColorSpace);</span>
+<span class="nc" id="L142">        getIndirectResourceObjects(resources, COSName.EXT_G_STATE)</span>
+<span class="nc" id="L143">                .forEach(resourceCache::removeExtState);</span>
+<span class="nc" id="L144">        getIndirectResourceObjects(resources, COSName.FONT)</span>
+<span class="nc" id="L145">                .forEach(resourceCache::removeFont);</span>
+<span class="nc" id="L146">        getIndirectResourceObjects(resources, COSName.PATTERN)</span>
+<span class="nc" id="L147">                .forEach(resourceCache::removePattern);</span>
+<span class="nc" id="L148">        getIndirectResourceObjects(resources, COSName.PROPERTIES)</span>
+<span class="nc" id="L149">                .forEach(resourceCache::removeProperties);</span>
+<span class="nc" id="L150">        getIndirectResourceObjects(resources, COSName.SHADING)</span>
+<span class="nc" id="L151">                .forEach(resourceCache::removeShading);</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">        for (COSObject cosObject : getIndirectResourceObjects(resources, COSName.XOBJECT))</span>
+        {
+<span class="nc" id="L154">            PDXObject removedXObject = resourceCache.removeXObject(cosObject);</span>
+            // clean up the resources of the XFormObject
+<span class="nc bnc" id="L156" title="All 2 branches missed.">            if (removedXObject instanceof PDFormXObject)</span>
+            {
+<span class="nc" id="L158">                COSStream cosStream = removedXObject.getCOSObject();</span>
+<span class="nc" id="L159">                removeResources(cosStream.getCOSDictionary(COSName.RESOURCES));</span>
+            }
+<span class="nc" id="L161">        }</span>
+<span class="nc" id="L162">    }</span>
+
+    private List&lt;COSObject&gt; getIndirectResourceObjects(COSDictionary pageResources, COSName kind)
+    {
+<span class="nc" id="L166">        COSDictionary resourcesDictionary = pageResources.getCOSDictionary(kind);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">        if (resourcesDictionary == null)</span>
+        {
+<span class="nc" id="L169">            return Collections.emptyList();</span>
+        }
+<span class="nc" id="L171">        return resourcesDictionary.getValues().stream() //</span>
+<span class="nc" id="L172">                .filter(COSObject.class::isInstance) //</span>
+<span class="nc" id="L173">                .map(COSObject.class::cast) //</span>
+<span class="nc" id="L174">                .filter(COSObject::isDereferenced) //</span>
+<span class="nc" id="L175">                .collect(Collectors.toList());</span>
+    }
+
+    /**
+     * Convert this standard java object to a COS object.
+     * 
+     * @return The cos object that matches this Java object.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="fc" id="L186">        return page;</span>
+    }
+
+    /**
+     * Returns the content streams which make up this page.
+     * 
+     * @return content stream iterator
+     */
+    public Iterator&lt;PDStream&gt; getContentStreams()
+    {
+<span class="nc" id="L196">        COSBase base = page.getDictionaryObject(COSName.CONTENTS);</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">        if (base instanceof COSStream)</span>
+        {
+<span class="nc" id="L199">            return Collections.singletonList(new PDStream((COSStream) base)).iterator();</span>
+        }
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        else if (base instanceof COSArray)</span>
+        {
+<span class="nc" id="L203">            COSArray array = (COSArray)base;</span>
+<span class="nc" id="L204">            List&lt;PDStream&gt; streams = new ArrayList&lt;&gt;(array.size());</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">            for (int i = 0; i &lt; array.size(); i++)</span>
+            {
+<span class="nc" id="L207">                COSStream stream = (COSStream) array.getObject(i);</span>
+<span class="nc" id="L208">                streams.add(new PDStream(stream));</span>
+            }
+<span class="nc" id="L210">            return streams.iterator();</span>
+        }
+<span class="nc" id="L212">        return Collections.emptyIterator();</span>
+    }
+    
+    /**
+     * Returns the content stream(s) of this page as a single input stream.
+     *
+     * @return An InputStream, never null. Multiple content streams are concatenated and separated
+     * with a newline. An empty stream is returned if the page doesn't have any content stream.
+     * @throws IOException If the stream could not be read
+     */
+    @Override
+    public InputStream getContents() throws IOException
+    {
+<span class="nc" id="L225">        RandomAccessRead contentsForRandomAccess = getContentsForRandomAccess();</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">        if (contentsForRandomAccess != null)</span>
+        {
+<span class="nc" id="L228">            return new RandomAccessInputStream(contentsForRandomAccess);</span>
+        }
+<span class="nc" id="L230">        return new ByteArrayInputStream(new byte[0]);</span>
+    }
+
+    @Override
+    public RandomAccessRead getContentsForStreamParsing() throws IOException
+    {
+        // return a stream based reader if there is just one stream
+<span class="nc" id="L237">        COSStream contentStream = page.getCOSStream(COSName.CONTENTS);</span>
+<span class="nc bnc" id="L238" title="All 4 branches missed.">        if (contentStream != null &amp;&amp; COSName.FLATE_DECODE.equals(contentStream.getFilters()))</span>
+        {
+            // for now only streams using a flate filter are supported
+            try
+            {
+<span class="nc" id="L243">                FlateFilterDecoderStream decoderStream = new FlateFilterDecoderStream(</span>
+<span class="nc" id="L244">                        contentStream.createRawInputStream());</span>
+<span class="nc" id="L245">                return new NonSeekableRandomAccessReadInputStream(decoderStream);</span>
+            }
+<span class="nc" id="L247">            catch (IOException exception)</span>
+            {
+<span class="nc" id="L249">                LOG.warn(&quot;skipped malformed content stream&quot;);</span>
+<span class="nc" id="L250">                return new RandomAccessReadBuffer(DELIMITER);</span>
+            }
+        }
+<span class="nc" id="L253">        return getContentsForRandomAccess();</span>
+    }
+
+    @Override
+    public RandomAccessRead getContentsForRandomAccess() throws IOException
+    {
+<span class="nc" id="L259">        COSStream contentStream = page.getCOSStream(COSName.CONTENTS);</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">        if (contentStream != null)</span>
+        {
+            try
+            {
+<span class="nc" id="L264">                return contentStream.createView();</span>
+            }
+<span class="nc" id="L266">            catch (IOException exception)</span>
+            {
+<span class="nc" id="L268">                LOG.warn(&quot;skipped malformed content stream&quot;);</span>
+<span class="nc" id="L269">                return new RandomAccessReadBuffer(DELIMITER);</span>
+            }
+        }
+<span class="nc" id="L272">        COSArray array = page.getCOSArray(COSName.CONTENTS);</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">        if (array != null)</span>
+        {
+<span class="nc" id="L275">            List&lt;COSStream&gt; streams = array.toList().stream() //</span>
+<span class="nc bnc" id="L276" title="All 2 branches missed.">                    .map(o -&gt; o instanceof COSObject ? ((COSObject) o).getObject() : o) //</span>
+<span class="nc" id="L277">                    .filter(COSStream.class::isInstance) //</span>
+<span class="nc" id="L278">                    .map(b -&gt; (COSStream) b) //</span>
+<span class="nc" id="L279">                    .collect(Collectors.toList());</span>
+<span class="nc" id="L280">            List&lt;RandomAccessRead&gt; inputStreams = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L281">            streams.forEach(stream -&gt;</span>
+            {
+                try
+                {
+<span class="nc" id="L285">                    inputStreams.add(stream.createView());</span>
+<span class="nc" id="L286">                    inputStreams.add(new RandomAccessReadBuffer(DELIMITER));</span>
+                }
+<span class="nc" id="L288">                catch (IOException exception)</span>
+                {
+<span class="nc" id="L290">                    LOG.warn(&quot;malformed substream of content stream skipped&quot;);</span>
+<span class="nc" id="L291">                }</span>
+<span class="nc" id="L292">            });</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">            if (!inputStreams.isEmpty())</span>
+            {
+<span class="nc" id="L295">                return new SequenceRandomAccessRead(inputStreams);</span>
+            }
+        }
+<span class="nc" id="L298">        return new RandomAccessReadBuffer(new byte[0]);</span>
+    }
+
+    /**
+     * Returns true if this page has one or more content streams.
+     * 
+     * @return true if the page has a non empty content stream, otherwise false
+     */
+    public boolean hasContents()
+    {
+<span class="nc" id="L308">        COSBase contents = page.getDictionaryObject(COSName.CONTENTS);</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">        if (contents instanceof COSStream)</span>
+        {
+<span class="nc bnc" id="L311" title="All 2 branches missed.">            return ((COSStream) contents).size() &gt; 0;</span>
+        }
+<span class="nc bnc" id="L313" title="All 2 branches missed.">        else if (contents instanceof COSArray)</span>
+        {
+<span class="nc bnc" id="L315" title="All 2 branches missed.">            return !((COSArray) contents).isEmpty();</span>
+        }
+<span class="nc" id="L317">        return false;</span>
+    }
+
+    /**
+     * A dictionary containing any resources required by the page.
+     */
+    @Override
+    public PDResources getResources()
+    {
+<span class="nc bnc" id="L326" title="All 2 branches missed.">        if (pageResources == null)</span>
+        {
+<span class="nc" id="L328">            COSBase base = PDPageTree.getInheritableAttribute(page, COSName.RESOURCES);</span>
+
+            // note: it's an error for resources to not be present
+<span class="nc bnc" id="L331" title="All 2 branches missed.">            if (base instanceof COSDictionary)</span>
+            {
+<span class="nc" id="L333">                pageResources = new PDResources((COSDictionary) base, resourceCache);</span>
+            }
+        }
+<span class="nc" id="L336">        return pageResources;</span>
+    }
+
+    /**
+     * This will set the resources for this page.
+     * 
+     * @param resources The new resources for this page.
+     */
+    public void setResources(PDResources resources)
+    {
+<span class="nc" id="L346">        pageResources = resources;</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">        if (resources != null)</span>
+        {
+<span class="nc" id="L349">            page.setItem(COSName.RESOURCES, resources);</span>
+        }
+        else
+        {
+<span class="nc" id="L353">            page.removeItem(COSName.RESOURCES);</span>
+        }
+<span class="nc" id="L355">    }</span>
+
+    /**
+     * This will get the key of this Page in the structural parent tree.
+     * 
+     * @return the integer key of the page's entry in the structural parent tree or -1 if
+     * there isn't any.
+     */
+    public int getStructParents()
+    {
+<span class="nc" id="L365">        return page.getInt(COSName.STRUCT_PARENTS);</span>
+    }
+
+    /**
+     * This will set the key for this page in the structural parent tree.
+     * 
+     * @param structParents The new key for this page.
+     */
+    public void setStructParents(int structParents)
+    {
+<span class="nc" id="L375">        page.setInt(COSName.STRUCT_PARENTS, structParents);</span>
+<span class="nc" id="L376">    }</span>
+
+    @Override
+    public PDRectangle getBBox()
+    {
+<span class="nc" id="L381">        return getCropBox();</span>
+    }
+
+    @Override
+    public Matrix getMatrix()
+    {
+        // todo: take into account user-space unit redefinition as scale?
+<span class="nc" id="L388">        return new Matrix();</span>
+    }
+
+    /**
+     * A rectangle, expressed in default user space units, defining the boundaries of the physical medium on which the
+     * page is intended to be displayed or printed.
+     * 
+     * @return the media box of the page
+     */
+    public PDRectangle getMediaBox()
+    {
+<span class="nc bnc" id="L399" title="All 2 branches missed.">        if (mediaBox == null)</span>
+        {
+<span class="nc" id="L401">            COSBase base = PDPageTree.getInheritableAttribute(page, COSName.MEDIA_BOX);</span>
+<span class="nc bnc" id="L402" title="All 2 branches missed.">            if (base instanceof COSArray)</span>
+            {
+<span class="nc" id="L404">                mediaBox = new PDRectangle((COSArray) base);</span>
+            }
+            else
+            {
+<span class="nc" id="L408">                LOG.debug(&quot;Can't find MediaBox, will use U.S. Letter&quot;);</span>
+<span class="nc" id="L409">                mediaBox = PDRectangle.LETTER;</span>
+            }
+        }
+<span class="nc" id="L412">        return mediaBox;</span>
+    }
+
+    /**
+     * This will set the mediaBox for this page.
+     * 
+     * @param mediaBox The new mediaBox for this page.
+     */
+    public void setMediaBox(PDRectangle mediaBox)
+    {
+<span class="nc" id="L422">        this.mediaBox = mediaBox;</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">        if (mediaBox == null)</span>
+        {
+<span class="nc" id="L425">            page.removeItem(COSName.MEDIA_BOX);</span>
+        }
+        else
+        {
+<span class="nc" id="L429">            page.setItem(COSName.MEDIA_BOX, mediaBox);</span>
+        }
+<span class="nc" id="L431">    }</span>
+
+    /**
+     * A rectangle, expressed in default user space units, defining the visible region of default user space. When the
+     * page is displayed or printed, its contents are to be clipped (cropped) to this rectangle.
+     * 
+     * @return the cropbox of the page
+     */
+    public PDRectangle getCropBox()
+    {
+<span class="nc" id="L441">        COSBase base = PDPageTree.getInheritableAttribute(page, COSName.CROP_BOX);</span>
+<span class="nc bnc" id="L442" title="All 2 branches missed.">        if (base instanceof COSArray)</span>
+        {
+<span class="nc" id="L444">            return clipToMediaBox(new PDRectangle((COSArray) base));</span>
+        }
+        else
+        {
+<span class="nc" id="L448">            return getMediaBox();</span>
+        }
+    }
+
+    /**
+     * This will set the CropBox for this page.
+     * 
+     * @param cropBox The new CropBox for this page.
+     */
+    public void setCropBox(PDRectangle cropBox)
+    {
+<span class="nc bnc" id="L459" title="All 2 branches missed.">        if (cropBox == null)</span>
+        {
+<span class="nc" id="L461">            page.removeItem(COSName.CROP_BOX);</span>
+        }
+        else
+        {
+<span class="nc" id="L465">            page.setItem(COSName.CROP_BOX, cropBox.getCOSArray());</span>
+        }
+<span class="nc" id="L467">    }</span>
+
+    /**
+     * A rectangle, expressed in default user space units, defining the region to which the contents
+     * of the page should be clipped when output in a production environment. The default is the
+     * CropBox.
+     * 
+     * @return The BleedBox attribute.
+     */
+    public PDRectangle getBleedBox()
+    {
+<span class="nc" id="L478">        COSArray bleedBox = page.getCOSArray(COSName.BLEED_BOX);</span>
+<span class="nc bnc" id="L479" title="All 2 branches missed.">        return bleedBox != null ? clipToMediaBox(new PDRectangle(bleedBox)) : getCropBox();</span>
+    }
+
+    /**
+     * This will set the BleedBox for this page.
+     * 
+     * @param bleedBox The new BleedBox for this page.
+     */
+    public void setBleedBox(PDRectangle bleedBox)
+    {
+<span class="nc bnc" id="L489" title="All 2 branches missed.">        if (bleedBox == null)</span>
+        {
+<span class="nc" id="L491">            page.removeItem(COSName.BLEED_BOX);</span>
+        }
+        else
+        {
+<span class="nc" id="L495">            page.setItem(COSName.BLEED_BOX, bleedBox);</span>
+        }
+<span class="nc" id="L497">    }</span>
+
+    /**
+     * A rectangle, expressed in default user space units, defining the intended dimensions of the
+     * finished page after trimming. The default is the CropBox.
+     * 
+     * @return The TrimBox attribute.
+     */
+    public PDRectangle getTrimBox()
+    {
+<span class="nc" id="L507">        COSArray trimBox = page.getCOSArray(COSName.TRIM_BOX);</span>
+<span class="nc bnc" id="L508" title="All 2 branches missed.">        return trimBox != null ? clipToMediaBox(new PDRectangle(trimBox)) : getCropBox();</span>
+    }
+
+    /**
+     * This will set the TrimBox for this page.
+     * 
+     * @param trimBox The new TrimBox for this page.
+     */
+    public void setTrimBox(PDRectangle trimBox)
+    {
+<span class="nc bnc" id="L518" title="All 2 branches missed.">        if (trimBox == null)</span>
+        {
+<span class="nc" id="L520">            page.removeItem(COSName.TRIM_BOX);</span>
+        }
+        else
+        {
+<span class="nc" id="L524">            page.setItem(COSName.TRIM_BOX, trimBox);</span>
+        }
+<span class="nc" id="L526">    }</span>
+
+    /**
+     * A rectangle, expressed in default user space units, defining the extent of the page's
+     * meaningful content (including potential white space) as intended by the page's creator The
+     * default is the CropBox.
+     * 
+     * @return The ArtBox attribute.
+     */
+    public PDRectangle getArtBox()
+    {
+<span class="nc" id="L537">        COSArray artBox = page.getCOSArray(COSName.ART_BOX);</span>
+<span class="nc bnc" id="L538" title="All 2 branches missed.">        return artBox != null ? clipToMediaBox(new PDRectangle(artBox)) : getCropBox();</span>
+    }
+
+    /**
+     * This will set the ArtBox for this page.
+     * 
+     * @param artBox The new ArtBox for this page.
+     */
+    public void setArtBox(PDRectangle artBox)
+    {
+<span class="nc bnc" id="L548" title="All 2 branches missed.">        if (artBox == null)</span>
+        {
+<span class="nc" id="L550">            page.removeItem(COSName.ART_BOX);</span>
+        }
+        else
+        {
+<span class="nc" id="L554">            page.setItem(COSName.ART_BOX, artBox);</span>
+        }
+<span class="nc" id="L556">    }</span>
+    
+    /**
+     * Clips the given box to the bounds of the media box.
+     */
+    private PDRectangle clipToMediaBox(PDRectangle box)
+    {
+<span class="nc" id="L563">        PDRectangle mediaBox = getMediaBox();</span>
+<span class="nc" id="L564">        PDRectangle result = new PDRectangle();</span>
+<span class="nc" id="L565">        result.setLowerLeftX(Math.max(mediaBox.getLowerLeftX(), box.getLowerLeftX()));</span>
+<span class="nc" id="L566">        result.setLowerLeftY(Math.max(mediaBox.getLowerLeftY(), box.getLowerLeftY()));</span>
+<span class="nc" id="L567">        result.setUpperRightX(Math.min(mediaBox.getUpperRightX(), box.getUpperRightX()));</span>
+<span class="nc" id="L568">        result.setUpperRightY(Math.min(mediaBox.getUpperRightY(), box.getUpperRightY()));</span>
+<span class="nc" id="L569">        return result;</span>
+    }
+
+    /**
+     * Returns the rotation angle in degrees by which the page should be rotated
+     * clockwise when displayed or printed. Valid values in a PDF must be a
+     * multiple of 90.
+     *
+     * @return The rotation angle in degrees in normalized form (0, 90, 180 or
+     * 270) or 0 if invalid or not set at this level.
+     */
+    public int getRotation()
+    {
+<span class="nc" id="L582">        COSBase obj = PDPageTree.getInheritableAttribute(page, COSName.ROTATE);</span>
+<span class="nc bnc" id="L583" title="All 2 branches missed.">        if (obj instanceof COSNumber)</span>
+        {
+<span class="nc" id="L585">            int rotationAngle = ((COSNumber) obj).intValue();</span>
+<span class="nc bnc" id="L586" title="All 2 branches missed.">            if (rotationAngle % 90 == 0)</span>
+            {
+<span class="nc" id="L588">                return (rotationAngle % 360 + 360) % 360;</span>
+            }
+        }
+<span class="nc" id="L591">        return 0;</span>
+    }
+
+    /**
+     * This will set the rotation for this page.
+     * 
+     * @param rotation The new rotation for this page in degrees.
+     */
+    public void setRotation(int rotation)
+    {
+<span class="nc" id="L601">        page.setInt(COSName.ROTATE, rotation);</span>
+<span class="nc" id="L602">    }</span>
+
+    /**
+     * This will set the contents of this page.
+     * 
+     * @param contents The new contents of the page.
+     */
+    public void setContents(PDStream contents)
+    {
+<span class="nc" id="L611">        page.setItem(COSName.CONTENTS, contents);</span>
+<span class="nc" id="L612">    }</span>
+
+    /**
+     * This will set the contents of this page.
+     *
+     * @param contents Array of new contents of the page.
+     */
+    public void setContents(List&lt;PDStream&gt; contents)
+    {
+<span class="nc" id="L621">        page.setItem(COSName.CONTENTS, new COSArray(contents));</span>
+<span class="nc" id="L622">    }</span>
+
+    /**
+     * This will get a list of PDThreadBead objects, which are article threads in the document. This
+     * will return an empty list if there are no thread beads.
+     *
+     * @return A list of article threads on this page, never null. The returned list is backed by
+     * the beads COSArray, so any adding or deleting in this list will change the document too.
+     */
+    public List&lt;PDThreadBead&gt; getThreadBeads()
+    {
+<span class="nc" id="L633">        COSArray beads = page.getCOSArray(COSName.B);</span>
+<span class="nc bnc" id="L634" title="All 2 branches missed.">        if (beads == null)</span>
+        {
+<span class="nc" id="L636">            beads = new COSArray();</span>
+        }
+<span class="nc" id="L638">        List&lt;PDThreadBead&gt; pdObjects = new ArrayList&lt;&gt;(beads.size());</span>
+<span class="nc bnc" id="L639" title="All 2 branches missed.">        for (int i = 0; i &lt; beads.size(); i++)</span>
+        {
+<span class="nc" id="L641">            COSBase base = beads.getObject(i);</span>
+<span class="nc" id="L642">            PDThreadBead bead = null;</span>
+            // in some cases the bead is null
+<span class="nc bnc" id="L644" title="All 2 branches missed.">            if (base instanceof COSDictionary)</span>
+            {
+<span class="nc" id="L646">                bead = new PDThreadBead((COSDictionary) base);</span>
+            }
+<span class="nc" id="L648">            pdObjects.add(bead);</span>
+        }
+<span class="nc" id="L650">        return new COSArrayList&lt;&gt;(pdObjects, beads);</span>
+    }
+
+    /**
+     * This will set the list of thread beads.
+     * 
+     * @param beads A list of PDThreadBead objects or null.
+     */
+    public void setThreadBeads(List&lt;PDThreadBead&gt; beads)
+    {
+<span class="nc" id="L660">        page.setItem(COSName.B, new COSArray(beads));</span>
+<span class="nc" id="L661">    }</span>
+
+    /**
+     * Get the metadata that is part of the document catalog. This will return null if there is
+     * no meta data for this object.
+     * 
+     * @return The metadata for this object.
+     */
+    public PDMetadata getMetadata()
+    {
+<span class="nc" id="L671">        COSStream metadata = page.getCOSStream(COSName.METADATA);</span>
+<span class="nc bnc" id="L672" title="All 2 branches missed.">        return metadata != null ? new PDMetadata(metadata) : null;</span>
+    }
+
+    /**
+     * Set the metadata for this object. This can be null.
+     * 
+     * @param meta The meta data for this object.
+     */
+    public void setMetadata(PDMetadata meta)
+    {
+<span class="nc" id="L682">        page.setItem(COSName.METADATA, meta);</span>
+<span class="nc" id="L683">    }</span>
+
+    /**
+     * Get the page actions.
+     * 
+     * @return The Actions for this Page
+     */
+    public PDPageAdditionalActions getActions()
+    {
+<span class="nc" id="L692">        COSDictionary addAct = page.getCOSDictionary(COSName.AA);</span>
+<span class="nc bnc" id="L693" title="All 2 branches missed.">        if (addAct == null)</span>
+        {
+<span class="nc" id="L695">            addAct = new COSDictionary();</span>
+<span class="nc" id="L696">            page.setItem(COSName.AA, addAct);</span>
+        }
+<span class="nc" id="L698">        return new PDPageAdditionalActions(addAct);</span>
+    }
+
+    /**
+     * Set the page actions.
+     * 
+     * @param actions The actions for the page.
+     */
+    public void setActions(PDPageAdditionalActions actions)
+    {
+<span class="nc" id="L708">        page.setItem(COSName.AA, actions);</span>
+<span class="nc" id="L709">    }</span>
+
+    /**
+     * @return The page transition associated with this page or null if no transition is defined
+     */
+    public PDTransition getTransition()
+    {
+<span class="nc" id="L716">        COSDictionary transition = page.getCOSDictionary(COSName.TRANS);</span>
+<span class="nc bnc" id="L717" title="All 2 branches missed.">        return transition != null ? new PDTransition(transition) : null;</span>
+    }
+
+    /**
+     * @param transition The new transition to set on this page.
+     */
+    public void setTransition(PDTransition transition)
+    {
+<span class="nc" id="L725">        page.setItem(COSName.TRANS, transition);</span>
+<span class="nc" id="L726">    }</span>
+
+    /**
+     * Convenient method to set a transition and the display duration
+     * 
+     * @param transition The new transition to set on this page.
+     * @param duration The maximum length of time, in seconds, that the page shall be displayed during presentations
+     * before the viewer application shall automatically advance to the next page.
+     */
+    public void setTransition(PDTransition transition, float duration)
+    {
+<span class="nc" id="L737">        page.setItem(COSName.TRANS, transition);</span>
+<span class="nc" id="L738">        page.setItem(COSName.DUR, new COSFloat(duration));</span>
+<span class="nc" id="L739">    }</span>
+
+    /**
+     * This will return a list of the annotations for this page.
+     *
+     * @return List of the PDAnnotation objects, never null. The returned list is backed by the
+     * annotations COSArray, so any adding or deleting in this list will change the document too.
+     * 
+     * @throws IOException If there is an error while creating the annotation list.
+     */
+    public List&lt;PDAnnotation&gt; getAnnotations() throws IOException
+    {
+<span class="nc" id="L751">        return getAnnotations(annotation -&gt; true);</span>
+    }
+
+    /**
+     * This will return a list of the annotations for this page.
+     *
+     * @param annotationFilter the annotation filter provided allowing to filter out specific annotations
+     * @return List of the PDAnnotation objects, never null. The returned list is backed by the
+     * annotations COSArray, so any adding or deleting in this list will change the document too.
+     * 
+     * @throws IOException If there is an error while creating the annotation list.
+     */
+    public List&lt;PDAnnotation&gt; getAnnotations(AnnotationFilter annotationFilter) throws IOException
+    {
+<span class="nc" id="L765">        COSArray annots = page.getCOSArray(COSName.ANNOTS);</span>
+<span class="nc bnc" id="L766" title="All 2 branches missed.">        if (annots == null)</span>
+        {
+<span class="nc" id="L768">            return new COSArrayList&lt;&gt;(page, COSName.ANNOTS);</span>
+        }
+
+<span class="nc" id="L771">        List&lt;PDAnnotation&gt; actuals = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L772" title="All 2 branches missed.">        for (int i = 0; i &lt; annots.size(); i++)</span>
+        {
+<span class="nc" id="L774">            COSBase item = annots.getObject(i);</span>
+<span class="nc bnc" id="L775" title="All 2 branches missed.">            if (item == null)</span>
+            {
+<span class="nc" id="L777">                continue;</span>
+            }
+<span class="nc" id="L779">            PDAnnotation createdAnnotation = PDAnnotation.createAnnotation(item);</span>
+<span class="nc bnc" id="L780" title="All 2 branches missed.">            if (annotationFilter.accept(createdAnnotation))</span>
+            {
+<span class="nc" id="L782">                actuals.add(createdAnnotation);</span>
+            }
+        }
+<span class="nc" id="L785">        return new COSArrayList&lt;&gt;(actuals, annots);</span>
+    }
+
+    /**
+     * This will set the list of annotations. Although this is optional, you should take care that
+     * any newly created annotations link back to this page by calling
+     * {@link PDAnnotation#setPage(org.apache.pdfbox.pdmodel.PDPage)}. Not doing it
+     * &lt;a href=&quot;https://stackoverflow.com/questions/74836898/&quot;&gt;can cause trouble when PDFs get
+     * signed&lt;/a&gt;.
+     *
+     * @param annotations The new list of annotations.
+     */
+    public void setAnnotations(List&lt;PDAnnotation&gt; annotations)
+    {
+<span class="nc" id="L799">        page.setItem(COSName.ANNOTS, new COSArray(annotations));</span>
+<span class="nc" id="L800">    }</span>
+
+    @Override
+    public boolean equals(Object other)
+    {
+<span class="nc bnc" id="L805" title="All 4 branches missed.">        return other instanceof PDPage &amp;&amp; ((PDPage) other).getCOSObject() == this.getCOSObject();</span>
+    }
+
+    @Override
+    public int hashCode()
+    {
+<span class="nc" id="L811">        return page.hashCode();</span>
+    }
+
+    /**
+     * Returns the resource cache associated with this page, or null if there is none.
+     * 
+     * @return the resource cache of the current page
+     */
+    public ResourceCache getResourceCache()
+    {
+<span class="nc" id="L821">        return resourceCache;</span>
+    }
+
+    /**
+     * Get the viewports.
+     *
+     * @return a list of viewports or null if there is no /VP entry.
+     */
+    public List&lt;PDViewportDictionary&gt; getViewports()
+    {
+<span class="nc" id="L831">        COSArray array = page.getCOSArray(COSName.VP);</span>
+<span class="nc bnc" id="L832" title="All 2 branches missed.">        if (array == null)</span>
+        {
+<span class="nc" id="L834">            return null;</span>
+        }
+<span class="nc" id="L836">        List&lt;PDViewportDictionary&gt; viewports = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L837" title="All 2 branches missed.">        for (int i = 0; i &lt; array.size(); ++i)</span>
+        {
+<span class="nc" id="L839">            COSBase base2 = array.getObject(i);</span>
+<span class="nc bnc" id="L840" title="All 2 branches missed.">            if (base2 instanceof COSDictionary)</span>
+            {
+<span class="nc" id="L842">                viewports.add(new PDViewportDictionary((COSDictionary) base2));</span>
+            }
+            else
+            {
+<span class="nc" id="L846">                LOG.warn(&quot;Array element {} is skipped, must be a (viewport) dictionary&quot;, base2);</span>
+            }
+        }
+<span class="nc" id="L849">        return viewports;</span>
+    }
+
+    /**
+     * Set the viewports.
+     *
+     * @param viewports A list of viewports, or null if the entry is to be deleted.
+     */
+    public void setViewports(List&lt;PDViewportDictionary&gt; viewports)
+    {
+<span class="nc bnc" id="L859" title="All 2 branches missed.">        if (viewports == null)</span>
+        {
+<span class="nc" id="L861">            page.removeItem(COSName.VP);</span>
+<span class="nc" id="L862">            return;</span>
+        }
+<span class="nc" id="L864">        page.setItem(COSName.VP, new COSArray(viewports));</span>
+<span class="nc" id="L865">    }</span>
+
+    /**
+     * Get the user unit. This is a positive number that shall give the size of default user space
+     * units, in multiples of 1/72 inch, or 1 if it hasn't been set. This is supported by PDF 1.6
+     * and higher.
+     *
+     * @return the user unit.
+     */
+    public float getUserUnit()
+    {
+<span class="nc" id="L876">        float userUnit = page.getFloat(COSName.USER_UNIT, 1.0f);</span>
+<span class="nc bnc" id="L877" title="All 2 branches missed.">        return userUnit &gt; 0 ? userUnit : 1.0f;</span>
+    }
+
+    /**
+     * Get the user unit. This is a positive number that shall give the size of default user space
+     * units, in multiples of 1/72 inch. This is supported by PDF 1.6 and higher.
+     *
+     * @param userUnit
+     * throws IllegalArgumentException if the parameter is not positive.
+     */
+    public void setUserUnit(float userUnit)
+    {
+<span class="nc bnc" id="L889" title="All 2 branches missed.">        if (userUnit &lt;= 0)</span>
+        {
+<span class="nc" id="L891">            throw new IllegalArgumentException(&quot;User unit must be positive&quot;);</span>
+        }
+<span class="nc" id="L893">        page.setFloat(COSName.USER_UNIT, userUnit);</span>
+<span class="nc" id="L894">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

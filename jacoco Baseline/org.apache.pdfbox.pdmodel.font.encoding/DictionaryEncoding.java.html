@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DictionaryEncoding.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font.encoding</a> &gt; <span class="el_source">DictionaryEncoding.java</span></div><h1>DictionaryEncoding.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.font.encoding;
+
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+
+/**
+ * This will perform the encoding from a dictionary.
+ *
+ * @author Ben Litchfield
+ */
+public class DictionaryEncoding extends Encoding
+{
+<span class="nc" id="L36">    private static final Logger LOG = LogManager.getLogger(DictionaryEncoding.class);</span>
+
+    private final COSDictionary encoding;
+    private final Encoding baseEncoding;
+<span class="nc" id="L40">    private final Map&lt;Integer, String&gt; differences = new HashMap&lt;&gt;();</span>
+
+    /**
+     * Creates a new DictionaryEncoding for embedding.
+     *
+     * @param baseEncoding the base encoding of this encoding
+     * @param differences the differences of this encoding with regard to the base encoding
+     */
+    public DictionaryEncoding(COSName baseEncoding, COSArray differences)
+<span class="nc" id="L49">    {</span>
+<span class="nc" id="L50">        encoding = new COSDictionary();</span>
+<span class="nc" id="L51">        encoding.setItem(COSName.NAME, COSName.ENCODING);</span>
+<span class="nc" id="L52">        encoding.setItem(COSName.DIFFERENCES, differences);</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        if (baseEncoding != COSName.STANDARD_ENCODING)</span>
+        {
+<span class="nc" id="L55">            encoding.setItem(COSName.BASE_ENCODING, baseEncoding);</span>
+<span class="nc" id="L56">            this.baseEncoding = Encoding.getInstance(baseEncoding);</span>
+        }
+        else
+        {
+<span class="nc" id="L60">            this.baseEncoding = Encoding.getInstance(baseEncoding);</span>
+        }
+
+<span class="nc bnc" id="L63" title="All 2 branches missed.">        if (this.baseEncoding == null)</span>
+        {
+<span class="nc" id="L65">            throw new IllegalArgumentException(&quot;Invalid encoding: &quot; + baseEncoding);</span>
+        }
+        
+<span class="nc" id="L68">        codeToName.putAll(this.baseEncoding.codeToName);</span>
+<span class="nc" id="L69">        inverted.putAll(this.baseEncoding.inverted);</span>
+<span class="nc" id="L70">        applyDifferences();</span>
+<span class="nc" id="L71">    }</span>
+
+    /**
+     * Creates a new DictionaryEncoding for a Type 3 font from a PDF.
+     *
+     * @param fontEncoding The Type 3 encoding dictionary.
+     */
+    public DictionaryEncoding(COSDictionary fontEncoding)
+<span class="nc" id="L79">    {</span>
+<span class="nc" id="L80">        encoding = fontEncoding;</span>
+<span class="nc" id="L81">        COSName name = encoding.getCOSName(COSName.BASE_ENCODING);</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">        if (name != null)</span>
+        {
+<span class="nc" id="L84">            baseEncoding = Encoding.getInstance(name); // null when the name is invalid</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            if (baseEncoding != null)</span>
+            {
+                // PDFBOX-5963
+                // PDF Specification: &quot;Differences array shall specify the complete character
+                // encoding for this font&quot; but other viewers read it, thus we do too.
+<span class="nc" id="L90">                LOG.warn(&quot;/BaseEncoding in type 3 font&quot;);</span>
+<span class="nc" id="L91">                codeToName.putAll(baseEncoding.codeToName);</span>
+<span class="nc" id="L92">                inverted.putAll(baseEncoding.inverted);</span>
+            }
+        }
+        else
+        {
+<span class="nc" id="L97">            baseEncoding = null;</span>
+        }
+<span class="nc" id="L99">        applyDifferences();</span>
+<span class="nc" id="L100">    }</span>
+    
+    /**
+     * Creates a new DictionaryEncoding from a PDF.
+     *
+     * @param fontEncoding The encoding dictionary.
+     * @param isNonSymbolic True if the font is non-symbolic. False for Type 3 fonts.
+     * @param builtIn The font's built-in encoding. Null for Type 3 fonts.
+     */
+    public DictionaryEncoding(COSDictionary fontEncoding, boolean isNonSymbolic, Encoding builtIn)
+<span class="nc" id="L110">    {</span>
+<span class="nc" id="L111">        encoding = fontEncoding;</span>
+
+<span class="nc" id="L113">        Encoding base = null;</span>
+<span class="nc" id="L114">        boolean hasBaseEncoding = encoding.containsKey(COSName.BASE_ENCODING);</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        if (hasBaseEncoding)</span>
+        {
+<span class="nc" id="L117">            COSName name = encoding.getCOSName(COSName.BASE_ENCODING);</span>
+<span class="nc" id="L118">            base = Encoding.getInstance(name); // null when the name is invalid</span>
+        }
+
+<span class="nc bnc" id="L121" title="All 2 branches missed.">        if (base == null)</span>
+        {
+<span class="nc bnc" id="L123" title="All 2 branches missed.">            if (isNonSymbolic)</span>
+            {
+                // Otherwise, for a nonsymbolic font, it is StandardEncoding
+<span class="nc" id="L126">                base = StandardEncoding.INSTANCE;</span>
+            }
+            else
+            {
+                // and for a symbolic font, it is the font's built-in encoding.
+<span class="nc bnc" id="L131" title="All 2 branches missed.">                if (builtIn != null)</span>
+                {
+<span class="nc" id="L133">                    base = builtIn;</span>
+                }
+                else
+                {
+                    // triggering this error indicates a bug in PDFBox. Every font should always have
+                    // a built-in encoding, if not, we parsed it incorrectly.
+<span class="nc" id="L139">                    throw new IllegalArgumentException(&quot;Symbolic fonts must have a built-in &quot; + </span>
+                                                       &quot;encoding&quot;);
+                }
+            }
+        }
+<span class="nc" id="L144">        baseEncoding = base;</span>
+
+<span class="nc" id="L146">        codeToName.putAll(baseEncoding.codeToName);</span>
+<span class="nc" id="L147">        inverted.putAll(baseEncoding.inverted);</span>
+<span class="nc" id="L148">        applyDifferences();</span>
+<span class="nc" id="L149">    }</span>
+
+    private void applyDifferences()
+    {
+        // now replace with the differences
+<span class="nc" id="L154">        COSArray diffArray = encoding.getCOSArray(COSName.DIFFERENCES);</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        if (diffArray == null)</span>
+        {
+<span class="nc" id="L157">            return;</span>
+        }
+<span class="nc" id="L159">        int currentIndex = -1;</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">        for (int i = 0; i &lt; diffArray.size(); i++)</span>
+        {
+<span class="nc" id="L162">            COSBase next = diffArray.getObject(i);</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">            if( next instanceof COSNumber)</span>
+            {
+<span class="nc" id="L165">                currentIndex = ((COSNumber)next).intValue();</span>
+            }
+<span class="nc bnc" id="L167" title="All 2 branches missed.">            else if( next instanceof COSName )</span>
+            {
+<span class="nc" id="L169">                COSName name = (COSName)next;</span>
+<span class="nc" id="L170">                overwrite(currentIndex, name.getName());</span>
+<span class="nc" id="L171">                this.differences.put(currentIndex, name.getName());</span>
+<span class="nc" id="L172">                currentIndex++;</span>
+            }
+        }
+<span class="nc" id="L175">    }</span>
+
+    /**
+     * Returns the base encoding. Will be null for Type 3 fonts.
+     * 
+     * @return the base encoding or null
+     */
+    public Encoding getBaseEncoding()
+    {
+<span class="nc" id="L184">        return baseEncoding;</span>
+    }
+
+    /**
+     * Returns the Differences array.
+     * 
+     * @return a map containing all differences
+     */
+    public Map&lt;Integer, String&gt; getDifferences()
+    {
+<span class="nc" id="L194">        return differences;</span>
+    }
+
+    @Override
+    public COSBase getCOSObject()
+    {
+<span class="nc" id="L200">        return encoding;</span>
+    }
+
+    @Override
+    public String getEncodingName()
+    {
+<span class="nc bnc" id="L206" title="All 2 branches missed.">        if (baseEncoding == null)</span>
+        {
+            // In type 3 the /Differences array shall specify the complete character encoding
+<span class="nc" id="L209">            return &quot;differences&quot;;</span>
+        }
+<span class="nc" id="L211">        return baseEncoding.getEncodingName() + &quot; with differences&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

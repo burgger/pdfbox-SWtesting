@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FilterFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.filter</a> &gt; <span class="el_source">FilterFactory.java</span></div><h1>FilterFactory.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.filter;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.pdfbox.cos.COSName;
+
+/**
+ * Factory for Filter classes.
+ *
+ * @author Ben Litchfield
+ */
+public final class FilterFactory
+{
+    /**
+     * Singleton instance.
+     */
+<span class="nc" id="L35">    public static final FilterFactory INSTANCE = new FilterFactory();</span>
+
+<span class="nc" id="L37">    private final Map&lt;COSName, Filter&gt; filters = new HashMap&lt;&gt;();</span>
+
+    private FilterFactory()
+<span class="nc" id="L40">    {</span>
+<span class="nc" id="L41">        Filter flate = new FlateFilter();</span>
+<span class="nc" id="L42">        Filter dct = new DCTFilter();</span>
+<span class="nc" id="L43">        Filter ccittFax = new CCITTFaxFilter();</span>
+<span class="nc" id="L44">        Filter lzw = new LZWFilter();</span>
+<span class="nc" id="L45">        Filter asciiHex = new ASCIIHexFilter();</span>
+<span class="nc" id="L46">        Filter ascii85 = new ASCII85Filter();</span>
+<span class="nc" id="L47">        Filter runLength = new RunLengthDecodeFilter();</span>
+<span class="nc" id="L48">        Filter crypt = new CryptFilter();</span>
+<span class="nc" id="L49">        Filter jpx = new JPXFilter();</span>
+<span class="nc" id="L50">        Filter jbig2 = new JBIG2Filter();</span>
+
+<span class="nc" id="L52">        filters.put(COSName.FLATE_DECODE, flate);</span>
+<span class="nc" id="L53">        filters.put(COSName.FLATE_DECODE_ABBREVIATION, flate);</span>
+<span class="nc" id="L54">        filters.put(COSName.DCT_DECODE, dct);</span>
+<span class="nc" id="L55">        filters.put(COSName.DCT_DECODE_ABBREVIATION, dct);</span>
+<span class="nc" id="L56">        filters.put(COSName.CCITTFAX_DECODE, ccittFax);</span>
+<span class="nc" id="L57">        filters.put(COSName.CCITTFAX_DECODE_ABBREVIATION, ccittFax);</span>
+<span class="nc" id="L58">        filters.put(COSName.LZW_DECODE, lzw);</span>
+<span class="nc" id="L59">        filters.put(COSName.LZW_DECODE_ABBREVIATION, lzw);</span>
+<span class="nc" id="L60">        filters.put(COSName.ASCII_HEX_DECODE, asciiHex);</span>
+<span class="nc" id="L61">        filters.put(COSName.ASCII_HEX_DECODE_ABBREVIATION, asciiHex);</span>
+<span class="nc" id="L62">        filters.put(COSName.ASCII85_DECODE, ascii85);</span>
+<span class="nc" id="L63">        filters.put(COSName.ASCII85_DECODE_ABBREVIATION, ascii85);</span>
+<span class="nc" id="L64">        filters.put(COSName.RUN_LENGTH_DECODE, runLength);</span>
+<span class="nc" id="L65">        filters.put(COSName.RUN_LENGTH_DECODE_ABBREVIATION, runLength);</span>
+<span class="nc" id="L66">        filters.put(COSName.CRYPT, crypt);</span>
+<span class="nc" id="L67">        filters.put(COSName.JPX_DECODE, jpx);</span>
+<span class="nc" id="L68">        filters.put(COSName.JBIG2_DECODE, jbig2);</span>
+<span class="nc" id="L69">    }</span>
+
+    /**
+     * Returns a filter instance given its name as a string.
+     * @param filterName the name of the filter to retrieve
+     * @return the filter that matches the name
+     * @throws IOException if the filter name was invalid
+     */
+    public Filter getFilter(String filterName) throws IOException
+    {
+<span class="nc" id="L79">        return getFilter(COSName.getPDFName(filterName));</span>
+    }
+
+    /**
+     * Returns a filter instance given its COSName.
+     * @param filterName the name of the filter to retrieve
+     * @return the filter that matches the name
+     * @throws IOException if the filter name was invalid
+     */
+    public Filter getFilter(COSName filterName) throws IOException
+    {
+<span class="nc" id="L90">        Filter filter = filters.get(filterName);</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        if (filter == null)</span>
+        {
+<span class="nc" id="L93">            throw new IOException(&quot;Invalid filter: &quot; + filterName);</span>
+        }
+<span class="nc" id="L95">        return filter;</span>
+    }
+
+    // returns all available filters, for testing
+    Collection&lt;Filter&gt; getAllFilters()
+    {
+<span class="nc" id="L101">        return filters.values();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDOptionalContentProperties.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.optionalcontent</a> &gt; <span class="el_source">PDOptionalContentProperties.java</span></div><h1>PDOptionalContentProperties.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.optionalcontent;
+
+import java.util.ArrayList;
+import java.util.Collection;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * This class represents the optional content properties dictionary.
+ *
+ * @since PDF 1.5
+ */
+public class PDOptionalContentProperties implements COSObjectable
+{
+
+    /**
+     * Enumeration for the BaseState dictionary entry on the &quot;D&quot; dictionary.
+     */
+<span class="nc" id="L40">    public enum BaseState</span>
+    {
+
+        /** The &quot;ON&quot; value. */
+<span class="nc" id="L44">        ON(COSName.ON),</span>
+        /** The &quot;OFF&quot; value. */
+<span class="nc" id="L46">        OFF(COSName.OFF),</span>
+        /** The &quot;Unchanged&quot; value. */
+<span class="nc" id="L48">        UNCHANGED(COSName.UNCHANGED);</span>
+
+        private final COSName name;
+
+        private BaseState(COSName value)
+<span class="nc" id="L53">        {</span>
+<span class="nc" id="L54">            this.name = value;</span>
+<span class="nc" id="L55">        }</span>
+
+        /**
+         * Returns the PDF name for the state.
+         * @return the name of the state
+         */
+        public COSName getName()
+        {
+<span class="nc" id="L63">            return this.name;</span>
+        }
+
+        /**
+         * Returns the base state represented by the given {@link COSName}.
+         * @param state the state name
+         * @return the state enum value
+         */
+        public static BaseState valueOf(COSName state)
+        {
+<span class="nc bnc" id="L73" title="All 2 branches missed.">            if (state == null)</span>
+            {
+<span class="nc" id="L75">                return BaseState.ON;</span>
+            }
+<span class="nc" id="L77">            return BaseState.valueOf(state.getName().toUpperCase());</span>
+        }
+
+    }
+
+    private final COSDictionary dict;
+
+    /**
+     * Creates a new optional content properties dictionary.
+     */
+    public PDOptionalContentProperties()
+<span class="nc" id="L88">    {</span>
+<span class="nc" id="L89">        this.dict = new COSDictionary();</span>
+<span class="nc" id="L90">        this.dict.setItem(COSName.OCGS, new COSArray());</span>
+<span class="nc" id="L91">        COSDictionary d = new COSDictionary();</span>
+
+        // Name optional but required for PDF/A-3
+<span class="nc" id="L94">        d.setString(COSName.NAME, &quot;Top&quot;);</span>
+
+<span class="nc" id="L96">        this.dict.setItem(COSName.D, d);</span>
+<span class="nc" id="L97">    }</span>
+
+    /**
+     * Creates a new instance based on a given {@link COSDictionary}.
+     * @param props the dictionary
+     */
+    public PDOptionalContentProperties(COSDictionary props)
+<span class="nc" id="L104">    {</span>
+<span class="nc" id="L105">        this.dict = props;</span>
+<span class="nc" id="L106">    }</span>
+
+    /** {@inheritDoc} */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L112">        return this.dict;</span>
+    }
+
+    /**
+     * Return the /OCGs array.
+     * 
+     * @return /OCGs array, never null.
+     */
+    private COSArray getOCGs()
+    {
+<span class="nc" id="L122">        COSArray ocgs = this.dict.getCOSArray(COSName.OCGS);</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (ocgs == null)</span>
+        {
+<span class="nc" id="L125">            ocgs = new COSArray();</span>
+<span class="nc" id="L126">            this.dict.setItem(COSName.OCGS, ocgs); //OCGs is required</span>
+        }
+<span class="nc" id="L128">        return ocgs;</span>
+    }
+
+    /**
+     * Return the /D dictionary.
+     *
+     * @return the /D dictionary, never null.
+     */
+    private COSDictionary getD()
+    {
+<span class="nc" id="L138">        COSDictionary d = dict.getCOSDictionary(COSName.D);</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">        if (d == null)</span>
+        {
+<span class="nc" id="L141">            d = new COSDictionary();</span>
+            // Name optional but required for PDF/A-3
+<span class="nc" id="L143">            d.setString(COSName.NAME, &quot;Top&quot;);</span>
+            // D is required
+<span class="nc" id="L145">            dict.setItem(COSName.D, d);</span>
+        }
+<span class="nc" id="L147">        return d;</span>
+    }
+
+    /**
+     * Returns the first optional content group of the given name.
+     *
+     * @param name the group name
+     * @return the optional content group or null, if there is no such group
+     */
+    public PDOptionalContentGroup getGroup(String name)
+    {
+<span class="nc" id="L158">        COSArray ocgs = getOCGs();</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">        for (COSBase o : ocgs)</span>
+        {
+<span class="nc" id="L161">            COSDictionary ocg = toDictionary(o);</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">            if (ocg == null)</span>
+            {
+<span class="nc" id="L164">                continue;</span>
+            }
+<span class="nc" id="L166">            String groupName = ocg.getString(COSName.NAME);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">            if (groupName.equals(name))</span>
+            {
+<span class="nc" id="L169">                return new PDOptionalContentGroup(ocg);</span>
+            }
+<span class="nc" id="L171">        }</span>
+<span class="nc" id="L172">        return null;</span>
+    }
+
+    /**
+     * Adds an optional content group (OCG).
+     * @param ocg the optional content group
+     */
+    public void addGroup(PDOptionalContentGroup ocg)
+    {
+<span class="nc" id="L181">        COSArray ocgs = getOCGs();</span>
+<span class="nc" id="L182">        ocgs.add(ocg.getCOSObject());</span>
+
+        //By default, add new group to the &quot;Order&quot; entry so it appears in the user interface
+<span class="nc" id="L185">        COSArray order = getD().getCOSArray(COSName.ORDER);</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">        if (order == null)</span>
+        {
+<span class="nc" id="L188">            order = new COSArray();</span>
+<span class="nc" id="L189">            getD().setItem(COSName.ORDER, order);</span>
+        }
+<span class="nc" id="L191">        order.add(ocg);</span>
+<span class="nc" id="L192">    }</span>
+
+    /**
+     * Returns the collection of all optional content groups.
+     * @return the optional content groups
+     */
+    public Collection&lt;PDOptionalContentGroup&gt; getOptionalContentGroups()
+    {
+<span class="nc" id="L200">        Collection&lt;PDOptionalContentGroup&gt; coll = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L201">        COSArray ocgs = getOCGs();</span>
+<span class="nc bnc" id="L202" title="All 2 branches missed.">        for (COSBase base : ocgs)</span>
+        {
+<span class="nc" id="L204">            COSDictionary dictionary = toDictionary(base);</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">            if (dictionary != null)</span>
+            {
+<span class="nc" id="L207">                coll.add(new PDOptionalContentGroup(dictionary));</span>
+            }
+<span class="nc" id="L209">        }</span>
+<span class="nc" id="L210">        return coll;</span>
+    }
+
+    /**
+     * Returns the base state for optional content groups.
+     * @return the base state, never null.
+     */
+    public BaseState getBaseState()
+    {
+<span class="nc" id="L219">        COSDictionary d = getD();</span>
+<span class="nc" id="L220">        COSName name = d.getCOSName(COSName.BASE_STATE, COSName.ON);</span>
+<span class="nc" id="L221">        return BaseState.valueOf(name);</span>
+    }
+
+    /**
+     * Sets the base state for optional content groups.
+     * @param state the base state
+     */
+    public void setBaseState(BaseState state)
+    {
+<span class="nc" id="L230">        COSDictionary d = getD();</span>
+<span class="nc" id="L231">        d.setItem(COSName.BASE_STATE, state.getName());</span>
+<span class="nc" id="L232">    }</span>
+
+    /**
+     * Lists all optional content group names.
+     * @return an array of all names
+     */
+    public String[] getGroupNames()
+    {
+<span class="nc" id="L240">        COSArray ocgs = dict.getCOSArray(COSName.OCGS);</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">        if (ocgs == null)</span>
+        {
+<span class="nc" id="L243">            return new String[0];</span>
+        }
+<span class="nc" id="L245">        int size = ocgs.size();</span>
+<span class="nc" id="L246">        String[] groups = new String[size];</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">        for (int i = 0; i &lt; size; i++)</span>
+        {
+<span class="nc" id="L249">            COSBase obj = ocgs.get(i);</span>
+<span class="nc" id="L250">            COSDictionary ocg = toDictionary(obj);</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">            if (ocg == null)</span>
+            {
+<span class="nc" id="L253">                groups[i] = &quot;&quot;;</span>
+            }
+            else
+            {
+<span class="nc" id="L257">                groups[i] = ocg.getString(COSName.NAME);</span>
+            }
+        }
+<span class="nc" id="L260">        return groups;</span>
+    }
+
+    /**
+     * Indicates whether a particular optional content group is found in the PDF file.
+     * @param groupName the group name
+     * @return true if the group exists, false otherwise
+     */
+    public boolean hasGroup(String groupName)
+    {
+<span class="nc" id="L270">        String[] layers = getGroupNames();</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">        for (String layer : layers)</span>
+        {
+<span class="nc bnc" id="L273" title="All 2 branches missed.">            if (layer.equals(groupName))</span>
+            {
+<span class="nc" id="L275">                return true;</span>
+            }
+        }
+<span class="nc" id="L278">        return false;</span>
+    }
+
+    /**
+     * Indicates whether &lt;em&gt;at least one&lt;/em&gt; optional content group with this name is enabled.
+     * There may be disabled optional content groups with this name even if this function returns
+     * true.
+     *
+     * @param groupName the group name
+     * @return true if at least one group is enabled
+     */
+    public boolean isGroupEnabled(String groupName)
+    {
+<span class="nc" id="L291">        boolean result = false;</span>
+<span class="nc" id="L292">        COSArray ocgs = getOCGs();</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">        for (COSBase o : ocgs)</span>
+        {
+<span class="nc" id="L295">            COSDictionary ocg = toDictionary(o);</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">            if (ocg == null)</span>
+            {
+<span class="nc" id="L298">                continue;</span>
+            }
+<span class="nc" id="L300">            String name = ocg.getString(COSName.NAME);</span>
+<span class="nc bnc" id="L301" title="All 4 branches missed.">            if (groupName.equals(name) &amp;&amp; isGroupEnabled(new PDOptionalContentGroup(ocg)))</span>
+            {
+<span class="nc" id="L303">                result = true;</span>
+            }
+<span class="nc" id="L305">        }</span>
+<span class="nc" id="L306">        return result;</span>
+    }
+
+    /**
+     * Indicates whether an optional content group is enabled.
+     * @param group the group object
+     * @return true if the group is enabled
+     */
+    public boolean isGroupEnabled(PDOptionalContentGroup group)
+    {
+        //TODO handle Optional Content Configuration Dictionaries,
+        //i.e. OCProperties/Configs
+
+<span class="nc" id="L319">        PDOptionalContentProperties.BaseState baseState = getBaseState();</span>
+<span class="nc bnc" id="L320" title="All 2 branches missed.">        boolean enabled = baseState != BaseState.OFF;</span>
+        //TODO What to do with BaseState.Unchanged?
+
+<span class="nc bnc" id="L323" title="All 2 branches missed.">        if (group == null)</span>
+        {
+<span class="nc" id="L325">            return enabled;</span>
+        }
+
+<span class="nc" id="L328">        COSDictionary d = getD();</span>
+<span class="nc" id="L329">        COSArray on = d.getCOSArray(COSName.ON);</span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">        if (on != null)</span>
+        {
+<span class="nc bnc" id="L332" title="All 2 branches missed.">            for (COSBase o : on)</span>
+            {
+<span class="nc" id="L334">                COSDictionary dictionary = toDictionary(o);</span>
+<span class="nc bnc" id="L335" title="All 2 branches missed.">                if (dictionary == group.getCOSObject())</span>
+                {
+<span class="nc" id="L337">                    return true;</span>
+                }
+<span class="nc" id="L339">            }</span>
+        }
+
+<span class="nc" id="L342">        COSArray off = d.getCOSArray(COSName.OFF);</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">        if (off != null)</span>
+        {
+<span class="nc bnc" id="L345" title="All 2 branches missed.">            for (COSBase o : off)</span>
+            {
+<span class="nc" id="L347">                COSDictionary dictionary = toDictionary(o);</span>
+<span class="nc bnc" id="L348" title="All 2 branches missed.">                if (dictionary == group.getCOSObject())</span>
+                {
+<span class="nc" id="L350">                    return false;</span>
+                }
+<span class="nc" id="L352">            }</span>
+        }
+
+<span class="nc" id="L355">        return enabled;</span>
+    }
+
+    private COSDictionary toDictionary(COSBase o)
+    {
+        COSBase base;
+<span class="nc bnc" id="L361" title="All 2 branches missed.">        if (o instanceof COSObject)</span>
+        {
+<span class="nc" id="L363">            base = ((COSObject) o).getObject();</span>
+        }
+        else
+        {
+<span class="nc" id="L367">            base = o;</span>
+        }
+<span class="nc bnc" id="L369" title="All 2 branches missed.">        if (base instanceof COSDictionary)</span>
+        {
+<span class="nc" id="L371">            return (COSDictionary) base;</span>
+        }
+<span class="nc" id="L373">        return null;</span>
+    }
+
+    /**
+     * Enables or disables all optional content groups with the given name.
+     *
+     * @param groupName the group name
+     * @param enable true to enable, false to disable
+     * @return true if at least one group with this name already had an on or off setting, false
+     * otherwise
+     */
+    public boolean setGroupEnabled(String groupName, boolean enable)
+    {
+<span class="nc" id="L386">        boolean result = false;</span>
+<span class="nc" id="L387">        COSArray ocgs = getOCGs();</span>
+<span class="nc bnc" id="L388" title="All 2 branches missed.">        for (COSBase o : ocgs)</span>
+        {
+<span class="nc" id="L390">            COSDictionary ocg = toDictionary(o);</span>
+<span class="nc bnc" id="L391" title="All 2 branches missed.">            if (ocg == null)</span>
+            {
+<span class="nc" id="L393">                continue;</span>
+            }
+<span class="nc" id="L395">            String name = ocg.getString(COSName.NAME);</span>
+<span class="nc bnc" id="L396" title="All 4 branches missed.">            if (groupName.equals(name) &amp;&amp; setGroupEnabled(new PDOptionalContentGroup(ocg), enable))</span>
+            {
+<span class="nc" id="L398">                result = true;</span>
+            }
+<span class="nc" id="L400">        }</span>
+<span class="nc" id="L401">        return result;</span>
+    }
+
+    /**
+     * Enables or disables an optional content group.
+     * @param group the group object
+     * @param enable true to enable, false to disable
+     * @return true if the group already had an on or off setting, false otherwise
+     */
+    public boolean setGroupEnabled(PDOptionalContentGroup group, boolean enable)
+    {
+<span class="nc" id="L412">        COSDictionary d = getD();</span>
+<span class="nc" id="L413">        COSArray on = d.getCOSArray(COSName.ON);</span>
+<span class="nc bnc" id="L414" title="All 2 branches missed.">        if (on == null)</span>
+        {
+<span class="nc" id="L416">            on = new COSArray();</span>
+<span class="nc" id="L417">            d.setItem(COSName.ON, on);</span>
+        }
+
+<span class="nc" id="L420">        COSArray off = d.getCOSArray(COSName.OFF);</span>
+<span class="nc bnc" id="L421" title="All 2 branches missed.">        if (off == null)</span>
+        {
+<span class="nc" id="L423">            off = new COSArray();</span>
+<span class="nc" id="L424">            d.setItem(COSName.OFF, off);</span>
+        }
+
+<span class="nc" id="L427">        boolean found = false;</span>
+<span class="nc bnc" id="L428" title="All 2 branches missed.">        if (enable)</span>
+        {
+<span class="nc bnc" id="L430" title="All 2 branches missed.">            for (COSBase o : off)</span>
+            {
+<span class="nc" id="L432">                COSDictionary groupDictionary = toDictionary(o);</span>
+<span class="nc bnc" id="L433" title="All 2 branches missed.">                if (groupDictionary == group.getCOSObject())</span>
+                {
+                    //enable group
+<span class="nc" id="L436">                    off.remove(o);</span>
+<span class="nc" id="L437">                    on.add(o);</span>
+<span class="nc" id="L438">                    found = true;</span>
+<span class="nc" id="L439">                    break;</span>
+                }
+<span class="nc" id="L441">            }</span>
+        }
+        else
+        {
+<span class="nc bnc" id="L445" title="All 2 branches missed.">            for (COSBase o : on)</span>
+            {
+<span class="nc" id="L447">                COSDictionary groupDictionary = toDictionary(o);</span>
+<span class="nc bnc" id="L448" title="All 2 branches missed.">                if (groupDictionary == group.getCOSObject())</span>
+                {
+                    //disable group
+<span class="nc" id="L451">                    on.remove(o);</span>
+<span class="nc" id="L452">                    off.add(o);</span>
+<span class="nc" id="L453">                    found = true;</span>
+<span class="nc" id="L454">                    break;</span>
+                }
+<span class="nc" id="L456">            }</span>
+        }
+<span class="nc bnc" id="L458" title="All 2 branches missed.">        if (!found)</span>
+        {
+<span class="nc bnc" id="L460" title="All 2 branches missed.">            if (enable)</span>
+            {
+<span class="nc" id="L462">                on.add(group.getCOSObject());</span>
+            }
+            else
+            {
+<span class="nc" id="L466">                off.add(group.getCOSObject());</span>
+            }
+        }
+<span class="nc" id="L469">        return found;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

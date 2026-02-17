@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDAnnotationSquareCircle.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation</a> &gt; <span class="el_source">PDAnnotationSquareCircle.java</span></div><h1>PDAnnotationSquareCircle.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.annotation;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+
+/**
+ * This is the class that represents a rectangular or elliptical annotation introduced in PDF 1.3
+ * specification .
+ *
+ * @author Paul King
+ */
+public abstract class PDAnnotationSquareCircle extends PDAnnotationMarkup
+{
+    /**
+     * Creates a Circle or Square annotation of the specified sub type.
+     *
+     * @param subType the subtype the annotation represents.
+     */
+    protected PDAnnotationSquareCircle(String subType)
+<span class="nc" id="L40">    {</span>
+<span class="nc" id="L41">        setSubtype(subType);</span>
+<span class="nc" id="L42">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param dict The annotations dictionary.
+     */
+    protected PDAnnotationSquareCircle(COSDictionary dict)
+    {
+<span class="nc" id="L51">        super(dict);</span>
+<span class="nc" id="L52">    }</span>
+
+    @Override
+    public abstract void constructAppearances();
+
+    /**
+     * This will set interior color of the drawn area color is in DeviceRGB colorspace.
+     *
+     * @param ic color in the DeviceRGB color space.
+     *
+     */
+    public void setInteriorColor(PDColor ic)
+    {
+<span class="nc" id="L65">        getCOSObject().setItem(COSName.IC, ic.toCOSArray());</span>
+<span class="nc" id="L66">    }</span>
+
+    /**
+     * This will retrieve the interior color of the drawn area color is in DeviceRGB color space.
+     *
+     * @return object representing the color.
+     */
+    public PDColor getInteriorColor()
+    {
+<span class="nc" id="L75">        return getColor(COSName.IC);</span>
+    }
+
+    /**
+     * This will set the border effect dictionary, specifying effects to be applied when drawing the
+     * line. This is supported by PDF 1.5 and higher.
+     *
+     * @param be The border effect dictionary to set.
+     *
+     */
+    public void setBorderEffect(PDBorderEffectDictionary be)
+    {
+<span class="nc" id="L87">        getCOSObject().setItem(COSName.BE, be);</span>
+<span class="nc" id="L88">    }</span>
+
+    /**
+     * This will retrieve the border effect dictionary, specifying effects to be applied used in
+     * drawing the line.
+     *
+     * @return The border effect dictionary
+     */
+    public PDBorderEffectDictionary getBorderEffect()
+    {
+<span class="nc" id="L98">        COSDictionary borderEffect = getCOSObject().getCOSDictionary(COSName.BE);</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        return borderEffect != null ? new PDBorderEffectDictionary(borderEffect) : null;</span>
+    }
+
+    /**
+     * This will set the rectangle difference rectangle. Giving the difference between the
+     * annotations rectangle and where the drawing occurs. (To take account of any effects applied
+     * through the BE entry for example)
+     *
+     * @param rd the rectangle difference
+     *
+     */
+    public void setRectDifference(PDRectangle rd)
+    {
+<span class="nc" id="L112">        getCOSObject().setItem(COSName.RD, rd);</span>
+<span class="nc" id="L113">    }</span>
+
+    /**
+     * This will get the rectangle difference rectangle. Giving the difference between the
+     * annotations rectangle and where the drawing occurs. (To take account of any effects applied
+     * through the BE entry for example)
+     *
+     * @return the rectangle difference
+     */
+    public PDRectangle getRectDifference()
+    {
+<span class="nc" id="L124">        COSArray difference = getCOSObject().getCOSArray(COSName.RD);</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        return difference != null ? new PDRectangle(difference) : null;</span>
+    }
+
+    /**
+     * This will set the difference between the annotations &quot;outer&quot; rectangle defined by /Rect and
+     * the border.
+     *
+     * &lt;p&gt;
+     * This will set an equal difference for all sides&lt;/p&gt;
+     *
+     * @param difference from the annotations /Rect entry
+     */
+    public void setRectDifferences(float difference)
+    {
+<span class="nc" id="L139">        setRectDifferences(difference, difference, difference, difference);</span>
+<span class="nc" id="L140">    }</span>
+    
+    /**
+     * This will set the difference between the annotations &quot;outer&quot; rectangle defined by
+     * /Rect and the border.
+     * 
+     * @param differenceLeft left difference from the annotations /Rect entry
+     * @param differenceTop top difference from the annotations /Rect entry
+     * @param differenceRight right difference from  the annotations /Rect entry
+     * @param differenceBottom bottom difference from the annotations /Rect entry
+     * 
+     */
+    public void setRectDifferences(float differenceLeft, float differenceTop, float differenceRight, float differenceBottom)
+    {
+<span class="nc" id="L154">        COSArray margins = new COSArray();</span>
+<span class="nc" id="L155">        margins.add(new COSFloat(differenceLeft));</span>
+<span class="nc" id="L156">        margins.add(new COSFloat(differenceTop));</span>
+<span class="nc" id="L157">        margins.add(new COSFloat(differenceRight));</span>
+<span class="nc" id="L158">        margins.add(new COSFloat(differenceBottom));</span>
+<span class="nc" id="L159">        getCOSObject().setItem(COSName.RD, margins);    </span>
+<span class="nc" id="L160">    }</span>
+    
+    /**
+     * This will get the differences between the annotations &quot;outer&quot; rectangle defined by
+     * /Rect and the border.
+     * 
+     * @return the differences. If the entry hasn't been set am empty array is returned.
+     */
+    public float[] getRectDifferences()
+    {
+<span class="nc" id="L170">        COSArray margin = getCOSObject().getCOSArray(COSName.RD);</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">        return margin != null ? margin.toFloatArray() : new float[] {};</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDThread.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.pagenavigation</a> &gt; <span class="el_source">PDThread.java</span></div><h1>PDThread.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.pagenavigation;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDDocumentInformation;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * This a single thread in a PDF document.
+ *
+ * @author Ben Litchfield
+ */
+public class PDThread implements COSObjectable
+{
+
+
+    private final COSDictionary thread;
+
+    /**
+     * Constructor that is used for a preexisting dictionary.
+     *
+     * @param t The underlying dictionary.
+     */
+    public PDThread( COSDictionary t )
+<span class="nc" id="L41">    {</span>
+<span class="nc" id="L42">        thread = t;</span>
+<span class="nc" id="L43">    }</span>
+
+    /**
+     * Default constructor.
+     *
+     */
+    public PDThread()
+<span class="nc" id="L50">    {</span>
+<span class="nc" id="L51">        thread = new COSDictionary();</span>
+<span class="nc" id="L52">        thread.setItem(COSName.TYPE, COSName.THREAD);</span>
+<span class="nc" id="L53">    }</span>
+
+    /**
+     * This will get the underlying dictionary that this object wraps.
+     *
+     * @return The underlying info dictionary.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L63">        return thread;</span>
+    }
+
+    /**
+     * Get info about the thread, or null if there is nothing.
+     *
+     * @return The thread information.
+     */
+    public PDDocumentInformation getThreadInfo()
+    {
+<span class="nc" id="L73">        COSDictionary info = thread.getCOSDictionary(COSName.I);</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        return info != null ? new PDDocumentInformation(info) : null;</span>
+    }
+
+    /**
+     * Set the thread info, can be null.
+     *
+     * @param info The info dictionary about this thread.
+     */
+    public void setThreadInfo( PDDocumentInformation info )
+    {
+<span class="nc" id="L84">        thread.setItem(COSName.I, info);</span>
+<span class="nc" id="L85">    }</span>
+
+    /**
+     * Get the first bead in the thread, or null if it has not been set yet.  This
+     * is a required field for this object.
+     *
+     * @return The first bead in the thread.
+     */
+    public PDThreadBead getFirstBead()
+    {
+<span class="nc" id="L95">        COSDictionary bead = thread.getCOSDictionary(COSName.F);</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        return bead != null ? new PDThreadBead(bead) : null;</span>
+    }
+
+    /**
+     * This will set the first bead in the thread.  When this is set it will
+     * also set the thread property of the bead object.
+     *
+     * @param bead The first bead in the thread.
+     */
+    public void setFirstBead( PDThreadBead bead )
+    {
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        if( bead != null )</span>
+        {
+<span class="nc" id="L109">            bead.setThread( this );</span>
+        }
+<span class="nc" id="L111">        thread.setItem(COSName.F, bead);</span>
+<span class="nc" id="L112">    }</span>
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

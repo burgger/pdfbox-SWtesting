@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDSignature.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.digitalsignature</a> &gt; <span class="el_source">PDSignature.java</span></div><h1>PDSignature.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.digitalsignature;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Calendar;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * This represents a digital signature that can be attached to a document. To learn more about
+ * digital signatures, read
+ * &lt;a href=&quot;https://www.adobe.com/devnet-docs/acrobatetk/tools/DigSig/Acrobat_DigitalSignatures_in_PDF.pdf&quot;&gt;Digital
+ * Signatures in a PDF&lt;/a&gt; by Adobe.
+ *
+ * @author Ben Litchfield
+ * @author Thomas Chojecki
+ */
+public class PDSignature implements COSObjectable
+{
+    private final COSDictionary dictionary;
+
+    /**
+     * A signature filter value.
+     */
+<span class="nc" id="L50">    public static final COSName FILTER_ADOBE_PPKLITE = COSName.ADOBE_PPKLITE;</span>
+
+    /**
+     * A signature filter value.
+     */
+<span class="nc" id="L55">    public static final COSName FILTER_ENTRUST_PPKEF = COSName.ENTRUST_PPKEF;</span>
+
+    /**
+     * A signature filter value.
+     */
+<span class="nc" id="L60">    public static final COSName FILTER_CICI_SIGNIT = COSName.CICI_SIGNIT;</span>
+
+    /**
+     * A signature filter value.
+     */
+<span class="nc" id="L65">    public static final COSName FILTER_VERISIGN_PPKVS = COSName.VERISIGN_PPKVS;</span>
+
+    /**
+     * A signature subfilter value.
+     */
+<span class="nc" id="L70">    public static final COSName SUBFILTER_ADBE_X509_RSA_SHA1 = COSName.ADBE_X509_RSA_SHA1;</span>
+
+    /**
+     * A signature subfilter value.
+     */
+<span class="nc" id="L75">    public static final COSName SUBFILTER_ADBE_PKCS7_DETACHED = COSName.ADBE_PKCS7_DETACHED;</span>
+
+    /**
+     * A signature subfilter value.
+     */
+<span class="nc" id="L80">    public static final COSName SUBFILTER_ETSI_CADES_DETACHED = COSName.getPDFName(&quot;ETSI.CAdES.detached&quot;);</span>
+
+    /**
+     * A signature subfilter value.
+     */
+<span class="nc" id="L85">    public static final COSName SUBFILTER_ADBE_PKCS7_SHA1 = COSName.ADBE_PKCS7_SHA1;</span>
+
+    /**
+     * Default constructor.
+     */
+    public PDSignature()
+<span class="nc" id="L91">    {</span>
+<span class="nc" id="L92">        dictionary = new COSDictionary();</span>
+<span class="nc" id="L93">        dictionary.setItem(COSName.TYPE, COSName.SIG);</span>
+<span class="nc" id="L94">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param dict The signature dictionary.
+     */
+    public PDSignature(COSDictionary dict)
+<span class="nc" id="L102">    {</span>
+<span class="nc" id="L103">        dictionary = dict;</span>
+<span class="nc" id="L104">    }</span>
+
+    /**
+     * Convert this standard java object to a COS dictionary.
+     *
+     * @return The COS dictionary that matches this Java object.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L114">        return dictionary;</span>
+    }
+
+    /**
+     * Set the dictionary type.
+     *
+     * @param type is the dictionary type.
+     */
+    public void setType(COSName type)
+    {
+<span class="nc" id="L124">        dictionary.setItem(COSName.TYPE, type);</span>
+<span class="nc" id="L125">    }</span>
+
+    /**
+     * Set the filter.
+     *
+     * @param filter the filter to be used
+     */
+    public void setFilter(COSName filter)
+    {
+<span class="nc" id="L134">        dictionary.setItem(COSName.FILTER, filter);</span>
+<span class="nc" id="L135">    }</span>
+
+    /**
+     * Set a subfilter that specify the signature that should be used.
+     *
+     * @param subfilter the subfilter that shall be used.
+     */
+    public void setSubFilter(COSName subfilter)
+    {
+<span class="nc" id="L144">        dictionary.setItem(COSName.SUB_FILTER, subfilter);</span>
+<span class="nc" id="L145">    }</span>
+
+    /**
+     * Sets the name of the person or authority signing the document. According to the PDF
+     * specification, this value should be used only when it is not possible to extract the name
+     * from the signature.
+     *
+     * @param name the name to be used
+     */
+    public void setName(String name)
+    {
+<span class="nc" id="L156">        dictionary.setString(COSName.NAME, name);</span>
+<span class="nc" id="L157">    }</span>
+
+    /**
+     * Sets the CPU host name or physical location of the signing.
+     *
+     * @param location the location to be used
+     */
+    public void setLocation(String location)
+    {
+<span class="nc" id="L166">        dictionary.setString(COSName.LOCATION, location);</span>
+<span class="nc" id="L167">    }</span>
+
+    /**
+     * Sets the reason for the signing, such as (I agree...).
+     *
+     * @param reason the reason to be used
+     */
+    public void setReason(String reason)
+    {
+<span class="nc" id="L176">        dictionary.setString(COSName.REASON, reason);</span>
+<span class="nc" id="L177">    }</span>
+
+    /**
+     * Sets the contact info provided by the signer to enable a recipient to contact the signer to
+     * verify the signature, e.g. a phone number.
+     *
+     * @param contactInfo the contact info to be used
+     */
+    public void setContactInfo(String contactInfo)
+    {
+<span class="nc" id="L187">        dictionary.setString(COSName.CONTACT_INFO, contactInfo);</span>
+<span class="nc" id="L188">    }</span>
+
+    /**
+     * Set the sign date.
+     *
+     * @param cal the date to be used as sign date
+     */
+    public void setSignDate(Calendar cal)
+    {
+<span class="nc" id="L197">        dictionary.setDate(COSName.M, cal);</span>
+<span class="nc" id="L198">    }</span>
+
+    /**
+     * Returns the filter.
+     * @return the filter
+     */
+    public String getFilter()
+    {
+<span class="nc" id="L206">        return dictionary.getNameAsString(COSName.FILTER);</span>
+    }
+
+    /**
+     * Returns the subfilter.
+     *
+     * @return the subfilter
+     */
+    public String getSubFilter()
+    {
+<span class="nc" id="L216">        return dictionary.getNameAsString(COSName.SUB_FILTER);</span>
+    }
+
+    /**
+     * Returns the name of the person or authority signing the document. According to the PDF
+     * specification, this value should be used only when it is not possible to extract the name
+     * from the signature.
+     *
+     * @return the name
+     */
+    public String getName()
+    {
+<span class="nc" id="L228">        return dictionary.getString(COSName.NAME);</span>
+    }
+
+    /**
+     * Returns the CPU host name or physical location of the signing.
+     *
+     * @return the location
+     */
+    public String getLocation()
+    {
+<span class="nc" id="L238">        return dictionary.getString(COSName.LOCATION);</span>
+    }
+
+    /**
+     * Returns the reason for the signing, such as (I agree...).
+     *
+     * @return the reason
+     */
+    public String getReason()
+    {
+<span class="nc" id="L248">        return dictionary.getString(COSName.REASON);</span>
+    }
+
+    /**
+     * Returns the contact info provided by the signer to enable a recipient to contact the signer
+     * to verify the signature, e.g. a phone number.
+     *
+     * @return the contact info
+     */
+    public String getContactInfo()
+    {
+<span class="nc" id="L259">        return dictionary.getString(COSName.CONTACT_INFO);</span>
+    }
+
+    /**
+     * Returns the sign date.
+     *
+     * @return the sign date
+     */
+    public Calendar getSignDate()
+    {
+<span class="nc" id="L269">        return dictionary.getDate(COSName.M);</span>
+    }
+
+    /**
+     * Sets the byte range.
+     *
+     * @param range the byte range to be used
+     */
+    public void setByteRange(int[] range)
+    {
+<span class="nc bnc" id="L279" title="All 2 branches missed.">        if (range.length!=4)</span>
+        {
+<span class="nc" id="L281">            return;</span>
+        }
+<span class="nc" id="L283">        COSArray ary = new COSArray();</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">        for ( int i : range )</span>
+        {
+<span class="nc" id="L286">            ary.add(COSInteger.get(i));</span>
+        }
+
+<span class="nc" id="L289">        dictionary.setItem(COSName.BYTERANGE, ary);</span>
+<span class="nc" id="L290">        ary.setDirect(true);</span>
+<span class="nc" id="L291">    }</span>
+
+    /**
+     * Read out the byterange from the file.
+     *
+     * @return an integer array with the byterange, or an empty array if there is none.
+     */
+    public int[] getByteRange()
+    {
+<span class="nc" id="L300">        COSArray byteRange = dictionary.getCOSArray(COSName.BYTERANGE);</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">        if (byteRange == null)</span>
+        {
+<span class="nc" id="L303">            return new int[0];</span>
+        }
+<span class="nc" id="L305">        int[] ary = new int[byteRange.size()];</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">        for (int i = 0; i&lt;ary.length;++i)</span>
+        {
+<span class="nc" id="L308">            ary[i] = byteRange.getInt(i);</span>
+        }
+<span class="nc" id="L310">        return ary;</span>
+    }
+
+    /**
+     * Returns the /Contents string as a byte array, i.e. the embedded signature between the
+     * byterange gap.
+     *
+     * @return a byte array containing the signature, or an empty array if there isn't any.
+     */
+    public byte[] getContents()
+    {
+<span class="nc" id="L321">        COSBase base = dictionary.getDictionaryObject(COSName.CONTENTS);</span>
+<span class="nc bnc" id="L322" title="All 2 branches missed.">        if (base instanceof COSString)</span>
+        {
+<span class="nc" id="L324">            return ((COSString) base).getBytes();</span>
+        }
+<span class="nc" id="L326">        return new byte[0];</span>
+    }
+
+    /**
+     * Will return the embedded signature between the byterange gap.
+     *
+     * @param pdfFile The signed pdf file as InputStream. It will be closed in this method.
+     * @return a byte array containing the signature
+     * @throws IOException if the pdfFile can't be read
+     * @throws IndexOutOfBoundsException if the byterange array is not long enough
+     */
+    public byte[] getContents(InputStream pdfFile) throws IOException
+    {
+<span class="nc" id="L339">        int[] byteRange = getByteRange();</span>
+<span class="nc" id="L340">        int begin = byteRange[0]+byteRange[1]+1;</span>
+<span class="nc" id="L341">        int len = byteRange[2]-begin;</span>
+
+<span class="nc" id="L343">        return getConvertedContents(new COSFilterInputStream(pdfFile,new int[] {begin,len}));</span>
+    }
+
+    /**
+     * Will return the embedded signature between the byterange gap.
+     *
+     * @param pdfFile The signed pdf file as byte array
+     * @return a byte array containing the signature
+     * @throws IOException if the pdfFile can't be read
+     * @throws IndexOutOfBoundsException if the byterange array is not long enough
+     */
+    public byte[] getContents(byte[] pdfFile) throws IOException
+    {
+<span class="nc" id="L356">        int[] byteRange = getByteRange();</span>
+<span class="nc" id="L357">        int begin = byteRange[0]+byteRange[1]+1;</span>
+<span class="nc" id="L358">        int len = byteRange[2]-begin-1;</span>
+
+<span class="nc" id="L360">        return getConvertedContents(new ByteArrayInputStream(pdfFile, begin, len));</span>
+    }
+
+    private byte[] getConvertedContents(InputStream is) throws IOException
+    {
+<span class="nc" id="L365">        ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);</span>
+<span class="nc" id="L366">        byte[] buffer = new byte[1024];</span>
+        int readLen;
+<span class="nc bnc" id="L368" title="All 2 branches missed.">        while ((readLen = is.read(buffer)) != -1)</span>
+        {
+<span class="nc" id="L370">            int writeLen = readLen;</span>
+<span class="nc" id="L371">            int start = 0;</span>
+            // Filter &lt; and (
+<span class="nc bnc" id="L373" title="All 4 branches missed.">            if(buffer[0]==0x3C || buffer[0]==0x28)</span>
+            {
+<span class="nc" id="L375">                ++start;</span>
+<span class="nc" id="L376">                --writeLen;</span>
+            }
+            // Filter &gt; and ) at the end
+<span class="nc bnc" id="L379" title="All 4 branches missed.">            if(buffer[readLen-1]==0x3E || buffer[readLen-1]==0x29)</span>
+            {
+<span class="nc" id="L381">                --writeLen;</span>
+            }
+<span class="nc" id="L383">            baos.write(buffer, start, writeLen);</span>
+<span class="nc" id="L384">        }</span>
+<span class="nc" id="L385">        is.close();</span>
+
+<span class="nc" id="L387">        return COSString.parseHex(baos.toString(StandardCharsets.ISO_8859_1)).getBytes();</span>
+    }
+
+    /**
+     * Sets the contents.
+     *
+     * @param bytes contents to be used
+     */
+    public void setContents(byte[] bytes)
+    {
+<span class="nc" id="L397">        COSString string = new COSString(bytes, true);</span>
+<span class="nc" id="L398">        dictionary.setItem(COSName.CONTENTS, string);</span>
+<span class="nc" id="L399">    }</span>
+
+    /**
+     * Return the signed content of the document. This is not a PDF file, nor is it the PDF file
+     * before signing, it is the byte sequence made of the input minus the area where the signature
+     * bytes will be. See &quot;The ByteRange and signature value&quot; in the document
+     * &lt;a href=&quot;https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/DigitalSignaturesInPDF.pdf#page=5&quot;&gt;Digital
+     * Signatures in a PDF&lt;/a&gt;.
+     *
+     * @param pdfFile The signed pdf file as InputStream. It will be closed in this method.
+     * @return a byte array containing only the signed part of the content
+     * @throws IOException if the pdfFile can't be read
+     */
+    public byte[] getSignedContent(InputStream pdfFile) throws IOException
+    {
+<span class="nc" id="L414">        try (COSFilterInputStream fis = new COSFilterInputStream(pdfFile, getByteRange()))</span>
+        {
+<span class="nc" id="L416">            return fis.toByteArray();</span>
+        }
+    }
+
+    /**
+     * Return the signed content of the document. This is not a PDF file, nor is it the PDF file
+     * before signing, it is the byte sequence made of the input minus the area where the signature
+     * bytes will be. See &quot;The ByteRange and signature value&quot; in the document
+     * &lt;a href=&quot;https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/DigitalSignaturesInPDF.pdf#page=5&quot;&gt;Digital
+     * Signatures in a PDF&lt;/a&gt;.
+     *
+     * @param pdfFile The signed pdf file as byte array
+     * @return a byte array containing only the signed part of the content
+     * @throws IOException if the pdfFile can't be read
+     */
+    public byte[] getSignedContent(byte[] pdfFile) throws IOException
+    {
+<span class="nc" id="L433">        try (COSFilterInputStream fis = new COSFilterInputStream(pdfFile, getByteRange()))</span>
+        {
+<span class="nc" id="L435">            return fis.toByteArray();</span>
+        }
+    }
+
+    /**
+     * PDF signature build dictionary. Provides information about the signature handler.
+     *
+     * @return the pdf signature build dictionary.
+     */
+    public PDPropBuild getPropBuild()
+    {
+<span class="nc" id="L446">        PDPropBuild propBuild = null;</span>
+<span class="nc" id="L447">        COSDictionary propBuildDic = dictionary.getCOSDictionary(COSName.PROP_BUILD);</span>
+<span class="nc bnc" id="L448" title="All 2 branches missed.">        if (propBuildDic != null)</span>
+        {
+<span class="nc" id="L450">            propBuild = new PDPropBuild(propBuildDic);</span>
+        }
+<span class="nc" id="L452">        return propBuild;</span>
+    }
+
+    /**
+     * PDF signature build dictionary. Provides information about the signature handler.
+     *
+     * @param propBuild the prop build
+     */
+    public void setPropBuild(PDPropBuild propBuild)
+    {
+<span class="nc" id="L462">        dictionary.setItem(COSName.PROP_BUILD, propBuild);</span>
+<span class="nc" id="L463">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

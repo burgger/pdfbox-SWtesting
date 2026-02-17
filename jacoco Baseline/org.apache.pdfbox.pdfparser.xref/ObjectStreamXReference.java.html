@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ObjectStreamXReference.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdfparser.xref</a> &gt; <span class="el_source">ObjectStreamXReference.java</span></div><h1>ObjectStreamXReference.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdfparser.xref;
+
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.cos.COSObjectKey;
+import org.apache.pdfbox.pdfparser.PDFXRefStream;
+
+/**
+ * A class representing a reference to an object stream entry in a PDF's crossreference stream ({@link PDFXRefStream}).
+ * 
+ * @author Christian Appl
+ */
+public class ObjectStreamXReference extends AbstractXReference
+{
+
+    private final int objectStreamIndex;
+    private final COSObjectKey key;
+    private final COSBase object;
+    private final COSObjectKey parentKey;
+
+    /**
+     * Prepares a object stream entry reference for the given {@link COSObject} in a PDF's crossreference stream
+     * ({@link PDFXRefStream}).
+     *
+     * @param objectStreamIndex The index of the {@link COSObject} in the containing object stream.
+     * @param key The {@link COSObjectKey}, that is represented by this entry.
+     * @param object The {@link COSObject}, that is represented by this entry.
+     * @param parentKey The {@link COSObjectKey} of the object stream, that is containing the object.
+     */
+    public ObjectStreamXReference(int objectStreamIndex, COSObjectKey key, COSBase object,
+            COSObjectKey parentKey)
+    {
+<span class="nc" id="L49">        super(XReferenceType.OBJECT_STREAM_ENTRY);</span>
+<span class="nc" id="L50">        this.objectStreamIndex = objectStreamIndex;</span>
+<span class="nc" id="L51">        this.key = key;</span>
+<span class="nc" id="L52">        this.object = object;</span>
+<span class="nc" id="L53">        this.parentKey = parentKey;</span>
+<span class="nc" id="L54">    }</span>
+
+    /**
+     * Returns the index of the {@link COSObject} in it's containing object stream.
+     *
+     * @return The index of the {@link COSObject} in it's containing object stream.
+     */
+    public int getObjectStreamIndex()
+    {
+<span class="nc" id="L63">        return objectStreamIndex;</span>
+    }
+
+    /**
+     * Returns the {@link COSObjectKey} of the object, that is described by this crossreference stream entry.
+     *
+     * @return The {@link COSObjectKey} of the object, that is described by this crossreference stream entry.
+     */
+    @Override
+    public COSObjectKey getReferencedKey()
+    {
+<span class="nc" id="L74">        return key;</span>
+    }
+
+    /**
+     * Returns the {@link COSObject}, that is described by this crossreference stream entry.
+     *
+     * @return The {@link COSObject}, that is described by this crossreference stream entry.
+     */
+    public COSBase getObject()
+    {
+<span class="nc" id="L84">        return object;</span>
+    }
+
+    /**
+     * Returns the {@link COSObjectKey} of the object stream, that is containing the object.
+     *
+     * @return The {@link COSObjectKey} of the object stream, that is containing the object.
+     */
+    public COSObjectKey getParentKey()
+    {
+<span class="nc" id="L94">        return parentKey;</span>
+    }
+
+    /**
+     * Returns the value for the second column of the crossreference stream entry. (This is object number from the
+     * {@link COSObjectKey} of the object stream, that is containing the object represented by this entry - for entries
+     * of this type..)
+     *
+     * @return The value for the second column of the crossreference stream entry.
+     */
+    @Override
+    public long getSecondColumnValue()
+    {
+<span class="nc" id="L107">        return getParentKey().getNumber();</span>
+    }
+
+    /**
+     * Returns the value for the third column of the crossreference stream entry. (This is index of the
+     * {@link COSObject} in the containing object stream - for entries of this type.)
+     *
+     * @return The value for the third column of the crossreference stream entry.
+     */
+    @Override
+    public long getThirdColumnValue()
+    {
+<span class="nc" id="L119">        return getObjectStreamIndex();</span>
+    }
+
+    /**
+     * Returns a string representation of this crossreference stream entry.
+     *
+     * @return A string representation of this crossreference stream entry.
+     */
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L130">        return &quot;ObjectStreamEntry{&quot; + &quot; key=&quot; + key + &quot;, type=&quot; + getType().getNumericValue()</span>
+                + &quot;, objectStreamIndex=&quot; + objectStreamIndex + &quot;, parent=&quot; + parentKey + &quot; }&quot;;
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

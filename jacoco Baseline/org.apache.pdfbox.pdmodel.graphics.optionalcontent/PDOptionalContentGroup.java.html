@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDOptionalContentGroup.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.optionalcontent</a> &gt; <span class="el_source">PDOptionalContentGroup.java</span></div><h1>PDOptionalContentGroup.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.optionalcontent;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.documentinterchange.markedcontent.PDPropertyList;
+import org.apache.pdfbox.rendering.RenderDestination;
+
+/**
+ * An optional content group (OCG).
+ */
+public class PDOptionalContentGroup extends PDPropertyList
+{
+    /**
+     * Creates a new optional content group (OCG).
+     * @param name the name of the content group
+     */
+    public PDOptionalContentGroup(String name)
+<span class="nc" id="L34">    {</span>
+<span class="nc" id="L35">        this.dict.setItem(COSName.TYPE, COSName.OCG);</span>
+<span class="nc" id="L36">        setName(name);</span>
+<span class="nc" id="L37">    }</span>
+
+    /**
+     * Creates a new instance based on a given {@link COSDictionary}.
+     * @param dict the dictionary
+     */
+    public PDOptionalContentGroup(COSDictionary dict)
+    {
+<span class="nc" id="L45">        super(dict);</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        if (!dict.getDictionaryObject(COSName.TYPE).equals(COSName.OCG))</span>
+        {
+<span class="nc" id="L48">            throw new IllegalArgumentException(</span>
+                    &quot;Provided dictionary is not of type '&quot; + COSName.OCG + &quot;'&quot;);
+        }
+<span class="nc" id="L51">    }</span>
+    
+    /**
+     * Enumeration for the renderState dictionary entry on the &quot;Export&quot;, &quot;View&quot;
+     * and &quot;Print&quot; dictionary.
+     */
+<span class="nc" id="L57">    public enum RenderState </span>
+    {
+        /** The &quot;ON&quot; value. */
+<span class="nc" id="L60">        ON(COSName.ON),</span>
+        /** The &quot;OFF&quot; value. */
+<span class="nc" id="L62">        OFF(COSName.OFF);</span>
+
+        private final COSName name;
+
+        private RenderState(COSName value)
+<span class="nc" id="L67">        {</span>
+<span class="nc" id="L68">            this.name = value;</span>
+<span class="nc" id="L69">        }</span>
+
+        /**
+         * Returns the base state represented by the given {@link COSName}.
+         *
+         * @param state the state name
+         * @return the state enum value
+         */
+        public static RenderState valueOf(COSName state)
+        {
+<span class="nc bnc" id="L79" title="All 2 branches missed.">            if (state == null)</span>
+            {
+<span class="nc" id="L81">                return null;</span>
+            }
+<span class="nc" id="L83">            return RenderState.valueOf(state.getName().toUpperCase());</span>
+        }
+
+        /**
+         * Returns the PDF name for the state.
+         *
+         * @return the name of the state
+         */
+        public COSName getName()
+        {
+<span class="nc" id="L93">            return this.name;</span>
+        }
+    }
+
+    /**
+     * Returns the name of the optional content group.
+     * @return the name
+     */
+    public String getName()
+    {
+<span class="nc" id="L103">        return dict.getString(COSName.NAME);</span>
+    }
+
+    /**
+     * Sets the name of the optional content group.
+     * @param name the name
+     */
+    public final void setName(String name)
+    {
+<span class="nc" id="L112">        dict.setString(COSName.NAME, name);</span>
+<span class="nc" id="L113">    }</span>
+
+    //TODO Add support for &quot;Intent&quot;
+    /**
+     * @param destination to be rendered
+     * @return state or null if undefined
+     */
+    public RenderState getRenderState(RenderDestination destination)
+    {
+<span class="nc" id="L122">        COSName state = null;</span>
+<span class="nc" id="L123">        COSDictionary usage = dict.getCOSDictionary(COSName.USAGE);</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">        if (usage != null)</span>
+        {
+<span class="nc bnc" id="L126" title="All 2 branches missed.">            if (RenderDestination.PRINT == destination)</span>
+            {
+<span class="nc" id="L128">                COSDictionary print = usage.getCOSDictionary(COSName.PRINT);</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">                state = print == null ? null : print.getCOSName(COSName.PRINT_STATE);</span>
+<span class="nc" id="L130">            }</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            else if (RenderDestination.VIEW == destination)</span>
+            {
+<span class="nc" id="L133">                COSDictionary view = usage.getCOSDictionary(COSName.VIEW);</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">                state = view == null ? null : view.getCOSName(COSName.VIEW_STATE);</span>
+            }
+            // Fallback to export
+<span class="nc bnc" id="L137" title="All 2 branches missed.">            if (state == null)</span>
+            {
+<span class="nc" id="L139">                COSDictionary export = usage.getCOSDictionary(COSName.EXPORT);</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">                state = export == null ? null : export.getCOSName(COSName.EXPORT_STATE);</span>
+            }
+        }
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        return state == null ? null : RenderState.valueOf(state);</span>
+    }
+
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L149">        return super.toString() + &quot; (&quot; + getName() + &quot;)&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

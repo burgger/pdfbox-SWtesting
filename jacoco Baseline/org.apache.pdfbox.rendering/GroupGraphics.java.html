@@ -1,0 +1,731 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GroupGraphics.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.rendering</a> &gt; <span class="el_source">GroupGraphics.java</span></div><h1>GroupGraphics.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.rendering;
+
+import java.awt.Color;
+import java.awt.Composite;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
+import java.awt.Image;
+import java.awt.Paint;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.Shape;
+import java.awt.Stroke;
+import java.awt.font.FontRenderContext;
+import java.awt.font.GlyphVector;
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
+import java.awt.image.BufferedImageOp;
+import java.awt.image.DataBuffer;
+import java.awt.image.DataBufferInt;
+import java.awt.image.ImageObserver;
+import java.awt.image.RenderedImage;
+import java.awt.image.renderable.RenderableImage;
+import java.text.AttributedCharacterIterator;
+import java.util.Map;
+
+/**
+ * Graphics implementation for non-isolated transparency groups.
+ * &lt;p&gt;
+ * Non-isolated groups require that the group backdrop (copied from parent group or
+ * page) is used as the initial contents of the image to which the group is rendered.
+ * This allows blend modes to blend the group contents with the graphics behind
+ * the group. Finally when the group rendering is done, backdrop removal must be
+ * computed (see {@link #removeBackdrop(java.awt.image.BufferedImage, int, int) removeBackdrop}).
+ * It ensures the backdrop is not rendered twice on the parent but it leaves the
+ * effects of blend modes.
+ * &lt;p&gt;
+ * This class renders the group contents to two images. &lt;code&gt;groupImage&lt;/code&gt; is
+ * initialized with the backdrop and group contents are drawn over it.
+ * &lt;code&gt;groupAlphaImage&lt;/code&gt; is initially fully transparent and it accumulates
+ * the total alpha of the group contents excluding backdrop.
+ * &lt;p&gt;
+ * If a non-isolated group uses only the blend mode Normal, it can be optimized
+ * and rendered like an isolated group; backdrop usage and removal are not needed.
+ */
+
+class GroupGraphics extends Graphics2D
+{
+    private final BufferedImage groupImage;
+    private final BufferedImage groupAlphaImage;
+    private final Graphics2D groupG2D;
+    private final Graphics2D alphaG2D;
+
+    GroupGraphics(BufferedImage groupImage, Graphics2D groupGraphics)
+<span class="nc" id="L73">    {</span>
+<span class="nc" id="L74">        this.groupImage = groupImage;</span>
+<span class="nc" id="L75">        this.groupG2D = groupGraphics;</span>
+<span class="nc" id="L76">        this.groupAlphaImage = new BufferedImage(groupImage.getWidth(), groupImage.getHeight(),</span>
+            BufferedImage.TYPE_INT_ARGB);
+<span class="nc" id="L78">        this.alphaG2D = groupAlphaImage.createGraphics();</span>
+<span class="nc" id="L79">    }</span>
+
+    private GroupGraphics(BufferedImage groupImage, Graphics2D groupGraphics,
+        BufferedImage groupAlphaImage, Graphics2D alphaGraphics)
+<span class="nc" id="L83">    {</span>
+<span class="nc" id="L84">        this.groupImage = groupImage;</span>
+<span class="nc" id="L85">        this.groupG2D = groupGraphics;</span>
+<span class="nc" id="L86">        this.groupAlphaImage = groupAlphaImage;</span>
+<span class="nc" id="L87">        this.alphaG2D = alphaGraphics;</span>
+<span class="nc" id="L88">    }</span>
+
+    @Override
+    public void clearRect(int x, int y, int width, int height)
+    {
+<span class="nc" id="L93">        groupG2D.clearRect(x, y, width, height);</span>
+<span class="nc" id="L94">        alphaG2D.clearRect(x, y, width, height);</span>
+<span class="nc" id="L95">    }</span>
+
+    @Override
+    public void clipRect(int x, int y, int width, int height)
+    {
+<span class="nc" id="L100">        groupG2D.clipRect(x, y, width, height);</span>
+<span class="nc" id="L101">        alphaG2D.clipRect(x, y, width, height);</span>
+<span class="nc" id="L102">    }</span>
+
+    @Override
+    public void copyArea(int x, int y, int width, int height, int dx, int dy)
+    {
+<span class="nc" id="L107">        groupG2D.copyArea(x, y, width, height, dx, dy);</span>
+<span class="nc" id="L108">        alphaG2D.copyArea(x, y, width, height, dx, dy);</span>
+<span class="nc" id="L109">    }</span>
+
+    @Override
+    public Graphics create()
+    {
+<span class="nc" id="L114">        Graphics g = groupG2D.create();</span>
+<span class="nc" id="L115">        Graphics a = alphaG2D.create();</span>
+<span class="nc bnc" id="L116" title="All 4 branches missed.">        if (g instanceof Graphics2D &amp;&amp; a instanceof Graphics2D)</span>
+        {
+<span class="nc" id="L118">            return new GroupGraphics(groupImage, (Graphics2D)g, groupAlphaImage, (Graphics2D)a);</span>
+        }
+<span class="nc" id="L120">        g.dispose();</span>
+<span class="nc" id="L121">        a.dispose();</span>
+<span class="nc" id="L122">        throw new UnsupportedOperationException(&quot;Only Graphics2D supported by this method&quot;);</span>
+    }
+
+    @Override
+    public void dispose()
+    {
+<span class="nc" id="L128">        groupG2D.dispose();</span>
+<span class="nc" id="L129">        alphaG2D.dispose();</span>
+<span class="nc" id="L130">    }</span>
+
+    @Override
+    public void drawArc(int x, int y, int width, int height, int startAngle, int arcAngle)
+    {
+<span class="nc" id="L135">        groupG2D.drawArc(x, y, width, height, startAngle, arcAngle);</span>
+<span class="nc" id="L136">        alphaG2D.drawArc(x, y, width, height, startAngle, arcAngle);</span>
+<span class="nc" id="L137">    }</span>
+
+    @Override
+    public boolean drawImage(Image img, int x, int y, Color bgcolor, ImageObserver observer)
+    {
+<span class="nc" id="L142">        groupG2D.drawImage(img, x, y, bgcolor, observer);</span>
+<span class="nc" id="L143">        return alphaG2D.drawImage(img, x, y, bgcolor, observer);</span>
+    }
+
+    @Override
+    public boolean drawImage(Image img, int x, int y, ImageObserver observer)
+    {
+<span class="nc" id="L149">        groupG2D.drawImage(img, x, y, observer);</span>
+<span class="nc" id="L150">        return alphaG2D.drawImage(img, x, y, observer);</span>
+    }
+
+    @Override
+    public boolean drawImage(Image img, int x, int y, int width, int height,
+        Color bgcolor, ImageObserver observer)
+    {
+<span class="nc" id="L157">        groupG2D.drawImage(img, x, y, width, height, bgcolor, observer);</span>
+<span class="nc" id="L158">        return alphaG2D.drawImage(img, x, y, width, height, bgcolor, observer);</span>
+    }
+
+    @Override
+    public boolean drawImage(Image img, int x, int y, int width, int height, ImageObserver observer)
+    {
+<span class="nc" id="L164">        groupG2D.drawImage(img, x, y, width, height, observer);</span>
+<span class="nc" id="L165">        return alphaG2D.drawImage(img, x, y, width, height, observer);</span>
+    }
+
+    @Override
+    public boolean drawImage(Image img, int dx1, int dy1, int dx2, int dy2, int sx1,
+        int sy1, int sx2, int sy2, Color bgcolor, ImageObserver observer)
+    {
+<span class="nc" id="L172">        groupG2D.drawImage(img, dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, bgcolor, observer);</span>
+<span class="nc" id="L173">        return alphaG2D.drawImage(img, dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, bgcolor, observer);</span>
+    }
+
+    @Override
+    public boolean drawImage(Image img, int dx1, int dy1, int dx2, int dy2, int sx1,
+            int sy1, int sx2, int sy2, ImageObserver observer)
+    {
+<span class="nc" id="L180">        groupG2D.drawImage(img, dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, observer);</span>
+<span class="nc" id="L181">        return alphaG2D.drawImage(img, dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, observer);</span>
+    }
+
+    @Override
+    public void drawLine(int x1, int y1, int x2, int y2)
+    {
+<span class="nc" id="L187">        groupG2D.drawLine(x1, y1, x2, y2);</span>
+<span class="nc" id="L188">        alphaG2D.drawLine(x1, y1, x2, y2);</span>
+<span class="nc" id="L189">    }</span>
+
+    @Override
+    public void drawOval(int x, int y, int width, int height)
+    {
+<span class="nc" id="L194">        groupG2D.drawOval(x, y, width, height);</span>
+<span class="nc" id="L195">        alphaG2D.drawOval(x, y, width, height);</span>
+<span class="nc" id="L196">    }</span>
+
+    @Override
+    public void drawPolygon(int[] xPoints, int[] yPoints, int nPoints)
+    {
+<span class="nc" id="L201">        groupG2D.drawPolygon(xPoints, yPoints, nPoints);</span>
+<span class="nc" id="L202">        alphaG2D.drawPolygon(xPoints, yPoints, nPoints);</span>
+<span class="nc" id="L203">    }</span>
+
+    @Override
+    public void drawPolyline(int[] xPoints, int[] yPoints, int nPoints)
+    {
+<span class="nc" id="L208">        groupG2D.drawPolyline(xPoints, yPoints, nPoints);</span>
+<span class="nc" id="L209">        alphaG2D.drawPolyline(xPoints, yPoints, nPoints);</span>
+<span class="nc" id="L210">    }</span>
+
+    @Override
+    public void drawRoundRect(int x, int y, int width, int height, int arcWidth, int arcHeight)
+    {
+<span class="nc" id="L215">        groupG2D.drawRoundRect(x, y, width, height, arcWidth, arcHeight);</span>
+<span class="nc" id="L216">        alphaG2D.drawRoundRect(x, y, width, height, arcWidth, arcHeight);</span>
+<span class="nc" id="L217">    }</span>
+
+    @Override
+    public void drawString(AttributedCharacterIterator iterator, int x, int y)
+    {
+<span class="nc" id="L222">        groupG2D.drawString(iterator, x, y);</span>
+<span class="nc" id="L223">        alphaG2D.drawString(iterator, x, y);</span>
+<span class="nc" id="L224">    }</span>
+
+    @Override
+    public void drawString(String str, int x, int y)
+    {
+<span class="nc" id="L229">        groupG2D.drawString(str, x, y);</span>
+<span class="nc" id="L230">        alphaG2D.drawString(str, x, y);</span>
+<span class="nc" id="L231">    }</span>
+
+    @Override
+    public void fillArc(int x, int y, int width, int height, int startAngle, int arcAngle)
+    {
+<span class="nc" id="L236">        groupG2D.fillArc(x, y, width, height, startAngle, arcAngle);</span>
+<span class="nc" id="L237">        alphaG2D.fillArc(x, y, width, height, startAngle, arcAngle);</span>
+<span class="nc" id="L238">    }</span>
+
+    @Override
+    public void fillOval(int x, int y, int width, int height)
+    {
+<span class="nc" id="L243">        groupG2D.fillOval(x, y, width, height);</span>
+<span class="nc" id="L244">        alphaG2D.fillOval(x, y, width, height);</span>
+<span class="nc" id="L245">    }</span>
+
+    @Override
+    public void fillPolygon(int[] xPoints, int[] yPoints, int nPoints)
+    {
+<span class="nc" id="L250">        groupG2D.fillPolygon(xPoints, yPoints, nPoints);</span>
+<span class="nc" id="L251">        alphaG2D.fillPolygon(xPoints, yPoints, nPoints);</span>
+<span class="nc" id="L252">    }</span>
+
+    @Override
+    public void fillRect(int x, int y, int width, int height)
+    {
+<span class="nc" id="L257">        groupG2D.fillRect(x, y, width, height);</span>
+<span class="nc" id="L258">        alphaG2D.fillRect(x, y, width, height);</span>
+<span class="nc" id="L259">    }</span>
+
+    @Override
+    public void fillRoundRect(int x, int y, int width, int height, int arcWidth, int arcHeight)
+    {
+<span class="nc" id="L264">        groupG2D.fillRoundRect(x, y, width, height, arcWidth, arcHeight);</span>
+<span class="nc" id="L265">        alphaG2D.fillRoundRect(x, y, width, height, arcWidth, arcHeight);</span>
+<span class="nc" id="L266">    }</span>
+
+    @Override
+    public Shape getClip()
+    {
+<span class="nc" id="L271">        return groupG2D.getClip();</span>
+    }
+
+    @Override
+    public Rectangle getClipBounds()
+    {
+<span class="nc" id="L277">        return groupG2D.getClipBounds();</span>
+    }
+
+    @Override
+    public Color getColor()
+    {
+<span class="nc" id="L283">        return groupG2D.getColor();</span>
+    }
+
+    @Override
+    public Font getFont()
+    {
+<span class="nc" id="L289">        return groupG2D.getFont();</span>
+    }
+
+    @Override
+    public FontMetrics getFontMetrics(Font f)
+    {
+<span class="nc" id="L295">        return groupG2D.getFontMetrics(f);</span>
+    }
+
+    @Override
+    public void setClip(int x, int y, int width, int height)
+    {
+<span class="nc" id="L301">        groupG2D.setClip(x, y, width, height);</span>
+<span class="nc" id="L302">        alphaG2D.setClip(x, y, width, height);</span>
+<span class="nc" id="L303">    }</span>
+
+    @Override
+    public void setClip(Shape clip)
+    {
+<span class="nc" id="L308">        groupG2D.setClip(clip);</span>
+<span class="nc" id="L309">        alphaG2D.setClip(clip);</span>
+<span class="nc" id="L310">    }</span>
+
+    @Override
+    public void setColor(Color c)
+    {
+<span class="nc" id="L315">        groupG2D.setColor(c);</span>
+<span class="nc" id="L316">        alphaG2D.setColor(c);</span>
+<span class="nc" id="L317">    }</span>
+
+    @Override
+    public void setFont(Font font)
+    {
+<span class="nc" id="L322">        groupG2D.setFont(font);</span>
+<span class="nc" id="L323">        alphaG2D.setFont(font);</span>
+<span class="nc" id="L324">    }</span>
+
+    @Override
+    public void setPaintMode()
+    {
+<span class="nc" id="L329">        groupG2D.setPaintMode();</span>
+<span class="nc" id="L330">        alphaG2D.setPaintMode();</span>
+<span class="nc" id="L331">    }</span>
+
+    @Override
+    public void setXORMode(Color c1)
+    {
+<span class="nc" id="L336">        groupG2D.setXORMode(c1);</span>
+<span class="nc" id="L337">        alphaG2D.setXORMode(c1);</span>
+<span class="nc" id="L338">    }</span>
+
+    @Override
+    public void translate(int x, int y)
+    {
+<span class="nc" id="L343">        groupG2D.translate(x, y);</span>
+<span class="nc" id="L344">        alphaG2D.translate(x, y);</span>
+<span class="nc" id="L345">    }</span>
+
+    @Override
+    public void addRenderingHints(Map&lt;?,?&gt; hints)
+    {
+<span class="nc" id="L350">        groupG2D.addRenderingHints(hints);</span>
+<span class="nc" id="L351">        alphaG2D.addRenderingHints(hints);</span>
+<span class="nc" id="L352">    }</span>
+
+    @Override
+    public void clip(Shape s)
+    {
+<span class="nc" id="L357">        groupG2D.clip(s);</span>
+<span class="nc" id="L358">        alphaG2D.clip(s);</span>
+<span class="nc" id="L359">    }</span>
+
+    @Override
+    public void draw(Shape s)
+    {
+<span class="nc" id="L364">        groupG2D.draw(s);</span>
+<span class="nc" id="L365">        alphaG2D.draw(s);</span>
+<span class="nc" id="L366">    }</span>
+
+    @Override
+    public void drawGlyphVector(GlyphVector g, float x, float y)
+    {
+<span class="nc" id="L371">        groupG2D.drawGlyphVector(g, x, y);</span>
+<span class="nc" id="L372">        alphaG2D.drawGlyphVector(g, x, y);</span>
+<span class="nc" id="L373">    }</span>
+
+    @Override
+    public void drawImage(BufferedImage img, BufferedImageOp op, int x, int y)
+    {
+<span class="nc" id="L378">        groupG2D.drawImage(img, op, x, y);</span>
+<span class="nc" id="L379">        alphaG2D.drawImage(img, op, x, y);</span>
+<span class="nc" id="L380">    }</span>
+
+    @Override
+    public boolean drawImage(Image img, AffineTransform xform, ImageObserver obs)
+    {
+<span class="nc" id="L385">        groupG2D.drawImage(img, xform, obs);</span>
+<span class="nc" id="L386">        return alphaG2D.drawImage(img, xform, obs);</span>
+    }
+
+    @Override
+    public void drawRenderableImage(RenderableImage img, AffineTransform xform)
+    {
+<span class="nc" id="L392">        groupG2D.drawRenderableImage(img, xform);</span>
+<span class="nc" id="L393">        alphaG2D.drawRenderableImage(img, xform);</span>
+<span class="nc" id="L394">    }</span>
+
+    @Override
+    public void drawRenderedImage(RenderedImage img, AffineTransform xform)
+    {
+<span class="nc" id="L399">        groupG2D.drawRenderedImage(img, xform);</span>
+<span class="nc" id="L400">        alphaG2D.drawRenderedImage(img, xform);</span>
+<span class="nc" id="L401">    }</span>
+
+    @Override
+    public void drawString(AttributedCharacterIterator iterator, float x, float y)
+    {
+<span class="nc" id="L406">        groupG2D.drawString(iterator, x, y);</span>
+<span class="nc" id="L407">        alphaG2D.drawString(iterator, x, y);</span>
+<span class="nc" id="L408">    }</span>
+
+    @Override
+    public void drawString(String str, float x, float y)
+    {
+<span class="nc" id="L413">        groupG2D.drawString(str, x, y);</span>
+<span class="nc" id="L414">        alphaG2D.drawString(str, x, y);</span>
+<span class="nc" id="L415">    }</span>
+
+    @Override
+    public void fill(Shape s)
+    {
+<span class="nc" id="L420">        groupG2D.fill(s);</span>
+<span class="nc" id="L421">        alphaG2D.fill(s);</span>
+<span class="nc" id="L422">    }</span>
+
+    @Override
+    public Color getBackground()
+    {
+<span class="nc" id="L427">        return groupG2D.getBackground();</span>
+    }
+
+    @Override
+    public Composite getComposite()
+    {
+<span class="nc" id="L433">        return groupG2D.getComposite();</span>
+    }
+
+    @Override
+    public GraphicsConfiguration getDeviceConfiguration()
+    {
+<span class="nc" id="L439">        return groupG2D.getDeviceConfiguration();</span>
+    }
+
+    @Override
+    public FontRenderContext getFontRenderContext()
+    {
+<span class="nc" id="L445">        return groupG2D.getFontRenderContext();</span>
+    }
+
+    @Override
+    public Paint getPaint()
+    {
+<span class="nc" id="L451">        return groupG2D.getPaint();</span>
+    }
+
+    @Override
+    public Object getRenderingHint(RenderingHints.Key hintKey)
+    {
+<span class="nc" id="L457">        return groupG2D.getRenderingHint(hintKey);</span>
+    }
+
+    @Override
+    public RenderingHints getRenderingHints()
+    {
+<span class="nc" id="L463">        return groupG2D.getRenderingHints();</span>
+    }
+
+    @Override
+    public Stroke getStroke()
+    {
+<span class="nc" id="L469">        return groupG2D.getStroke();</span>
+    }
+
+    @Override
+    public AffineTransform getTransform()
+    {
+<span class="nc" id="L475">        return groupG2D.getTransform();</span>
+    }
+
+    @Override
+    public boolean hit(Rectangle rect, Shape s, boolean onStroke)
+    {
+<span class="nc" id="L481">        return groupG2D.hit(rect, s, onStroke);</span>
+    }
+
+    @Override
+    public void rotate(double theta)
+    {
+<span class="nc" id="L487">        groupG2D.rotate(theta);</span>
+<span class="nc" id="L488">        alphaG2D.rotate(theta);</span>
+<span class="nc" id="L489">    }</span>
+
+    @Override
+    public void rotate(double theta, double x, double y)
+    {
+<span class="nc" id="L494">        groupG2D.rotate(theta, x, y);</span>
+<span class="nc" id="L495">        alphaG2D.rotate(theta, x, y);</span>
+<span class="nc" id="L496">    }</span>
+
+    @Override
+    public void scale(double sx, double sy)
+    {
+<span class="nc" id="L501">        groupG2D.scale(sx, sy);</span>
+<span class="nc" id="L502">        alphaG2D.scale(sx, sy);</span>
+<span class="nc" id="L503">    }</span>
+
+    @Override
+    public void setBackground(Color color)
+    {
+<span class="nc" id="L508">        groupG2D.setBackground(color);</span>
+<span class="nc" id="L509">        alphaG2D.setBackground(color);</span>
+<span class="nc" id="L510">    }</span>
+
+    @Override
+    public void setComposite(Composite comp)
+    {
+<span class="nc" id="L515">        groupG2D.setComposite(comp);</span>
+<span class="nc" id="L516">        alphaG2D.setComposite(comp);</span>
+<span class="nc" id="L517">    }</span>
+
+    @Override
+    public void setPaint(Paint paint)
+    {
+<span class="nc" id="L522">        groupG2D.setPaint(paint);</span>
+<span class="nc" id="L523">        alphaG2D.setPaint(paint);</span>
+<span class="nc" id="L524">    }</span>
+
+    @Override
+    public void setRenderingHint(RenderingHints.Key hintKey, Object hintValue)
+    {
+<span class="nc" id="L529">        groupG2D.setRenderingHint(hintKey, hintValue);</span>
+<span class="nc" id="L530">        alphaG2D.setRenderingHint(hintKey, hintValue);</span>
+<span class="nc" id="L531">    }</span>
+
+    @Override
+    public void setRenderingHints(Map&lt;?, ?&gt; hints)
+    {
+<span class="nc" id="L536">        groupG2D.setRenderingHints(hints);</span>
+<span class="nc" id="L537">        alphaG2D.setRenderingHints(hints);</span>
+<span class="nc" id="L538">    }</span>
+
+    @Override
+    public void setStroke(Stroke s)
+    {
+<span class="nc" id="L543">        groupG2D.setStroke(s);</span>
+<span class="nc" id="L544">        alphaG2D.setStroke(s);</span>
+<span class="nc" id="L545">    }</span>
+
+    @Override
+    public void setTransform(AffineTransform tx)
+    {
+<span class="nc" id="L550">        groupG2D.setTransform(tx);</span>
+<span class="nc" id="L551">        alphaG2D.setTransform(tx);</span>
+<span class="nc" id="L552">    }</span>
+
+    @Override
+    public void shear(double shx, double shy)
+    {
+<span class="nc" id="L557">        groupG2D.shear(shx, shy);</span>
+<span class="nc" id="L558">        alphaG2D.shear(shx, shy);</span>
+<span class="nc" id="L559">    }</span>
+
+    @Override
+    public void transform(AffineTransform tx)
+    {
+<span class="nc" id="L564">        groupG2D.transform(tx);</span>
+<span class="nc" id="L565">        alphaG2D.transform(tx);</span>
+<span class="nc" id="L566">    }</span>
+
+    @Override
+    public void translate(double tx, double ty)
+    {
+<span class="nc" id="L571">        groupG2D.translate(tx, ty);</span>
+<span class="nc" id="L572">        alphaG2D.translate(tx, ty);</span>
+<span class="nc" id="L573">    }</span>
+
+    /**
+     * Computes backdrop removal.
+     * The backdrop removal equation is given in section 11.4.4 in the PDF 32000-1:2008
+     * standard. It returns the final color &lt;code&gt;C&lt;/code&gt; for each pixel in the group:&lt;br&gt;
+     *     &lt;code&gt;C = Cn + (Cn - C0) * (alpha0 / alphagn - alpha0)&lt;/code&gt;&lt;br&gt;
+     * where&lt;br&gt;
+     *     &lt;code&gt;Cn&lt;/code&gt; is the group color including backdrop (read from &lt;code&gt;groupImage&lt;/code&gt;),&lt;br&gt;
+     *     &lt;code&gt;C0&lt;/code&gt; is the backdrop color,&lt;br&gt;
+     *     &lt;code&gt;alpha0&lt;/code&gt; is the backdrop alpha,&lt;br&gt;
+     *     &lt;code&gt;alphagn&lt;/code&gt; is the group alpha excluding backdrop (read the
+     *           alpha channel from &lt;code&gt;groupAlphaImage&lt;/code&gt;)&lt;br&gt;
+     * &lt;p&gt;
+     * The alpha of the result is equal to &lt;code&gt;alphagn&lt;/code&gt;, i.e., the alpha
+     * channel of &lt;code&gt;groupAlphaImage&lt;/code&gt;.
+     * &lt;p&gt;
+     * The &lt;code&gt;backdrop&lt;/code&gt; image may be much larger than &lt;code&gt;groupImage&lt;/code&gt; if,
+     * for example, the current page is used as the backdrop. Only a specific rectangular
+     * region of &lt;code&gt;backdrop&lt;/code&gt; is used in the backdrop removal: upper-left corner
+     * is at &lt;code&gt;(offsetX, offsetY)&lt;/code&gt;; width and height are equal to those of
+     * &lt;code&gt;groupImage&lt;/code&gt;.
+     *
+     * @param backdrop group backdrop
+     * @param offsetX backdrop left X coordinate
+     * @param offsetY backdrop upper Y coordinate
+     */
+    void removeBackdrop(BufferedImage backdrop, int offsetX, int offsetY)
+    {
+<span class="nc" id="L602">        int groupWidth = groupImage.getWidth();</span>
+<span class="nc" id="L603">        int groupHeight = groupImage.getHeight();</span>
+<span class="nc" id="L604">        int backdropWidth = backdrop.getWidth();</span>
+<span class="nc" id="L605">        int backdropHeight = backdrop.getHeight();</span>
+<span class="nc" id="L606">        int groupType = groupImage.getType();</span>
+<span class="nc" id="L607">        int groupAlphaType = groupAlphaImage.getType();</span>
+<span class="nc" id="L608">        int backdropType = backdrop.getType();</span>
+<span class="nc" id="L609">        DataBuffer groupDataBuffer = groupImage.getRaster().getDataBuffer();</span>
+<span class="nc" id="L610">        DataBuffer groupAlphaDataBuffer = groupAlphaImage.getRaster().getDataBuffer();</span>
+<span class="nc" id="L611">        DataBuffer backdropDataBuffer = backdrop.getRaster().getDataBuffer();</span>
+
+<span class="nc bnc" id="L613" title="All 14 branches missed.">        if (groupType == BufferedImage.TYPE_INT_ARGB &amp;&amp;</span>
+            groupAlphaType == BufferedImage.TYPE_INT_ARGB &amp;&amp;
+            (backdropType == BufferedImage.TYPE_INT_ARGB || backdropType == BufferedImage.TYPE_INT_RGB) &amp;&amp;
+            groupDataBuffer instanceof DataBufferInt &amp;&amp;
+            groupAlphaDataBuffer instanceof DataBufferInt &amp;&amp;
+            backdropDataBuffer instanceof DataBufferInt)
+        {
+            // Optimized computation for int[] buffers.
+
+<span class="nc" id="L622">            int[] groupData = ((DataBufferInt)groupDataBuffer).getData();</span>
+<span class="nc" id="L623">            int[] groupAlphaData = ((DataBufferInt)groupAlphaDataBuffer).getData();</span>
+<span class="nc" id="L624">            int[] backdropData = ((DataBufferInt)backdropDataBuffer).getData();</span>
+<span class="nc bnc" id="L625" title="All 2 branches missed.">            boolean backdropHasAlpha = backdropType == BufferedImage.TYPE_INT_ARGB;</span>
+
+<span class="nc bnc" id="L627" title="All 2 branches missed.">            for (int y = 0; y &lt; groupHeight; y++)</span>
+            {
+<span class="nc bnc" id="L629" title="All 2 branches missed.">                for (int x = 0; x &lt; groupWidth; x++)</span>
+                {
+<span class="nc" id="L631">                    int index = x + y * groupWidth;</span>
+
+                    // alphagn is the total alpha of the group contents excluding backdrop.
+<span class="nc" id="L634">                    int alphagn = (groupAlphaData[index] &gt;&gt; 24) &amp; 0xFF;</span>
+<span class="nc bnc" id="L635" title="All 2 branches missed.">                    if (alphagn == 0)</span>
+                    {
+                        // Avoid division by 0 and set the result to fully transparent.
+<span class="nc" id="L638">                        groupData[index] = 0;</span>
+<span class="nc" id="L639">                        continue;</span>
+                    }
+
+<span class="nc" id="L642">                    int backdropX = x + offsetX;</span>
+<span class="nc" id="L643">                    int backdropY = y + offsetY;</span>
+                    int backdropRGB; // color of backdrop pixel
+                    float alpha0; // alpha of backdrop pixel
+
+<span class="nc bnc" id="L647" title="All 8 branches missed.">                    if (backdropX &gt;= 0 &amp;&amp; backdropX &lt; backdropWidth &amp;&amp;</span>
+                        backdropY &gt;= 0 &amp;&amp; backdropY &lt; backdropHeight)
+                    {
+<span class="nc" id="L650">                        backdropRGB = backdropData[backdropX + backdropY * backdropWidth];</span>
+<span class="nc bnc" id="L651" title="All 2 branches missed.">                        alpha0 = backdropHasAlpha ? ((backdropRGB &gt;&gt; 24) &amp; 0xFF) : 255;</span>
+                    }
+                    else
+                    {
+                        // Backdrop pixel is out of bounds. Use a transparent value.
+<span class="nc" id="L656">                        backdropRGB = 0;</span>
+<span class="nc" id="L657">                        alpha0 = 0;</span>
+                    }
+
+                    // Alpha factor alpha0 / alphagn - alpha0 is in range 0.0-1.0.
+<span class="nc" id="L661">                    float alphaFactor = alpha0 / alphagn - alpha0 / 255.0f;</span>
+<span class="nc" id="L662">                    int groupRGB = groupData[index]; // color of group pixel</span>
+
+                    // Compute backdrop removal for RGB components.
+<span class="nc" id="L665">                    int r = backdropRemoval(groupRGB, backdropRGB, 16, alphaFactor);</span>
+<span class="nc" id="L666">                    int g = backdropRemoval(groupRGB, backdropRGB, 8, alphaFactor);</span>
+<span class="nc" id="L667">                    int b = backdropRemoval(groupRGB, backdropRGB, 0, alphaFactor);</span>
+
+                    // Copy the result back to groupImage. The alpha of the result
+                    // is equal to alphagn.
+<span class="nc" id="L671">                    groupData[index] = (alphagn &lt;&lt; 24) | (r &lt;&lt; 16) | (g &lt;&lt; 8) | b;</span>
+                }
+            }
+<span class="nc" id="L674">        }</span>
+        else
+        {
+            // Non-optimized computation for other types of color spaces and pixel buffers.
+
+<span class="nc bnc" id="L679" title="All 2 branches missed.">            for (int y = 0; y &lt; groupHeight; y++)</span>
+            {
+<span class="nc bnc" id="L681" title="All 2 branches missed.">                for (int x = 0; x &lt; groupWidth; x++)</span>
+                {
+<span class="nc" id="L683">                    int alphagn = (groupAlphaImage.getRGB(x, y) &gt;&gt; 24) &amp; 0xFF;</span>
+<span class="nc bnc" id="L684" title="All 2 branches missed.">                    if (alphagn == 0)</span>
+                    {
+<span class="nc" id="L686">                        groupImage.setRGB(x, y, 0);</span>
+<span class="nc" id="L687">                        continue;</span>
+                    }
+
+<span class="nc" id="L690">                    int backdropX = x + offsetX;</span>
+<span class="nc" id="L691">                    int backdropY = y + offsetY;</span>
+                    int backdropRGB;
+                    float alpha0;
+<span class="nc bnc" id="L694" title="All 8 branches missed.">                    if (backdropX &gt;= 0 &amp;&amp; backdropX &lt; backdropWidth &amp;&amp;</span>
+                        backdropY &gt;= 0 &amp;&amp; backdropY &lt; backdropHeight)
+                    {
+<span class="nc" id="L697">                        backdropRGB = backdrop.getRGB(backdropX, backdropY);</span>
+<span class="nc" id="L698">                        alpha0 = (backdropRGB &gt;&gt; 24) &amp; 0xFF;</span>
+                    }
+                    else
+                    {
+<span class="nc" id="L702">                        backdropRGB = 0;</span>
+<span class="nc" id="L703">                        alpha0 = 0;</span>
+                    }
+
+<span class="nc" id="L706">                    int groupRGB = groupImage.getRGB(x, y);</span>
+<span class="nc" id="L707">                    float alphaFactor = alpha0 / alphagn - alpha0 / 255.0f;</span>
+
+<span class="nc" id="L709">                    int r = backdropRemoval(groupRGB, backdropRGB, 16, alphaFactor);</span>
+<span class="nc" id="L710">                    int g = backdropRemoval(groupRGB, backdropRGB, 8, alphaFactor);</span>
+<span class="nc" id="L711">                    int b = backdropRemoval(groupRGB, backdropRGB, 0, alphaFactor);</span>
+
+<span class="nc" id="L713">                    groupImage.setRGB(x, y, (alphagn &lt;&lt; 24) | (r &lt;&lt; 16) | (g &lt;&lt; 8) | b);</span>
+                }
+            }
+        }
+<span class="nc" id="L717">    }</span>
+
+    /**
+     * Computes the backdrop removal equation.
+     * &lt;code&gt;C = Cn + (Cn - C0) * (alpha0 / alphagn - alpha0)&lt;/code&gt;
+     */
+    private int backdropRemoval(int groupRGB, int backdropRGB, int shift, float alphaFactor)
+    {
+<span class="nc" id="L725">        float cn = (groupRGB &gt;&gt; shift) &amp; 0xFF;</span>
+<span class="nc" id="L726">        float c0 = (backdropRGB &gt;&gt; shift) &amp; 0xFF;</span>
+<span class="nc" id="L727">        int c = Math.round(cn + (cn - c0) * alphaFactor);</span>
+<span class="nc bnc" id="L728" title="All 4 branches missed.">        return (c &lt; 0) ? 0 : (c &gt; 255 ? 255 : c);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

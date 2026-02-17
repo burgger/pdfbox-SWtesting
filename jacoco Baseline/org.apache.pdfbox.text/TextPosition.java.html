@@ -1,0 +1,992 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TextPosition.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.text</a> &gt; <span class="el_source">TextPosition.java</span></div><h1>TextPosition.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.text;
+
+import java.text.Normalizer;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * This represents a string and a position on the screen of those characters.
+ *
+ * @author Ben Litchfield
+ */
+public final class TextPosition
+{
+<span class="nc" id="L36">    private static final Logger LOG = LogManager.getLogger(TextPosition.class);</span>
+
+<span class="nc" id="L38">    private static final Map&lt;Integer, String&gt; DIACRITICS = createDiacritics();</span>
+
+    // text matrix for the start of the text object, coordinates are in display units
+    // and have not been adjusted
+    private final Matrix textMatrix;
+
+    // ending X and Y coordinates in display units
+    private final float endX;
+    private final float endY;
+
+    private final float maxHeight; // maximum height of text, in display units
+    private final int rotation; // 0, 90, 180, 270 degrees of page rotation
+    private final float x;
+    private final float y;
+    private final float pageHeight;
+    private final float pageWidth;
+
+    private final float widthOfSpace; // width of a space, in display units
+
+    private final int[] charCodes; // internal PDF character codes
+    private final PDFont font;
+    private final float fontSize;
+    private final int fontSizePt;
+
+    // mutable
+    private float[] widths;
+    private String unicode;
+<span class="nc" id="L65">    private float direction = -1;</span>
+
+    /**
+     * Constructor.
+     *
+     * @param pageRotation rotation of the page that the text is located in
+     * @param pageWidth width of the page that the text is located in
+     * @param pageHeight height of the page that the text is located in
+     * @param textMatrix text rendering matrix for start of text (in display units)
+     * @param endX x coordinate of the end position
+     * @param endY y coordinate of the end position
+     * @param maxHeight Maximum height of text (in display units)
+     * @param individualWidth The width of the given character/string. (in text units)
+     * @param spaceWidth The width of the space character. (in display units)
+     * @param unicode The string of Unicode characters to be displayed.
+     * @param charCodes An array of the internal PDF character codes for the glyphs in this text.
+     * @param font The current font for this text position.
+     * @param fontSize The new font size.
+     * @param fontSizeInPt The font size in pt units (see {@link #getFontSizeInPt()} for details).
+     */
+    public TextPosition(int pageRotation, float pageWidth, float pageHeight, Matrix textMatrix,
+                        float endX, float endY, float maxHeight, float individualWidth,
+                        float spaceWidth, String unicode, int[] charCodes, PDFont font,
+                        float fontSize, int fontSizeInPt)
+<span class="nc" id="L89">    {</span>
+<span class="nc" id="L90">        this.textMatrix = textMatrix;</span>
+
+<span class="nc" id="L92">        this.endX = endX;</span>
+<span class="nc" id="L93">        this.endY = endY;</span>
+
+<span class="nc" id="L95">        this.rotation = pageRotation;</span>
+
+<span class="nc" id="L97">        this.maxHeight = maxHeight;</span>
+<span class="nc" id="L98">        this.pageHeight = pageHeight;</span>
+<span class="nc" id="L99">        this.pageWidth = pageWidth;</span>
+
+<span class="nc" id="L101">        this.widths = new float[] { individualWidth };</span>
+<span class="nc" id="L102">        this.widthOfSpace = spaceWidth;</span>
+<span class="nc" id="L103">        this.unicode = unicode;</span>
+<span class="nc" id="L104">        this.charCodes = charCodes;</span>
+<span class="nc" id="L105">        this.font = font;</span>
+<span class="nc" id="L106">        this.fontSize = fontSize;</span>
+<span class="nc" id="L107">        this.fontSizePt = fontSizeInPt;</span>
+
+<span class="nc" id="L109">        x = getXRot(rotation);</span>
+<span class="nc bnc" id="L110" title="All 4 branches missed.">        if (rotation == 0 || rotation == 180)</span>
+        {
+<span class="nc" id="L112">            y = this.pageHeight - getYLowerLeftRot(rotation);</span>
+        }
+        else
+        {
+<span class="nc" id="L116">            y = this.pageWidth - getYLowerLeftRot(rotation);</span>
+        }
+<span class="nc" id="L118">    }</span>
+
+    // Adds non-decomposing diacritics to the hash with their related combining character.
+    // These are values that the unicode spec claims are equivalent but are not mapped in the form
+    // NFKC normalization method. Determined by going through the Combining Diacritical Marks
+    // section of the Unicode spec and identifying which characters are not  mapped to by the
+    // normalization.
+    private static Map&lt;Integer, String&gt; createDiacritics()
+    {
+<span class="nc" id="L127">        Map&lt;Integer, String&gt; map = new HashMap&lt;&gt;(31);</span>
+<span class="nc" id="L128">        map.put(0x0060, &quot;\u0300&quot;);</span>
+<span class="nc" id="L129">        map.put(0x02CB, &quot;\u0300&quot;);</span>
+<span class="nc" id="L130">        map.put(0x0027, &quot;\u0301&quot;);</span>
+<span class="nc" id="L131">        map.put(0x02B9, &quot;\u0301&quot;);</span>
+<span class="nc" id="L132">        map.put(0x02CA, &quot;\u0301&quot;);</span>
+<span class="nc" id="L133">        map.put(0x005e, &quot;\u0302&quot;);</span>
+<span class="nc" id="L134">        map.put(0x02C6, &quot;\u0302&quot;);</span>
+<span class="nc" id="L135">        map.put(0x007E, &quot;\u0303&quot;);</span>
+<span class="nc" id="L136">        map.put(0x02C9, &quot;\u0304&quot;);</span>
+<span class="nc" id="L137">        map.put(0x00B0, &quot;\u030A&quot;);</span>
+<span class="nc" id="L138">        map.put(0x02BA, &quot;\u030B&quot;);</span>
+<span class="nc" id="L139">        map.put(0x02C7, &quot;\u030C&quot;);</span>
+<span class="nc" id="L140">        map.put(0x02C8, &quot;\u030D&quot;);</span>
+<span class="nc" id="L141">        map.put(0x0022, &quot;\u030E&quot;);</span>
+<span class="nc" id="L142">        map.put(0x02BB, &quot;\u0312&quot;);</span>
+<span class="nc" id="L143">        map.put(0x02BC, &quot;\u0313&quot;);</span>
+<span class="nc" id="L144">        map.put(0x0486, &quot;\u0313&quot;);</span>
+<span class="nc" id="L145">        map.put(0x055A, &quot;\u0313&quot;);</span>
+<span class="nc" id="L146">        map.put(0x02BD, &quot;\u0314&quot;);</span>
+<span class="nc" id="L147">        map.put(0x0485, &quot;\u0314&quot;);</span>
+<span class="nc" id="L148">        map.put(0x0559, &quot;\u0314&quot;);</span>
+<span class="nc" id="L149">        map.put(0x02D4, &quot;\u031D&quot;);</span>
+<span class="nc" id="L150">        map.put(0x02D5, &quot;\u031E&quot;);</span>
+<span class="nc" id="L151">        map.put(0x02D6, &quot;\u031F&quot;);</span>
+<span class="nc" id="L152">        map.put(0x02D7, &quot;\u0320&quot;);</span>
+<span class="nc" id="L153">        map.put(0x02B2, &quot;\u0321&quot;);</span>
+<span class="nc" id="L154">        map.put(0x02CC, &quot;\u0329&quot;);</span>
+<span class="nc" id="L155">        map.put(0x02B7, &quot;\u032B&quot;);</span>
+<span class="nc" id="L156">        map.put(0x02CD, &quot;\u0331&quot;);</span>
+<span class="nc" id="L157">        map.put(0x005F, &quot;\u0332&quot;);</span>
+<span class="nc" id="L158">        map.put(0x204E, &quot;\u0359&quot;);</span>
+<span class="nc" id="L159">        return map;</span>
+    }
+
+    /**
+     * Return the string of characters stored in this object. The length can be different than the
+     * CharacterCodes length e.g. if ligatures are used (&quot;fi&quot;, &quot;fl&quot;, &quot;ffl&quot;) where one glyph
+     * represents several unicode characters.
+     *
+     * @return The string on the screen.
+     */
+    public String getUnicode()
+    {
+<span class="nc" id="L171">        return unicode;</span>
+    }
+
+    void setUnicode(String unicode)
+    {
+<span class="nc" id="L176">        this.unicode = unicode;</span>
+<span class="nc" id="L177">    }</span>
+
+    /**
+     * Same as {@link #getUnicode()} except that returned text is ensured to be
+     * visually ordered (i.e. same order you would see them displayed on screen when
+     * looking from left to right). This is important for Arabic/Hebrew where several
+     * unicode characters can be composed in one glyph with logical order (the order
+     * in which it would be normally typed from right to left).
+     * 
+     * @return The string on the screen in visual order.
+     */
+    public String getVisuallyOrderedUnicode()
+    {
+<span class="nc" id="L190">        final String text = getUnicode();</span>
+<span class="nc" id="L191">        final int length = text.length();</span>
+        int nextIndex;
+<span class="nc bnc" id="L193" title="All 2 branches missed.">        for (int index = 0; index &lt; length; index = nextIndex)</span>
+        {
+<span class="nc" id="L195">            int codePoint = text.codePointAt(index);</span>
+<span class="nc" id="L196">            nextIndex = index + Character.charCount(codePoint);</span>
+<span class="nc" id="L197">            byte directionality = Character.getDirectionality(codePoint);</span>
+<span class="nc bnc" id="L198" title="All 8 branches missed.">            if ((directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC ||</span>
+                    directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT)
+                    // Even if the directionality is right to left, still there is no need to
+                    // reverse a single code-point
+                    &amp;&amp; (index != 0 || nextIndex &lt; length))
+            {
+<span class="nc" id="L204">                return new StringBuilder(text).reverse().toString();</span>
+            }
+        }
+<span class="nc" id="L207">        return text;</span>
+    }
+
+    /**
+     * Return the internal PDF character codes of the glyphs in this text.
+     *
+     * @return an array of internal PDF character codes
+     */
+    public int[] getCharacterCodes()
+    {
+<span class="nc" id="L217">        return charCodes;</span>
+    }
+
+    /**
+     * The matrix containing the starting text position and scaling. Despite the name, it is not the
+     * text matrix set by the &quot;Tm&quot; operator, it is really the effective text rendering matrix (which
+     * is dependent on the current transformation matrix (set by the &quot;cm&quot; operator), the text matrix
+     * (set by the &quot;Tm&quot; operator), the font size (set by the &quot;Tf&quot; operator) and the page cropbox).
+     *
+     * @return The Matrix containing the starting text position
+     */
+    public Matrix getTextMatrix()
+    {
+<span class="nc" id="L230">        return textMatrix;</span>
+    }
+
+    /**
+     * Return the direction/orientation of the string in this object based on its text matrix. Only
+     * angles of 0, 90, 180, or 270 are supported. To get other angles, use this code:
+     * &lt;pre&gt;
+     * TextPosition text = ...
+     * Matrix m = text.getTextMatrix().clone();
+     * m.concatenate(text.getFont().getFontMatrix());
+     * int angle = (int) Math.round(Math.toDegrees(Math.atan2(m.getShearY(), m.getScaleY())));
+     * &lt;/pre&gt;
+     *
+     * @return The direction of the text (0, 90, 180, or 270).
+     */
+    public float getDir()
+    {
+<span class="nc bnc" id="L247" title="All 2 branches missed.">        if (direction &lt; 0)</span>
+        {
+<span class="nc" id="L249">            float a = textMatrix.getScaleY();</span>
+<span class="nc" id="L250">            float b = textMatrix.getShearY();</span>
+<span class="nc" id="L251">            float c = textMatrix.getShearX();</span>
+<span class="nc" id="L252">            float d = textMatrix.getScaleX();</span>
+    
+            // 12 0   left to right
+            // 0 12
+<span class="nc bnc" id="L256" title="All 8 branches missed.">            if (a &gt; 0 &amp;&amp; Math.abs(b) &lt; d &amp;&amp; Math.abs(c) &lt; a &amp;&amp; d &gt; 0)</span>
+            {
+<span class="nc" id="L258">                direction = 0;</span>
+            }
+            // -12 0   right to left (upside down)
+            // 0 -12
+<span class="nc bnc" id="L262" title="All 8 branches missed.">            else if (a &lt; 0 &amp;&amp; Math.abs(b) &lt; Math.abs(d) &amp;&amp; Math.abs(c) &lt; Math.abs(a) &amp;&amp; d &lt; 0)</span>
+            {
+<span class="nc" id="L264">                direction = 180;</span>
+            }
+            // 0  12    up
+            // -12 0
+<span class="nc bnc" id="L268" title="All 8 branches missed.">            else if (Math.abs(a) &lt; Math.abs(c) &amp;&amp; b &gt; 0 &amp;&amp; c &lt; 0 &amp;&amp; Math.abs(d) &lt; b)</span>
+            {
+<span class="nc" id="L270">                direction = 90;</span>
+            }
+            // 0  -12   down
+            // 12 0
+<span class="nc bnc" id="L274" title="All 8 branches missed.">            else if (Math.abs(a) &lt; c &amp;&amp; b &lt; 0 &amp;&amp; c &gt; 0 &amp;&amp; Math.abs(d) &lt; Math.abs(b))</span>
+            {
+<span class="nc" id="L276">                direction = 270;</span>
+            }
+            else
+            {
+<span class="nc" id="L280">                direction = 0;</span>
+            }
+        }
+<span class="nc" id="L283">        return direction;</span>
+    }
+
+    /**
+     * Return the X starting coordinate of the text, adjusted by the given rotation amount.
+     * The rotation adjusts where the 0,0 location is relative to the text.
+     *
+     * @param rotation Rotation to apply (0, 90, 180, or 270).  0 will perform no adjustments.
+     * @return X coordinate
+     */
+    private float getXRot(float rotation)
+    {
+<span class="nc bnc" id="L295" title="All 2 branches missed.">        if (Float.compare(rotation, 0) == 0)</span>
+        {
+<span class="nc" id="L297">            return textMatrix.getTranslateX();</span>
+        }
+<span class="nc bnc" id="L299" title="All 2 branches missed.">        else if (Float.compare(rotation, 90) == 0)</span>
+        {
+<span class="nc" id="L301">            return textMatrix.getTranslateY();</span>
+        }
+<span class="nc bnc" id="L303" title="All 2 branches missed.">        else if (Float.compare(rotation, 180) == 0)</span>
+        {
+<span class="nc" id="L305">            return pageWidth - textMatrix.getTranslateX();</span>
+        }
+<span class="nc bnc" id="L307" title="All 2 branches missed.">        else if (Float.compare(rotation, 270) == 0)</span>
+        {
+<span class="nc" id="L309">            return pageHeight - textMatrix.getTranslateY();</span>
+        }
+<span class="nc" id="L311">        return 0;</span>
+    }
+
+    /**
+     * This will get the page rotation adjusted x position of the character.
+     * This is adjusted based on page rotation so that the upper left is 0,0 which is
+     * unlike PDF coordinates, which start at the bottom left. See also
+     * &lt;a href=&quot;https://stackoverflow.com/questions/57067372/&quot;&gt;this answer by Michael Klink&lt;/a&gt; for
+     * further details and
+     * &lt;a href=&quot;https://issues.apache.org/jira/browse/PDFBOX-4597&quot;&gt;PDFBOX-4597&lt;/a&gt; for a sample
+     * file.
+     *
+     * @return The x coordinate of the character.
+     */
+    public float getX()
+    {
+<span class="nc" id="L327">        return x;</span>
+    }
+
+    /**
+     * This will get the text direction adjusted x position of the character.
+     * This is adjusted based on text direction so that the first character
+     * in that direction is in the upper left at 0,0.
+     * This method ignores the page rotation but takes the text rotation (see
+     * {@link #getDir() getDir()}) and adjusts the coordinates to awt. This is useful when doing
+     * text extraction, to compare the glyph positions when imagining these to be horizontal. See also
+     * &lt;a href=&quot;https://stackoverflow.com/questions/57067372/&quot;&gt;this answer by Michael Klink&lt;/a&gt; for
+     * further details and
+     * &lt;a href=&quot;https://issues.apache.org/jira/browse/PDFBOX-4597&quot;&gt;PDFBOX-4597&lt;/a&gt; for a sample
+     * file.
+     *
+     * @return The x coordinate of the text.
+     */
+    public float getXDirAdj()
+    {
+<span class="nc" id="L346">        return getXRot(getDir());</span>
+    }
+
+    /**
+     * This will get the y position of the character with 0,0 in lower left.
+     * This will be adjusted by the given rotation.
+     *
+     * @param rotation Rotation to apply to text to adjust the 0,0 location (0,90,180,270)
+     * @return The y coordinate of the text
+     */
+    private float getYLowerLeftRot(float rotation)
+    {
+<span class="nc bnc" id="L358" title="All 2 branches missed.">        if (Float.compare(rotation, 0) == 0)</span>
+        {
+<span class="nc" id="L360">            return textMatrix.getTranslateY();</span>
+        }
+<span class="nc bnc" id="L362" title="All 2 branches missed.">        else if (Float.compare(rotation, 90) == 0)</span>
+        {
+<span class="nc" id="L364">            return pageWidth - textMatrix.getTranslateX();</span>
+        }
+<span class="nc bnc" id="L366" title="All 2 branches missed.">        else if (Float.compare(rotation, 180) == 0)</span>
+        {
+<span class="nc" id="L368">            return pageHeight - textMatrix.getTranslateY();</span>
+        }
+<span class="nc bnc" id="L370" title="All 2 branches missed.">        else if (Float.compare(rotation, 270) == 0)</span>
+        {
+<span class="nc" id="L372">            return textMatrix.getTranslateX();</span>
+        }
+<span class="nc" id="L374">        return 0;</span>
+    }
+
+    /**
+     * This will get the page rotation adjusted x position of the character.
+     * This is adjusted based on page rotation so that the upper left is 0,0 which is
+     * unlike PDF coordinates, which start at the bottom left. See also
+     * &lt;a href=&quot;https://stackoverflow.com/questions/57067372/&quot;&gt;this answer by Michael Klink&lt;/a&gt; for
+     * further details and
+     * &lt;a href=&quot;https://issues.apache.org/jira/browse/PDFBOX-4597&quot;&gt;PDFBOX-4597&lt;/a&gt; for a sample
+     * file.
+     *
+     * @return The adjusted y coordinate of the character.
+     */
+    public float getY()
+    {
+<span class="nc" id="L390">        return y;</span>
+    }
+
+    /**
+     * This will get the y position of the text, adjusted so that 0,0 is upper left and it is
+     * adjusted based on the text direction.
+     * This method ignores the page rotation but takes the
+     * text rotation and adjusts the coordinates to awt. This is useful when doing text extraction,
+     * to compare the glyph positions when imagining these to be horizontal. See also
+     * &lt;a href=&quot;https://stackoverflow.com/questions/57067372/&quot;&gt;this answer by Michael Klink&lt;/a&gt; for
+     * further details and
+     * &lt;a href=&quot;https://issues.apache.org/jira/browse/PDFBOX-4597&quot;&gt;PDFBOX-4597&lt;/a&gt; for a sample
+     * file.
+     *
+     * @return The adjusted y coordinate of the character.
+     */
+    public float getYDirAdj()
+    {
+<span class="nc" id="L408">        float dir = getDir();</span>
+        // some PDFBox code assumes that the 0,0 point is in upper left, not lower left
+<span class="nc bnc" id="L410" title="All 4 branches missed.">        if (Float.compare(dir, 0) == 0 || Float.compare(dir, 180) == 0)</span>
+        {
+<span class="nc" id="L412">            return pageHeight - getYLowerLeftRot(dir);</span>
+        }
+        else
+        {
+<span class="nc" id="L416">            return pageWidth - getYLowerLeftRot(dir);</span>
+        }
+    }
+
+    /**
+     * Get the length or width of the text, based on a given rotation.
+     *
+     * @param rotation Rotation that was used to determine coordinates (0,90,180,270)
+     * @return Width of text in display units
+     */
+    private float getWidthRot(float rotation)
+    {
+<span class="nc bnc" id="L428" title="All 4 branches missed.">        if (Float.compare(rotation, 90) == 0 || Float.compare(rotation, 270) == 0)</span>
+        {
+<span class="nc" id="L430">            return Math.abs(endY - textMatrix.getTranslateY());</span>
+        }
+        else
+        {
+<span class="nc" id="L434">            return Math.abs(endX - textMatrix.getTranslateX());</span>
+        }
+    }
+
+    /**
+     * This will get the width of the string when page rotation adjusted coordinates are used.
+     *
+     * @return The width of the text in display units.
+     */
+    public float getWidth()
+    {
+<span class="nc" id="L445">        return getWidthRot(rotation);</span>
+    }
+
+    /**
+     * This will get the width of the string when text direction adjusted coordinates are used.
+     *
+     * @return The width of the text in display units.
+     */
+    public float getWidthDirAdj()
+    {
+<span class="nc" id="L455">        return getWidthRot(getDir());</span>
+    }
+
+    /**
+     * This will get the maximum height of all characters in this string.
+     *
+     * @return The maximum height of all characters in this string.
+     */
+    public float getHeight()
+    {
+<span class="nc" id="L465">        return maxHeight;</span>
+    }
+
+    /**
+     * This will get the maximum height of all characters in this string.
+     *
+     * @return The maximum height of all characters in this string.
+     */
+    public float getHeightDir()
+    {
+        // this is not really a rotation-dependent calculation, but this is defined for symmetry
+<span class="nc" id="L476">        return maxHeight;</span>
+    }
+
+    /**
+     * This will get the font size that has been set with the &quot;Tf&quot; operator (Set text font and
+     * size). When the text is rendered, it may appear bigger or smaller depending on the current
+     * transformation matrix (set by the &quot;cm&quot; operator) and the text matrix (set by the &quot;Tm&quot;
+     * operator).
+     *
+     * @return The font size.
+     */
+    public float getFontSize()
+    {
+<span class="nc" id="L489">        return fontSize;</span>
+    }
+
+    /**
+     * This will get the font size in pt. To get this size we have to multiply the font size from
+     * {@link #getFontSize() getFontSize()} with the text matrix (set by the &quot;Tm&quot; operator)
+     * horizontal scaling factor and truncate the result to integer. The actual rendering may appear
+     * bigger or smaller depending on the current transformation matrix (set by the &quot;cm&quot; operator).
+     * To get the size in rendering, use {@link #getXScale() getXScale()}.
+     *
+     * @return The font size in pt.
+     */
+    public float getFontSizeInPt()
+    {
+<span class="nc" id="L503">        return fontSizePt;</span>
+    }
+
+    /**
+     * This will get the font for the text being drawn.
+     *
+     * @return The font size.
+     */
+    public PDFont getFont()
+    {
+<span class="nc" id="L513">        return font;</span>
+    }
+
+    /**
+     * This will get the width of a space character. This is useful for some algorithms such as the
+     * text stripper, that need to know the width of a space character.
+     *
+     * @return The width of a space character.
+     */
+    public float getWidthOfSpace()
+    {
+<span class="nc" id="L524">        return widthOfSpace;</span>
+    }
+
+    /**
+     * This will get the X scaling factor. This is dependent on the current transformation matrix
+     * (set by the &quot;cm&quot; operator), the text matrix (set by the &quot;Tm&quot; operator) and the font size (set
+     * by the &quot;Tf&quot; operator).
+     *
+     * @return The X scaling factor.
+     */
+    public float getXScale()
+    {
+<span class="nc" id="L536">        return textMatrix.getScalingFactorX();</span>
+    }
+
+    /**
+     * This will get the Y scaling factor. This is dependent on the current transformation matrix
+     * (set by the &quot;cm&quot; operator), the text matrix (set by the &quot;Tm&quot; operator) and the font size (set
+     * by the &quot;Tf&quot; operator).
+     *
+     * @return The Y scaling factor.
+     */
+    public float getYScale()
+    {
+<span class="nc" id="L548">        return textMatrix.getScalingFactorY();</span>
+    }
+
+    /**
+     * Get the widths of each individual character.
+     *
+     * @return An array that has the same length as the CharacterCodes array.
+     */
+    public float[] getIndividualWidths()
+    {
+<span class="nc" id="L558">        return widths;</span>
+    }
+
+    /**
+     * Determine if this TextPosition logically contains another (i.e. they overlap and should be
+     * rendered on top of each other).
+     *
+     * @param tp2 The other TestPosition to compare against
+     * @return True if tp2 is contained in the bounding box of this text.
+     */
+    public boolean contains(TextPosition tp2)
+    {
+<span class="nc" id="L570">        double thisXstart = getXDirAdj();</span>
+<span class="nc" id="L571">        double thisWidth = getWidthDirAdj();</span>
+<span class="nc" id="L572">        double thisXend = thisXstart + thisWidth;</span>
+
+<span class="nc" id="L574">        double tp2Xstart = tp2.getXDirAdj();</span>
+<span class="nc" id="L575">        double tp2Xend = tp2Xstart + tp2.getWidthDirAdj();</span>
+
+        // no X overlap at all so return as soon as possible
+<span class="nc bnc" id="L578" title="All 4 branches missed.">        if (tp2Xend &lt;= thisXstart || tp2Xstart &gt;= thisXend)</span>
+        {
+<span class="nc" id="L580">            return false;</span>
+        }
+
+        // no Y overlap at all so return as soon as possible. Note: 0.0 is in the upper left and
+        // y-coordinate is top of TextPosition
+<span class="nc" id="L585">        double thisYstart = getYDirAdj();</span>
+<span class="nc" id="L586">        double tp2Ystart = tp2.getYDirAdj();</span>
+<span class="nc bnc" id="L587" title="All 2 branches missed.">        if (tp2Ystart + tp2.getHeightDir() &lt; thisYstart ||</span>
+<span class="nc bnc" id="L588" title="All 2 branches missed.">                tp2Ystart &gt; thisYstart + getHeightDir())</span>
+        {
+<span class="nc" id="L590">            return false;</span>
+        }
+        // we're going to calculate the percentage of overlap, if its less than a 15% x-coordinate
+        // overlap then we'll return false because its negligible, .15 was determined by trial and
+        // error in the regression test files
+<span class="nc bnc" id="L595" title="All 4 branches missed.">        else if (tp2Xstart &gt; thisXstart &amp;&amp; tp2Xend &gt; thisXend)</span>
+        {
+<span class="nc" id="L597">            double overlap = thisXend - tp2Xstart;</span>
+<span class="nc" id="L598">            double overlapPercent = overlap/thisWidth;</span>
+<span class="nc bnc" id="L599" title="All 2 branches missed.">            return overlapPercent &gt; .15;</span>
+        }
+<span class="nc bnc" id="L601" title="All 4 branches missed.">        else if (tp2Xstart &lt; thisXstart &amp;&amp; tp2Xend &lt; thisXend)</span>
+        {
+<span class="nc" id="L603">            double overlap = tp2Xend - thisXstart;</span>
+<span class="nc" id="L604">            double overlapPercent = overlap/thisWidth;</span>
+<span class="nc bnc" id="L605" title="All 2 branches missed.">            return overlapPercent &gt; .15;</span>
+        }
+<span class="nc" id="L607">        return true;</span>
+    }
+
+    /**
+     * Determine if this TextPosition perfectly contains another (i.e. the other TextPosition
+     * overlaps 100% with this one and fits entirely inside its bounding box when they are rendered
+     * on top of each other).
+     *
+     * @param tp2 The other TestPosition to compare against
+     * @return True if tp2 is contained completely inside the bounding box of this text.
+     */
+    public boolean completelyContains(TextPosition tp2)
+    {
+        //  Note: (0, 0) is in the upper left and y-coordinate is top of TextPosition
+        //      +---thisTop------------+
+        //      |    +--tp2Top---+     |
+        //      |    |           |     |
+        //  thisLeft |       tp2Right  |
+        //      | tp2Left        | thisRight
+        //      |    |           |     |
+        //      |    +-tp2Bottom-+     |
+        //      +---------thisBottom---+
+
+<span class="nc" id="L630">        float thisLeft = getXDirAdj();</span>
+<span class="nc" id="L631">        float thisWidth = getWidthDirAdj();</span>
+<span class="nc" id="L632">        float thisRight = thisLeft + thisWidth;</span>
+
+<span class="nc" id="L634">        float tp2Left = tp2.getXDirAdj();</span>
+<span class="nc" id="L635">        float tp2Width = tp2.getWidthDirAdj();</span>
+<span class="nc" id="L636">        float tp2Right = tp2Left + tp2Width;</span>
+
+<span class="nc bnc" id="L638" title="All 4 branches missed.">        if (thisLeft &gt; tp2Left || tp2Right &gt; thisRight)</span>
+        {
+<span class="nc" id="L640">            return false;</span>
+        }
+
+<span class="nc" id="L643">        float thisTop = getYDirAdj();</span>
+<span class="nc" id="L644">        float thisHeight = getHeightDir();</span>
+<span class="nc" id="L645">        float thisBottom = thisTop + thisHeight;</span>
+
+<span class="nc" id="L647">        float tp2Top = tp2.getYDirAdj();</span>
+<span class="nc" id="L648">        float tp2Height = tp2.getHeightDir();</span>
+<span class="nc" id="L649">        float tp2Bottom = tp2Top + tp2Height;</span>
+
+<span class="nc bnc" id="L651" title="All 4 branches missed.">        if (thisTop &gt; tp2Top || tp2Bottom &gt; thisBottom)</span>
+        {
+<span class="nc" id="L653">            return false;</span>
+        }
+
+<span class="nc" id="L656">        return true;</span>
+    }
+
+    /**
+     * Merge a single character TextPosition into the current object. This is to be used only for
+     * cases where we have a diacritic that overlaps an existing TextPosition. In a graphical
+     * display, we could overlay them, but for text extraction we need to merge them. Use the
+     * contains() method to test if two objects overlap.
+     *
+     * @param diacritic TextPosition to merge into the current TextPosition.
+     */
+    public void mergeDiacritic(TextPosition diacritic)
+    {
+<span class="nc bnc" id="L669" title="All 2 branches missed.">        if (diacritic.getUnicode().length() &gt; 1)</span>
+        {
+<span class="nc" id="L671">            return;</span>
+        }
+
+<span class="nc" id="L674">        float diacXStart = diacritic.getXDirAdj();</span>
+<span class="nc" id="L675">        float diacXEnd = diacXStart + diacritic.widths[0];</span>
+
+<span class="nc" id="L677">        float currCharXStart = getXDirAdj();</span>
+
+<span class="nc" id="L679">        int strLen = unicode.length();</span>
+<span class="nc" id="L680">        boolean wasAdded = false;</span>
+
+<span class="nc bnc" id="L682" title="All 4 branches missed.">        for (int i = 0; i &lt; strLen &amp;&amp; !wasAdded; i++)</span>
+        {
+<span class="nc bnc" id="L684" title="All 2 branches missed.">            if (i &gt;= widths.length)</span>
+            {
+<span class="nc" id="L686">                LOG.info(</span>
+                        &quot;diacritic {} on ligature {} is not supported yet and is ignored (PDFBOX-2831)&quot;,
+<span class="nc" id="L688">                        diacritic.getUnicode(), unicode);</span>
+<span class="nc" id="L689">                break;</span>
+            }
+<span class="nc" id="L691">            float currCharXEnd = currCharXStart + widths[i];</span>
+
+             // this is the case where there is an overlap of the diacritic character with the
+             // current character and the previous character. If no previous character, just append
+             // the diacritic after the current one
+<span class="nc bnc" id="L696" title="All 4 branches missed.">            if (diacXStart &lt; currCharXStart &amp;&amp; diacXEnd &lt;= currCharXEnd)</span>
+            {
+<span class="nc bnc" id="L698" title="All 2 branches missed.">                if (i == 0)</span>
+                {
+<span class="nc" id="L700">                    insertDiacritic(i, diacritic);</span>
+                }
+                else
+                {
+<span class="nc" id="L704">                    float distanceOverlapping1 = diacXEnd - currCharXStart;</span>
+<span class="nc" id="L705">                    float percentage1 = distanceOverlapping1/widths[i];</span>
+
+<span class="nc" id="L707">                    float distanceOverlapping2 = currCharXStart - diacXStart;</span>
+<span class="nc" id="L708">                    float percentage2 = distanceOverlapping2/widths[i - 1];</span>
+
+<span class="nc bnc" id="L710" title="All 2 branches missed.">                    if (percentage1 &gt;= percentage2)</span>
+                    {
+<span class="nc" id="L712">                        insertDiacritic(i, diacritic);</span>
+                    }
+                    else
+                    {
+<span class="nc" id="L716">                        insertDiacritic(i - 1, diacritic);</span>
+                    }
+                }
+<span class="nc" id="L719">                wasAdded = true;</span>
+            }
+            // diacritic completely covers this character and therefore we assume that this is the
+            // character the diacritic belongs to
+<span class="nc bnc" id="L723" title="All 2 branches missed.">            else if (diacXStart &lt; currCharXStart)</span>
+            {
+<span class="nc" id="L725">                insertDiacritic(i, diacritic);</span>
+<span class="nc" id="L726">                wasAdded = true;</span>
+            }
+            // otherwise, The diacritic modifies this character because its completely
+            // contained by the character width
+<span class="nc bnc" id="L730" title="All 2 branches missed.">            else if (diacXEnd &lt;= currCharXEnd)</span>
+            {
+<span class="nc" id="L732">                insertDiacritic(i, diacritic);</span>
+<span class="nc" id="L733">                wasAdded = true;</span>
+            }
+            // last character in the TextPosition so we add diacritic to the end
+<span class="nc bnc" id="L736" title="All 2 branches missed.">            else if (i == strLen - 1)</span>
+            {
+<span class="nc" id="L738">                insertDiacritic(i, diacritic);</span>
+<span class="nc" id="L739">                wasAdded = true;</span>
+            }
+
+            // couldn't find anything useful so we go to the next character in the TextPosition
+<span class="nc" id="L743">            currCharXStart += widths[i];</span>
+        }
+<span class="nc" id="L745">    }</span>
+
+    /**
+     * Inserts the diacritic TextPosition to the str of this TextPosition and updates the widths
+     * array to include the extra character width.
+     *
+     * @param i current character
+     * @param diacritic The diacritic TextPosition
+     */
+    private void insertDiacritic(int i, TextPosition diacritic)
+    {
+<span class="nc" id="L756">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L757">        sb.append(unicode, 0, i);</span>
+
+<span class="nc" id="L759">        float[] widths2 = new float[widths.length + 1];</span>
+<span class="nc" id="L760">        System.arraycopy(widths, 0, widths2, 0, i);</span>
+
+        // First we add a zero-width entry for the diacritic in the widths array
+<span class="nc" id="L763">        widths2[i] = widths[i];</span>
+<span class="nc" id="L764">        widths2[i + 1] = 0;</span>
+<span class="nc" id="L765">        System.arraycopy(widths, i + 1, widths2, i + 2, widths.length - i - 1);</span>
+
+        // Unicode combining diacritics always go after the base character, regardless of whether
+        // the string is in presentation order or logical order
+<span class="nc" id="L769">        sb.append(unicode.charAt(i));</span>
+
+        // If a surrogate starts at the current position, make sure we preserve it
+<span class="nc bnc" id="L772" title="All 4 branches missed.">        if (i &lt; unicode.length() - 1 &amp;&amp; Character.isSurrogatePair(unicode.charAt(i), unicode.charAt(i + 1)))</span>
+        {
+<span class="nc" id="L774">            sb.append(unicode.charAt(i + 1));</span>
+<span class="nc" id="L775">            i++;</span>
+        }
+
+<span class="nc" id="L778">        sb.append(combineDiacritic(diacritic.getUnicode()));</span>
+
+        // get the rest of the string
+<span class="nc" id="L781">        sb.append(unicode.substring(i + 1));</span>
+
+<span class="nc" id="L783">        unicode = sb.toString();</span>
+<span class="nc" id="L784">        widths = widths2;</span>
+<span class="nc" id="L785">    }</span>
+
+    /**
+     * Combine the diacritic, for example, convert non-combining diacritic characters to their
+     * combining counterparts.
+     *
+     * @param str String to normalize
+     * @return Normalized string
+     */
+    private String combineDiacritic(String str)
+    {
+        // Unicode contains special combining forms of the diacritic characters which we want to use
+<span class="nc" id="L797">        int codePoint = str.codePointAt(0);</span>
+
+        // convert the characters not defined in the Unicode spec
+<span class="nc bnc" id="L800" title="All 2 branches missed.">        if (DIACRITICS.containsKey(codePoint))</span>
+        {
+<span class="nc" id="L802">            return DIACRITICS.get(codePoint);</span>
+        }
+        else
+        {
+<span class="nc" id="L806">            return Normalizer.normalize(str, Normalizer.Form.NFKC).trim();</span>
+        }
+    }
+
+    /**
+     * @return True if the current character is a diacritic char.
+     */
+    public boolean isDiacritic()
+    {
+<span class="nc" id="L815">        String text = this.getUnicode();</span>
+<span class="nc bnc" id="L816" title="All 2 branches missed.">        if (text.length() != 1)</span>
+        {
+<span class="nc" id="L818">            return false;</span>
+        }
+<span class="nc bnc" id="L820" title="All 2 branches missed.">        if (&quot;ー&quot;.equals(text))</span>
+        {
+            // PDFBOX-3833: ー is not a real diacritic like ¨ or ˆ, it just changes the 
+            // pronunciation of the previous sound, and is printed after the previous glyph
+            // http://www.japanesewithanime.com/2017/04/prolonged-sound-mark.html
+            // Ignoring it as diacritic avoids trouble if it slightly overlaps with the next glyph.
+<span class="nc" id="L826">            return false;</span>
+        }
+<span class="nc" id="L828">        int type = Character.getType(text.charAt(0));</span>
+<span class="nc bnc" id="L829" title="All 6 branches missed.">        return type == Character.NON_SPACING_MARK ||</span>
+               type == Character.MODIFIER_SYMBOL ||
+               type == Character.MODIFIER_LETTER;
+
+  }
+
+    /**
+     * Show the string data for this text position.
+     *
+     * @return A human readable form of this object.
+     */
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L843">        return getUnicode();</span>
+    }
+
+    /**
+     * This will get the x coordinate of the end position. This is the unadjusted value passed into
+     * the constructor.
+     *
+     * @return The unadjusted x coordinate of the end position
+     */
+    public float getEndX()
+    {
+<span class="nc" id="L854">        return endX;</span>
+    }
+
+    /**
+     * This will get the y coordinate of the end position. This is the unadjusted value passed into
+     * the constructor.
+     *
+     * @return The unadjusted y coordinate of the end position
+     */
+    public float getEndY()
+    {
+<span class="nc" id="L865">        return endY;</span>
+    }
+
+    /**
+     * This will get the rotation of the page that the text is located in. This is the unadjusted
+     * value passed into the constructor.
+     *
+     * @return The unadjusted rotation of the page that the text is located in
+     */
+    public int getRotation()
+    {
+<span class="nc" id="L876">        return rotation;</span>
+    }
+
+    /**
+     * This will get the height of the page that the text is located in. This is the unadjusted
+     * value passed into the constructor.
+     *
+     * @return The unadjusted height of the page that the text is located in
+     */
+    public float getPageHeight()
+    {
+<span class="nc" id="L887">        return pageHeight;</span>
+    }
+
+    /**
+     * This will get the width of the page that the text is located in. This is the unadjusted value
+     * passed into the constructor.
+     *
+     * @return The unadjusted width of the page that the text is located in
+     */
+    public float getPageWidth()
+    {
+<span class="nc" id="L898">        return pageWidth;</span>
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+<span class="nc bnc" id="L904" title="All 2 branches missed.">        if (this == o)</span>
+        {
+<span class="nc" id="L906">            return true;</span>
+        }
+<span class="nc bnc" id="L908" title="All 2 branches missed.">        if (!(o instanceof TextPosition))</span>
+        {
+<span class="nc" id="L910">            return false;</span>
+        }
+
+<span class="nc" id="L913">        TextPosition that = (TextPosition) o;</span>
+
+<span class="nc bnc" id="L915" title="All 2 branches missed.">        if (Float.compare(that.endX, endX) != 0)</span>
+        {
+<span class="nc" id="L917">            return false;</span>
+        }
+<span class="nc bnc" id="L919" title="All 2 branches missed.">        if (Float.compare(that.endY, endY) != 0)</span>
+        {
+<span class="nc" id="L921">            return false;</span>
+        }
+<span class="nc bnc" id="L923" title="All 2 branches missed.">        if (Float.compare(that.maxHeight, maxHeight) != 0)</span>
+        {
+<span class="nc" id="L925">            return false;</span>
+        }
+<span class="nc bnc" id="L927" title="All 2 branches missed.">        if (rotation != that.rotation)</span>
+        {
+<span class="nc" id="L929">            return false;</span>
+        }
+<span class="nc bnc" id="L931" title="All 2 branches missed.">        if (Float.compare(that.x, x) != 0)</span>
+        {
+<span class="nc" id="L933">            return false;</span>
+        }
+<span class="nc bnc" id="L935" title="All 2 branches missed.">        if (Float.compare(that.y, y) != 0)</span>
+        {
+<span class="nc" id="L937">            return false;</span>
+        }
+<span class="nc bnc" id="L939" title="All 2 branches missed.">        if (Float.compare(that.pageHeight, pageHeight) != 0)</span>
+        {
+<span class="nc" id="L941">            return false;</span>
+        }
+<span class="nc bnc" id="L943" title="All 2 branches missed.">        if (Float.compare(that.pageWidth, pageWidth) != 0)</span>
+        {
+<span class="nc" id="L945">            return false;</span>
+        }
+<span class="nc bnc" id="L947" title="All 2 branches missed.">        if (Float.compare(that.widthOfSpace, widthOfSpace) != 0)</span>
+        {
+<span class="nc" id="L949">            return false;</span>
+        }
+<span class="nc bnc" id="L951" title="All 2 branches missed.">        if (Float.compare(that.fontSize, fontSize) != 0)</span>
+        {
+<span class="nc" id="L953">            return false;</span>
+        }
+<span class="nc bnc" id="L955" title="All 2 branches missed.">        if (fontSizePt != that.fontSizePt)</span>
+        {
+<span class="nc" id="L957">            return false;</span>
+        }
+<span class="nc bnc" id="L959" title="All 2 branches missed.">        if (!Objects.equals(textMatrix, that.textMatrix))</span>
+        {
+<span class="nc" id="L961">            return false;</span>
+        }
+<span class="nc bnc" id="L963" title="All 2 branches missed.">        if (!Arrays.equals(charCodes, that.charCodes))</span>
+        {
+<span class="nc" id="L965">            return false;</span>
+        }
+<span class="nc" id="L967">        return Objects.equals(font, that.font);</span>
+        
+        // If changing this method, do not compare mutable fields (PDFBOX-4701)        
+    }
+
+    @Override
+    public int hashCode()
+    {
+<span class="nc bnc" id="L975" title="All 2 branches missed.">        int result = textMatrix != null ? textMatrix.hashCode() : 0;</span>
+<span class="nc" id="L976">        result = 31 * result + Float.floatToIntBits(endX);</span>
+<span class="nc" id="L977">        result = 31 * result + Float.floatToIntBits(endY);</span>
+<span class="nc" id="L978">        result = 31 * result + Float.floatToIntBits(maxHeight);</span>
+<span class="nc" id="L979">        result = 31 * result + rotation;</span>
+<span class="nc" id="L980">        result = 31 * result + Float.floatToIntBits(x);</span>
+<span class="nc" id="L981">        result = 31 * result + Float.floatToIntBits(y);</span>
+<span class="nc" id="L982">        result = 31 * result + Float.floatToIntBits(pageHeight);</span>
+<span class="nc" id="L983">        result = 31 * result + Float.floatToIntBits(pageWidth);</span>
+<span class="nc" id="L984">        result = 31 * result + Float.floatToIntBits(widthOfSpace);</span>
+<span class="nc" id="L985">        result = 31 * result + Arrays.hashCode(charCodes);</span>
+<span class="nc bnc" id="L986" title="All 2 branches missed.">        result = 31 * result + (font != null ? font.hashCode() : 0);</span>
+<span class="nc" id="L987">        result = 31 * result + Float.floatToIntBits(fontSize);</span>
+<span class="nc" id="L988">        result = 31 * result + fontSizePt;</span>
+<span class="nc" id="L989">        return result;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

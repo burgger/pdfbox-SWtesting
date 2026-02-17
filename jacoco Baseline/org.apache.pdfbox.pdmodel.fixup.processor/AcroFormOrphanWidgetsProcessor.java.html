@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AcroFormOrphanWidgetsProcessor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.fixup.processor</a> &gt; <span class="el_source">AcroFormOrphanWidgetsProcessor.java</span></div><h1>AcroFormOrphanWidgetsProcessor.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.fixup.processor;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.fontbox.ttf.TrueTypeFont;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.font.FontMapper;
+import org.apache.pdfbox.pdmodel.font.FontMappers;
+import org.apache.pdfbox.pdmodel.font.FontMapping;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceStream;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDField;
+import org.apache.pdfbox.pdmodel.interactive.form.PDFieldFactory;
+import org.apache.pdfbox.pdmodel.interactive.form.PDVariableText;
+
+/**
+ *  Generate field entries from page level widget annotations
+ *  if there AcroForm /Fields entry is empty.
+ * 
+ */
+public class AcroFormOrphanWidgetsProcessor extends AbstractProcessor
+{
+    
+<span class="nc" id="L53">    private static final Logger LOG = LogManager.getLogger(AcroFormOrphanWidgetsProcessor.class);</span>
+
+    public AcroFormOrphanWidgetsProcessor(PDDocument document)
+    { 
+<span class="nc" id="L57">        super(document); </span>
+<span class="nc" id="L58">    }</span>
+
+    @Override
+    public void process()
+    {
+        /*
+         * Get the AcroForm in it's current state.
+         *
+         * Also note: getAcroForm() applies a default fixup which this processor
+         * is part of. So keep the null parameter otherwise this will end
+         * in an endless recursive call
+         */
+<span class="nc" id="L70">        PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm(null);</span>
+
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        if (acroForm != null)</span>
+        {            
+<span class="nc" id="L74">            resolveFieldsFromWidgets(acroForm);</span>
+        } 
+<span class="nc" id="L76">    }</span>
+
+    private void resolveFieldsFromWidgets(PDAcroForm acroForm)
+    {
+<span class="nc" id="L80">        LOG.debug(&quot;rebuilding fields from widgets&quot;);</span>
+
+<span class="nc" id="L82">        PDResources resources = acroForm.getDefaultResources();</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        if (resources == null)</span>
+        {
+            // failsafe. Currently resources is never null because defaultfixup is called first.
+<span class="nc" id="L86">            LOG.debug(&quot;AcroForm default resources is null&quot;);</span>
+<span class="nc" id="L87">            return;</span>
+        }
+
+<span class="nc" id="L90">        List&lt;PDField&gt; fields = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L91">        Map&lt;String, PDField&gt; nonTerminalFieldsMap = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        for (PDPage page : document.getPages())</span>
+        {
+            try
+            {
+<span class="nc" id="L96">                handleAnnotations(acroForm, resources, fields, page.getAnnotations(), nonTerminalFieldsMap);</span>
+            }
+<span class="nc" id="L98">            catch (IOException ioe)</span>
+            {
+<span class="nc" id="L100">                LOG.debug(&quot;couldn't read annotations for page {}&quot;, ioe.getMessage());</span>
+<span class="nc" id="L101">            }</span>
+<span class="nc" id="L102">        }</span>
+
+<span class="nc" id="L104">        acroForm.setFields(fields);</span>
+
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        for (PDField field : acroForm.getFieldTree())</span>
+        {
+<span class="nc bnc" id="L108" title="All 2 branches missed.">            if (field instanceof PDVariableText)</span>
+            {
+<span class="nc" id="L110">                ensureFontResources(resources, (PDVariableText) field);</span>
+            }
+<span class="nc" id="L112">        }</span>
+<span class="nc" id="L113">    }</span>
+
+    private void handleAnnotations(PDAcroForm acroForm, PDResources acroFormResources,
+            List&lt;PDField&gt; fields, List&lt;PDAnnotation&gt; annotations,
+            Map&lt;String, PDField&gt; nonTerminalFieldsMap)
+    {
+<span class="nc bnc" id="L119" title="All 2 branches missed.">        for (PDAnnotation annot : annotations)</span>
+        {
+<span class="nc bnc" id="L121" title="All 2 branches missed.">            if (annot instanceof PDAnnotationWidget)</span>
+            {
+<span class="nc" id="L123">                addFontFromWidget(acroFormResources, annot);</span>
+
+<span class="nc" id="L125">                COSDictionary parent = annot.getCOSObject().getCOSDictionary(COSName.PARENT);</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">                if (parent != null)</span>
+                {
+<span class="nc" id="L128">                    PDField resolvedField = resolveNonRootField(acroForm, parent, nonTerminalFieldsMap);</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">                    if (resolvedField != null)</span>
+                    {
+<span class="nc" id="L131">                        fields.add(resolvedField);</span>
+                    }
+<span class="nc" id="L133">                }</span>
+                else
+                {
+<span class="nc" id="L136">                    PDField field = PDFieldFactory.createField(acroForm, annot.getCOSObject(), null);</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">                    if (field != null)</span>
+                    {
+<span class="nc" id="L139">                        fields.add(field);</span>
+                    }
+                }
+            }
+<span class="nc" id="L143">        }</span>
+<span class="nc" id="L144">    }</span>
+
+    /**
+     * Add font resources from the widget to the AcroForm to make sure embedded fonts are being used
+     * and not added by ensureFontResources potentially using a fallback font.
+     * 
+     * @param acroFormResources AcroForm default resources, should not be null.
+     * @param annotation annotation, should not be null.
+     */
+    private void addFontFromWidget(PDResources acroFormResources, PDAnnotation annotation)
+    {
+<span class="nc" id="L155">        PDAppearanceStream normalAppearanceStream = annotation.getNormalAppearanceStream();</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (normalAppearanceStream == null)</span>
+        {
+<span class="nc" id="L158">            return;</span>
+        }
+<span class="nc" id="L160">        PDResources widgetResources = normalAppearanceStream.getResources();</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">        if (widgetResources == null)</span>
+        {
+<span class="nc" id="L163">            return;</span>
+        }
+<span class="nc" id="L165">        widgetResources.getFontNames().forEach(fontName -&gt;</span>
+        {
+<span class="nc bnc" id="L167" title="All 2 branches missed.">            if (!fontName.getName().startsWith(&quot;+&quot;))</span>
+            {
+                try
+                {
+<span class="nc bnc" id="L171" title="All 2 branches missed.">                    if (acroFormResources.getFont(fontName) == null)</span>
+                    {
+<span class="nc" id="L173">                        acroFormResources.put(fontName, widgetResources.getFont(fontName));</span>
+<span class="nc" id="L174">                        LOG.debug(&quot;added font resource to AcroForm from widget for font name {}&quot;,</span>
+<span class="nc" id="L175">                                fontName::getName);</span>
+                    }
+                }
+<span class="nc" id="L178">                catch (IOException ioe)</span>
+                {
+<span class="nc" id="L180">                    LOG.debug(&quot;unable to add font to AcroForm for font name {}&quot;,</span>
+<span class="nc" id="L181">                            fontName::getName);</span>
+<span class="nc" id="L182">                }</span>
+            }
+            else
+            {
+<span class="nc" id="L186">                LOG.debug(&quot;font resource for widget was a subsetted font - ignored: {}&quot;,</span>
+<span class="nc" id="L187">                        fontName::getName);</span>
+            }
+<span class="nc" id="L189">        });</span>
+<span class="nc" id="L190">    }</span>
+
+    /*
+     *  Widgets having a /Parent entry are non root fields. Go up until the root node is found
+     *  and handle from there.
+     */
+    private PDField resolveNonRootField(PDAcroForm acroForm, COSDictionary parent, Map&lt;String, PDField&gt; nonTerminalFieldsMap)
+    {
+<span class="nc bnc" id="L198" title="All 2 branches missed.">        while (parent.containsKey(COSName.PARENT))</span>
+        {
+<span class="nc" id="L200">            parent = parent.getCOSDictionary(COSName.PARENT);</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">            if (parent == null)</span>
+            {
+<span class="nc" id="L203">                return null;</span>
+            }
+        }
+        
+<span class="nc bnc" id="L207" title="All 2 branches missed.">        if (nonTerminalFieldsMap.get(parent.getString(COSName.T)) == null)</span>
+        {
+<span class="nc" id="L209">            PDField field = PDFieldFactory.createField(acroForm, parent, null);</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">            if (field != null)</span>
+            {
+<span class="nc" id="L212">                nonTerminalFieldsMap.put(field.getFullyQualifiedName(), field);</span>
+            }
+<span class="nc" id="L214">            return field;</span>
+        }
+
+        // this should not happen, likely broken PDF
+<span class="nc" id="L218">        return null;</span>
+    }
+
+
+    /*
+     *  Lookup the font used in the default appearance and if this is 
+     *  not available try to find a suitable font and use that.
+     *  This may not be the original font but a similar font replacement
+     * 
+     *  TODO: implement a font lookup similar as discussed in PDFBOX-2661 so that already existing
+     *        font resources might be accepatble.
+     *        In such case this must be implemented in PDDefaultAppearanceString too!
+     */
+    private void ensureFontResources(PDResources defaultResources, PDVariableText field)
+    {
+<span class="nc" id="L233">        String daString = field.getDefaultAppearance();</span>
+<span class="nc bnc" id="L234" title="All 4 branches missed.">        if (daString.startsWith(&quot;/&quot;) &amp;&amp; daString.length() &gt; 1)</span>
+        {
+<span class="nc" id="L236">            COSName fontName = COSName.getPDFName(daString.substring(1, daString.indexOf(' ')));</span>
+            try
+            {
+<span class="nc bnc" id="L239" title="All 2 branches missed.">                if (defaultResources.getFont(fontName) == null)</span>
+                {
+<span class="nc" id="L241">                    LOG.debug(&quot;trying to add missing font resource for field {}&quot;,</span>
+<span class="nc" id="L242">                            field::getFullyQualifiedName);</span>
+<span class="nc" id="L243">                    FontMapper mapper = FontMappers.instance();</span>
+<span class="nc" id="L244">                    FontMapping&lt;TrueTypeFont&gt; fontMapping = mapper.getTrueTypeFont(fontName.getName() , null);</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">                    if (fontMapping != null)</span>
+                    {
+<span class="nc" id="L247">                        PDType0Font pdFont = PDType0Font.load(document, fontMapping.getFont(), false);</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">                        if (LOG.isDebugEnabled())</span>
+                        {
+<span class="nc" id="L250">                            LOG.debug(&quot;looked up font for {} - found {}&quot;, fontName.getName(),</span>
+<span class="nc" id="L251">                                    fontMapping.getFont().getName());</span>
+                        }
+<span class="nc" id="L253">                        defaultResources.put(fontName, pdFont);</span>
+<span class="nc" id="L254">                    }</span>
+                    else
+                    {
+<span class="nc" id="L257">                        LOG.debug(&quot;no suitable font found for field {} for font name {}&quot;,</span>
+<span class="nc" id="L258">                                field::getFullyQualifiedName, fontName::getName);</span>
+                    }
+                }
+            }
+<span class="nc" id="L262">            catch (IOException ioe)</span>
+            {
+<span class="nc" id="L264">                LOG.debug(&quot;unable to handle font resources for field {}: {}&quot;,</span>
+<span class="nc" id="L265">                        field::getFullyQualifiedName, ioe::getMessage);</span>
+<span class="nc" id="L266">            }</span>
+        }
+<span class="nc" id="L268">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MacExpertEncoding.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font.encoding</a> &gt; <span class="el_source">MacExpertEncoding.java</span></div><h1>MacExpertEncoding.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.font.encoding;
+
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSName;
+
+/**
+ * This is an interface to a text encoder.
+ */
+public class MacExpertEncoding extends Encoding
+{
+    /**
+     * Table of octal character codes and their corresponding names.
+     */
+<span class="nc" id="L30">    private static final Object[][] MAC_EXPERT_ENCODING_TABLE = {</span>
+<span class="nc" id="L31">        {0276, &quot;AEsmall&quot;},</span>
+<span class="nc" id="L32">        {0207, &quot;Aacutesmall&quot;},</span>
+<span class="nc" id="L33">        {0211, &quot;Acircumflexsmall&quot;},</span>
+<span class="nc" id="L34">        {047, &quot;Acutesmall&quot;},</span>
+<span class="nc" id="L35">        {0212, &quot;Adieresissmall&quot;},</span>
+<span class="nc" id="L36">        {0210, &quot;Agravesmall&quot;},</span>
+<span class="nc" id="L37">        {0214, &quot;Aringsmall&quot;},</span>
+<span class="nc" id="L38">        {0141, &quot;Asmall&quot;},</span>
+<span class="nc" id="L39">        {0213, &quot;Atildesmall&quot;},</span>
+<span class="nc" id="L40">        {0363, &quot;Brevesmall&quot;},</span>
+<span class="nc" id="L41">        {0142, &quot;Bsmall&quot;},</span>
+<span class="nc" id="L42">        {0256, &quot;Caronsmall&quot;},</span>
+<span class="nc" id="L43">        {0215, &quot;Ccedillasmall&quot;},</span>
+<span class="nc" id="L44">        {0311, &quot;Cedillasmall&quot;},</span>
+<span class="nc" id="L45">        {0136, &quot;Circumflexsmall&quot;},</span>
+<span class="nc" id="L46">        {0143, &quot;Csmall&quot;},</span>
+<span class="nc" id="L47">        {0254, &quot;Dieresissmall&quot;},</span>
+<span class="nc" id="L48">        {0372, &quot;Dotaccentsmall&quot;},</span>
+<span class="nc" id="L49">        {0144, &quot;Dsmall&quot;},</span>
+<span class="nc" id="L50">        {0216, &quot;Eacutesmall&quot;},</span>
+<span class="nc" id="L51">        {0220, &quot;Ecircumflexsmall&quot;},</span>
+<span class="nc" id="L52">        {0221, &quot;Edieresissmall&quot;},</span>
+<span class="nc" id="L53">        {0217, &quot;Egravesmall&quot;},</span>
+<span class="nc" id="L54">        {0145, &quot;Esmall&quot;},</span>
+<span class="nc" id="L55">        {0104, &quot;Ethsmall&quot;},</span>
+<span class="nc" id="L56">        {0146, &quot;Fsmall&quot;},</span>
+<span class="nc" id="L57">        {0140, &quot;Gravesmall&quot;},</span>
+<span class="nc" id="L58">        {0147, &quot;Gsmall&quot;},</span>
+<span class="nc" id="L59">        {0150, &quot;Hsmall&quot;},</span>
+<span class="nc" id="L60">        {042, &quot;Hungarumlautsmall&quot;},</span>
+<span class="nc" id="L61">        {0222, &quot;Iacutesmall&quot;},</span>
+<span class="nc" id="L62">        {0224, &quot;Icircumflexsmall&quot;},</span>
+<span class="nc" id="L63">        {0225, &quot;Idieresissmall&quot;},</span>
+<span class="nc" id="L64">        {0223, &quot;Igravesmall&quot;},</span>
+<span class="nc" id="L65">        {0151, &quot;Ismall&quot;},</span>
+<span class="nc" id="L66">        {0152, &quot;Jsmall&quot;},</span>
+<span class="nc" id="L67">        {0153, &quot;Ksmall&quot;},</span>
+<span class="nc" id="L68">        {0302, &quot;Lslashsmall&quot;},</span>
+<span class="nc" id="L69">        {0154, &quot;Lsmall&quot;},</span>
+<span class="nc" id="L70">        {0364, &quot;Macronsmall&quot;},</span>
+<span class="nc" id="L71">        {0155, &quot;Msmall&quot;},</span>
+<span class="nc" id="L72">        {0156, &quot;Nsmall&quot;},</span>
+<span class="nc" id="L73">        {0226, &quot;Ntildesmall&quot;},</span>
+<span class="nc" id="L74">        {0317, &quot;OEsmall&quot;},</span>
+<span class="nc" id="L75">        {0227, &quot;Oacutesmall&quot;},</span>
+<span class="nc" id="L76">        {0231, &quot;Ocircumflexsmall&quot;},</span>
+<span class="nc" id="L77">        {0232, &quot;Odieresissmall&quot;},</span>
+<span class="nc" id="L78">        {0362, &quot;Ogoneksmall&quot;},</span>
+<span class="nc" id="L79">        {0230, &quot;Ogravesmall&quot;},</span>
+<span class="nc" id="L80">        {0277, &quot;Oslashsmall&quot;},</span>
+<span class="nc" id="L81">        {0157, &quot;Osmall&quot;},</span>
+<span class="nc" id="L82">        {0233, &quot;Otildesmall&quot;},</span>
+<span class="nc" id="L83">        {0160, &quot;Psmall&quot;},</span>
+<span class="nc" id="L84">        {0161, &quot;Qsmall&quot;},</span>
+<span class="nc" id="L85">        {0373, &quot;Ringsmall&quot;},</span>
+<span class="nc" id="L86">        {0162, &quot;Rsmall&quot;},</span>
+<span class="nc" id="L87">        {0247, &quot;Scaronsmall&quot;},</span>
+<span class="nc" id="L88">        {0163, &quot;Ssmall&quot;},</span>
+<span class="nc" id="L89">        {0271, &quot;Thornsmall&quot;},</span>
+<span class="nc" id="L90">        {0176, &quot;Tildesmall&quot;},</span>
+<span class="nc" id="L91">        {0164, &quot;Tsmall&quot;},</span>
+<span class="nc" id="L92">        {0234, &quot;Uacutesmall&quot;},</span>
+<span class="nc" id="L93">        {0236, &quot;Ucircumflexsmall&quot;},</span>
+<span class="nc" id="L94">        {0237, &quot;Udieresissmall&quot;},</span>
+<span class="nc" id="L95">        {0235, &quot;Ugravesmall&quot;},</span>
+<span class="nc" id="L96">        {0165, &quot;Usmall&quot;},</span>
+<span class="nc" id="L97">        {0166, &quot;Vsmall&quot;},</span>
+<span class="nc" id="L98">        {0167, &quot;Wsmall&quot;},</span>
+<span class="nc" id="L99">        {0170, &quot;Xsmall&quot;},</span>
+<span class="nc" id="L100">        {0264, &quot;Yacutesmall&quot;},</span>
+<span class="nc" id="L101">        {0330, &quot;Ydieresissmall&quot;},</span>
+<span class="nc" id="L102">        {0171, &quot;Ysmall&quot;},</span>
+<span class="nc" id="L103">        {0275, &quot;Zcaronsmall&quot;},</span>
+<span class="nc" id="L104">        {0172, &quot;Zsmall&quot;},</span>
+<span class="nc" id="L105">        {046, &quot;ampersandsmall&quot;},</span>
+<span class="nc" id="L106">        {0201, &quot;asuperior&quot;},</span>
+<span class="nc" id="L107">        {0365, &quot;bsuperior&quot;},</span>
+<span class="nc" id="L108">        {0251, &quot;centinferior&quot;},</span>
+<span class="nc" id="L109">        {043, &quot;centoldstyle&quot;},</span>
+<span class="nc" id="L110">        {0202, &quot;centsuperior&quot;},</span>
+<span class="nc" id="L111">        {072, &quot;colon&quot;},</span>
+<span class="nc" id="L112">        {0173, &quot;colonmonetary&quot;},</span>
+<span class="nc" id="L113">        {054, &quot;comma&quot;},</span>
+<span class="nc" id="L114">        {0262, &quot;commainferior&quot;},</span>
+<span class="nc" id="L115">        {0370, &quot;commasuperior&quot;},</span>
+<span class="nc" id="L116">        {0266, &quot;dollarinferior&quot;},</span>
+<span class="nc" id="L117">        {044, &quot;dollaroldstyle&quot;},</span>
+<span class="nc" id="L118">        {045, &quot;dollarsuperior&quot;},</span>
+<span class="nc" id="L119">        {0353, &quot;dsuperior&quot;},</span>
+<span class="nc" id="L120">        {0245, &quot;eightinferior&quot;},</span>
+<span class="nc" id="L121">        {070, &quot;eightoldstyle&quot;},</span>
+<span class="nc" id="L122">        {0241, &quot;eightsuperior&quot;},</span>
+<span class="nc" id="L123">        {0344, &quot;esuperior&quot;},</span>
+<span class="nc" id="L124">        {0326, &quot;exclamdownsmall&quot;},</span>
+<span class="nc" id="L125">        {041, &quot;exclamsmall&quot;},</span>
+<span class="nc" id="L126">        {0126, &quot;ff&quot;},</span>
+<span class="nc" id="L127">        {0131, &quot;ffi&quot;},</span>
+<span class="nc" id="L128">        {0132, &quot;ffl&quot;},</span>
+<span class="nc" id="L129">        {0127, &quot;fi&quot;},</span>
+<span class="nc" id="L130">        {0320, &quot;figuredash&quot;},</span>
+<span class="nc" id="L131">        {0114, &quot;fiveeighths&quot;},</span>
+<span class="nc" id="L132">        {0260, &quot;fiveinferior&quot;},</span>
+<span class="nc" id="L133">        {065, &quot;fiveoldstyle&quot;},</span>
+<span class="nc" id="L134">        {0336, &quot;fivesuperior&quot;},</span>
+<span class="nc" id="L135">        {0130, &quot;fl&quot;},</span>
+<span class="nc" id="L136">        {0242, &quot;fourinferior&quot;},</span>
+<span class="nc" id="L137">        {064, &quot;fouroldstyle&quot;},</span>
+<span class="nc" id="L138">        {0335, &quot;foursuperior&quot;},</span>
+<span class="nc" id="L139">        {057, &quot;fraction&quot;},</span>
+<span class="nc" id="L140">        {055, &quot;hyphen&quot;},</span>
+<span class="nc" id="L141">        {0137, &quot;hypheninferior&quot;},</span>
+<span class="nc" id="L142">        {0321, &quot;hyphensuperior&quot;},</span>
+<span class="nc" id="L143">        {0351, &quot;isuperior&quot;},</span>
+<span class="nc" id="L144">        {0361, &quot;lsuperior&quot;},</span>
+<span class="nc" id="L145">        {0367, &quot;msuperior&quot;},</span>
+<span class="nc" id="L146">        {0273, &quot;nineinferior&quot;},</span>
+<span class="nc" id="L147">        {071, &quot;nineoldstyle&quot;},</span>
+<span class="nc" id="L148">        {0341, &quot;ninesuperior&quot;},</span>
+<span class="nc" id="L149">        {0366, &quot;nsuperior&quot;},</span>
+<span class="nc" id="L150">        {053, &quot;onedotenleader&quot;},</span>
+<span class="nc" id="L151">        {0112, &quot;oneeighth&quot;},</span>
+<span class="nc" id="L152">        {0174, &quot;onefitted&quot;},</span>
+<span class="nc" id="L153">        {0110, &quot;onehalf&quot;},</span>
+<span class="nc" id="L154">        {0301, &quot;oneinferior&quot;},</span>
+<span class="nc" id="L155">        {061, &quot;oneoldstyle&quot;},</span>
+<span class="nc" id="L156">        {0107, &quot;onequarter&quot;},</span>
+<span class="nc" id="L157">        {0332, &quot;onesuperior&quot;},</span>
+<span class="nc" id="L158">        {0116, &quot;onethird&quot;},</span>
+<span class="nc" id="L159">        {0257, &quot;osuperior&quot;},</span>
+<span class="nc" id="L160">        {0133, &quot;parenleftinferior&quot;},</span>
+<span class="nc" id="L161">        {050, &quot;parenleftsuperior&quot;},</span>
+<span class="nc" id="L162">        {0135, &quot;parenrightinferior&quot;},</span>
+<span class="nc" id="L163">        {051, &quot;parenrightsuperior&quot;},</span>
+<span class="nc" id="L164">        {056, &quot;period&quot;},</span>
+<span class="nc" id="L165">        {0263, &quot;periodinferior&quot;},</span>
+<span class="nc" id="L166">        {0371, &quot;periodsuperior&quot;},</span>
+<span class="nc" id="L167">        {0300, &quot;questiondownsmall&quot;},</span>
+<span class="nc" id="L168">        {077, &quot;questionsmall&quot;},</span>
+<span class="nc" id="L169">        {0345, &quot;rsuperior&quot;},</span>
+<span class="nc" id="L170">        {0175, &quot;rupiah&quot;},</span>
+<span class="nc" id="L171">        {073, &quot;semicolon&quot;},</span>
+<span class="nc" id="L172">        {0115, &quot;seveneighths&quot;},</span>
+<span class="nc" id="L173">        {0246, &quot;seveninferior&quot;},</span>
+<span class="nc" id="L174">        {067, &quot;sevenoldstyle&quot;},</span>
+<span class="nc" id="L175">        {0340, &quot;sevensuperior&quot;},</span>
+<span class="nc" id="L176">        {0244, &quot;sixinferior&quot;},</span>
+<span class="nc" id="L177">        {066, &quot;sixoldstyle&quot;},</span>
+<span class="nc" id="L178">        {0337, &quot;sixsuperior&quot;},</span>
+<span class="nc" id="L179">        {040, &quot;space&quot;},</span>
+<span class="nc" id="L180">        {0352, &quot;ssuperior&quot;},</span>
+<span class="nc" id="L181">        {0113, &quot;threeeighths&quot;},</span>
+<span class="nc" id="L182">        {0243, &quot;threeinferior&quot;},</span>
+<span class="nc" id="L183">        {063, &quot;threeoldstyle&quot;},</span>
+<span class="nc" id="L184">        {0111, &quot;threequarters&quot;},</span>
+<span class="nc" id="L185">        {075, &quot;threequartersemdash&quot;},</span>
+<span class="nc" id="L186">        {0334, &quot;threesuperior&quot;},</span>
+<span class="nc" id="L187">        {0346, &quot;tsuperior&quot;},</span>
+<span class="nc" id="L188">        {052, &quot;twodotenleader&quot;},</span>
+<span class="nc" id="L189">        {0252, &quot;twoinferior&quot;},</span>
+<span class="nc" id="L190">        {062, &quot;twooldstyle&quot;},</span>
+<span class="nc" id="L191">        {0333, &quot;twosuperior&quot;},</span>
+<span class="nc" id="L192">        {0117, &quot;twothirds&quot;},</span>
+<span class="nc" id="L193">        {0274, &quot;zeroinferior&quot;},</span>
+<span class="nc" id="L194">        {060, &quot;zerooldstyle&quot;},</span>
+<span class="nc" id="L195">        {0342, &quot;zerosuperior&quot;}</span>
+    };
+    
+    /**
+     * Singleton instance of this class.
+     */
+<span class="nc" id="L201">    public static final MacExpertEncoding INSTANCE = new MacExpertEncoding();</span>
+
+    /**
+     * Constructor.
+     */
+    public MacExpertEncoding()
+<span class="nc" id="L207">    {</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">        for (Object[] encodingEntry : MAC_EXPERT_ENCODING_TABLE)</span>
+        {
+<span class="nc" id="L210">            add((Integer) encodingEntry[CHAR_CODE], encodingEntry[CHAR_NAME].toString());</span>
+        }
+<span class="nc" id="L212">    }</span>
+    
+    @Override
+    public COSBase getCOSObject()
+    {
+<span class="nc" id="L217">        return COSName.MAC_EXPERT_ENCODING;</span>
+    }
+
+    @Override
+    public String getEncodingName()
+    {
+<span class="nc" id="L223">        return &quot;MacExpertEncoding&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

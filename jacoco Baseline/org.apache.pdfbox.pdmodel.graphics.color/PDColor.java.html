@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDColor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.color</a> &gt; <span class="el_source">PDColor.java</span></div><h1>PDColor.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.color;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+
+import java.io.IOException;
+import java.util.Arrays;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSBase;
+
+/**
+ * A color value, consisting of one or more color components, or for pattern color spaces,
+ * a name and optional color components.
+ * Color values are not associated with any given color space.
+ *
+ * Instances of PDColor are immutable.
+ *
+ * @author John Hewson
+ */
+public final class PDColor
+{
+<span class="fc" id="L40">    private static final Logger LOG = LogManager.getLogger(PDColor.class);</span>
+
+    private final float[] components;
+    private final COSName patternName;
+    private final PDColorSpace colorSpace;
+
+    /**
+     * Creates a PDColor containing the given color value.
+     * @param array a COS array containing the color value
+     * @param colorSpace color space in which the color value is defined
+     */
+    public PDColor(COSArray array, PDColorSpace colorSpace)
+<span class="nc" id="L52">    {</span>
+<span class="nc bnc" id="L53" title="All 4 branches missed.">        if (!array.isEmpty() &amp;&amp; array.get(array.size() - 1) instanceof COSName)</span>
+        {
+            // color components (optional), for the color of an uncoloured tiling pattern
+<span class="nc" id="L56">            components = new float[array.size() - 1];</span>
+<span class="nc" id="L57">            initComponents(array);</span>
+
+            // pattern name (required)
+<span class="nc" id="L60">            COSBase base = array.get(array.size() - 1);</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">            if (base instanceof COSName)</span>
+            {
+<span class="nc" id="L63">                patternName = (COSName) base;</span>
+            }
+            else
+            {
+<span class="nc" id="L67">                LOG.warn(&quot;pattern name in {} isn't a name, ignored&quot;, array);</span>
+<span class="nc" id="L68">                patternName = COSName.getPDFName(&quot;Unknown&quot;);</span>
+            }
+<span class="nc" id="L70">        }</span>
+        else
+        {
+            // color components only
+<span class="nc" id="L74">            components = new float[array.size()];</span>
+<span class="nc" id="L75">            initComponents(array);</span>
+<span class="nc" id="L76">            patternName = null;</span>
+        }
+<span class="nc" id="L78">        this.colorSpace = colorSpace;</span>
+<span class="nc" id="L79">    }</span>
+
+    private void initComponents(COSArray array)
+    {
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        for (int i = 0; i &lt; components.length; i++)</span>
+        {
+<span class="nc" id="L85">            COSBase base = array.get(i);</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            if (base instanceof COSNumber)</span>
+            {
+<span class="nc" id="L88">                components[i] = ((COSNumber) base).floatValue();</span>
+            }
+            else
+            {
+<span class="nc" id="L92">                LOG.warn(&quot;color component {} in {} isn't a number, ignored&quot;, i, array);</span>
+            }
+        }
+<span class="nc" id="L95">    }</span>
+
+    /**
+     * Creates a PDColor containing the given color component values.
+     * @param components array of color component values
+     * @param colorSpace color space in which the components are defined
+     */
+    public PDColor(float[] components, PDColorSpace colorSpace)
+<span class="fc" id="L103">    {</span>
+<span class="fc" id="L104">        this.components = components.clone();</span>
+<span class="fc" id="L105">        this.patternName = null;</span>
+<span class="fc" id="L106">        this.colorSpace = colorSpace;</span>
+<span class="pc bpc" id="L107" title="2 of 4 branches missed.">        if (colorSpace != null &amp;&amp; colorSpace.getNumberOfComponents() != components.length)</span>
+        {
+            // PDFBOX-5882
+<span class="nc" id="L110">            LOG.warn(&quot;Colorspace component count {} doesn't match components length {}&quot;,</span>
+<span class="nc" id="L111">                    colorSpace.getNumberOfComponents(),</span>
+<span class="nc" id="L112">                    components.length);</span>
+        }
+<span class="fc" id="L114">    }</span>
+
+    /**
+     * Creates a PDColor containing the given pattern name.
+     * @param patternName the name of a pattern in a pattern dictionary
+     * @param colorSpace color space in which the pattern is defined
+     */
+    public PDColor(COSName patternName, PDColorSpace colorSpace)
+<span class="nc" id="L122">    {</span>
+<span class="nc" id="L123">        this.components = new float[0];</span>
+<span class="nc" id="L124">        this.patternName = patternName;</span>
+<span class="nc" id="L125">        this.colorSpace = colorSpace;</span>
+<span class="nc" id="L126">    }</span>
+
+    /**
+     * Creates a PDColor containing the given color component values and pattern name.
+     * @param components array of color component values
+     * @param patternName the name of a pattern in a pattern dictionary
+     * @param colorSpace color space in which the pattern/components are defined
+     */
+    public PDColor(float[] components, COSName patternName, PDColorSpace colorSpace)
+<span class="nc" id="L135">    {</span>
+<span class="nc" id="L136">        this.components = components.clone();</span>
+<span class="nc" id="L137">        this.patternName = patternName;</span>
+<span class="nc" id="L138">        this.colorSpace = colorSpace;</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">        if (colorSpace instanceof PDPattern)</span>
+        {
+<span class="nc" id="L141">            PDColorSpace ucs = ((PDPattern) colorSpace).getUnderlyingColorSpace();</span>
+<span class="nc bnc" id="L142" title="All 4 branches missed.">            if (ucs != null &amp;&amp; ucs.getNumberOfComponents() != components.length)</span>
+            {
+                // PDFBOX-5882
+<span class="nc" id="L145">                LOG.warn(&quot;Pattern colorspace component count {} doesn't match components length {}&quot;,</span>
+<span class="nc" id="L146">                        ucs.getNumberOfComponents(), components.length);</span>
+            }
+        }
+<span class="nc" id="L149">    }</span>
+
+    /**
+     * Returns the components of this color value.
+     * @return the components of this color value, never null.
+     */
+    public float[] getComponents()
+    {
+<span class="nc bnc" id="L157" title="All 4 branches missed.">        if (colorSpace instanceof PDPattern || colorSpace == null)</span>
+        {
+            // colorspace of the pattern color isn't known, so just clone
+            // null colorspace can happen with empty annotation color
+            // see PDFBOX-3351-538928-p4.pdf
+<span class="nc" id="L162">            return components.clone();</span>
+        }
+        // PDFBOX-4279: copyOf instead of clone in case array is too small
+<span class="nc" id="L165">        return Arrays.copyOf(components, colorSpace.getNumberOfComponents());</span>
+    }
+
+    /**
+     * Returns the pattern name from this color value.
+     * @return the pattern name from this color value
+     */
+    public COSName getPatternName()
+    {
+<span class="nc" id="L174">        return patternName;</span>
+    }
+
+    /**
+     * Returns true if this color value is a pattern.
+     * @return true if this color value is a pattern
+     */
+    public boolean isPattern()
+    {
+<span class="nc bnc" id="L183" title="All 2 branches missed.">        return patternName != null;</span>
+    }
+
+    /**
+     * Returns the packed RGB value for this color, if any.
+     * @return RGB
+     * @throws IOException if the color conversion fails
+     * @throws UnsupportedOperationException if this color value is a pattern.
+     */
+    public int toRGB() throws IOException
+    {
+<span class="nc" id="L194">        float[] floats = colorSpace.toRGB(components);</span>
+<span class="nc" id="L195">        int r = Math.round(floats[0] * 255);</span>
+<span class="nc" id="L196">        int g = Math.round(floats[1] * 255);</span>
+<span class="nc" id="L197">        int b = Math.round(floats[2] * 255);</span>
+<span class="nc" id="L198">        int rgb = r;</span>
+<span class="nc" id="L199">        rgb = (rgb &lt;&lt; 8) + g;</span>
+<span class="nc" id="L200">        rgb = (rgb &lt;&lt; 8) + b;</span>
+<span class="nc" id="L201">        return rgb;</span>
+    }
+
+    /**
+     * Returns the color component values as a COS array
+     * @return the color component values as a COS array
+     */
+    public COSArray toCOSArray()
+    {
+<span class="nc" id="L210">        COSArray array = COSArray.of(components);</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">        if (patternName != null)</span>
+        {
+<span class="nc" id="L213">            array.add(patternName);</span>
+        }
+<span class="nc" id="L215">        return array;</span>
+    }
+
+    /**
+     * Returns the color space in which this color value is defined.
+     * 
+     * @return the color space in which this color value is defined
+     */
+    public PDColorSpace getColorSpace()
+    {
+<span class="nc" id="L225">        return colorSpace;</span>
+    }
+
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L231">        return &quot;PDColor{components=&quot; + Arrays.toString(components) + &quot;, patternName=&quot; + patternName + &quot;, colorSpace=&quot; + colorSpace + '}';</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

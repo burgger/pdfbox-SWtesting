@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EndstreamFilterStream.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdfparser</a> &gt; <span class="el_source">EndstreamFilterStream.java</span></div><h1>EndstreamFilterStream.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2014 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdfparser;
+
+
+/**
+ * This class is only for the readUntilEndStream method, to prevent a final CR LF or LF (but not a final CR!) from being
+ * written to the output, unless the beginning of the stream is assumed to be ASCII. This solves PDFBOX-2079 and
+ * PDFBOX-2120 and avoids making readUntilEndStream() even more complex than it already is.
+ *
+ * @author Tilman Hausherr
+ */
+<span class="nc" id="L27">class EndstreamFilterStream</span>
+{
+<span class="nc" id="L29">    private boolean hasCR = false;</span>
+<span class="nc" id="L30">    private boolean hasLF = false;</span>
+<span class="nc" id="L31">    private int pos = 0;</span>
+<span class="nc" id="L32">    private boolean mustFilter = true;</span>
+<span class="nc" id="L33">    private long length = 0;</span>
+
+    /**
+     * Write CR and/or LF that were kept, then writes len bytes from the 
+     * specified byte array starting at offset off to this output stream,
+     * except trailing CR, CR LF, or LF. No filtering will be done for the
+     * entire stream if the beginning is assumed to be ASCII.
+     * @param b byte array.
+     * @param off offset.
+     * @param len length of segment to write.
+     */
+    public void filter(byte[] b, int off, int len)
+    {
+<span class="nc bnc" id="L46" title="All 4 branches missed.">        if (pos == 0 &amp;&amp; len &gt; 10)</span>
+        {
+            // PDFBOX-2120 Don't filter if ASCII, i.e. keep a final CR LF or LF
+<span class="nc" id="L49">            mustFilter = false;</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">            for (int i = 0; i &lt; 10; ++i)</span>
+            {
+                // Heuristic approach, taken from PDFStreamParser, PDFBOX-1164
+<span class="nc bnc" id="L53" title="All 8 branches missed.">                if ((b[i] &lt; 0x09) || ((b[i] &gt; 0x0a) &amp;&amp; (b[i] &lt; 0x20) &amp;&amp; (b[i] != 0x0d)))</span>
+                {
+                    // control character or &gt; 0x7f -&gt; we have binary data
+<span class="nc" id="L56">                    mustFilter = true;</span>
+<span class="nc" id="L57">                    break;</span>
+                }
+            }
+        }
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (mustFilter)</span>
+        {
+            // first write what we kept last time
+<span class="nc bnc" id="L64" title="All 2 branches missed.">            if (hasCR)</span>
+            {
+                // previous buffer ended with CR
+<span class="nc" id="L67">                hasCR = false;</span>
+<span class="nc bnc" id="L68" title="All 6 branches missed.">                if (!hasLF &amp;&amp; len == 1 &amp;&amp; b[off] == '\n')</span>
+                {
+                    // actual buffer contains only LF so it will be the last one
+                    // =&gt; we're done
+                    // reset hasCR done too to avoid CR getting written in the flush
+<span class="nc" id="L73">                    return;</span>
+                }
+<span class="nc" id="L75">                length++;</span>
+            }
+<span class="nc bnc" id="L77" title="All 2 branches missed.">            if (hasLF)</span>
+            {
+<span class="nc" id="L79">                length++;</span>
+<span class="nc" id="L80">                hasLF = false;</span>
+            }
+            // don't write CR, LF, or CR LF if at the end of the buffer
+<span class="nc bnc" id="L83" title="All 2 branches missed.">            if (len &gt; 0)</span>
+            {
+<span class="nc bnc" id="L85" title="All 2 branches missed.">                if (b[off + len - 1] == '\r')</span>
+                {
+<span class="nc" id="L87">                    hasCR = true;</span>
+<span class="nc" id="L88">                    --len;</span>
+                }
+<span class="nc bnc" id="L90" title="All 2 branches missed.">                else if (b[off + len - 1] == '\n')</span>
+                {
+<span class="nc" id="L92">                    hasLF = true;</span>
+<span class="nc" id="L93">                    --len;</span>
+<span class="nc bnc" id="L94" title="All 4 branches missed.">                    if (len &gt; 0 &amp;&amp; b[off + len - 1] == '\r')</span>
+                    {
+<span class="nc" id="L96">                        hasCR = true;</span>
+<span class="nc" id="L97">                        --len;</span>
+                    }
+                }
+            }
+        }
+<span class="nc" id="L102">        length += len;</span>
+<span class="nc" id="L103">        pos += len;</span>
+<span class="nc" id="L104">    }</span>
+
+    /**
+     * write out a single CR if one was kept. Don't write kept CR LF or LF, 
+     * and then call the base method to flush.
+     * 
+     */
+    public long calculateLength()
+    {
+        // if there is only a CR and no LF, write it
+<span class="nc bnc" id="L114" title="All 4 branches missed.">        if (hasCR &amp;&amp; !hasLF)</span>
+        {
+<span class="nc" id="L116">            length++;</span>
+<span class="nc" id="L117">            ++pos;</span>
+        }
+<span class="nc" id="L119">        hasCR = false;</span>
+<span class="nc" id="L120">        hasLF = false;</span>
+<span class="nc" id="L121">        return length;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
