@@ -54,23 +54,23 @@ public class PDFunctionType2 extends PDFunction
      */
     public PDFunctionType2(COSBase function)
     {
-<span class="nc" id="L57">        super(function);</span>
+<span class="fc" id="L57">        super(function);</span>
 
-<span class="nc" id="L59">        COSDictionary cosObject = getCOSObject();</span>
-<span class="nc" id="L60">        c0 = Objects.requireNonNullElseGet(cosObject.getCOSArray(COSName.C0), COSArray::new);</span>
-<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (c0.isEmpty())</span>
+<span class="fc" id="L59">        COSDictionary cosObject = getCOSObject();</span>
+<span class="fc" id="L60">        c0 = Objects.requireNonNullElseGet(cosObject.getCOSArray(COSName.C0), COSArray::new);</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        if (c0.isEmpty())</span>
         {
 <span class="nc" id="L63">            c0.add(COSFloat.ZERO);</span>
         }
 
-<span class="nc" id="L66">        c1 = Objects.requireNonNullElseGet(cosObject.getCOSArray(COSName.C1), COSArray::new);</span>
-<span class="nc bnc" id="L67" title="All 2 branches missed.">        if (c1.isEmpty())</span>
+<span class="fc" id="L66">        c1 = Objects.requireNonNullElseGet(cosObject.getCOSArray(COSName.C1), COSArray::new);</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">        if (c1.isEmpty())</span>
         {
 <span class="nc" id="L69">            c1.add(COSFloat.ONE);</span>
         }
 
-<span class="nc" id="L72">        exponent = getCOSObject().getFloat(COSName.N);</span>
-<span class="nc" id="L73">    }</span>
+<span class="fc" id="L72">        exponent = getCOSObject().getFloat(COSName.N);</span>
+<span class="fc" id="L73">    }</span>
 
     /**
      * {@inheritDoc}
@@ -90,17 +90,17 @@ public class PDFunctionType2 extends PDFunction
     public float[] eval(float[] input) throws IOException
     {
         // exponential interpolation
-<span class="nc" id="L93">        float xToN = (float) Math.pow(input[0], exponent); // x^exponent</span>
+<span class="fc" id="L93">        float xToN = (float) Math.pow(input[0], exponent); // x^exponent</span>
 
-<span class="nc" id="L95">        float[] result = new float[Math.min(c0.size(), c1.size())];</span>
-<span class="nc bnc" id="L96" title="All 2 branches missed.">        for (int j = 0; j &lt; result.length; j++)</span>
+<span class="fc" id="L95">        float[] result = new float[Math.min(c0.size(), c1.size())];</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        for (int j = 0; j &lt; result.length; j++)</span>
         {
-<span class="nc" id="L98">            float c0j = ((COSNumber) c0.get(j)).floatValue();</span>
-<span class="nc" id="L99">            float c1j = ((COSNumber) c1.get(j)).floatValue();</span>
-<span class="nc" id="L100">            result[j] = c0j + xToN * (c1j - c0j);</span>
+<span class="fc" id="L98">            float c0j = ((COSNumber) c0.get(j)).floatValue();</span>
+<span class="fc" id="L99">            float c1j = ((COSNumber) c1.get(j)).floatValue();</span>
+<span class="fc" id="L100">            result[j] = c0j + xToN * (c1j - c0j);</span>
         }
 
-<span class="nc" id="L103">        return clipToRange(result);</span>
+<span class="fc" id="L103">        return clipToRange(result);</span>
     }
 
     /**

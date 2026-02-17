@@ -41,7 +41,7 @@ import org.apache.pdfbox.cos.COSString;
  */
 public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements COSObjectable
 {
-<span class="nc" id="L44">    private static final Logger LOG = LogManager.getLogger(PDNameTreeNode.class);</span>
+<span class="fc" id="L44">    private static final Logger LOG = LogManager.getLogger(PDNameTreeNode.class);</span>
     
     private final COSDictionary node;
     private PDNameTreeNode&lt;T&gt; parent;
@@ -50,9 +50,9 @@ public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements C
      * Constructor.
      */
     protected PDNameTreeNode()
-<span class="nc" id="L53">    {</span>
-<span class="nc" id="L54">        node = new COSDictionary();</span>
-<span class="nc" id="L55">    }</span>
+<span class="fc" id="L53">    {</span>
+<span class="fc" id="L54">        node = new COSDictionary();</span>
+<span class="fc" id="L55">    }</span>
 
     /**
      * Constructor.
@@ -60,9 +60,9 @@ public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements C
      * @param dict The dictionary that holds the name information.
      */
     protected PDNameTreeNode( COSDictionary dict )
-<span class="nc" id="L63">    {</span>
-<span class="nc" id="L64">        node = dict;</span>
-<span class="nc" id="L65">    }</span>
+<span class="fc" id="L63">    {</span>
+<span class="fc" id="L64">        node = dict;</span>
+<span class="fc" id="L65">    }</span>
 
     /**
      * Convert this standard java object to a COS object.
@@ -72,7 +72,7 @@ public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements C
     @Override
     public COSDictionary getCOSObject()
     {
-<span class="nc" id="L75">        return node;</span>
+<span class="fc" id="L75">        return node;</span>
     }
 
     /**
@@ -92,9 +92,9 @@ public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements C
      */
     public void setParent(PDNameTreeNode&lt;T&gt; parentNode)
     {
-<span class="nc" id="L95">        parent = parentNode;</span>
-<span class="nc" id="L96">        calculateLimits();</span>
-<span class="nc" id="L97">    }</span>
+<span class="fc" id="L95">        parent = parentNode;</span>
+<span class="fc" id="L96">        calculateLimits();</span>
+<span class="fc" id="L97">    }</span>
     
     /**
      * Determines if this is a root node or not.
@@ -103,7 +103,7 @@ public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements C
      */
     public boolean isRootNode()
     {
-<span class="nc bnc" id="L106" title="All 2 branches missed.">        return parent == null;</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        return parent == null;</span>
     }
     
     /**
@@ -113,30 +113,30 @@ public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements C
      */
     public List&lt;PDNameTreeNode&lt;T&gt;&gt; getKids()
     {
-<span class="nc" id="L116">        List&lt;PDNameTreeNode&lt;T&gt;&gt; retval = null;</span>
-<span class="nc" id="L117">        COSArray kids = node.getCOSArray(COSName.KIDS);</span>
-<span class="nc bnc" id="L118" title="All 2 branches missed.">        if( kids != null )</span>
+<span class="fc" id="L116">        List&lt;PDNameTreeNode&lt;T&gt;&gt; retval = null;</span>
+<span class="fc" id="L117">        COSArray kids = node.getCOSArray(COSName.KIDS);</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if( kids != null )</span>
         {
-<span class="nc" id="L120">            List&lt;PDNameTreeNode&lt;T&gt;&gt; pdObjects = new ArrayList&lt;&gt;(kids.size());</span>
-<span class="nc bnc" id="L121" title="All 2 branches missed.">            for( int i=0; i&lt;kids.size(); i++ )</span>
+<span class="fc" id="L120">            List&lt;PDNameTreeNode&lt;T&gt;&gt; pdObjects = new ArrayList&lt;&gt;(kids.size());</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">            for( int i=0; i&lt;kids.size(); i++ )</span>
             {
-<span class="nc" id="L123">                COSBase base = kids.getObject(i);</span>
+<span class="fc" id="L123">                COSBase base = kids.getObject(i);</span>
                 PDNameTreeNode&lt;T&gt; childNode;
-<span class="nc bnc" id="L125" title="All 2 branches missed.">                if (base instanceof COSDictionary)</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">                if (base instanceof COSDictionary)</span>
                 {
-<span class="nc" id="L127">                    childNode = createChildNode((COSDictionary) base);</span>
+<span class="fc" id="L127">                    childNode = createChildNode((COSDictionary) base);</span>
                 }
                 else
                 {
 <span class="nc" id="L131">                    LOG.warn(&quot;Bad child node at position {}&quot;, i);</span>
 <span class="nc" id="L132">                    childNode = createChildNode(new COSDictionary());</span>
                 }
-<span class="nc" id="L134">                pdObjects.add(childNode);</span>
+<span class="fc" id="L134">                pdObjects.add(childNode);</span>
             }
-<span class="nc" id="L136">            retval = new COSArrayList&lt;&gt;(pdObjects, kids);</span>
+<span class="fc" id="L136">            retval = new COSArrayList&lt;&gt;(pdObjects, kids);</span>
         }
 
-<span class="nc" id="L139">        return retval;</span>
+<span class="fc" id="L139">        return retval;</span>
     }
 
     /**
@@ -148,14 +148,14 @@ public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements C
      */
     public void setKids( List&lt;? extends PDNameTreeNode&lt;T&gt;&gt; kids )
     {
-<span class="nc bnc" id="L151" title="All 4 branches missed.">        if (kids != null &amp;&amp; !kids.isEmpty())</span>
+<span class="pc bpc" id="L151" title="2 of 4 branches missed.">        if (kids != null &amp;&amp; !kids.isEmpty())</span>
         {
-<span class="nc" id="L153">            kids.forEach(kidsNode -&gt; kidsNode.setParent(this));</span>
-<span class="nc" id="L154">            node.setItem(COSName.KIDS, new COSArray(kids));</span>
+<span class="fc" id="L153">            kids.forEach(kidsNode -&gt; kidsNode.setParent(this));</span>
+<span class="fc" id="L154">            node.setItem(COSName.KIDS, new COSArray(kids));</span>
             // root nodes with kids don't have Names
-<span class="nc bnc" id="L156" title="All 2 branches missed.">            if (isRootNode())</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">            if (isRootNode())</span>
             {
-<span class="nc" id="L158">                node.setItem(COSName.NAMES, null);</span>
+<span class="fc" id="L158">                node.setItem(COSName.NAMES, null);</span>
             }
         }
         else 
@@ -165,41 +165,41 @@ public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements C
             // remove Limits 
 <span class="nc" id="L166">            node.setItem(COSName.LIMITS, null);</span>
         }
-<span class="nc" id="L168">        calculateLimits();</span>
-<span class="nc" id="L169">    }</span>
+<span class="fc" id="L168">        calculateLimits();</span>
+<span class="fc" id="L169">    }</span>
 
     private void calculateLimits()
     {
-<span class="nc bnc" id="L173" title="All 2 branches missed.">        if (isRootNode())</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        if (isRootNode())</span>
         {
-<span class="nc" id="L175">            node.setItem(COSName.LIMITS, null);</span>
+<span class="fc" id="L175">            node.setItem(COSName.LIMITS, null);</span>
         }
         else
         {
-<span class="nc" id="L179">            List&lt;PDNameTreeNode&lt;T&gt;&gt; kids = getKids();</span>
-<span class="nc bnc" id="L180" title="All 4 branches missed.">            if (kids != null &amp;&amp; !kids.isEmpty())</span>
+<span class="fc" id="L179">            List&lt;PDNameTreeNode&lt;T&gt;&gt; kids = getKids();</span>
+<span class="pc bpc" id="L180" title="1 of 4 branches missed.">            if (kids != null &amp;&amp; !kids.isEmpty())</span>
             {
-<span class="nc" id="L182">                PDNameTreeNode&lt;T&gt; firstKid = kids.get(0);</span>
-<span class="nc" id="L183">                PDNameTreeNode&lt;T&gt; lastKid = kids.get(kids.size() - 1);</span>
-<span class="nc" id="L184">                String lowerLimit = firstKid.getLowerLimit();</span>
-<span class="nc" id="L185">                setLowerLimit(lowerLimit);</span>
-<span class="nc" id="L186">                String upperLimit = lastKid.getUpperLimit();</span>
-<span class="nc" id="L187">                setUpperLimit(upperLimit);</span>
-<span class="nc" id="L188">            }</span>
+<span class="fc" id="L182">                PDNameTreeNode&lt;T&gt; firstKid = kids.get(0);</span>
+<span class="fc" id="L183">                PDNameTreeNode&lt;T&gt; lastKid = kids.get(kids.size() - 1);</span>
+<span class="fc" id="L184">                String lowerLimit = firstKid.getLowerLimit();</span>
+<span class="fc" id="L185">                setLowerLimit(lowerLimit);</span>
+<span class="fc" id="L186">                String upperLimit = lastKid.getUpperLimit();</span>
+<span class="fc" id="L187">                setUpperLimit(upperLimit);</span>
+<span class="fc" id="L188">            }</span>
             else
             {
                 try 
                 {
-<span class="nc" id="L193">                    Map&lt;String, T&gt; names = getNames();</span>
-<span class="nc bnc" id="L194" title="All 4 branches missed.">                    if (names != null &amp;&amp; !names.isEmpty())</span>
+<span class="fc" id="L193">                    Map&lt;String, T&gt; names = getNames();</span>
+<span class="pc bpc" id="L194" title="2 of 4 branches missed.">                    if (names != null &amp;&amp; !names.isEmpty())</span>
                     {
-<span class="nc" id="L196">                        Set&lt;String&gt; strings = names.keySet();</span>
-<span class="nc" id="L197">                        String[] keys = strings.toArray(String[]::new);</span>
-<span class="nc" id="L198">                        String lowerLimit = keys[0];</span>
-<span class="nc" id="L199">                        setLowerLimit(lowerLimit);</span>
-<span class="nc" id="L200">                        String upperLimit = keys[keys.length-1];</span>
-<span class="nc" id="L201">                        setUpperLimit(upperLimit);</span>
-<span class="nc" id="L202">                    }</span>
+<span class="fc" id="L196">                        Set&lt;String&gt; strings = names.keySet();</span>
+<span class="fc" id="L197">                        String[] keys = strings.toArray(String[]::new);</span>
+<span class="fc" id="L198">                        String lowerLimit = keys[0];</span>
+<span class="fc" id="L199">                        setLowerLimit(lowerLimit);</span>
+<span class="fc" id="L200">                        String upperLimit = keys[keys.length-1];</span>
+<span class="fc" id="L201">                        setUpperLimit(upperLimit);</span>
+<span class="fc" id="L202">                    }</span>
                     else
                     {
 <span class="nc" id="L205">                        node.setItem(COSName.LIMITS, null);</span>
@@ -209,10 +209,10 @@ public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements C
                 {
 <span class="nc" id="L210">                    node.setItem(COSName.LIMITS, null);</span>
 <span class="nc" id="L211">                    LOG.error(&quot;Error while calculating the Limits of a PageNameTreeNode:&quot;, exception);</span>
-<span class="nc" id="L212">                }</span>
+<span class="fc" id="L212">                }</span>
             }
         }
-<span class="nc" id="L215">    }</span>
+<span class="fc" id="L215">    }</span>
     
     /**
      * The name to retrieve.
@@ -223,10 +223,10 @@ public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements C
      */
     public T getValue( String name ) throws IOException
     {
-<span class="nc" id="L226">        Map&lt;String, T&gt; names = getNames();</span>
-<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (names != null)</span>
+<span class="fc" id="L226">        Map&lt;String, T&gt; names = getNames();</span>
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">        if (names != null)</span>
         {
-<span class="nc" id="L229">            return names.get(name);</span>
+<span class="fc" id="L229">            return names.get(name);</span>
         }
 <span class="nc" id="L231">        List&lt;PDNameTreeNode&lt;T&gt;&gt; kids = getKids();</span>
 <span class="nc bnc" id="L232" title="All 2 branches missed.">        if (kids != null)</span>
@@ -263,31 +263,31 @@ public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements C
      */
     public Map&lt;String, T&gt; getNames() throws IOException
     {
-<span class="nc" id="L266">        COSArray namesArray = node.getCOSArray(COSName.NAMES);</span>
-<span class="nc bnc" id="L267" title="All 2 branches missed.">        if( namesArray != null )</span>
+<span class="fc" id="L266">        COSArray namesArray = node.getCOSArray(COSName.NAMES);</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">        if( namesArray != null )</span>
         {
-<span class="nc" id="L269">            int size = namesArray.size();</span>
-<span class="nc" id="L270">            Map&lt;String, T&gt; names = new LinkedHashMap&lt;&gt;(size);</span>
-<span class="nc bnc" id="L271" title="All 2 branches missed.">            if (namesArray.size() % 2 != 0)</span>
+<span class="fc" id="L269">            int size = namesArray.size();</span>
+<span class="fc" id="L270">            Map&lt;String, T&gt; names = new LinkedHashMap&lt;&gt;(size);</span>
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">            if (namesArray.size() % 2 != 0)</span>
             {
 <span class="nc" id="L273">                LOG.warn(&quot;Names array has odd size: {}&quot;, size);</span>
             }
-<span class="nc bnc" id="L275" title="All 2 branches missed.">            for (int i = 0; i + 1 &lt; size; i += 2)</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">            for (int i = 0; i + 1 &lt; size; i += 2)</span>
             {
-<span class="nc" id="L277">                COSBase base = namesArray.getObject(i);</span>
-<span class="nc bnc" id="L278" title="All 2 branches missed.">                if (!(base instanceof COSString))</span>
+<span class="fc" id="L277">                COSBase base = namesArray.getObject(i);</span>
+<span class="pc bpc" id="L278" title="1 of 2 branches missed.">                if (!(base instanceof COSString))</span>
                 {
 <span class="nc" id="L280">                    throw new IOException(&quot;Expected string, found &quot; + base + &quot; in name tree at index &quot; + i);</span>
                 }
-<span class="nc" id="L282">                COSString key = (COSString) base;</span>
-<span class="nc" id="L283">                COSBase cosValue = namesArray.getObject( i+1 );</span>
-<span class="nc" id="L284">                names.put( key.getString(), convertCOSToPD(cosValue) );</span>
+<span class="fc" id="L282">                COSString key = (COSString) base;</span>
+<span class="fc" id="L283">                COSBase cosValue = namesArray.getObject( i+1 );</span>
+<span class="fc" id="L284">                names.put( key.getString(), convertCOSToPD(cosValue) );</span>
             }
-<span class="nc" id="L286">            return Collections.unmodifiableMap(names);</span>
+<span class="fc" id="L286">            return Collections.unmodifiableMap(names);</span>
         }
         else
         {
-<span class="nc" id="L290">            return null;</span>
+<span class="fc" id="L290">            return null;</span>
         }
     }
 
@@ -318,25 +318,25 @@ public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements C
      */
     public void setNames( Map&lt;String, T&gt; names )
     {
-<span class="nc bnc" id="L321" title="All 2 branches missed.">        if( names == null )</span>
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">        if( names == null )</span>
         {
 <span class="nc" id="L323">            node.setItem( COSName.NAMES, (COSObjectable)null );</span>
 <span class="nc" id="L324">            node.setItem( COSName.LIMITS, (COSObjectable)null);</span>
         }
         else
         {
-<span class="nc" id="L328">            COSArray array = new COSArray();</span>
-<span class="nc" id="L329">            List&lt;String&gt; keys = new ArrayList&lt;&gt;(names.keySet());</span>
-<span class="nc" id="L330">            Collections.sort(keys);</span>
-<span class="nc bnc" id="L331" title="All 2 branches missed.">            for (String key : keys) </span>
+<span class="fc" id="L328">            COSArray array = new COSArray();</span>
+<span class="fc" id="L329">            List&lt;String&gt; keys = new ArrayList&lt;&gt;(names.keySet());</span>
+<span class="fc" id="L330">            Collections.sort(keys);</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">            for (String key : keys) </span>
             {
-<span class="nc" id="L333">                array.add(new COSString(key));</span>
-<span class="nc" id="L334">                array.add(names.get(key));</span>
-<span class="nc" id="L335">            }</span>
-<span class="nc" id="L336">            node.setItem(COSName.NAMES, array);</span>
-<span class="nc" id="L337">            calculateLimits();</span>
+<span class="fc" id="L333">                array.add(new COSString(key));</span>
+<span class="fc" id="L334">                array.add(names.get(key));</span>
+<span class="fc" id="L335">            }</span>
+<span class="fc" id="L336">            node.setItem(COSName.NAMES, array);</span>
+<span class="fc" id="L337">            calculateLimits();</span>
         }
-<span class="nc" id="L339">    }</span>
+<span class="fc" id="L339">    }</span>
 
     /**
      * Get the highest value for a key in the name map.
@@ -345,13 +345,13 @@ public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements C
      */
     public String getUpperLimit()
     {
-<span class="nc" id="L348">        String retval = null;</span>
-<span class="nc" id="L349">        COSArray arr = node.getCOSArray(COSName.LIMITS);</span>
-<span class="nc bnc" id="L350" title="All 2 branches missed.">        if( arr != null )</span>
+<span class="fc" id="L348">        String retval = null;</span>
+<span class="fc" id="L349">        COSArray arr = node.getCOSArray(COSName.LIMITS);</span>
+<span class="fc bfc" id="L350" title="All 2 branches covered.">        if( arr != null )</span>
         {
-<span class="nc" id="L352">            retval = arr.getString( 1 );</span>
+<span class="fc" id="L352">            retval = arr.getString( 1 );</span>
         }
-<span class="nc" id="L354">        return retval;</span>
+<span class="fc" id="L354">        return retval;</span>
     }
 
     /**
@@ -361,16 +361,16 @@ public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements C
      */
     private void setUpperLimit( String upper )
     {
-<span class="nc" id="L364">        COSArray arr = node.getCOSArray(COSName.LIMITS);</span>
-<span class="nc bnc" id="L365" title="All 2 branches missed.">        if( arr == null )</span>
+<span class="fc" id="L364">        COSArray arr = node.getCOSArray(COSName.LIMITS);</span>
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">        if( arr == null )</span>
         {
 <span class="nc" id="L367">            arr = new COSArray();</span>
 <span class="nc" id="L368">            arr.add( null );</span>
 <span class="nc" id="L369">            arr.add( null );</span>
 <span class="nc" id="L370">            node.setItem(COSName.LIMITS, arr);</span>
         }
-<span class="nc" id="L372">        arr.setString( 1, upper );</span>
-<span class="nc" id="L373">    }</span>
+<span class="fc" id="L372">        arr.setString( 1, upper );</span>
+<span class="fc" id="L373">    }</span>
 
     /**
      * Get the lowest value for a key in the name map.
@@ -379,13 +379,13 @@ public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements C
      */
     public String getLowerLimit()
     {
-<span class="nc" id="L382">        String retval = null;</span>
-<span class="nc" id="L383">        COSArray arr = node.getCOSArray(COSName.LIMITS);</span>
-<span class="nc bnc" id="L384" title="All 2 branches missed.">        if( arr != null )</span>
+<span class="fc" id="L382">        String retval = null;</span>
+<span class="fc" id="L383">        COSArray arr = node.getCOSArray(COSName.LIMITS);</span>
+<span class="fc bfc" id="L384" title="All 2 branches covered.">        if( arr != null )</span>
         {
-<span class="nc" id="L386">            retval = arr.getString( 0 );</span>
+<span class="fc" id="L386">            retval = arr.getString( 0 );</span>
         }
-<span class="nc" id="L388">        return retval;</span>
+<span class="fc" id="L388">        return retval;</span>
     }
 
     /**
@@ -395,15 +395,15 @@ public abstract class PDNameTreeNode&lt;T extends COSObjectable&gt; implements C
      */
     private void setLowerLimit( String lower )
     {
-<span class="nc" id="L398">        COSArray arr = node.getCOSArray(COSName.LIMITS);</span>
-<span class="nc bnc" id="L399" title="All 2 branches missed.">        if( arr == null )</span>
+<span class="fc" id="L398">        COSArray arr = node.getCOSArray(COSName.LIMITS);</span>
+<span class="pc bpc" id="L399" title="1 of 2 branches missed.">        if( arr == null )</span>
         {
-<span class="nc" id="L401">            arr = new COSArray();</span>
-<span class="nc" id="L402">            arr.add( null );</span>
-<span class="nc" id="L403">            arr.add( null );</span>
-<span class="nc" id="L404">            node.setItem(COSName.LIMITS, arr);</span>
+<span class="fc" id="L401">            arr = new COSArray();</span>
+<span class="fc" id="L402">            arr.add( null );</span>
+<span class="fc" id="L403">            arr.add( null );</span>
+<span class="fc" id="L404">            node.setItem(COSName.LIMITS, arr);</span>
         }
-<span class="nc" id="L406">        arr.setString( 0, lower );</span>
-<span class="nc" id="L407">    }</span>
+<span class="fc" id="L406">        arr.setString( 0, lower );</span>
+<span class="fc" id="L407">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

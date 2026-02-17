@@ -60,34 +60,34 @@ public final class CCITTFactory
     public static PDImageXObject createFromImage(PDDocument document, BufferedImage image)
             throws IOException
     {
-<span class="nc bnc" id="L63" title="All 4 branches missed.">        if (image.getType() != BufferedImage.TYPE_BYTE_BINARY &amp;&amp; image.getColorModel().getPixelSize() != 1)</span>
+<span class="pc bpc" id="L63" title="3 of 4 branches missed.">        if (image.getType() != BufferedImage.TYPE_BYTE_BINARY &amp;&amp; image.getColorModel().getPixelSize() != 1)</span>
         {
 <span class="nc" id="L65">            throw new IllegalArgumentException(&quot;Only 1-bit b/w images supported&quot;);</span>
         }
         
-<span class="nc" id="L68">        int height = image.getHeight();</span>
-<span class="nc" id="L69">        int width = image.getWidth();</span>
+<span class="fc" id="L68">        int height = image.getHeight();</span>
+<span class="fc" id="L69">        int width = image.getWidth();</span>
 
-<span class="nc" id="L71">        ByteArrayOutputStream bos = new ByteArrayOutputStream(Math.max(32, (width + 1) * height));</span>
-<span class="nc" id="L72">        try (MemoryCacheImageOutputStream mcios = new MemoryCacheImageOutputStream(bos))</span>
+<span class="fc" id="L71">        ByteArrayOutputStream bos = new ByteArrayOutputStream(Math.max(32, (width + 1) * height));</span>
+<span class="fc" id="L72">        try (MemoryCacheImageOutputStream mcios = new MemoryCacheImageOutputStream(bos))</span>
         {
-<span class="nc bnc" id="L74" title="All 2 branches missed.">            for (int y = 0; y &lt; height; ++y)</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">            for (int y = 0; y &lt; height; ++y)</span>
             {
-<span class="nc bnc" id="L76" title="All 2 branches missed.">                for (int x = 0; x &lt; width; ++x)</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">                for (int x = 0; x &lt; width; ++x)</span>
                 {
                     // flip bit to avoid having to set /BlackIs1
-<span class="nc" id="L79">                    mcios.writeBits(~(image.getRGB(x, y) &amp; 1), 1);</span>
+<span class="fc" id="L79">                    mcios.writeBits(~(image.getRGB(x, y) &amp; 1), 1);</span>
                 }
-<span class="nc" id="L81">                int bitOffset = mcios.getBitOffset();</span>
-<span class="nc bnc" id="L82" title="All 2 branches missed.">                if (bitOffset != 0)</span>
+<span class="fc" id="L81">                int bitOffset = mcios.getBitOffset();</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">                if (bitOffset != 0)</span>
                 {
-<span class="nc" id="L84">                    mcios.writeBits(0, 8 - bitOffset);</span>
+<span class="fc" id="L84">                    mcios.writeBits(0, 8 - bitOffset);</span>
                 }
             }
-<span class="nc" id="L87">            mcios.flush();</span>
+<span class="fc" id="L87">            mcios.flush();</span>
         }
 
-<span class="nc" id="L90">        return prepareImageXObject(document, bos.toByteArray(), width, height, PDDeviceGray.INSTANCE);</span>
+<span class="fc" id="L90">        return prepareImageXObject(document, bos.toByteArray(), width, height, PDDeviceGray.INSTANCE);</span>
     }
 
     /**
@@ -107,7 +107,7 @@ public final class CCITTFactory
     public static PDImageXObject createFromByteArray(PDDocument document, byte[] byteArray)
             throws IOException
     {
-<span class="nc" id="L110">        return createFromByteArray(document, byteArray, 0);</span>
+<span class="fc" id="L110">        return createFromByteArray(document, byteArray, 0);</span>
     }
 
     /**
@@ -128,9 +128,9 @@ public final class CCITTFactory
     public static PDImageXObject createFromByteArray(PDDocument document, byte[] byteArray, int number)
             throws IOException
     {
-<span class="nc" id="L131">        try (RandomAccessRead raf = new RandomAccessReadBuffer(byteArray))</span>
+<span class="fc" id="L131">        try (RandomAccessRead raf = new RandomAccessReadBuffer(byteArray))</span>
         {
-<span class="nc" id="L133">            return createFromRandomAccessImpl(document, raf, number);</span>
+<span class="fc" id="L133">            return createFromRandomAccessImpl(document, raf, number);</span>
         }
     }
 
@@ -138,20 +138,20 @@ public final class CCITTFactory
             byte[] byteArray, int width, int height,
             PDColorSpace initColorSpace) throws IOException
     {
-<span class="nc" id="L141">        ByteArrayOutputStream baos = new ByteArrayOutputStream();</span>
+<span class="fc" id="L141">        ByteArrayOutputStream baos = new ByteArrayOutputStream();</span>
 
-<span class="nc" id="L143">        Filter filter = FilterFactory.INSTANCE.getFilter(COSName.CCITTFAX_DECODE);</span>
-<span class="nc" id="L144">        COSDictionary dict = new COSDictionary();</span>
-<span class="nc" id="L145">        dict.setInt(COSName.COLUMNS, width);</span>
-<span class="nc" id="L146">        dict.setInt(COSName.ROWS, height);</span>
-<span class="nc" id="L147">        filter.encode(new ByteArrayInputStream(byteArray), baos, dict, 0);</span>
+<span class="fc" id="L143">        Filter filter = FilterFactory.INSTANCE.getFilter(COSName.CCITTFAX_DECODE);</span>
+<span class="fc" id="L144">        COSDictionary dict = new COSDictionary();</span>
+<span class="fc" id="L145">        dict.setInt(COSName.COLUMNS, width);</span>
+<span class="fc" id="L146">        dict.setInt(COSName.ROWS, height);</span>
+<span class="fc" id="L147">        filter.encode(new ByteArrayInputStream(byteArray), baos, dict, 0);</span>
 
-<span class="nc" id="L149">        ByteArrayInputStream encodedByteStream = new ByteArrayInputStream(baos.toByteArray());</span>
-<span class="nc" id="L150">        PDImageXObject image = new PDImageXObject(document, encodedByteStream, COSName.CCITTFAX_DECODE,</span>
+<span class="fc" id="L149">        ByteArrayInputStream encodedByteStream = new ByteArrayInputStream(baos.toByteArray());</span>
+<span class="fc" id="L150">        PDImageXObject image = new PDImageXObject(document, encodedByteStream, COSName.CCITTFAX_DECODE,</span>
                 width, height, 1, initColorSpace);
-<span class="nc" id="L152">        dict.setInt(COSName.K, -1);</span>
-<span class="nc" id="L153">        image.getCOSObject().setItem(COSName.DECODE_PARMS, dict);</span>
-<span class="nc" id="L154">        return image;</span>
+<span class="fc" id="L152">        dict.setInt(COSName.K, -1);</span>
+<span class="fc" id="L153">        image.getCOSObject().setItem(COSName.DECODE_PARMS, dict);</span>
+<span class="fc" id="L154">        return image;</span>
     }
 
     /**
@@ -170,7 +170,7 @@ public final class CCITTFactory
     public static PDImageXObject createFromFile(PDDocument document, File file)
             throws IOException
     {
-<span class="nc" id="L173">        return createFromFile(document, file, 0);</span>
+<span class="fc" id="L173">        return createFromFile(document, file, 0);</span>
     }
 
     /**
@@ -190,9 +190,9 @@ public final class CCITTFactory
     public static PDImageXObject createFromFile(PDDocument document, File file, int number)
             throws IOException
     {
-<span class="nc" id="L193">        try (RandomAccessRead raf = new RandomAccessReadBufferedFile(file))</span>
+<span class="fc" id="L193">        try (RandomAccessRead raf = new RandomAccessReadBufferedFile(file))</span>
         {
-<span class="nc" id="L195">            return createFromRandomAccessImpl(document, raf, number);</span>
+<span class="fc" id="L195">            return createFromRandomAccessImpl(document, raf, number);</span>
         }
     }
     
@@ -210,25 +210,25 @@ public final class CCITTFactory
             RandomAccessRead reader,
                                                              int number) throws IOException
     {
-<span class="nc" id="L213">        COSDictionary decodeParms = new COSDictionary();</span>
-<span class="nc" id="L214">        ByteArrayOutputStream bos = new ByteArrayOutputStream();</span>
-<span class="nc" id="L215">        extractFromTiff(reader, bos, decodeParms, number);</span>
-<span class="nc bnc" id="L216" title="All 2 branches missed.">        if (bos.size() == 0)</span>
+<span class="fc" id="L213">        COSDictionary decodeParms = new COSDictionary();</span>
+<span class="fc" id="L214">        ByteArrayOutputStream bos = new ByteArrayOutputStream();</span>
+<span class="fc" id="L215">        extractFromTiff(reader, bos, decodeParms, number);</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        if (bos.size() == 0)</span>
         {
-<span class="nc" id="L218">            return null;</span>
+<span class="fc" id="L218">            return null;</span>
         }
-<span class="nc" id="L220">        ByteArrayInputStream encodedByteStream = new ByteArrayInputStream(bos.toByteArray());</span>
-<span class="nc" id="L221">        PDImageXObject pdImage = new PDImageXObject(document, </span>
+<span class="fc" id="L220">        ByteArrayInputStream encodedByteStream = new ByteArrayInputStream(bos.toByteArray());</span>
+<span class="fc" id="L221">        PDImageXObject pdImage = new PDImageXObject(document, </span>
                 encodedByteStream, 
                 COSName.CCITTFAX_DECODE, 
-<span class="nc" id="L224">                decodeParms.getInt(COSName.COLUMNS), </span>
-<span class="nc" id="L225">                decodeParms.getInt(COSName.ROWS),</span>
+<span class="fc" id="L224">                decodeParms.getInt(COSName.COLUMNS), </span>
+<span class="fc" id="L225">                decodeParms.getInt(COSName.ROWS),</span>
                 1,
                 PDDeviceGray.INSTANCE);
         
-<span class="nc" id="L229">        COSDictionary dict = pdImage.getCOSObject();</span>
-<span class="nc" id="L230">        dict.setItem(COSName.DECODE_PARMS, decodeParms);</span>
-<span class="nc" id="L231">        return pdImage;</span>
+<span class="fc" id="L229">        COSDictionary dict = pdImage.getCOSObject();</span>
+<span class="fc" id="L230">        dict.setItem(COSName.DECODE_PARMS, decodeParms);</span>
+<span class="fc" id="L231">        return pdImage;</span>
     }
 
     // extracts the CCITT stream from the TIFF file
@@ -236,53 +236,53 @@ public final class CCITTFactory
             OutputStream os,
             COSDictionary params, int number) throws IOException
     {
-<span class="nc" id="L239">        try (os)</span>
+<span class="fc" id="L239">        try (os)</span>
         {
             // First check the basic tiff header
-<span class="nc" id="L242">            reader.seek(0);</span>
-<span class="nc" id="L243">            char endianess = (char) reader.read();</span>
-<span class="nc bnc" id="L244" title="All 2 branches missed.">            if ((char) reader.read() != endianess)</span>
+<span class="fc" id="L242">            reader.seek(0);</span>
+<span class="fc" id="L243">            char endianess = (char) reader.read();</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">            if ((char) reader.read() != endianess)</span>
             {
 <span class="nc" id="L246">                throw new IOException(&quot;Not a valid tiff file&quot;);</span>
             }
             // ensure that endianess is either M or I
-<span class="nc bnc" id="L249" title="All 4 branches missed.">            if (endianess != 'M' &amp;&amp; endianess != 'I')</span>
+<span class="pc bpc" id="L249" title="1 of 4 branches missed.">            if (endianess != 'M' &amp;&amp; endianess != 'I')</span>
             {
 <span class="nc" id="L251">                throw new IOException(&quot;Not a valid tiff file&quot;);</span>
             }
-<span class="nc" id="L253">            int magicNumber = readshort(endianess, reader);</span>
-<span class="nc bnc" id="L254" title="All 2 branches missed.">            if (magicNumber != 42)</span>
+<span class="fc" id="L253">            int magicNumber = readshort(endianess, reader);</span>
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">            if (magicNumber != 42)</span>
             {
 <span class="nc" id="L256">                throw new IOException(&quot;Not a valid tiff file&quot;);</span>
             }
 
             // Relocate to the first set of tags
-<span class="nc" id="L260">            long address = readlong(endianess, reader);</span>
-<span class="nc" id="L261">            reader.seek(address);</span>
+<span class="fc" id="L260">            long address = readlong(endianess, reader);</span>
+<span class="fc" id="L261">            reader.seek(address);</span>
     
             // If some higher page number is required, skip this page's tags, 
             // then read the next page's address
-<span class="nc bnc" id="L265" title="All 2 branches missed.">            for (int i = 0; i &lt; number; i++)</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">            for (int i = 0; i &lt; number; i++)</span>
             {
-<span class="nc" id="L267">                int numtags = readshort(endianess, reader);</span>
-<span class="nc bnc" id="L268" title="All 2 branches missed.">                if (numtags &gt; 50)</span>
+<span class="fc" id="L267">                int numtags = readshort(endianess, reader);</span>
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">                if (numtags &gt; 50)</span>
                 {
 <span class="nc" id="L270">                    throw new IOException(&quot;Not a valid tiff file&quot;);</span>
                 }
-<span class="nc" id="L272">                reader.seek(address + 2 + numtags * 12L);</span>
-<span class="nc" id="L273">                address = readlong(endianess, reader);</span>
-<span class="nc bnc" id="L274" title="All 2 branches missed.">                if (address == 0)</span>
+<span class="fc" id="L272">                reader.seek(address + 2 + numtags * 12L);</span>
+<span class="fc" id="L273">                address = readlong(endianess, reader);</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">                if (address == 0)</span>
                 {
-<span class="nc" id="L276">                    return;</span>
+<span class="fc" id="L276">                    return;</span>
                 }
-<span class="nc" id="L278">                reader.seek(address);</span>
+<span class="fc" id="L278">                reader.seek(address);</span>
             }
 
-<span class="nc" id="L281">            int numtags = readshort(endianess, reader);</span>
+<span class="fc" id="L281">            int numtags = readshort(endianess, reader);</span>
 
             // The number 50 is somewhat arbitrary, it just stops us load up junk from somewhere
             // and tramping on
-<span class="nc bnc" id="L285" title="All 2 branches missed.">            if (numtags &gt; 50)</span>
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">            if (numtags &gt; 50)</span>
             {
 <span class="nc" id="L287">                throw new IOException(&quot;Not a valid tiff file&quot;);</span>
             }
@@ -293,21 +293,21 @@ public final class CCITTFactory
             // we'll deal with that differently.
             
             // Default value to detect error
-<span class="nc" id="L296">            int k = -1000;</span>
+<span class="fc" id="L296">            int k = -1000;</span>
             
-<span class="nc" id="L298">            int dataoffset = 0;</span>
-<span class="nc" id="L299">            int datalength = 0;</span>
+<span class="fc" id="L298">            int dataoffset = 0;</span>
+<span class="fc" id="L299">            int datalength = 0;</span>
 
-<span class="nc bnc" id="L301" title="All 2 branches missed.">            for (int i = 0; i &lt; numtags; i++)</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">            for (int i = 0; i &lt; numtags; i++)</span>
             {
-<span class="nc" id="L303">                int tag = readshort(endianess, reader);</span>
-<span class="nc" id="L304">                int type = readshort(endianess, reader);</span>
-<span class="nc" id="L305">                int count = readlong(endianess, reader);</span>
+<span class="fc" id="L303">                int tag = readshort(endianess, reader);</span>
+<span class="fc" id="L304">                int type = readshort(endianess, reader);</span>
+<span class="fc" id="L305">                int count = readlong(endianess, reader);</span>
                 int val;
                 // Note that when the type is shorter than 4 bytes, the rest can be garbage
                 // and must be ignored. E.g. short (2 bytes) from &quot;01 00 38 32&quot; (little endian)
                 // is 1, not 842530817 (seen in a real-life TIFF image).
-<span class="nc bnc" id="L310" title="All 3 branches missed.">                switch (type)</span>
+<span class="pc bpc" id="L310" title="1 of 3 branches missed.">                switch (type)</span>
                 {
                     case 1: // byte value
 <span class="nc" id="L313">                        val = reader.read();</span>
@@ -316,41 +316,41 @@ public final class CCITTFactory
 <span class="nc" id="L316">                        reader.read();</span>
 <span class="nc" id="L317">                        break;</span>
                     case 3: // short value
-<span class="nc" id="L319">                        val = readshort(endianess, reader);</span>
-<span class="nc" id="L320">                        reader.read();</span>
-<span class="nc" id="L321">                        reader.read();</span>
-<span class="nc" id="L322">                        break;</span>
+<span class="fc" id="L319">                        val = readshort(endianess, reader);</span>
+<span class="fc" id="L320">                        reader.read();</span>
+<span class="fc" id="L321">                        reader.read();</span>
+<span class="fc" id="L322">                        break;</span>
                     default: // long and other types
-<span class="nc" id="L324">                        val = readlong(endianess, reader);</span>
+<span class="fc" id="L324">                        val = readlong(endianess, reader);</span>
                         break;
                 }
-<span class="nc bnc" id="L327" title="All 12 branches missed.">                switch (tag)</span>
+<span class="pc bpc" id="L327" title="3 of 12 branches missed.">                switch (tag)</span>
                 {
                     case 256:
                     {
-<span class="nc" id="L331">                        params.setInt(COSName.COLUMNS, val);</span>
-<span class="nc" id="L332">                        break;</span>
+<span class="fc" id="L331">                        params.setInt(COSName.COLUMNS, val);</span>
+<span class="fc" id="L332">                        break;</span>
                     }
                     case 257:
                     {
-<span class="nc" id="L336">                        params.setInt(COSName.ROWS, val);</span>
-<span class="nc" id="L337">                        break;</span>
+<span class="fc" id="L336">                        params.setInt(COSName.ROWS, val);</span>
+<span class="fc" id="L337">                        break;</span>
                     }
                     case 259:
                     {
-<span class="nc bnc" id="L341" title="All 2 branches missed.">                        if (val == 4)</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">                        if (val == 4)</span>
                         {
-<span class="nc" id="L343">                            k = -1;</span>
+<span class="fc" id="L343">                            k = -1;</span>
                         }
-<span class="nc bnc" id="L345" title="All 2 branches missed.">                        if (val == 3)</span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">                        if (val == 3)</span>
                         {
-<span class="nc" id="L347">                            k = 0;</span>
+<span class="fc" id="L347">                            k = 0;</span>
                         }
                         break; // T6/T4 Compression
                     }
                     case 262:
                     {
-<span class="nc bnc" id="L353" title="All 2 branches missed.">                        if (val == 1)</span>
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">                        if (val == 1)</span>
                         {
 <span class="nc" id="L355">                            params.setBoolean(COSName.BLACK_IS_1, true);</span>
                         }
@@ -358,7 +358,7 @@ public final class CCITTFactory
                     }
                     case 266:
                     {
-<span class="nc bnc" id="L361" title="All 2 branches missed.">                        if (val != 1)</span>
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">                        if (val != 1)</span>
                         {
 <span class="nc" id="L363">                            throw new IOException(&quot;FillOrder &quot; + val + &quot; is not supported&quot;);</span>
                         }
@@ -366,16 +366,16 @@ public final class CCITTFactory
                     }
                     case 273:
                     {
-<span class="nc bnc" id="L369" title="All 2 branches missed.">                        if (count == 1)</span>
+<span class="fc bfc" id="L369" title="All 2 branches covered.">                        if (count == 1)</span>
                         {
-<span class="nc" id="L371">                            dataoffset = val;</span>
+<span class="fc" id="L371">                            dataoffset = val;</span>
                         }
                         break;
                     }
                     case 274:
                     {
                         // http://www.awaresystems.be/imaging/tiff/tifftags/orientation.html
-<span class="nc bnc" id="L378" title="All 2 branches missed.">                        if (val != 1)</span>
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">                        if (val != 1)</span>
                         {
 <span class="nc" id="L380">                            throw new IOException(&quot;Orientation &quot; + val + &quot; is not supported&quot;);</span>
                         }
@@ -383,9 +383,9 @@ public final class CCITTFactory
                     }
                     case 279:
                     {
-<span class="nc bnc" id="L386" title="All 2 branches missed.">                        if (count == 1)</span>
+<span class="fc bfc" id="L386" title="All 2 branches covered.">                        if (count == 1)</span>
                         {
-<span class="nc" id="L388">                            datalength = val;</span>
+<span class="fc" id="L388">                            datalength = val;</span>
                         }
                         break;
                     }
@@ -430,46 +430,46 @@ public final class CCITTFactory
                 }
             }
 
-<span class="nc bnc" id="L433" title="All 2 branches missed.">            if (k == -1000)</span>
+<span class="fc bfc" id="L433" title="All 2 branches covered.">            if (k == -1000)</span>
             {
-<span class="nc" id="L435">                throw new IOException(&quot;First image in tiff is not CCITT T4 or T6 compressed&quot;);</span>
+<span class="fc" id="L435">                throw new IOException(&quot;First image in tiff is not CCITT T4 or T6 compressed&quot;);</span>
             }
-<span class="nc bnc" id="L437" title="All 2 branches missed.">            if (dataoffset == 0)</span>
+<span class="pc bpc" id="L437" title="1 of 2 branches missed.">            if (dataoffset == 0)</span>
             {
 <span class="nc" id="L439">                throw new IOException(&quot;First image in tiff is not a single tile/strip&quot;);</span>
             }
 
-<span class="nc" id="L442">            params.setInt(COSName.K, k);</span>
+<span class="fc" id="L442">            params.setInt(COSName.K, k);</span>
 
-<span class="nc" id="L444">            reader.seek(dataoffset);</span>
+<span class="fc" id="L444">            reader.seek(dataoffset);</span>
 
-<span class="nc" id="L446">            byte[] buf = new byte[8192];</span>
+<span class="fc" id="L446">            byte[] buf = new byte[8192];</span>
             int amountRead;
-<span class="nc bnc" id="L448" title="All 2 branches missed.">            while ((amountRead = reader.read(buf, 0, Math.min(8192, datalength))) &gt; 0)</span>
+<span class="fc bfc" id="L448" title="All 2 branches covered.">            while ((amountRead = reader.read(buf, 0, Math.min(8192, datalength))) &gt; 0)</span>
             {
-<span class="nc" id="L450">                datalength -= amountRead;</span>
-<span class="nc" id="L451">                os.write(buf, 0, amountRead);</span>
+<span class="fc" id="L450">                datalength -= amountRead;</span>
+<span class="fc" id="L451">                os.write(buf, 0, amountRead);</span>
             }
 
-<span class="nc bnc" id="L454" title="All 2 branches missed.">        }</span>
-<span class="nc" id="L455">    }</span>
+<span class="pc bpc" id="L454" title="1 of 2 branches missed.">        }</span>
+<span class="fc" id="L455">    }</span>
 
     private static int readshort(char endianess, RandomAccessRead raf) throws IOException
     {
-<span class="nc bnc" id="L459" title="All 2 branches missed.">        if (endianess == 'I')</span>
+<span class="fc bfc" id="L459" title="All 2 branches covered.">        if (endianess == 'I')</span>
         {
-<span class="nc" id="L461">            return raf.read() | (raf.read() &lt;&lt; 8);</span>
+<span class="fc" id="L461">            return raf.read() | (raf.read() &lt;&lt; 8);</span>
         }
-<span class="nc" id="L463">        return (raf.read() &lt;&lt; 8) | raf.read();</span>
+<span class="fc" id="L463">        return (raf.read() &lt;&lt; 8) | raf.read();</span>
     }
 
     private static int readlong(char endianess, RandomAccessRead raf) throws IOException
     {
-<span class="nc bnc" id="L468" title="All 2 branches missed.">        if (endianess == 'I')</span>
+<span class="fc bfc" id="L468" title="All 2 branches covered.">        if (endianess == 'I')</span>
         {
-<span class="nc" id="L470">            return raf.read() | (raf.read() &lt;&lt; 8) | (raf.read() &lt;&lt; 16) | (raf.read() &lt;&lt; 24);</span>
+<span class="fc" id="L470">            return raf.read() | (raf.read() &lt;&lt; 8) | (raf.read() &lt;&lt; 16) | (raf.read() &lt;&lt; 24);</span>
         }
-<span class="nc" id="L472">        return (raf.read() &lt;&lt; 24) | (raf.read() &lt;&lt; 16) | (raf.read() &lt;&lt; 8) | raf.read();</span>
+<span class="fc" id="L472">        return (raf.read() &lt;&lt; 24) | (raf.read() &lt;&lt; 16) | (raf.read() &lt;&lt; 8) | raf.read();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

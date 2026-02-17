@@ -31,24 +31,24 @@ public abstract class PDCIEDictionaryBasedColorSpace extends PDCIEBasedColorSpac
 {
     protected final COSDictionary dictionary;
 
-<span class="nc" id="L34">    private static final ColorSpace CIEXYZ = ColorSpace.getInstance(ColorSpace.CS_CIEXYZ);</span>
+<span class="fc" id="L34">    private static final ColorSpace CIEXYZ = ColorSpace.getInstance(ColorSpace.CS_CIEXYZ);</span>
 
     // we need to cache whitepoint values, because using getWhitePoint()
     // would create a new default object for each pixel conversion if the original
     // PDF didn't have a whitepoint array
-<span class="nc" id="L39">    protected float wpX = 1;</span>
-<span class="nc" id="L40">    protected float wpY = 1;</span>
-<span class="nc" id="L41">    protected float wpZ = 1;</span>
+<span class="fc" id="L39">    protected float wpX = 1;</span>
+<span class="fc" id="L40">    protected float wpY = 1;</span>
+<span class="fc" id="L41">    protected float wpZ = 1;</span>
 
     protected PDCIEDictionaryBasedColorSpace(COSName cosName)
-<span class="nc" id="L44">    {</span>
-<span class="nc" id="L45">        array = new COSArray();</span>
-<span class="nc" id="L46">        dictionary = new COSDictionary();</span>
-<span class="nc" id="L47">        array.add(cosName);</span>
-<span class="nc" id="L48">        array.add(dictionary);</span>
+<span class="fc" id="L44">    {</span>
+<span class="fc" id="L45">        array = new COSArray();</span>
+<span class="fc" id="L46">        dictionary = new COSDictionary();</span>
+<span class="fc" id="L47">        array.add(cosName);</span>
+<span class="fc" id="L48">        array.add(dictionary);</span>
 
-<span class="nc" id="L50">        fillWhitepointCache(getWhitepoint());</span>
-<span class="nc" id="L51">    }</span>
+<span class="fc" id="L50">        fillWhitepointCache(getWhitepoint());</span>
+<span class="fc" id="L51">    }</span>
 
     /**
      * Creates a new CalRGB color space using the given COS array.
@@ -56,12 +56,12 @@ public abstract class PDCIEDictionaryBasedColorSpace extends PDCIEBasedColorSpac
      * @param rgb the cos array which represents this color space
      */
     protected PDCIEDictionaryBasedColorSpace(COSArray rgb)
-<span class="nc" id="L59">    {</span>
-<span class="nc" id="L60">        array = rgb;</span>
-<span class="nc" id="L61">        dictionary = (COSDictionary) array.getObject(1);</span>
+<span class="fc" id="L59">    {</span>
+<span class="fc" id="L60">        array = rgb;</span>
+<span class="fc" id="L61">        dictionary = (COSDictionary) array.getObject(1);</span>
 
-<span class="nc" id="L63">        fillWhitepointCache(getWhitepoint());</span>
-<span class="nc" id="L64">    }</span>
+<span class="fc" id="L63">        fillWhitepointCache(getWhitepoint());</span>
+<span class="fc" id="L64">    }</span>
 
     /**
      * Tests if the current point is the white point.
@@ -70,36 +70,36 @@ public abstract class PDCIEDictionaryBasedColorSpace extends PDCIEBasedColorSpac
      */
     protected boolean isWhitePoint()
     {
-<span class="nc bnc" id="L73" title="All 2 branches missed.">        return  Float.compare(wpX, 1) == 0 &amp;&amp;</span>
-<span class="nc bnc" id="L74" title="All 2 branches missed.">                Float.compare(wpY, 1) == 0 &amp;&amp; </span>
-<span class="nc bnc" id="L75" title="All 2 branches missed.">                Float.compare(wpZ, 1)  == 0;</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        return  Float.compare(wpX, 1) == 0 &amp;&amp;</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">                Float.compare(wpY, 1) == 0 &amp;&amp; </span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">                Float.compare(wpZ, 1)  == 0;</span>
     }
 
     private void fillWhitepointCache(PDTristimulus whitepoint)
     {
-<span class="nc" id="L80">        wpX = whitepoint.getX();</span>
-<span class="nc" id="L81">        wpY = whitepoint.getY();</span>
-<span class="nc" id="L82">        wpZ = whitepoint.getZ();</span>
-<span class="nc" id="L83">    }</span>
+<span class="fc" id="L80">        wpX = whitepoint.getX();</span>
+<span class="fc" id="L81">        wpY = whitepoint.getY();</span>
+<span class="fc" id="L82">        wpZ = whitepoint.getZ();</span>
+<span class="fc" id="L83">    }</span>
 
     protected float[] convXYZtoRGB(float x, float y, float z)
     {
         // toRGB() malfunctions with negative values
         // XYZ must be non-negative anyway:
         // http://ninedegreesbelow.com/photography/icc-profile-negative-tristimulus.html
-<span class="nc bnc" id="L90" title="All 2 branches missed.">        if (x &lt; 0)</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (x &lt; 0)</span>
         {
 <span class="nc" id="L92">            x = 0;</span>
         }
-<span class="nc bnc" id="L94" title="All 2 branches missed.">        if (y &lt; 0)</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        if (y &lt; 0)</span>
         {
 <span class="nc" id="L96">            y = 0;</span>
         }
-<span class="nc bnc" id="L98" title="All 2 branches missed.">        if (z &lt; 0)</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        if (z &lt; 0)</span>
         {
 <span class="nc" id="L100">            z = 0;</span>
         }
-<span class="nc" id="L102">        return CIEXYZ.toRGB(new float[]</span>
+<span class="fc" id="L102">        return CIEXYZ.toRGB(new float[]</span>
         {
             x, y, z
         });
@@ -114,15 +114,15 @@ public abstract class PDCIEDictionaryBasedColorSpace extends PDCIEBasedColorSpac
      */
     public final PDTristimulus getWhitepoint()
     {
-<span class="nc" id="L117">        COSArray wp = dictionary.getCOSArray(COSName.WHITE_POINT);</span>
-<span class="nc bnc" id="L118" title="All 2 branches missed.">        if (wp == null)</span>
+<span class="fc" id="L117">        COSArray wp = dictionary.getCOSArray(COSName.WHITE_POINT);</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (wp == null)</span>
         {
-<span class="nc" id="L120">            wp = new COSArray();</span>
-<span class="nc" id="L121">            wp.add(COSFloat.ONE);</span>
-<span class="nc" id="L122">            wp.add(COSFloat.ONE);</span>
-<span class="nc" id="L123">            wp.add(COSFloat.ONE);</span>
+<span class="fc" id="L120">            wp = new COSArray();</span>
+<span class="fc" id="L121">            wp.add(COSFloat.ONE);</span>
+<span class="fc" id="L122">            wp.add(COSFloat.ONE);</span>
+<span class="fc" id="L123">            wp.add(COSFloat.ONE);</span>
         }
-<span class="nc" id="L125">        return new PDTristimulus(wp);</span>
+<span class="fc" id="L125">        return new PDTristimulus(wp);</span>
     }
 
     /**
@@ -134,15 +134,15 @@ public abstract class PDCIEDictionaryBasedColorSpace extends PDCIEBasedColorSpac
      */
     public final PDTristimulus getBlackPoint()
     {
-<span class="nc" id="L137">        COSArray bp = dictionary.getCOSArray(COSName.BLACK_POINT);</span>
-<span class="nc bnc" id="L138" title="All 2 branches missed.">        if (bp == null)</span>
+<span class="fc" id="L137">        COSArray bp = dictionary.getCOSArray(COSName.BLACK_POINT);</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">        if (bp == null)</span>
         {
-<span class="nc" id="L140">            bp = new COSArray();</span>
-<span class="nc" id="L141">            bp.add(COSFloat.ZERO);</span>
-<span class="nc" id="L142">            bp.add(COSFloat.ZERO);</span>
-<span class="nc" id="L143">            bp.add(COSFloat.ZERO);</span>
+<span class="fc" id="L140">            bp = new COSArray();</span>
+<span class="fc" id="L141">            bp.add(COSFloat.ZERO);</span>
+<span class="fc" id="L142">            bp.add(COSFloat.ZERO);</span>
+<span class="fc" id="L143">            bp.add(COSFloat.ZERO);</span>
         }
-<span class="nc" id="L145">        return new PDTristimulus(bp);</span>
+<span class="fc" id="L145">        return new PDTristimulus(bp);</span>
     }
 
     /**
@@ -154,13 +154,13 @@ public abstract class PDCIEDictionaryBasedColorSpace extends PDCIEBasedColorSpac
      */
     public void setWhitePoint(PDTristimulus whitepoint)
     {
-<span class="nc bnc" id="L157" title="All 2 branches missed.">        if (whitepoint == null)</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">        if (whitepoint == null)</span>
         {
 <span class="nc" id="L159">            throw new IllegalArgumentException(&quot;Whitepoint may not be null&quot;);</span>
         }
-<span class="nc" id="L161">        dictionary.setItem(COSName.WHITE_POINT, whitepoint);</span>
-<span class="nc" id="L162">        fillWhitepointCache(whitepoint);</span>
-<span class="nc" id="L163">    }</span>
+<span class="fc" id="L161">        dictionary.setItem(COSName.WHITE_POINT, whitepoint);</span>
+<span class="fc" id="L162">        fillWhitepointCache(whitepoint);</span>
+<span class="fc" id="L163">    }</span>
 
     /**
      * This will set the BlackPoint tristimulus.
@@ -169,8 +169,8 @@ public abstract class PDCIEDictionaryBasedColorSpace extends PDCIEBasedColorSpac
      */
     public void setBlackPoint(PDTristimulus blackpoint)
     {
-<span class="nc" id="L172">        dictionary.setItem(COSName.BLACK_POINT, blackpoint);</span>
-<span class="nc" id="L173">    }</span>
+<span class="fc" id="L172">        dictionary.setItem(COSName.BLACK_POINT, blackpoint);</span>
+<span class="fc" id="L173">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

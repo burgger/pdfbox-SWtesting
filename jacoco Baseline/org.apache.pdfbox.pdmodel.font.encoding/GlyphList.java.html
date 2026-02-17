@@ -34,28 +34,28 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class GlyphList
 {
-<span class="nc" id="L37">    private static final Logger LOG = LogManager.getLogger(GlyphList.class);</span>
+<span class="fc" id="L37">    private static final Logger LOG = LogManager.getLogger(GlyphList.class);</span>
 
     // Adobe Glyph List (AGL)
-<span class="nc" id="L40">    private static final GlyphList DEFAULT = load(&quot;glyphlist.txt&quot;, 4281);</span>
+<span class="fc" id="L40">    private static final GlyphList DEFAULT = load(&quot;glyphlist.txt&quot;, 4281);</span>
     
     // Zapf Dingbats has its own glyph list
-<span class="nc" id="L43">    private static final GlyphList ZAPF_DINGBATS = load(&quot;zapfdingbats.txt&quot;,201);</span>
+<span class="fc" id="L43">    private static final GlyphList ZAPF_DINGBATS = load(&quot;zapfdingbats.txt&quot;,201);</span>
     
     /**
      * Loads a glyph list from disk.
      */
     private static GlyphList load(String filename, int numberOfEntries)
     {
-<span class="nc" id="L50">        String path = &quot;/org/apache/pdfbox/resources/glyphlist/&quot; + filename;</span>
+<span class="fc" id="L50">        String path = &quot;/org/apache/pdfbox/resources/glyphlist/&quot; + filename;</span>
         //no need to use a BufferedInputSteam here, as GlyphList uses a BufferedReader
-<span class="nc" id="L52">        try (InputStream resourceAsStream = GlyphList.class.getResourceAsStream(path))</span>
+<span class="fc" id="L52">        try (InputStream resourceAsStream = GlyphList.class.getResourceAsStream(path))</span>
         {
-<span class="nc bnc" id="L54" title="All 2 branches missed.">            if (resourceAsStream == null)</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">            if (resourceAsStream == null)</span>
             {
 <span class="nc" id="L56">                throw new IOException(&quot;GlyphList '&quot; + path + &quot;' not found&quot;);</span>
             }
-<span class="nc" id="L58">            return new GlyphList(resourceAsStream, numberOfEntries);</span>
+<span class="fc" id="L58">            return new GlyphList(resourceAsStream, numberOfEntries);</span>
         }
 <span class="nc" id="L60">        catch (IOException e)</span>
         {
@@ -70,7 +70,7 @@ public final class GlyphList
      */
     public static GlyphList getAdobeGlyphList()
     {
-<span class="nc" id="L73">        return DEFAULT;</span>
+<span class="fc" id="L73">        return DEFAULT;</span>
     }
 
     /**
@@ -80,7 +80,7 @@ public final class GlyphList
      */
     public static GlyphList getZapfDingbats()
     {
-<span class="nc" id="L83">        return ZAPF_DINGBATS;</span>
+<span class="fc" id="L83">        return ZAPF_DINGBATS;</span>
     }
 
     // read-only mappings, never modified outside GlyphList's constructor
@@ -88,7 +88,7 @@ public final class GlyphList
     private final Map&lt;String, String&gt; unicodeToName;
     
     // additional read/write cache for uniXXXX names
-<span class="nc" id="L91">    private final Map&lt;String, String&gt; uniNameToUnicodeCache = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc" id="L91">    private final Map&lt;String, String&gt; uniNameToUnicodeCache = new ConcurrentHashMap&lt;&gt;();</span>
 
     /**
      * Creates a new GlyphList from a glyph list file.
@@ -98,11 +98,11 @@ public final class GlyphList
      * @throws IOException if the glyph list could not be read
      */
     public GlyphList(InputStream input, int numberOfEntries) throws IOException
-<span class="nc" id="L101">    {</span>
-<span class="nc" id="L102">        nameToUnicode = new HashMap&lt;&gt;(numberOfEntries);</span>
-<span class="nc" id="L103">        unicodeToName = new HashMap&lt;&gt;(numberOfEntries);</span>
-<span class="nc" id="L104">        loadList(input);</span>
-<span class="nc" id="L105">    }</span>
+<span class="fc" id="L101">    {</span>
+<span class="fc" id="L102">        nameToUnicode = new HashMap&lt;&gt;(numberOfEntries);</span>
+<span class="fc" id="L103">        unicodeToName = new HashMap&lt;&gt;(numberOfEntries);</span>
+<span class="fc" id="L104">        loadList(input);</span>
+<span class="fc" id="L105">    }</span>
 
     /**
      * Creates a new GlyphList from multiple glyph list files.
@@ -112,65 +112,65 @@ public final class GlyphList
      * @throws IOException if the glyph list could not be read
      */
     public GlyphList(GlyphList glyphList, InputStream input) throws IOException
-<span class="nc" id="L115">    {</span>
-<span class="nc" id="L116">        nameToUnicode = new HashMap&lt;&gt;(glyphList.nameToUnicode);</span>
-<span class="nc" id="L117">        unicodeToName = new HashMap&lt;&gt;(glyphList.unicodeToName);</span>
-<span class="nc" id="L118">        loadList(input);</span>
-<span class="nc" id="L119">    }</span>
+<span class="fc" id="L115">    {</span>
+<span class="fc" id="L116">        nameToUnicode = new HashMap&lt;&gt;(glyphList.nameToUnicode);</span>
+<span class="fc" id="L117">        unicodeToName = new HashMap&lt;&gt;(glyphList.unicodeToName);</span>
+<span class="fc" id="L118">        loadList(input);</span>
+<span class="fc" id="L119">    }</span>
 
     private void loadList(InputStream input) throws IOException
     {
-<span class="nc" id="L123">        try (BufferedReader in = new BufferedReader(new InputStreamReader(input, StandardCharsets.ISO_8859_1)))</span>
+<span class="fc" id="L123">        try (BufferedReader in = new BufferedReader(new InputStreamReader(input, StandardCharsets.ISO_8859_1)))</span>
         {
-<span class="nc bnc" id="L125" title="All 2 branches missed.">            while (in.ready())</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">            while (in.ready())</span>
             {
-<span class="nc" id="L127">                String line = in.readLine();</span>
-<span class="nc bnc" id="L128" title="All 4 branches missed.">                if (line != null &amp;&amp; !line.startsWith(&quot;#&quot;))</span>
+<span class="fc" id="L127">                String line = in.readLine();</span>
+<span class="pc bpc" id="L128" title="1 of 4 branches missed.">                if (line != null &amp;&amp; !line.startsWith(&quot;#&quot;))</span>
                 {
-<span class="nc" id="L130">                    String[] parts = line.split(&quot;;&quot;);</span>
-<span class="nc bnc" id="L131" title="All 2 branches missed.">                    if (parts.length &lt; 2)</span>
+<span class="fc" id="L130">                    String[] parts = line.split(&quot;;&quot;);</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">                    if (parts.length &lt; 2)</span>
                     {
 <span class="nc" id="L133">                        throw new IOException(&quot;Invalid glyph list entry: &quot; + line);</span>
                     }
 
-<span class="nc" id="L136">                    String name = parts[0];</span>
-<span class="nc" id="L137">                    String[] unicodeList = parts[1].split(&quot; &quot;);</span>
+<span class="fc" id="L136">                    String name = parts[0];</span>
+<span class="fc" id="L137">                    String[] unicodeList = parts[1].split(&quot; &quot;);</span>
 
-<span class="nc" id="L139">                    int[] codePoints = new int[unicodeList.length];</span>
-<span class="nc" id="L140">                    int index = 0;</span>
-<span class="nc bnc" id="L141" title="All 2 branches missed.">                    for (String hex : unicodeList)</span>
+<span class="fc" id="L139">                    int[] codePoints = new int[unicodeList.length];</span>
+<span class="fc" id="L140">                    int index = 0;</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">                    for (String hex : unicodeList)</span>
                     {
-<span class="nc" id="L143">                        codePoints[index++] = Integer.parseInt(hex, 16);</span>
+<span class="fc" id="L143">                        codePoints[index++] = Integer.parseInt(hex, 16);</span>
                     }
-<span class="nc" id="L145">                    String string = new String(codePoints, 0 , codePoints.length);</span>
+<span class="fc" id="L145">                    String string = new String(codePoints, 0 , codePoints.length);</span>
 
                     // forward mapping
-<span class="nc" id="L148">                    String oldMapping = nameToUnicode.put(name, string);</span>
-<span class="nc bnc" id="L149" title="All 2 branches missed.">                    if (oldMapping != null)</span>
+<span class="fc" id="L148">                    String oldMapping = nameToUnicode.put(name, string);</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">                    if (oldMapping != null)</span>
                     {
 <span class="nc" id="L151">                        LOG.warn(&quot;duplicate value for {} -&gt; {} {}&quot;, name, parts[1], oldMapping);</span>
                     }
                     // reverse mapping
                     // PDFBOX-3884: take the various standard encodings as canonical, 
                     // e.g. tilde over ilde
-<span class="nc" id="L156">                    final boolean forceOverride =</span>
-<span class="nc bnc" id="L157" title="All 2 branches missed.">                          WinAnsiEncoding.INSTANCE.contains(name) ||</span>
-<span class="nc bnc" id="L158" title="All 2 branches missed.">                          MacRomanEncoding.INSTANCE.contains(name) || </span>
-<span class="nc bnc" id="L159" title="All 2 branches missed.">                          MacExpertEncoding.INSTANCE.contains(name) ||</span>
-<span class="nc bnc" id="L160" title="All 2 branches missed.">                          SymbolEncoding.INSTANCE.contains(name) ||</span>
-<span class="nc bnc" id="L161" title="All 2 branches missed.">                          ZapfDingbatsEncoding.INSTANCE.contains(name);</span>
-<span class="nc bnc" id="L162" title="All 2 branches missed.">                    if (forceOverride)</span>
+<span class="fc" id="L156">                    final boolean forceOverride =</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">                          WinAnsiEncoding.INSTANCE.contains(name) ||</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">                          MacRomanEncoding.INSTANCE.contains(name) || </span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">                          MacExpertEncoding.INSTANCE.contains(name) ||</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">                          SymbolEncoding.INSTANCE.contains(name) ||</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">                          ZapfDingbatsEncoding.INSTANCE.contains(name);</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">                    if (forceOverride)</span>
                     {
-<span class="nc" id="L164">                        unicodeToName.put(string, name);</span>
+<span class="fc" id="L164">                        unicodeToName.put(string, name);</span>
                     }
                     else
                     {
-<span class="nc" id="L168">                        unicodeToName.putIfAbsent(string, name);</span>
+<span class="fc" id="L168">                        unicodeToName.putIfAbsent(string, name);</span>
                     }
                 }
-<span class="nc" id="L171">            }</span>
+<span class="fc" id="L171">            }</span>
         }
-<span class="nc" id="L173">    }</span>
+<span class="fc" id="L173">    }</span>
 
     /**
      * Returns the name for the given Unicode code point.
@@ -180,12 +180,12 @@ public final class GlyphList
      */
     public String codePointToName(int codePoint)
     {
-<span class="nc" id="L183">        String name = unicodeToName.get(new String(new int[] { codePoint }, 0 , 1));</span>
-<span class="nc bnc" id="L184" title="All 2 branches missed.">        if (name == null)</span>
+<span class="fc" id="L183">        String name = unicodeToName.get(new String(new int[] { codePoint }, 0 , 1));</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">        if (name == null)</span>
         {
-<span class="nc" id="L186">            return &quot;.notdef&quot;;</span>
+<span class="fc" id="L186">            return &quot;.notdef&quot;;</span>
         }
-<span class="nc" id="L188">        return name;</span>
+<span class="fc" id="L188">        return name;</span>
     }
 
     /**
@@ -212,28 +212,28 @@ public final class GlyphList
      */
     public String toUnicode(String name)
     {
-<span class="nc bnc" id="L215" title="All 2 branches missed.">        if (name == null)</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">        if (name == null)</span>
         {
 <span class="nc" id="L217">            return null;</span>
         }
 
-<span class="nc" id="L220">        String unicode = nameToUnicode.get(name);</span>
-<span class="nc bnc" id="L221" title="All 2 branches missed.">        if (unicode != null)</span>
+<span class="fc" id="L220">        String unicode = nameToUnicode.get(name);</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">        if (unicode != null)</span>
         {
-<span class="nc" id="L223">            return unicode;</span>
+<span class="fc" id="L223">            return unicode;</span>
         }
         
         // separate read/write cache for thread safety
-<span class="nc" id="L227">        unicode = uniNameToUnicodeCache.get(name);</span>
-<span class="nc bnc" id="L228" title="All 2 branches missed.">        if (unicode == null)</span>
+<span class="fc" id="L227">        unicode = uniNameToUnicodeCache.get(name);</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">        if (unicode == null)</span>
         {
             // test if we have a suffix and if so remove it
-<span class="nc bnc" id="L231" title="All 2 branches missed.">            if (name.indexOf('.') &gt; 0)</span>
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">            if (name.indexOf('.') &gt; 0)</span>
             {
 <span class="nc" id="L233">                unicode = toUnicode(name.substring(0, name.indexOf('.')));</span>
             }
-<span class="nc bnc" id="L235" title="All 4 branches missed.">            else if ((name.length() == 7 &amp;&amp; name.startsWith(&quot;uni&quot;))</span>
-<span class="nc bnc" id="L236" title="All 4 branches missed.">                    || (name.length() == 5 &amp;&amp; name.startsWith(&quot;u&quot;)))</span>
+<span class="pc bpc" id="L235" title="1 of 4 branches missed.">            else if ((name.length() == 7 &amp;&amp; name.startsWith(&quot;uni&quot;))</span>
+<span class="pc bpc" id="L236" title="3 of 4 branches missed.">                    || (name.length() == 5 &amp;&amp; name.startsWith(&quot;u&quot;)))</span>
             {
                 // test for Unicode name in the format uniXXXX/uXXXX where X is hex
 <span class="nc bnc" id="L239" title="All 2 branches missed.">                int start = name.length() == 7 ? 3 : 1;</span>
@@ -254,13 +254,13 @@ public final class GlyphList
 <span class="nc" id="L254">                    LOG.warn(&quot;Not a number in Unicode character name: {}&quot;, name);</span>
 <span class="nc" id="L255">                }</span>
             }
-<span class="nc bnc" id="L257" title="All 2 branches missed.">            if (unicode != null)</span>
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">            if (unicode != null)</span>
             {
                 // null value not allowed in ConcurrentHashMap
 <span class="nc" id="L260">                uniNameToUnicodeCache.put(name, unicode);</span>
             }
         }
-<span class="nc" id="L263">        return unicode;</span>
+<span class="fc" id="L263">        return unicode;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

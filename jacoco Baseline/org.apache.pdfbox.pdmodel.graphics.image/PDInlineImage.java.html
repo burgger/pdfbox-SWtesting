@@ -67,57 +67,57 @@ public final class PDInlineImage implements PDImage
      */
     public PDInlineImage(COSDictionary parameters, byte[] data, PDResources resources)
             throws IOException
-<span class="nc" id="L70">    {</span>
-<span class="nc" id="L71">        this.parameters = parameters;</span>
-<span class="nc" id="L72">        this.resources = resources;</span>
-<span class="nc" id="L73">        this.rawData = data;</span>
+<span class="fc" id="L70">    {</span>
+<span class="fc" id="L71">        this.parameters = parameters;</span>
+<span class="fc" id="L72">        this.resources = resources;</span>
+<span class="fc" id="L73">        this.rawData = data;</span>
 
-<span class="nc" id="L75">        DecodeResult decodeResult = null;</span>
-<span class="nc" id="L76">        List&lt;String&gt; filters = getFilters();</span>
-<span class="nc bnc" id="L77" title="All 2 branches missed.">        if (filters.isEmpty())</span>
+<span class="fc" id="L75">        DecodeResult decodeResult = null;</span>
+<span class="fc" id="L76">        List&lt;String&gt; filters = getFilters();</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (filters.isEmpty())</span>
         {
-<span class="nc" id="L79">            this.decodedData = data;</span>
+<span class="fc" id="L79">            this.decodedData = data;</span>
         }
         else
         {
-<span class="nc" id="L83">            ByteArrayInputStream in = new ByteArrayInputStream(data);</span>
-<span class="nc" id="L84">            ByteArrayOutputStream out = new ByteArrayOutputStream(data.length);</span>
-<span class="nc" id="L85">            byte[] ba = null;</span>
-<span class="nc bnc" id="L86" title="All 2 branches missed.">            for (int i = 0; i &lt; filters.size(); i++)</span>
+<span class="fc" id="L83">            ByteArrayInputStream in = new ByteArrayInputStream(data);</span>
+<span class="fc" id="L84">            ByteArrayOutputStream out = new ByteArrayOutputStream(data.length);</span>
+<span class="fc" id="L85">            byte[] ba = null;</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">            for (int i = 0; i &lt; filters.size(); i++)</span>
             {
                 // TODO handling of abbreviated names belongs here, rather than in other classes
-<span class="nc" id="L89">                out.reset();</span>
-<span class="nc" id="L90">                Filter filter = FilterFactory.INSTANCE.getFilter(filters.get(i));</span>
-<span class="nc" id="L91">                decodeResult = filter.decode(in, out, parameters, i);</span>
-<span class="nc" id="L92">                ba = out.toByteArray();</span>
-<span class="nc" id="L93">                in = new ByteArrayInputStream(ba);</span>
+<span class="fc" id="L89">                out.reset();</span>
+<span class="fc" id="L90">                Filter filter = FilterFactory.INSTANCE.getFilter(filters.get(i));</span>
+<span class="fc" id="L91">                decodeResult = filter.decode(in, out, parameters, i);</span>
+<span class="fc" id="L92">                ba = out.toByteArray();</span>
+<span class="fc" id="L93">                in = new ByteArrayInputStream(ba);</span>
             }
-<span class="nc" id="L95">            this.decodedData = ba;</span>
+<span class="fc" id="L95">            this.decodedData = ba;</span>
         }
 
         // repair parameters
-<span class="nc bnc" id="L99" title="All 2 branches missed.">        if (decodeResult != null)</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        if (decodeResult != null)</span>
         {
-<span class="nc" id="L101">            parameters.addAll(decodeResult.getParameters());</span>
+<span class="fc" id="L101">            parameters.addAll(decodeResult.getParameters());</span>
         }
-<span class="nc" id="L103">    }</span>
+<span class="fc" id="L103">    }</span>
 
     @Override
     public COSDictionary getCOSObject()
     {
-<span class="nc" id="L108">        return parameters;</span>
+<span class="fc" id="L108">        return parameters;</span>
     }
 
     @Override
     public int getBitsPerComponent()
     {
-<span class="nc bnc" id="L114" title="All 2 branches missed.">        if (isStencil())</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (isStencil())</span>
         {
-<span class="nc" id="L116">            return 1;</span>
+<span class="fc" id="L116">            return 1;</span>
         }
         else
         {
-<span class="nc" id="L120">            return parameters.getInt(COSName.BPC, COSName.BITS_PER_COMPONENT, -1);</span>
+<span class="fc" id="L120">            return parameters.getInt(COSName.BPC, COSName.BITS_PER_COMPONENT, -1);</span>
         }
     }
 
@@ -130,15 +130,15 @@ public final class PDInlineImage implements PDImage
     @Override
     public PDColorSpace getColorSpace() throws IOException
     {
-<span class="nc" id="L133">        COSBase cs = parameters.getDictionaryObject(COSName.CS, COSName.COLORSPACE);</span>
-<span class="nc bnc" id="L134" title="All 2 branches missed.">        if (cs != null)</span>
+<span class="fc" id="L133">        COSBase cs = parameters.getDictionaryObject(COSName.CS, COSName.COLORSPACE);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (cs != null)</span>
         {
-<span class="nc" id="L136">            return createColorSpace(cs);</span>
+<span class="fc" id="L136">            return createColorSpace(cs);</span>
         }
-<span class="nc bnc" id="L138" title="All 2 branches missed.">        else if (isStencil())</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        else if (isStencil())</span>
         {
             // stencil mask color space must be gray, it is often missing
-<span class="nc" id="L141">            return PDDeviceGray.INSTANCE;</span>
+<span class="fc" id="L141">            return PDDeviceGray.INSTANCE;</span>
         }
         else
         {
@@ -150,26 +150,26 @@ public final class PDInlineImage implements PDImage
     // deliver the long name of a device colorspace, or the parameter
     private COSBase toLongName(COSBase cs)
     {
-<span class="nc bnc" id="L153" title="All 2 branches missed.">        if (COSName.RGB.equals(cs))</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">        if (COSName.RGB.equals(cs))</span>
         {
-<span class="nc" id="L155">            return COSName.DEVICERGB;</span>
+<span class="fc" id="L155">            return COSName.DEVICERGB;</span>
         }
-<span class="nc bnc" id="L157" title="All 2 branches missed.">        if (COSName.CMYK.equals(cs))</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">        if (COSName.CMYK.equals(cs))</span>
         {
 <span class="nc" id="L159">            return COSName.DEVICECMYK;</span>
         }
-<span class="nc bnc" id="L161" title="All 2 branches missed.">        if (COSName.G.equals(cs))</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        if (COSName.G.equals(cs))</span>
         {
 <span class="nc" id="L163">            return COSName.DEVICEGRAY;</span>
         }
-<span class="nc" id="L165">        return cs;</span>
+<span class="fc" id="L165">        return cs;</span>
     }
     
     private PDColorSpace createColorSpace(COSBase cs) throws IOException
     {
-<span class="nc bnc" id="L170" title="All 2 branches missed.">        if (cs instanceof COSName)</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        if (cs instanceof COSName)</span>
         {
-<span class="nc" id="L172">            return PDColorSpace.create(toLongName(cs), resources);</span>
+<span class="fc" id="L172">            return PDColorSpace.create(toLongName(cs), resources);</span>
         }
 
 <span class="nc bnc" id="L175" title="All 4 branches missed.">        if (cs instanceof COSArray &amp;&amp; ((COSArray) cs).size() &gt; 1)</span>
@@ -205,7 +205,7 @@ public final class PDInlineImage implements PDImage
     @Override
     public int getHeight()
     {
-<span class="nc" id="L208">        return parameters.getInt(COSName.H, COSName.HEIGHT, -1);</span>
+<span class="fc" id="L208">        return parameters.getInt(COSName.H, COSName.HEIGHT, -1);</span>
     }
 
     @Override
@@ -217,7 +217,7 @@ public final class PDInlineImage implements PDImage
     @Override
     public int getWidth()
     {
-<span class="nc" id="L220">        return parameters.getInt(COSName.W, COSName.WIDTH, -1);</span>
+<span class="fc" id="L220">        return parameters.getInt(COSName.W, COSName.WIDTH, -1);</span>
     }
 
     @Override
@@ -229,7 +229,7 @@ public final class PDInlineImage implements PDImage
     @Override
     public boolean getInterpolate()
     {
-<span class="nc" id="L232">        return parameters.getBoolean(COSName.I, COSName.INTERPOLATE, false);</span>
+<span class="fc" id="L232">        return parameters.getBoolean(COSName.I, COSName.INTERPOLATE, false);</span>
     }
 
     @Override
@@ -245,17 +245,17 @@ public final class PDInlineImage implements PDImage
      */
     public List&lt;String&gt; getFilters()
     {
-<span class="nc" id="L248">        COSBase filters = parameters.getDictionaryObject(COSName.F, COSName.FILTER);</span>
-<span class="nc bnc" id="L249" title="All 2 branches missed.">        if (filters instanceof COSName)</span>
+<span class="fc" id="L248">        COSBase filters = parameters.getDictionaryObject(COSName.F, COSName.FILTER);</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">        if (filters instanceof COSName)</span>
         {
-<span class="nc" id="L251">            COSName name = (COSName) filters;</span>
-<span class="nc" id="L252">            return Collections.singletonList(name.getName());</span>
+<span class="fc" id="L251">            COSName name = (COSName) filters;</span>
+<span class="fc" id="L252">            return Collections.singletonList(name.getName());</span>
         }
-<span class="nc bnc" id="L254" title="All 2 branches missed.">        else if (filters instanceof COSArray)</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        else if (filters instanceof COSArray)</span>
         {
-<span class="nc" id="L256">            return ((COSArray) filters).toCOSNameStringList();</span>
+<span class="fc" id="L256">            return ((COSArray) filters).toCOSNameStringList();</span>
         }
-<span class="nc" id="L258">        return Collections.emptyList();</span>
+<span class="fc" id="L258">        return Collections.emptyList();</span>
     }
 
     /**
@@ -278,13 +278,13 @@ public final class PDInlineImage implements PDImage
     @Override
     public COSArray getDecode()
     {
-<span class="nc" id="L281">        return (COSArray) parameters.getDictionaryObject(COSName.D, COSName.DECODE);</span>
+<span class="fc" id="L281">        return (COSArray) parameters.getDictionaryObject(COSName.D, COSName.DECODE);</span>
     }
 
     @Override
     public boolean isStencil()
     {
-<span class="nc" id="L287">        return parameters.getBoolean(COSName.IM, COSName.IMAGE_MASK, false);</span>
+<span class="fc" id="L287">        return parameters.getBoolean(COSName.IM, COSName.IMAGE_MASK, false);</span>
     }
 
     @Override
@@ -296,14 +296,14 @@ public final class PDInlineImage implements PDImage
     @Override
     public InputStream createInputStream() throws IOException
     {
-<span class="nc" id="L299">        return new ByteArrayInputStream(decodedData);</span>
+<span class="fc" id="L299">        return new ByteArrayInputStream(decodedData);</span>
     }
 
     @Override
     public InputStream createInputStream(DecodeOptions options) throws IOException
     {
         // Decode options are irrelevant for inline image, as the data is always buffered.
-<span class="nc" id="L306">        return createInputStream();</span>
+<span class="fc" id="L306">        return createInputStream();</span>
     }
 
     @Override
@@ -331,7 +331,7 @@ public final class PDInlineImage implements PDImage
     @Override
     public boolean isEmpty()
     {
-<span class="nc bnc" id="L334" title="All 2 branches missed.">        return decodedData.length == 0;</span>
+<span class="pc bpc" id="L334" title="1 of 2 branches missed.">        return decodedData.length == 0;</span>
     }
 
     /**
@@ -341,13 +341,13 @@ public final class PDInlineImage implements PDImage
      */
     public byte[] getData()
     {
-<span class="nc" id="L344">        return decodedData;</span>
+<span class="fc" id="L344">        return decodedData;</span>
     }
     
     @Override
     public BufferedImage getImage() throws IOException
     {
-<span class="nc" id="L350">        return SampledImageReader.getRGBImage(this, null);</span>
+<span class="fc" id="L350">        return SampledImageReader.getRGBImage(this, null);</span>
     }
 
     @Override
@@ -371,11 +371,11 @@ public final class PDInlineImage implements PDImage
     @Override
     public BufferedImage getStencilImage(Paint paint) throws IOException
     {
-<span class="nc bnc" id="L374" title="All 2 branches missed.">        if (!isStencil())</span>
+<span class="pc bpc" id="L374" title="1 of 2 branches missed.">        if (!isStencil())</span>
         {
 <span class="nc" id="L376">            throw new IllegalStateException(&quot;Image is not a stencil&quot;);</span>
         }
-<span class="nc" id="L378">        return SampledImageReader.getStencilImage(this, paint);</span>
+<span class="fc" id="L378">        return SampledImageReader.getStencilImage(this, paint);</span>
     }
 
     /**
@@ -386,21 +386,21 @@ public final class PDInlineImage implements PDImage
     @Override
     public String getSuffix()
     {
-<span class="nc" id="L389">        List&lt;String&gt; filters = getFilters();</span>
+<span class="fc" id="L389">        List&lt;String&gt; filters = getFilters();</span>
 
-<span class="nc bnc" id="L391" title="All 4 branches missed.">        if (filters == null || filters.isEmpty())</span>
+<span class="pc bpc" id="L391" title="2 of 4 branches missed.">        if (filters == null || filters.isEmpty())</span>
         {
 <span class="nc" id="L393">            return &quot;png&quot;;</span>
         }
-<span class="nc bnc" id="L395" title="All 2 branches missed.">        if (filters.contains(COSName.DCT_DECODE.getName()) || </span>
-<span class="nc bnc" id="L396" title="All 2 branches missed.">            filters.contains(COSName.DCT_DECODE_ABBREVIATION.getName()))</span>
+<span class="pc bpc" id="L395" title="1 of 2 branches missed.">        if (filters.contains(COSName.DCT_DECODE.getName()) || </span>
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">            filters.contains(COSName.DCT_DECODE_ABBREVIATION.getName()))</span>
         {
 <span class="nc" id="L398">            return &quot;jpg&quot;;</span>
         }
-<span class="nc bnc" id="L400" title="All 2 branches missed.">        if (filters.contains(COSName.CCITTFAX_DECODE.getName()) ||</span>
-<span class="nc bnc" id="L401" title="All 2 branches missed.">            filters.contains(COSName.CCITTFAX_DECODE_ABBREVIATION.getName()))</span>
+<span class="pc bpc" id="L400" title="1 of 2 branches missed.">        if (filters.contains(COSName.CCITTFAX_DECODE.getName()) ||</span>
+<span class="pc bpc" id="L401" title="1 of 2 branches missed.">            filters.contains(COSName.CCITTFAX_DECODE_ABBREVIATION.getName()))</span>
         {
-<span class="nc" id="L403">            return &quot;tiff&quot;;</span>
+<span class="fc" id="L403">            return &quot;tiff&quot;;</span>
         }
         // JPX and JBIG2 don't exist for inline images
 <span class="nc" id="L406">        return &quot;png&quot;;        </span>

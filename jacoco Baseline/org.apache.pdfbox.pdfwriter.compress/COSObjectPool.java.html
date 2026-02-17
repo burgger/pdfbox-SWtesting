@@ -31,10 +31,10 @@ import java.util.Map;
  */
 public class COSObjectPool
 {
-<span class="nc" id="L34">    private final Map&lt;COSObjectKey, COSBase&gt; keyPool = new HashMap&lt;&gt;();</span>
-<span class="nc" id="L35">    private final Map&lt;COSBase, COSObjectKey&gt; objectPool = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L34">    private final Map&lt;COSObjectKey, COSBase&gt; keyPool = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L35">    private final Map&lt;COSBase, COSObjectKey&gt; objectPool = new HashMap&lt;&gt;();</span>
 
-<span class="nc" id="L37">    private long highestXRefObjectNumber = 0;</span>
+<span class="fc" id="L37">    private long highestXRefObjectNumber = 0;</span>
 
     /**
      * Creates a map of {@link COSBase} instances to {@link COSObjectKey}s, allowing bidirectional lookups. This
@@ -44,10 +44,10 @@ public class COSObjectPool
      * @param highestXRefObjectNumber The highest known object number.
      */
     public COSObjectPool(long highestXRefObjectNumber)
-<span class="nc" id="L47">    {</span>
-<span class="nc" id="L48">        this.highestXRefObjectNumber = Math.max(this.highestXRefObjectNumber,</span>
+<span class="fc" id="L47">    {</span>
+<span class="fc" id="L48">        this.highestXRefObjectNumber = Math.max(this.highestXRefObjectNumber,</span>
                 highestXRefObjectNumber);
-<span class="nc" id="L50">    }</span>
+<span class="fc" id="L50">    }</span>
 
     /**
      * Update the key and object maps.
@@ -62,24 +62,24 @@ public class COSObjectPool
         // if the given key is the same than the key which is stored for the &quot;same&quot; base object wihtin the object pool
         // the same is always true for COSFloat, COSBoolean and COSName and under certain circumstances for the remainig
         // types as well
-<span class="nc bnc" id="L65" title="All 6 branches missed.">        if (object == null || (contains(object) &amp;&amp; getKey(object).equals(key)))</span>
+<span class="pc bpc" id="L65" title="2 of 6 branches missed.">        if (object == null || (contains(object) &amp;&amp; getKey(object).equals(key)))</span>
         {
 <span class="nc" id="L67">            return null;</span>
         }
-<span class="nc" id="L69">        COSObjectKey actualKey = key;</span>
-<span class="nc bnc" id="L70" title="All 4 branches missed.">        if (actualKey == null || contains(actualKey))</span>
+<span class="fc" id="L69">        COSObjectKey actualKey = key;</span>
+<span class="pc bpc" id="L70" title="1 of 4 branches missed.">        if (actualKey == null || contains(actualKey))</span>
         {
-<span class="nc" id="L72">            highestXRefObjectNumber++;</span>
-<span class="nc" id="L73">            actualKey = new COSObjectKey(highestXRefObjectNumber, 0);</span>
-<span class="nc" id="L74">            object.setKey(actualKey);</span>
+<span class="fc" id="L72">            highestXRefObjectNumber++;</span>
+<span class="fc" id="L73">            actualKey = new COSObjectKey(highestXRefObjectNumber, 0);</span>
+<span class="fc" id="L74">            object.setKey(actualKey);</span>
         }
         else
         {
-<span class="nc" id="L78">            highestXRefObjectNumber = Math.max(key.getNumber(), highestXRefObjectNumber);</span>
+<span class="fc" id="L78">            highestXRefObjectNumber = Math.max(key.getNumber(), highestXRefObjectNumber);</span>
         }
-<span class="nc" id="L80">        keyPool.put(actualKey, object);</span>
-<span class="nc" id="L81">        objectPool.put(object, actualKey);</span>
-<span class="nc" id="L82">        return actualKey;</span>
+<span class="fc" id="L80">        keyPool.put(actualKey, object);</span>
+<span class="fc" id="L81">        objectPool.put(object, actualKey);</span>
+<span class="fc" id="L82">        return actualKey;</span>
     }
 
     /**
@@ -92,14 +92,14 @@ public class COSObjectPool
      */
     public COSObjectKey getKey(COSBase object)
     {
-<span class="nc" id="L95">        COSObjectKey key = null;</span>
-<span class="nc bnc" id="L96" title="All 2 branches missed.">        if (object instanceof COSObject)</span>
+<span class="fc" id="L95">        COSObjectKey key = null;</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        if (object instanceof COSObject)</span>
         {
 <span class="nc" id="L98">            key = objectPool.get(((COSObject) object).getObject());</span>
         }
-<span class="nc bnc" id="L100" title="All 2 branches missed.">        if (key == null)</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (key == null)</span>
         {
-<span class="nc" id="L102">            return objectPool.get(object);</span>
+<span class="fc" id="L102">            return objectPool.get(object);</span>
         }
 <span class="nc" id="L104">        return key;</span>
     }
@@ -112,7 +112,7 @@ public class COSObjectPool
      */
     public boolean contains(COSObjectKey key)
     {
-<span class="nc" id="L115">        return keyPool.containsKey(key);</span>
+<span class="fc" id="L115">        return keyPool.containsKey(key);</span>
     }
 
     /**
@@ -125,7 +125,7 @@ public class COSObjectPool
      */
     public COSBase getObject(COSObjectKey key)
     {
-<span class="nc" id="L128">        return keyPool.get(key);</span>
+<span class="fc" id="L128">        return keyPool.get(key);</span>
     }
 
     /**
@@ -136,9 +136,9 @@ public class COSObjectPool
      */
     public boolean contains(COSBase object)
     {
-<span class="nc bnc" id="L139" title="All 2 branches missed.">        return (object instanceof COSObject</span>
-<span class="nc bnc" id="L140" title="All 2 branches missed.">                &amp;&amp; objectPool.containsKey(((COSObject) object).getObject()))</span>
-<span class="nc bnc" id="L141" title="All 2 branches missed.">                || objectPool.containsKey(object);</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">        return (object instanceof COSObject</span>
+<span class="pc bnc" id="L140" title="All 2 branches missed.">                &amp;&amp; objectPool.containsKey(((COSObject) object).getObject()))</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">                || objectPool.containsKey(object);</span>
     }
 
     /**
@@ -150,7 +150,7 @@ public class COSObjectPool
      */
     public long getHighestXRefObjectNumber()
     {
-<span class="nc" id="L153">        return highestXRefObjectNumber;</span>
+<span class="fc" id="L153">        return highestXRefObjectNumber;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

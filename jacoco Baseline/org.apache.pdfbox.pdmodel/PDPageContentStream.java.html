@@ -39,35 +39,35 @@ public final class PDPageContentStream extends PDAbstractContentStream implement
     /**
      * This is to choose what to do with the stream: overwrite, append or prepend.
      */
-<span class="nc" id="L42">    public enum AppendMode</span>
+<span class="fc" id="L42">    public enum AppendMode</span>
     {
         /**
          * Overwrite the existing page content streams.
          */
-<span class="nc" id="L47">        OVERWRITE, </span>
+<span class="fc" id="L47">        OVERWRITE, </span>
         /**
          * Append the content stream after all existing page content streams.
          */
-<span class="nc" id="L51">        APPEND, </span>
+<span class="fc" id="L51">        APPEND, </span>
         /**
          * Insert before all other page content streams.
          */
-<span class="nc" id="L55">        PREPEND;</span>
+<span class="fc" id="L55">        PREPEND;</span>
 
         public boolean isOverwrite()
         {
-<span class="nc bnc" id="L59" title="All 2 branches missed.">            return this == OVERWRITE;</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">            return this == OVERWRITE;</span>
         }
 
         public boolean isPrepend()
         {
-<span class="nc bnc" id="L64" title="All 2 branches missed.">            return this == PREPEND;</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">            return this == PREPEND;</span>
         }
     }
   
-<span class="nc" id="L68">    private static final Logger LOG = LogManager.getLogger(PDPageContentStream.class);</span>
+<span class="fc" id="L68">    private static final Logger LOG = LogManager.getLogger(PDPageContentStream.class);</span>
 
-<span class="nc" id="L70">    private boolean sourcePageHadContents = false;</span>
+<span class="pc" id="L70">    private boolean sourcePageHadContents = false;</span>
 
     /**
      * Create a new PDPage content stream. This constructor overwrites all existing content streams
@@ -79,12 +79,12 @@ public final class PDPageContentStream extends PDAbstractContentStream implement
      */
     public PDPageContentStream(PDDocument document, PDPage sourcePage) throws IOException
     {
-<span class="nc" id="L82">        this(document, sourcePage, AppendMode.OVERWRITE, true, false);</span>
-<span class="nc bnc" id="L83" title="All 2 branches missed.">        if (sourcePageHadContents)</span>
+<span class="fc" id="L82">        this(document, sourcePage, AppendMode.OVERWRITE, true, false);</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        if (sourcePageHadContents)</span>
         {
 <span class="nc" id="L85">            LOG.warn(&quot;You are overwriting an existing content, you should use the append mode&quot;);</span>
         }
-<span class="nc" id="L87">    }</span>
+<span class="fc" id="L87">    }</span>
 
     /**
      * Create a new PDPage content stream. If the appendContent parameter is set to
@@ -101,8 +101,8 @@ public final class PDPageContentStream extends PDAbstractContentStream implement
     public PDPageContentStream(PDDocument document, PDPage sourcePage, AppendMode appendContent,
                                boolean compress) throws IOException
     {
-<span class="nc" id="L104">        this(document, sourcePage, appendContent, compress, false);</span>
-<span class="nc" id="L105">    }</span>
+<span class="fc" id="L104">        this(document, sourcePage, appendContent, compress, false);</span>
+<span class="fc" id="L105">    }</span>
     
     /**
      * Create a new PDPage content stream.
@@ -120,84 +120,84 @@ public final class PDPageContentStream extends PDAbstractContentStream implement
     public PDPageContentStream(PDDocument document, PDPage sourcePage, AppendMode appendContent,
                                boolean compress, boolean resetContext) throws IOException
     {
-<span class="nc" id="L123">        this(document, sourcePage, appendContent, compress, resetContext, new PDStream(document),</span>
-<span class="nc bnc" id="L124" title="All 2 branches missed.">                sourcePage.getResources() != null ? sourcePage.getResources() : new PDResources());</span>
-<span class="nc" id="L125">    }</span>
+<span class="fc" id="L123">        this(document, sourcePage, appendContent, compress, resetContext, new PDStream(document),</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">                sourcePage.getResources() != null ? sourcePage.getResources() : new PDResources());</span>
+<span class="fc" id="L125">    }</span>
 
     private PDPageContentStream(PDDocument document, PDPage sourcePage, AppendMode appendContent,
                                 boolean compress, boolean resetContext,PDStream stream,
                                 PDResources resources) throws IOException
     {
-<span class="nc bnc" id="L131" title="All 2 branches missed.">        super(document, stream.createOutputStream(compress ? COSName.FLATE_DECODE : null), resources);</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        super(document, stream.createOutputStream(compress ? COSName.FLATE_DECODE : null), resources);</span>
 
         // propagate resources to the page
-<span class="nc bnc" id="L134" title="All 2 branches missed.">        if (sourcePage.getResources() == null)</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (sourcePage.getResources() == null)</span>
         {
-<span class="nc" id="L136">            sourcePage.setResources(resources);</span>
+<span class="fc" id="L136">            sourcePage.setResources(resources);</span>
         }
 
         // If request specifies the need to append/prepend to the document
-<span class="nc bnc" id="L140" title="All 4 branches missed.">        if (!appendContent.isOverwrite() &amp;&amp; sourcePage.hasContents())</span>
+<span class="fc bfc" id="L140" title="All 4 branches covered.">        if (!appendContent.isOverwrite() &amp;&amp; sourcePage.hasContents())</span>
         {
             // Add new stream to contents array
-<span class="nc" id="L143">            COSBase contents = sourcePage.getCOSObject().getDictionaryObject(COSName.CONTENTS);</span>
+<span class="fc" id="L143">            COSBase contents = sourcePage.getCOSObject().getDictionaryObject(COSName.CONTENTS);</span>
             COSArray array;
-<span class="nc bnc" id="L145" title="All 2 branches missed.">            if (contents instanceof COSArray)</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">            if (contents instanceof COSArray)</span>
             {
                 // If contents is already an array, a new stream is simply appended to it
-<span class="nc" id="L148">                array = (COSArray) contents;</span>
+<span class="fc" id="L148">                array = (COSArray) contents;</span>
             }
             else
             {
                 // Creates a new array and adds the current stream plus a new one to it
-<span class="nc" id="L153">                array = new COSArray();</span>
-<span class="nc" id="L154">                array.add(contents);</span>
+<span class="fc" id="L153">                array = new COSArray();</span>
+<span class="fc" id="L154">                array.add(contents);</span>
             }
 
-<span class="nc bnc" id="L157" title="All 2 branches missed.">            if (appendContent.isPrepend())</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">            if (appendContent.isPrepend())</span>
             {
 <span class="nc" id="L159">                array.add(0, stream.getCOSObject());</span>
             }
             else
             {
-<span class="nc" id="L163">                array.add(stream);</span>
+<span class="fc" id="L163">                array.add(stream);</span>
             }
 
             // save the initial/unmodified graphics context
-<span class="nc bnc" id="L167" title="All 2 branches missed.">            if (resetContext)</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">            if (resetContext)</span>
             {
                 // create a new stream to prefix existing stream
-<span class="nc" id="L170">                PDStream prefixStream = new PDStream(document);</span>
+<span class="fc" id="L170">                PDStream prefixStream = new PDStream(document);</span>
 
                 // save the pre-append graphics state
-<span class="nc" id="L173">                try (OutputStream prefixOut = prefixStream.createOutputStream())</span>
+<span class="fc" id="L173">                try (OutputStream prefixOut = prefixStream.createOutputStream())</span>
                 {
-<span class="nc" id="L175">                    prefixOut.write(&quot;q&quot;.getBytes(StandardCharsets.US_ASCII));</span>
-<span class="nc" id="L176">                    prefixOut.write('\n');</span>
+<span class="fc" id="L175">                    prefixOut.write(&quot;q&quot;.getBytes(StandardCharsets.US_ASCII));</span>
+<span class="fc" id="L176">                    prefixOut.write('\n');</span>
                 }
 
                 // insert the new stream at the beginning
-<span class="nc" id="L180">                array.add(0, prefixStream.getCOSObject());</span>
+<span class="fc" id="L180">                array.add(0, prefixStream.getCOSObject());</span>
             }
 
             // Sets the compoundStream as page contents
-<span class="nc" id="L184">            sourcePage.getCOSObject().setItem(COSName.CONTENTS, array);</span>
+<span class="fc" id="L184">            sourcePage.getCOSObject().setItem(COSName.CONTENTS, array);</span>
 
             // restore the pre-append graphics state
-<span class="nc bnc" id="L187" title="All 2 branches missed.">            if (resetContext)</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">            if (resetContext)</span>
             {
-<span class="nc" id="L189">                restoreGraphicsState();</span>
+<span class="fc" id="L189">                restoreGraphicsState();</span>
             }
-<span class="nc" id="L191">        }</span>
+<span class="fc" id="L191">        }</span>
         else
         {
-<span class="nc" id="L194">            sourcePageHadContents = sourcePage.hasContents();</span>
-<span class="nc" id="L195">            sourcePage.setContents(stream);</span>
+<span class="fc" id="L194">            sourcePageHadContents = sourcePage.hasContents();</span>
+<span class="fc" id="L195">            sourcePage.setContents(stream);</span>
         }
 
         // configure NumberFormat
-<span class="nc" id="L199">        setMaximumFractionDigits(5);</span>
-<span class="nc" id="L200">    }</span>
+<span class="fc" id="L199">        setMaximumFractionDigits(5);</span>
+<span class="fc" id="L200">    }</span>
 
     /**
      * Create a new appearance stream. Note that this is not actually a &quot;page&quot; content stream.

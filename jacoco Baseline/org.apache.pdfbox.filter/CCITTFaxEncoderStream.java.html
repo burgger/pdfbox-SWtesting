@@ -45,7 +45,7 @@ import java.io.OutputStream;
  */
 final class CCITTFaxEncoderStream extends OutputStream {
     
-<span class="nc" id="L48">    private int currentBufferLength = 0;</span>
+<span class="fc" id="L48">    private int currentBufferLength = 0;</span>
     private final byte[] inputBuffer;
     private final int inputBufferLength;
     private final int columns;
@@ -53,38 +53,38 @@ final class CCITTFaxEncoderStream extends OutputStream {
 
     private int[] changesCurrentRow;
     private int[] changesReferenceRow;
-<span class="nc" id="L56">    private int currentRow = 0;</span>
-<span class="nc" id="L57">    private int changesCurrentRowLength = 0;</span>
-<span class="nc" id="L58">    private int changesReferenceRowLength = 0;</span>
-<span class="nc" id="L59">    private byte outputBuffer = 0;</span>
-<span class="nc" id="L60">    private byte outputBufferBitLength = 0;</span>
+<span class="fc" id="L56">    private int currentRow = 0;</span>
+<span class="fc" id="L57">    private int changesCurrentRowLength = 0;</span>
+<span class="fc" id="L58">    private int changesReferenceRowLength = 0;</span>
+<span class="fc" id="L59">    private byte outputBuffer = 0;</span>
+<span class="fc" id="L60">    private byte outputBufferBitLength = 0;</span>
     private final int fillOrder;
     private final OutputStream stream;
 
-<span class="nc" id="L64">    CCITTFaxEncoderStream(final OutputStream stream, final int columns, final int rows, final int fillOrder) {</span>
+<span class="fc" id="L64">    CCITTFaxEncoderStream(final OutputStream stream, final int columns, final int rows, final int fillOrder) {</span>
 
-<span class="nc" id="L66">        this.stream = stream;</span>
-<span class="nc" id="L67">        this.columns = columns;</span>
-<span class="nc" id="L68">        this.rows = rows;</span>
-<span class="nc" id="L69">        this.fillOrder = fillOrder;</span>
+<span class="fc" id="L66">        this.stream = stream;</span>
+<span class="fc" id="L67">        this.columns = columns;</span>
+<span class="fc" id="L68">        this.rows = rows;</span>
+<span class="fc" id="L69">        this.fillOrder = fillOrder;</span>
 
-<span class="nc" id="L71">        this.changesReferenceRow = new int[columns];</span>
-<span class="nc" id="L72">        this.changesCurrentRow = new int[columns];</span>
+<span class="fc" id="L71">        this.changesReferenceRow = new int[columns];</span>
+<span class="fc" id="L72">        this.changesCurrentRow = new int[columns];</span>
         
-<span class="nc" id="L74">        inputBufferLength = (columns + 7) / 8;</span>
-<span class="nc" id="L75">        inputBuffer = new byte[inputBufferLength];</span>
-<span class="nc" id="L76">    }</span>
+<span class="fc" id="L74">        inputBufferLength = (columns + 7) / 8;</span>
+<span class="fc" id="L75">        inputBuffer = new byte[inputBufferLength];</span>
+<span class="fc" id="L76">    }</span>
 
     @Override
     public void write(int b) throws IOException {
-<span class="nc" id="L80">        inputBuffer[currentBufferLength] = (byte) b;</span>
-<span class="nc" id="L81">        currentBufferLength++;</span>
+<span class="fc" id="L80">        inputBuffer[currentBufferLength] = (byte) b;</span>
+<span class="fc" id="L81">        currentBufferLength++;</span>
 
-<span class="nc bnc" id="L83" title="All 2 branches missed.">        if (currentBufferLength == inputBufferLength) {</span>
-<span class="nc" id="L84">            encodeRow();</span>
-<span class="nc" id="L85">            currentBufferLength = 0;</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (currentBufferLength == inputBufferLength) {</span>
+<span class="fc" id="L84">            encodeRow();</span>
+<span class="fc" id="L85">            currentBufferLength = 0;</span>
         }
-<span class="nc" id="L87">    }</span>
+<span class="fc" id="L87">    }</span>
 
     @Override
     public void flush() throws IOException {
@@ -97,182 +97,182 @@ final class CCITTFaxEncoderStream extends OutputStream {
 <span class="nc" id="L97">    }</span>
 
     private void encodeRow() throws IOException {
-<span class="nc" id="L100">        currentRow++;</span>
-<span class="nc" id="L101">        int[] tmp = changesReferenceRow;</span>
-<span class="nc" id="L102">        changesReferenceRow = changesCurrentRow;</span>
-<span class="nc" id="L103">        changesCurrentRow = tmp;</span>
-<span class="nc" id="L104">        changesReferenceRowLength = changesCurrentRowLength;</span>
-<span class="nc" id="L105">        changesCurrentRowLength = 0;</span>
+<span class="fc" id="L100">        currentRow++;</span>
+<span class="fc" id="L101">        int[] tmp = changesReferenceRow;</span>
+<span class="fc" id="L102">        changesReferenceRow = changesCurrentRow;</span>
+<span class="fc" id="L103">        changesCurrentRow = tmp;</span>
+<span class="fc" id="L104">        changesReferenceRowLength = changesCurrentRowLength;</span>
+<span class="fc" id="L105">        changesCurrentRowLength = 0;</span>
 
-<span class="nc" id="L107">        int index = 0;</span>
-<span class="nc" id="L108">        boolean white = true;</span>
-<span class="nc bnc" id="L109" title="All 2 branches missed.">        while (index &lt; columns) {</span>
-<span class="nc" id="L110">            int byteIndex = index / 8;</span>
-<span class="nc" id="L111">            int bit = index % 8;</span>
-<span class="nc bnc" id="L112" title="All 4 branches missed.">            if ((((inputBuffer[byteIndex] &gt;&gt; (7 - bit)) &amp; 1) == 1) == (white)) {</span>
-<span class="nc" id="L113">                changesCurrentRow[changesCurrentRowLength] = index;</span>
-<span class="nc" id="L114">                changesCurrentRowLength++;</span>
-<span class="nc bnc" id="L115" title="All 2 branches missed.">                white = !white;</span>
+<span class="fc" id="L107">        int index = 0;</span>
+<span class="fc" id="L108">        boolean white = true;</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        while (index &lt; columns) {</span>
+<span class="fc" id="L110">            int byteIndex = index / 8;</span>
+<span class="fc" id="L111">            int bit = index % 8;</span>
+<span class="fc bfc" id="L112" title="All 4 branches covered.">            if ((((inputBuffer[byteIndex] &gt;&gt; (7 - bit)) &amp; 1) == 1) == (white)) {</span>
+<span class="fc" id="L113">                changesCurrentRow[changesCurrentRowLength] = index;</span>
+<span class="fc" id="L114">                changesCurrentRowLength++;</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">                white = !white;</span>
             }
-<span class="nc" id="L117">            index++;</span>
-<span class="nc" id="L118">        }</span>
+<span class="fc" id="L117">            index++;</span>
+<span class="fc" id="L118">        }</span>
 
-<span class="nc" id="L120">        encodeRowType6();</span>
+<span class="fc" id="L120">        encodeRowType6();</span>
 
-<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (currentRow == rows) {</span>
-<span class="nc" id="L123">            writeEOL();</span>
-<span class="nc" id="L124">            writeEOL();</span>
-<span class="nc" id="L125">            fill();</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        if (currentRow == rows) {</span>
+<span class="fc" id="L123">            writeEOL();</span>
+<span class="fc" id="L124">            writeEOL();</span>
+<span class="fc" id="L125">            fill();</span>
         }
-<span class="nc" id="L127">    }</span>
+<span class="fc" id="L127">    }</span>
 
 
     private void encodeRowType6() throws IOException {
-<span class="nc" id="L131">        encode2D();</span>
-<span class="nc" id="L132">    }</span>
+<span class="fc" id="L131">        encode2D();</span>
+<span class="fc" id="L132">    }</span>
 
     private int[] getNextChanges(int pos, boolean white) {
-<span class="nc" id="L135">        int[] result = {columns, columns};</span>
-<span class="nc bnc" id="L136" title="All 2 branches missed.">        for (int i = 0; i &lt; changesCurrentRowLength; i++) {</span>
-<span class="nc bnc" id="L137" title="All 6 branches missed.">            if (pos &lt; changesCurrentRow[i] || (pos == 0 &amp;&amp; white)) {</span>
-<span class="nc" id="L138">                result[0] = changesCurrentRow[i];</span>
-<span class="nc bnc" id="L139" title="All 2 branches missed.">                if ((i + 1) &lt; changesCurrentRowLength) {</span>
-<span class="nc" id="L140">                    result[1] = changesCurrentRow[i + 1];</span>
+<span class="fc" id="L135">        int[] result = {columns, columns};</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        for (int i = 0; i &lt; changesCurrentRowLength; i++) {</span>
+<span class="fc bfc" id="L137" title="All 6 branches covered.">            if (pos &lt; changesCurrentRow[i] || (pos == 0 &amp;&amp; white)) {</span>
+<span class="fc" id="L138">                result[0] = changesCurrentRow[i];</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">                if ((i + 1) &lt; changesCurrentRowLength) {</span>
+<span class="fc" id="L140">                    result[1] = changesCurrentRow[i + 1];</span>
                 }
                 break;
             }
         }
 
-<span class="nc" id="L146">        return result;</span>
+<span class="fc" id="L146">        return result;</span>
     }
 
     private void writeRun(int runLength, boolean white) throws IOException {
-<span class="nc" id="L150">        int nonterm = runLength / 64;</span>
-<span class="nc bnc" id="L151" title="All 2 branches missed.">        Code[] codes = white ? WHITE_NONTERMINATING_CODES : BLACK_NONTERMINATING_CODES;</span>
-<span class="nc bnc" id="L152" title="All 2 branches missed.">        while (nonterm &gt; 0) {</span>
-<span class="nc bnc" id="L153" title="All 2 branches missed.">            if (nonterm &gt;= codes.length) {</span>
+<span class="fc" id="L150">        int nonterm = runLength / 64;</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        Code[] codes = white ? WHITE_NONTERMINATING_CODES : BLACK_NONTERMINATING_CODES;</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">        while (nonterm &gt; 0) {</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">            if (nonterm &gt;= codes.length) {</span>
 <span class="nc" id="L154">                write(codes[codes.length - 1].code, codes[codes.length - 1].length);</span>
 <span class="nc" id="L155">                nonterm -= codes.length;</span>
             }
             else {
-<span class="nc" id="L158">                write(codes[nonterm - 1].code, codes[nonterm - 1].length);</span>
-<span class="nc" id="L159">                nonterm = 0;</span>
+<span class="fc" id="L158">                write(codes[nonterm - 1].code, codes[nonterm - 1].length);</span>
+<span class="fc" id="L159">                nonterm = 0;</span>
             }
         }
 
-<span class="nc bnc" id="L163" title="All 2 branches missed.">        Code c = white ? WHITE_TERMINATING_CODES[runLength % 64] : BLACK_TERMINATING_CODES[runLength % 64];</span>
-<span class="nc" id="L164">        write(c.code, c.length);</span>
-<span class="nc" id="L165">    }</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">        Code c = white ? WHITE_TERMINATING_CODES[runLength % 64] : BLACK_TERMINATING_CODES[runLength % 64];</span>
+<span class="fc" id="L164">        write(c.code, c.length);</span>
+<span class="fc" id="L165">    }</span>
 
     private void encode2D() throws IOException {
-<span class="nc" id="L168">        boolean white = true;</span>
-<span class="nc" id="L169">        int index = 0; // a0</span>
-<span class="nc bnc" id="L170" title="All 2 branches missed.">        while (index &lt; columns) {</span>
-<span class="nc" id="L171">            int[] nextChanges = getNextChanges(index, white); // a1, a2</span>
+<span class="fc" id="L168">        boolean white = true;</span>
+<span class="fc" id="L169">        int index = 0; // a0</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        while (index &lt; columns) {</span>
+<span class="fc" id="L171">            int[] nextChanges = getNextChanges(index, white); // a1, a2</span>
 
-<span class="nc" id="L173">            int[] nextRefs = getNextRefChanges(index, white); // b1, b2</span>
+<span class="fc" id="L173">            int[] nextRefs = getNextRefChanges(index, white); // b1, b2</span>
 
-<span class="nc" id="L175">            int difference = nextChanges[0] - nextRefs[0];</span>
-<span class="nc bnc" id="L176" title="All 2 branches missed.">            if (nextChanges[0] &gt; nextRefs[1]) {</span>
+<span class="fc" id="L175">            int difference = nextChanges[0] - nextRefs[0];</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">            if (nextChanges[0] &gt; nextRefs[1]) {</span>
                 // PMODE
-<span class="nc" id="L178">                write(1, 4);</span>
-<span class="nc" id="L179">                index = nextRefs[1];</span>
+<span class="fc" id="L178">                write(1, 4);</span>
+<span class="fc" id="L179">                index = nextRefs[1];</span>
             }
-<span class="nc bnc" id="L181" title="All 4 branches missed.">            else if (difference &gt; 3 || difference &lt; -3) {</span>
+<span class="fc bfc" id="L181" title="All 4 branches covered.">            else if (difference &gt; 3 || difference &lt; -3) {</span>
                 // HMODE
-<span class="nc" id="L183">                write(1, 3);</span>
-<span class="nc" id="L184">                writeRun(nextChanges[0] - index, white);</span>
-<span class="nc bnc" id="L185" title="All 2 branches missed.">                writeRun(nextChanges[1] - nextChanges[0], !white);</span>
-<span class="nc" id="L186">                index = nextChanges[1];</span>
+<span class="fc" id="L183">                write(1, 3);</span>
+<span class="fc" id="L184">                writeRun(nextChanges[0] - index, white);</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">                writeRun(nextChanges[1] - nextChanges[0], !white);</span>
+<span class="fc" id="L186">                index = nextChanges[1];</span>
 
             }
             else {
                 // VMODE
-<span class="nc bnc" id="L191" title="All 8 branches missed.">                switch (difference) {</span>
+<span class="pc bpc" id="L191" title="1 of 8 branches missed.">                switch (difference) {</span>
                     case 0:
-<span class="nc" id="L193">                        write(1, 1);</span>
-<span class="nc" id="L194">                        break;</span>
+<span class="fc" id="L193">                        write(1, 1);</span>
+<span class="fc" id="L194">                        break;</span>
                     case 1:
-<span class="nc" id="L196">                        write(3, 3);</span>
-<span class="nc" id="L197">                        break;</span>
+<span class="fc" id="L196">                        write(3, 3);</span>
+<span class="fc" id="L197">                        break;</span>
                     case 2:
-<span class="nc" id="L199">                        write(3, 6);</span>
-<span class="nc" id="L200">                        break;</span>
+<span class="fc" id="L199">                        write(3, 6);</span>
+<span class="fc" id="L200">                        break;</span>
                     case 3:
-<span class="nc" id="L202">                        write(3, 7);</span>
-<span class="nc" id="L203">                        break;</span>
+<span class="fc" id="L202">                        write(3, 7);</span>
+<span class="fc" id="L203">                        break;</span>
                     case -1:
-<span class="nc" id="L205">                        write(2, 3);</span>
-<span class="nc" id="L206">                        break;</span>
+<span class="fc" id="L205">                        write(2, 3);</span>
+<span class="fc" id="L206">                        break;</span>
                     case -2:
-<span class="nc" id="L208">                        write(2, 6);</span>
-<span class="nc" id="L209">                        break;</span>
+<span class="fc" id="L208">                        write(2, 6);</span>
+<span class="fc" id="L209">                        break;</span>
                     case -3:
-<span class="nc" id="L211">                        write(2, 7);</span>
-<span class="nc" id="L212">                        break;</span>
+<span class="fc" id="L211">                        write(2, 7);</span>
+<span class="fc" id="L212">                        break;</span>
                     default:
                         break;
                 }
-<span class="nc bnc" id="L216" title="All 2 branches missed.">                white = !white;</span>
-<span class="nc" id="L217">                index = nextRefs[0] + difference;</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">                white = !white;</span>
+<span class="fc" id="L217">                index = nextRefs[0] + difference;</span>
             }
-<span class="nc" id="L219">        }</span>
-<span class="nc" id="L220">    }</span>
+<span class="fc" id="L219">        }</span>
+<span class="fc" id="L220">    }</span>
 
     private int[] getNextRefChanges(int a0, boolean white) {
-<span class="nc" id="L223">        int[] result = {columns, columns};</span>
-<span class="nc bnc" id="L224" title="All 4 branches missed.">        for (int i = (white ? 0 : 1); i &lt; changesReferenceRowLength; i += 2) {</span>
-<span class="nc bnc" id="L225" title="All 6 branches missed.">            if (changesReferenceRow[i] &gt; a0 || (a0 == 0 &amp;&amp; i == 0)) {</span>
-<span class="nc" id="L226">                result[0] = changesReferenceRow[i];</span>
-<span class="nc bnc" id="L227" title="All 2 branches missed.">                if ((i + 1) &lt; changesReferenceRowLength) {</span>
-<span class="nc" id="L228">                    result[1] = changesReferenceRow[i + 1];</span>
+<span class="fc" id="L223">        int[] result = {columns, columns};</span>
+<span class="fc bfc" id="L224" title="All 4 branches covered.">        for (int i = (white ? 0 : 1); i &lt; changesReferenceRowLength; i += 2) {</span>
+<span class="pc bpc" id="L225" title="1 of 6 branches missed.">            if (changesReferenceRow[i] &gt; a0 || (a0 == 0 &amp;&amp; i == 0)) {</span>
+<span class="fc" id="L226">                result[0] = changesReferenceRow[i];</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">                if ((i + 1) &lt; changesReferenceRowLength) {</span>
+<span class="fc" id="L228">                    result[1] = changesReferenceRow[i + 1];</span>
                 }
                 break;
             }
         }
-<span class="nc" id="L233">        return result;</span>
+<span class="fc" id="L233">        return result;</span>
     }
 
     private void write(int code, int codeLength) throws IOException {
 
-<span class="nc bnc" id="L238" title="All 2 branches missed.">        for (int i = 0; i &lt; codeLength; i++) {</span>
-<span class="nc bnc" id="L239" title="All 2 branches missed.">            boolean codeBit = ((code &gt;&gt; (codeLength - i - 1)) &amp; 1) == 1;</span>
-<span class="nc bnc" id="L240" title="All 2 branches missed.">            if (fillOrder == TIFFExtension.FILL_LEFT_TO_RIGHT) {</span>
-<span class="nc bnc" id="L241" title="All 2 branches missed.">                outputBuffer |= (codeBit ? 1 &lt;&lt; (7 - ((outputBufferBitLength) % 8)) : 0);</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        for (int i = 0; i &lt; codeLength; i++) {</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">            boolean codeBit = ((code &gt;&gt; (codeLength - i - 1)) &amp; 1) == 1;</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">            if (fillOrder == TIFFExtension.FILL_LEFT_TO_RIGHT) {</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">                outputBuffer |= (codeBit ? 1 &lt;&lt; (7 - ((outputBufferBitLength) % 8)) : 0);</span>
             }
             else {
 <span class="nc bnc" id="L244" title="All 2 branches missed.">                outputBuffer |= (codeBit ? 1 &lt;&lt; (((outputBufferBitLength) % 8)) : 0);</span>
             }
-<span class="nc" id="L246">            outputBufferBitLength++;</span>
+<span class="fc" id="L246">            outputBufferBitLength++;</span>
 
-<span class="nc bnc" id="L248" title="All 2 branches missed.">            if (outputBufferBitLength == 8) {</span>
-<span class="nc" id="L249">                stream.write(outputBuffer);</span>
-<span class="nc" id="L250">                clearOutputBuffer();</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">            if (outputBufferBitLength == 8) {</span>
+<span class="fc" id="L249">                stream.write(outputBuffer);</span>
+<span class="fc" id="L250">                clearOutputBuffer();</span>
             }
         }
-<span class="nc" id="L253">    }</span>
+<span class="fc" id="L253">    }</span>
 
     private void writeEOL() throws IOException {
-<span class="nc" id="L256">        write(1, 12);</span>
-<span class="nc" id="L257">    }</span>
+<span class="fc" id="L256">        write(1, 12);</span>
+<span class="fc" id="L257">    }</span>
 
     private void fill() throws IOException {
-<span class="nc bnc" id="L260" title="All 2 branches missed.">        if (outputBufferBitLength != 0) {</span>
-<span class="nc" id="L261">            stream.write(outputBuffer);</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">        if (outputBufferBitLength != 0) {</span>
+<span class="fc" id="L261">            stream.write(outputBuffer);</span>
         }
-<span class="nc" id="L263">        clearOutputBuffer();</span>
-<span class="nc" id="L264">    }</span>
+<span class="fc" id="L263">        clearOutputBuffer();</span>
+<span class="fc" id="L264">    }</span>
 
     private void clearOutputBuffer() {
-<span class="nc" id="L267">        outputBuffer = 0;</span>
-<span class="nc" id="L268">        outputBufferBitLength = 0;</span>
-<span class="nc" id="L269">    }</span>
+<span class="fc" id="L267">        outputBuffer = 0;</span>
+<span class="fc" id="L268">        outputBufferBitLength = 0;</span>
+<span class="fc" id="L269">    }</span>
 
     private static class Code {
-<span class="nc" id="L272">        private Code(int code, int length) {</span>
-<span class="nc" id="L273">            this.code = code;</span>
-<span class="nc" id="L274">            this.length = length;</span>
-<span class="nc" id="L275">        }</span>
+<span class="fc" id="L272">        private Code(int code, int length) {</span>
+<span class="fc" id="L273">            this.code = code;</span>
+<span class="fc" id="L274">            this.length = length;</span>
+<span class="fc" id="L275">        }</span>
 
         final int code;
         final int length;
@@ -288,39 +288,39 @@ final class CCITTFaxEncoderStream extends OutputStream {
 
     static {
         // Setup HUFFMAN Codes
-<span class="nc" id="L291">        WHITE_TERMINATING_CODES = new Code[64];</span>
-<span class="nc" id="L292">        WHITE_NONTERMINATING_CODES = new Code[40];</span>
-<span class="nc bnc" id="L293" title="All 2 branches missed.">        for (int i = 0; i &lt; CCITTFaxDecoderStream.WHITE_CODES.length; i++) {</span>
-<span class="nc" id="L294">            int bitLength = i + 4;</span>
-<span class="nc bnc" id="L295" title="All 2 branches missed.">            for (int j = 0; j &lt; CCITTFaxDecoderStream.WHITE_CODES[i].length; j++) {</span>
-<span class="nc" id="L296">                int value = CCITTFaxDecoderStream.WHITE_RUN_LENGTHS[i][j];</span>
-<span class="nc" id="L297">                int code = CCITTFaxDecoderStream.WHITE_CODES[i][j];</span>
+<span class="fc" id="L291">        WHITE_TERMINATING_CODES = new Code[64];</span>
+<span class="fc" id="L292">        WHITE_NONTERMINATING_CODES = new Code[40];</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">        for (int i = 0; i &lt; CCITTFaxDecoderStream.WHITE_CODES.length; i++) {</span>
+<span class="fc" id="L294">            int bitLength = i + 4;</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">            for (int j = 0; j &lt; CCITTFaxDecoderStream.WHITE_CODES[i].length; j++) {</span>
+<span class="fc" id="L296">                int value = CCITTFaxDecoderStream.WHITE_RUN_LENGTHS[i][j];</span>
+<span class="fc" id="L297">                int code = CCITTFaxDecoderStream.WHITE_CODES[i][j];</span>
 
-<span class="nc bnc" id="L299" title="All 2 branches missed.">                if (value &lt; 64) {</span>
-<span class="nc" id="L300">                    WHITE_TERMINATING_CODES[value] = new Code(code, bitLength);</span>
+<span class="fc bfc" id="L299" title="All 2 branches covered.">                if (value &lt; 64) {</span>
+<span class="fc" id="L300">                    WHITE_TERMINATING_CODES[value] = new Code(code, bitLength);</span>
                 }
                 else {
-<span class="nc" id="L303">                    WHITE_NONTERMINATING_CODES[(value / 64) - 1] = new Code(code, bitLength);</span>
+<span class="fc" id="L303">                    WHITE_NONTERMINATING_CODES[(value / 64) - 1] = new Code(code, bitLength);</span>
                 }
             }
         }
 
-<span class="nc" id="L308">        BLACK_TERMINATING_CODES = new Code[64];</span>
-<span class="nc" id="L309">        BLACK_NONTERMINATING_CODES = new Code[40];</span>
-<span class="nc bnc" id="L310" title="All 2 branches missed.">        for (int i = 0; i &lt; CCITTFaxDecoderStream.BLACK_CODES.length; i++) {</span>
-<span class="nc" id="L311">            int bitLength = i + 2;</span>
-<span class="nc bnc" id="L312" title="All 2 branches missed.">            for (int j = 0; j &lt; CCITTFaxDecoderStream.BLACK_CODES[i].length; j++) {</span>
-<span class="nc" id="L313">                int value = CCITTFaxDecoderStream.BLACK_RUN_LENGTHS[i][j];</span>
-<span class="nc" id="L314">                int code = CCITTFaxDecoderStream.BLACK_CODES[i][j];</span>
+<span class="fc" id="L308">        BLACK_TERMINATING_CODES = new Code[64];</span>
+<span class="fc" id="L309">        BLACK_NONTERMINATING_CODES = new Code[40];</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">        for (int i = 0; i &lt; CCITTFaxDecoderStream.BLACK_CODES.length; i++) {</span>
+<span class="fc" id="L311">            int bitLength = i + 2;</span>
+<span class="fc bfc" id="L312" title="All 2 branches covered.">            for (int j = 0; j &lt; CCITTFaxDecoderStream.BLACK_CODES[i].length; j++) {</span>
+<span class="fc" id="L313">                int value = CCITTFaxDecoderStream.BLACK_RUN_LENGTHS[i][j];</span>
+<span class="fc" id="L314">                int code = CCITTFaxDecoderStream.BLACK_CODES[i][j];</span>
 
-<span class="nc bnc" id="L316" title="All 2 branches missed.">                if (value &lt; 64) {</span>
-<span class="nc" id="L317">                    BLACK_TERMINATING_CODES[value] = new Code(code, bitLength);</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">                if (value &lt; 64) {</span>
+<span class="fc" id="L317">                    BLACK_TERMINATING_CODES[value] = new Code(code, bitLength);</span>
                 }
                 else {
-<span class="nc" id="L320">                    BLACK_NONTERMINATING_CODES[(value / 64) - 1] = new Code(code, bitLength);</span>
+<span class="fc" id="L320">                    BLACK_NONTERMINATING_CODES[(value / 64) - 1] = new Code(code, bitLength);</span>
                 }
             }
         }
-<span class="nc" id="L324">    }</span>
+<span class="fc" id="L324">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

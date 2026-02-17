@@ -64,7 +64,7 @@ import org.apache.pdfbox.cos.COSString;
  */
 public final class DateConverter
 {
-<span class="nc" id="L67">    private static final Logger LOG = LogManager.getLogger(DateConverter.class);</span>
+<span class="fc" id="L67">    private static final Logger LOG = LogManager.getLogger(DateConverter.class);</span>
 
     private DateConverter()
     {
@@ -105,7 +105,7 @@ public final class DateConverter
      * and two digit years are converted to four digits in the range
      *      [thisyear-79...thisyear+20]
      */
-<span class="nc" id="L108">    private static final String[] ALPHA_START_FORMATS = </span>
+<span class="fc" id="L108">    private static final String[] ALPHA_START_FORMATS = </span>
     {
         &quot;EEEE, dd MMM yy hh:mm:ss a&quot;,
         &quot;EEEE, MMM dd, yy hh:mm:ss a&quot;,
@@ -116,7 +116,7 @@ public final class DateConverter
         &quot;EEEE MMM dd HH:mm:ss yy&quot;, // GNU Ghostscript 7.0.7 variant
     };
     
-<span class="nc" id="L119">    private static final String[] DIGIT_START_FORMATS = </span>
+<span class="fc" id="L119">    private static final String[] DIGIT_START_FORMATS = </span>
     {
         &quot;dd MMM yy HH:mm:ss&quot;,  // for 26 May 2000 11:25:00
         &quot;dd MMM yy HH:mm&quot;,  // for 26 May 2000 11:25
@@ -164,13 +164,13 @@ public final class DateConverter
      */
     public static String toString(Calendar cal)
     {
-<span class="nc bnc" id="L167" title="All 2 branches missed.">        if (cal == null) </span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        if (cal == null) </span>
         {
-<span class="nc" id="L169">            return null;</span>
+<span class="fc" id="L169">            return null;</span>
         }
-<span class="nc" id="L171">        String offset = formatTZoffset(cal.get(Calendar.ZONE_OFFSET) +</span>
-<span class="nc" id="L172">                                       cal.get(Calendar.DST_OFFSET), &quot;'&quot;);</span>
-<span class="nc" id="L173">        return String.format(Locale.US, &quot;D:&quot;</span>
+<span class="fc" id="L171">        String offset = formatTZoffset(cal.get(Calendar.ZONE_OFFSET) +</span>
+<span class="fc" id="L172">                                       cal.get(Calendar.DST_OFFSET), &quot;'&quot;);</span>
+<span class="fc" id="L173">        return String.format(Locale.US, &quot;D:&quot;</span>
                 + &quot;%1$4tY%1$2tm%1$2td&quot;   // yyyyMMdd 
                 + &quot;%1$2tH%1$2tM%1$2tS&quot;   // HHmmss 
                 + &quot;%2$s&quot;                 // time zone
@@ -189,9 +189,9 @@ public final class DateConverter
      */
     public static String toISO8601(Calendar cal)
     {
-<span class="nc" id="L192">        String offset = formatTZoffset(cal.get(Calendar.ZONE_OFFSET) +</span>
-<span class="nc" id="L193">                                       cal.get(Calendar.DST_OFFSET), &quot;:&quot;);</span>
-<span class="nc" id="L194">        return String.format(Locale.US, </span>
+<span class="fc" id="L192">        String offset = formatTZoffset(cal.get(Calendar.ZONE_OFFSET) +</span>
+<span class="fc" id="L193">                                       cal.get(Calendar.DST_OFFSET), &quot;:&quot;);</span>
+<span class="fc" id="L194">        return String.format(Locale.US, </span>
                 &quot;%1$4tY&quot;                  // yyyy
                 + &quot;-%1$2tm&quot;               // -mm  (%tm adds one to cal month value)
                 + &quot;-%1$2td&quot;               // -dd  (%tm adds one to cal month value)
@@ -207,22 +207,22 @@ public final class DateConverter
      */
     private static int restrainTZoffset(long proposedOffset)
     {
-<span class="nc bnc" id="L210" title="All 4 branches missed.">        if (proposedOffset &lt;= 14 * MILLIS_PER_HOUR &amp;&amp; proposedOffset &gt;= -14 * MILLIS_PER_HOUR)</span>
+<span class="pc bpc" id="L210" title="1 of 4 branches missed.">        if (proposedOffset &lt;= 14 * MILLIS_PER_HOUR &amp;&amp; proposedOffset &gt;= -14 * MILLIS_PER_HOUR)</span>
         {
             // https://www.w3.org/TR/xmlschema-2/#dateTime-timezones
             // Timezones between 14:00 and -14:00 are valid
-<span class="nc" id="L214">            return (int) proposedOffset;</span>
+<span class="fc" id="L214">            return (int) proposedOffset;</span>
         }
         // Constrain a timezone offset to the range  [-11:59 thru +12:00].
-<span class="nc" id="L217">        proposedOffset = ((proposedOffset + HALF_DAY) % DAY + DAY) % DAY;</span>
-<span class="nc bnc" id="L218" title="All 2 branches missed.">        if (proposedOffset == 0)</span>
+<span class="fc" id="L217">        proposedOffset = ((proposedOffset + HALF_DAY) % DAY + DAY) % DAY;</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">        if (proposedOffset == 0)</span>
         {
 <span class="nc" id="L220">            return HALF_DAY;</span>
         }
         // 0 &lt;= proposedOffset &lt; DAY
-<span class="nc" id="L223">        proposedOffset = (proposedOffset - HALF_DAY) % HALF_DAY;</span>
+<span class="fc" id="L223">        proposedOffset = (proposedOffset - HALF_DAY) % HALF_DAY;</span>
         // -HALF_DAY &lt; proposedOffset &lt; HALF_DAY
-<span class="nc" id="L225">        return (int)proposedOffset;</span>
+<span class="fc" id="L225">        return (int)proposedOffset;</span>
     }
     
     /*
@@ -285,10 +285,10 @@ public final class DateConverter
      */
     static String formatTZoffset(long millis, String sep)
     {
-<span class="nc" id="L288">        SimpleDateFormat sdf = new SimpleDateFormat(&quot;Z&quot;, Locale.ENGLISH); // #hhmm</span>
-<span class="nc" id="L289">        sdf.setTimeZone(new SimpleTimeZone(restrainTZoffset(millis),&quot;unknown&quot;));</span>
-<span class="nc" id="L290">        String tz = sdf.format(new Date());</span>
-<span class="nc" id="L291">        return tz.substring(0,3) + sep + tz.substring(3);</span>
+<span class="fc" id="L288">        SimpleDateFormat sdf = new SimpleDateFormat(&quot;Z&quot;, Locale.ENGLISH); // #hhmm</span>
+<span class="fc" id="L289">        sdf.setTimeZone(new SimpleTimeZone(restrainTZoffset(millis),&quot;unknown&quot;));</span>
+<span class="fc" id="L290">        String tz = sdf.format(new Date());</span>
+<span class="fc" id="L291">        return tz.substring(0,3) + sep + tz.substring(3);</span>
     }
 
      /*
@@ -306,34 +306,34 @@ public final class DateConverter
      */
     private static int parseTimeField(String text, ParsePosition where, int maxlen, int remedy)
     {
-<span class="nc bnc" id="L309" title="All 2 branches missed.">        if (text == null) </span>
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">        if (text == null) </span>
         {
 <span class="nc" id="L311">            return remedy;</span>
         }
         // it would seem that DecimalFormat.parse() would be simpler;
         // but that class blithely ignores setMaximumIntegerDigits
-<span class="nc" id="L315">        int retval = 0;</span>
-<span class="nc" id="L316">        int index = where.getIndex();</span>
-<span class="nc" id="L317">        int limit = index + Math.min(maxlen, text.length()-index);</span>
-<span class="nc bnc" id="L318" title="All 2 branches missed.">        for (; index &lt; limit; index++)</span>
+<span class="fc" id="L315">        int retval = 0;</span>
+<span class="fc" id="L316">        int index = where.getIndex();</span>
+<span class="fc" id="L317">        int limit = index + Math.min(maxlen, text.length()-index);</span>
+<span class="fc bfc" id="L318" title="All 2 branches covered.">        for (; index &lt; limit; index++)</span>
         {
             // convert digit to integer
-<span class="nc" id="L321">            int cval = text.charAt(index) - '0';</span>
+<span class="fc" id="L321">            int cval = text.charAt(index) - '0';</span>
             // test to see if we got a digit
-<span class="nc bnc" id="L323" title="All 4 branches missed.">            if (cval &lt; 0 || cval &gt; 9)</span>
+<span class="fc bfc" id="L323" title="All 4 branches covered.">            if (cval &lt; 0 || cval &gt; 9)</span>
             {
                 // no digit at index
-<span class="nc" id="L326">                break;</span>
+<span class="fc" id="L326">                break;</span>
             }
             // append the digit to the return value
-<span class="nc" id="L329">            retval = retval * 10 + cval;</span>
+<span class="fc" id="L329">            retval = retval * 10 + cval;</span>
         }   
-<span class="nc bnc" id="L331" title="All 2 branches missed.">        if (index == where.getIndex())</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">        if (index == where.getIndex())</span>
         {
-<span class="nc" id="L333">            return remedy;</span>
+<span class="fc" id="L333">            return remedy;</span>
         }
-<span class="nc" id="L335">        where.setIndex(index);</span>
-<span class="nc" id="L336">        return retval;</span>
+<span class="fc" id="L335">        where.setIndex(index);</span>
+<span class="fc" id="L336">        return retval;</span>
     }
  
     /*
@@ -348,15 +348,15 @@ public final class DateConverter
      */
     private static char skipOptionals(String text, ParsePosition where, String optionals)
     {
-<span class="nc" id="L351">        char retval = ' ';</span>
+<span class="fc" id="L351">        char retval = ' ';</span>
         char currch;
-<span class="nc bnc" id="L353" title="All 2 branches missed.">        while (where.getIndex() &lt; text.length() &amp;&amp;</span>
-<span class="nc bnc" id="L354" title="All 2 branches missed.">               optionals.indexOf((currch = text.charAt(where.getIndex()))) &gt;= 0)</span>
+<span class="fc bfc" id="L353" title="All 2 branches covered.">        while (where.getIndex() &lt; text.length() &amp;&amp;</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">               optionals.indexOf((currch = text.charAt(where.getIndex()))) &gt;= 0)</span>
         {
-<span class="nc bnc" id="L356" title="All 2 branches missed.">            retval = (currch != ' ') ? currch : retval;</span>
-<span class="nc" id="L357">            where.setIndex(where.getIndex() + 1);</span>
+<span class="fc bfc" id="L356" title="All 2 branches covered.">            retval = (currch != ' ') ? currch : retval;</span>
+<span class="fc" id="L357">            where.setIndex(where.getIndex() + 1);</span>
         }
-<span class="nc" id="L359">        return retval;</span>
+<span class="fc" id="L359">        return retval;</span>
     }
     
     /*
@@ -369,12 +369,12 @@ public final class DateConverter
      */
     private static boolean skipString(String text, String victim, ParsePosition where)
     {
-<span class="nc bnc" id="L372" title="All 2 branches missed.">        if (text.startsWith(victim, where.getIndex()))</span>
+<span class="fc bfc" id="L372" title="All 2 branches covered.">        if (text.startsWith(victim, where.getIndex()))</span>
         {
-<span class="nc" id="L374">            where.setIndex(where.getIndex()+victim.length());</span>
-<span class="nc" id="L375">            return true;</span>
+<span class="fc" id="L374">            where.setIndex(where.getIndex()+victim.length());</span>
+<span class="fc" id="L375">            return true;</span>
         }
-<span class="nc" id="L377">        return false;</span>
+<span class="fc" id="L377">        return false;</span>
     }
 
     /*
@@ -387,10 +387,10 @@ public final class DateConverter
      */
     static GregorianCalendar newGreg()
     {
-<span class="nc" id="L390">        GregorianCalendar retCal = new GregorianCalendar(new SimpleTimeZone(0, &quot;UTC&quot;), Locale.ENGLISH);</span>
-<span class="nc" id="L391">        retCal.setLenient(false);</span>
-<span class="nc" id="L392">        retCal.set(Calendar.MILLISECOND, 0);</span>
-<span class="nc" id="L393">        return retCal;</span>
+<span class="fc" id="L390">        GregorianCalendar retCal = new GregorianCalendar(new SimpleTimeZone(0, &quot;UTC&quot;), Locale.ENGLISH);</span>
+<span class="fc" id="L391">        retCal.setLenient(false);</span>
+<span class="fc" id="L392">        retCal.set(Calendar.MILLISECOND, 0);</span>
+<span class="fc" id="L393">        return retCal;</span>
     }
     
     /*
@@ -401,11 +401,11 @@ public final class DateConverter
      */
     private static void adjustTimeZoneNicely(GregorianCalendar cal, TimeZone tz)
     {
-<span class="nc" id="L404">        cal.setTimeZone(tz);</span>
-<span class="nc" id="L405">        int offset = (cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET)) / </span>
+<span class="fc" id="L404">        cal.setTimeZone(tz);</span>
+<span class="fc" id="L405">        int offset = (cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET)) / </span>
                 MILLIS_PER_MINUTE;
-<span class="nc" id="L407">        cal.add(Calendar.MINUTE, -offset);</span>
-<span class="nc" id="L408">    }</span>
+<span class="fc" id="L407">        cal.add(Calendar.MINUTE, -offset);</span>
+<span class="fc" id="L408">    }</span>
     
     /*
      * Parses the end of a date string for a time zone and, if one is found,
@@ -429,47 +429,47 @@ public final class DateConverter
     static boolean parseTZoffset(String text, GregorianCalendar cal,
                                         ParsePosition initialWhere)
     {
-<span class="nc" id="L432">        ParsePosition where = new ParsePosition(initialWhere.getIndex());</span>
-<span class="nc" id="L433">        TimeZone tz = new SimpleTimeZone(0, &quot;GMT&quot;);</span>
+<span class="fc" id="L432">        ParsePosition where = new ParsePosition(initialWhere.getIndex());</span>
+<span class="fc" id="L433">        TimeZone tz = new SimpleTimeZone(0, &quot;GMT&quot;);</span>
         int tzHours, tzMin;
-<span class="nc" id="L435">        char sign = skipOptionals(text, where, &quot;Z+- &quot;);</span>
-<span class="nc bnc" id="L436" title="All 4 branches missed.">        boolean hadGMT = (sign == 'Z' || skipString(text, &quot;GMT&quot;, where) ||</span>
-<span class="nc bnc" id="L437" title="All 2 branches missed.">                         skipString(text, &quot;UTC&quot;, where));</span>
-<span class="nc bnc" id="L438" title="All 2 branches missed.">        sign = (!hadGMT) ? sign : skipOptionals(text, where, &quot;+- &quot;);</span>
+<span class="fc" id="L435">        char sign = skipOptionals(text, where, &quot;Z+- &quot;);</span>
+<span class="fc bfc" id="L436" title="All 4 branches covered.">        boolean hadGMT = (sign == 'Z' || skipString(text, &quot;GMT&quot;, where) ||</span>
+<span class="fc bfc" id="L437" title="All 2 branches covered.">                         skipString(text, &quot;UTC&quot;, where));</span>
+<span class="fc bfc" id="L438" title="All 2 branches covered.">        sign = (!hadGMT) ? sign : skipOptionals(text, where, &quot;+- &quot;);</span>
         
-<span class="nc" id="L440">        tzHours = parseTimeField(text, where, 2, -999);</span>
-<span class="nc" id="L441">        skipOptionals(text, where, &quot;': &quot;);</span>
-<span class="nc" id="L442">        tzMin = parseTimeField(text, where, 2, 0);</span>
-<span class="nc" id="L443">        skipOptionals(text, where, &quot;' &quot;);</span>
+<span class="fc" id="L440">        tzHours = parseTimeField(text, where, 2, -999);</span>
+<span class="fc" id="L441">        skipOptionals(text, where, &quot;': &quot;);</span>
+<span class="fc" id="L442">        tzMin = parseTimeField(text, where, 2, 0);</span>
+<span class="fc" id="L443">        skipOptionals(text, where, &quot;' &quot;);</span>
         
-<span class="nc bnc" id="L445" title="All 2 branches missed.">        if (tzHours != -999) </span>
+<span class="fc bfc" id="L445" title="All 2 branches covered.">        if (tzHours != -999) </span>
         {
             // we parsed a time zone in default format
-<span class="nc bnc" id="L448" title="All 2 branches missed.">            int hrSign = (sign == '-' ? -1 : 1);</span>
-<span class="nc" id="L449">            tz.setRawOffset(restrainTZoffset(hrSign * (tzHours * (long) MILLIS_PER_HOUR + </span>
+<span class="fc bfc" id="L448" title="All 2 branches covered.">            int hrSign = (sign == '-' ? -1 : 1);</span>
+<span class="fc" id="L449">            tz.setRawOffset(restrainTZoffset(hrSign * (tzHours * (long) MILLIS_PER_HOUR + </span>
                                                        tzMin * (long) MILLIS_PER_MINUTE)));
-<span class="nc" id="L451">            updateZoneId(tz);                       </span>
-<span class="nc" id="L452">        }</span>
-<span class="nc bnc" id="L453" title="All 2 branches missed.">        else if ( ! hadGMT)</span>
+<span class="fc" id="L451">            updateZoneId(tz);                       </span>
+<span class="fc" id="L452">        }</span>
+<span class="fc bfc" id="L453" title="All 2 branches covered.">        else if ( ! hadGMT)</span>
         {
             // try to process as a name; &quot;GMT&quot; or &quot;UTC&quot; has already been processed
-<span class="nc" id="L456">            String tzText = text.substring(initialWhere.getIndex()).trim();</span>
-<span class="nc" id="L457">            tz = TimeZone.getTimeZone(tzText);</span>
+<span class="fc" id="L456">            String tzText = text.substring(initialWhere.getIndex()).trim();</span>
+<span class="fc" id="L457">            tz = TimeZone.getTimeZone(tzText);</span>
             // getTimeZone returns &quot;GMT&quot; for unknown ids
-<span class="nc bnc" id="L459" title="All 2 branches missed.">            if (&quot;GMT&quot;.equals(tz.getID()))  </span>
+<span class="fc bfc" id="L459" title="All 2 branches covered.">            if (&quot;GMT&quot;.equals(tz.getID()))  </span>
             {
                 // no timezone in text, cal amd initialWhere are unchanged
-<span class="nc" id="L462">                return false;</span>
+<span class="fc" id="L462">                return false;</span>
             }
             else
             {
                 // we got a tz by name; use it
-<span class="nc" id="L467">                where.setIndex(text.length());</span>
+<span class="fc" id="L467">                where.setIndex(text.length());</span>
             }
         }
-<span class="nc" id="L470">        adjustTimeZoneNicely(cal, tz);</span>
-<span class="nc" id="L471">        initialWhere.setIndex(where.getIndex());</span>
-<span class="nc" id="L472">        return true;</span>
+<span class="fc" id="L470">        adjustTimeZoneNicely(cal, tz);</span>
+<span class="fc" id="L471">        initialWhere.setIndex(where.getIndex());</span>
+<span class="fc" id="L472">        return true;</span>
     }
 
     /**
@@ -481,32 +481,32 @@ public final class DateConverter
      */
     private static void updateZoneId(TimeZone tz)
     {
-<span class="nc" id="L484">        int offset = tz.getRawOffset();</span>
-<span class="nc" id="L485">        char pm = '+';</span>
-<span class="nc bnc" id="L486" title="All 2 branches missed.">        if (offset &lt; 0)</span>
+<span class="fc" id="L484">        int offset = tz.getRawOffset();</span>
+<span class="fc" id="L485">        char pm = '+';</span>
+<span class="fc bfc" id="L486" title="All 2 branches covered.">        if (offset &lt; 0)</span>
         {
-<span class="nc" id="L488">            pm = '-';</span>
-<span class="nc" id="L489">            offset = -offset;</span>
+<span class="fc" id="L488">            pm = '-';</span>
+<span class="fc" id="L489">            offset = -offset;</span>
         }
-<span class="nc" id="L491">        int hh = offset / 3600000;</span>
-<span class="nc" id="L492">        int mm = offset % 3600000 / 60000;</span>
-<span class="nc bnc" id="L493" title="All 2 branches missed.">        if (offset == 0)</span>
+<span class="fc" id="L491">        int hh = offset / 3600000;</span>
+<span class="fc" id="L492">        int mm = offset % 3600000 / 60000;</span>
+<span class="fc bfc" id="L493" title="All 2 branches covered.">        if (offset == 0)</span>
         {
-<span class="nc" id="L495">            tz.setID(&quot;GMT&quot;);</span>
+<span class="fc" id="L495">            tz.setID(&quot;GMT&quot;);</span>
         }
-<span class="nc bnc" id="L497" title="All 4 branches missed.">        else if (pm == '+' &amp;&amp; hh &lt;= 12)</span>
+<span class="fc bfc" id="L497" title="All 4 branches covered.">        else if (pm == '+' &amp;&amp; hh &lt;= 12)</span>
         {
-<span class="nc" id="L499">            tz.setID(String.format(Locale.US, &quot;GMT+%02d:%02d&quot;, hh, mm));</span>
+<span class="fc" id="L499">            tz.setID(String.format(Locale.US, &quot;GMT+%02d:%02d&quot;, hh, mm));</span>
         }
-<span class="nc bnc" id="L501" title="All 4 branches missed.">        else if (pm == '-' &amp;&amp; hh &lt;= 14)</span>
+<span class="pc bpc" id="L501" title="1 of 4 branches missed.">        else if (pm == '-' &amp;&amp; hh &lt;= 14)</span>
         {
-<span class="nc" id="L503">            tz.setID(String.format(Locale.US, &quot;GMT-%02d:%02d&quot;, hh, mm));</span>
+<span class="fc" id="L503">            tz.setID(String.format(Locale.US, &quot;GMT-%02d:%02d&quot;, hh, mm));</span>
         }
         else
         {
-<span class="nc" id="L507">            tz.setID(&quot;unknown&quot;);</span>
+<span class="fc" id="L507">            tz.setID(&quot;unknown&quot;);</span>
         }
-<span class="nc" id="L509">    }</span>
+<span class="fc" id="L509">    }</span>
 
     /*
      * Parses a big-endian date: year month day hour min sec.
@@ -526,45 +526,45 @@ public final class DateConverter
     private static GregorianCalendar parseBigEndianDate(String text,
             ParsePosition initialWhere) 
     {
-<span class="nc" id="L529">        ParsePosition where = new ParsePosition(initialWhere.getIndex());</span>
-<span class="nc" id="L530">        int year = parseTimeField(text, where, 4, 0);</span>
-<span class="nc bnc" id="L531" title="All 2 branches missed.">        if (where.getIndex() != 4 + initialWhere.getIndex()) </span>
+<span class="fc" id="L529">        ParsePosition where = new ParsePosition(initialWhere.getIndex());</span>
+<span class="fc" id="L530">        int year = parseTimeField(text, where, 4, 0);</span>
+<span class="fc bfc" id="L531" title="All 2 branches covered.">        if (where.getIndex() != 4 + initialWhere.getIndex()) </span>
         {
-<span class="nc" id="L533">            return null;</span>
+<span class="fc" id="L533">            return null;</span>
         }
-<span class="nc" id="L535">        skipOptionals(text, where, &quot;/- &quot;);</span>
-<span class="nc" id="L536">        int month = parseTimeField(text, where, 2, 1) - 1; // Calendar months are 0...11</span>
-<span class="nc" id="L537">        skipOptionals(text, where, &quot;/- &quot;);</span>
-<span class="nc" id="L538">        int day = parseTimeField(text, where, 2, 1);</span>
-<span class="nc" id="L539">        skipOptionals(text, where, &quot; T&quot;);</span>
-<span class="nc" id="L540">        int hour = parseTimeField(text, where, 2, 0);</span>
-<span class="nc" id="L541">        skipOptionals(text, where, &quot;: &quot;);</span>
-<span class="nc" id="L542">        int minute = parseTimeField(text, where, 2, 0);</span>
-<span class="nc" id="L543">        skipOptionals(text, where, &quot;: &quot;);</span>
-<span class="nc" id="L544">        int second = parseTimeField(text, where, 2, 0);</span>
-<span class="nc" id="L545">        char nextC = skipOptionals(text, where, &quot;.&quot;);</span>
-<span class="nc bnc" id="L546" title="All 2 branches missed.">        if (nextC == '.')</span>
+<span class="fc" id="L535">        skipOptionals(text, where, &quot;/- &quot;);</span>
+<span class="fc" id="L536">        int month = parseTimeField(text, where, 2, 1) - 1; // Calendar months are 0...11</span>
+<span class="fc" id="L537">        skipOptionals(text, where, &quot;/- &quot;);</span>
+<span class="fc" id="L538">        int day = parseTimeField(text, where, 2, 1);</span>
+<span class="fc" id="L539">        skipOptionals(text, where, &quot; T&quot;);</span>
+<span class="fc" id="L540">        int hour = parseTimeField(text, where, 2, 0);</span>
+<span class="fc" id="L541">        skipOptionals(text, where, &quot;: &quot;);</span>
+<span class="fc" id="L542">        int minute = parseTimeField(text, where, 2, 0);</span>
+<span class="fc" id="L543">        skipOptionals(text, where, &quot;: &quot;);</span>
+<span class="fc" id="L544">        int second = parseTimeField(text, where, 2, 0);</span>
+<span class="fc" id="L545">        char nextC = skipOptionals(text, where, &quot;.&quot;);</span>
+<span class="fc bfc" id="L546" title="All 2 branches covered.">        if (nextC == '.')</span>
         {
             // fractions of a second: skip up to 19 digits
-<span class="nc" id="L549">            parseTimeField(text, where, 19, 0);</span>
+<span class="fc" id="L549">            parseTimeField(text, where, 19, 0);</span>
         }
 
-<span class="nc" id="L552">        GregorianCalendar dest = newGreg();</span>
+<span class="fc" id="L552">        GregorianCalendar dest = newGreg();</span>
         try 
         {
-<span class="nc" id="L555">            dest.set(year, month, day, hour, minute, second);</span>
+<span class="fc" id="L555">            dest.set(year, month, day, hour, minute, second);</span>
             // trigger limit tests
-<span class="nc" id="L557">            dest.getTimeInMillis();</span>
+<span class="fc" id="L557">            dest.getTimeInMillis();</span>
         }
-<span class="nc" id="L559">        catch (IllegalArgumentException ill) </span>
+<span class="fc" id="L559">        catch (IllegalArgumentException ill) </span>
         {
-<span class="nc" id="L561">            LOG.debug(&quot;Couldn't parse arguments text:{} initialWhere:{}&quot;, text, initialWhere, ill);</span>
-<span class="nc" id="L562">            return  null;</span>
-<span class="nc" id="L563">        }</span>
-<span class="nc" id="L564">        initialWhere.setIndex(where.getIndex());</span>
-<span class="nc" id="L565">        skipOptionals(text, initialWhere, &quot; &quot;);</span>
+<span class="fc" id="L561">            LOG.debug(&quot;Couldn't parse arguments text:{} initialWhere:{}&quot;, text, initialWhere, ill);</span>
+<span class="fc" id="L562">            return  null;</span>
+<span class="fc" id="L563">        }</span>
+<span class="fc" id="L564">        initialWhere.setIndex(where.getIndex());</span>
+<span class="fc" id="L565">        skipOptionals(text, initialWhere, &quot; &quot;);</span>
         // dest has at least a year value
-<span class="nc" id="L567">        return dest;</span>
+<span class="fc" id="L567">        return dest;</span>
     }
 
     /*
@@ -584,20 +584,20 @@ public final class DateConverter
     private static GregorianCalendar parseSimpleDate(String text, String[] fmts,
             ParsePosition initialWhere) 
     {
-<span class="nc bnc" id="L587" title="All 2 branches missed.">        for(String fmt : fmts)</span>
+<span class="fc bfc" id="L587" title="All 2 branches covered.">        for(String fmt : fmts)</span>
         {
-<span class="nc" id="L589">            ParsePosition where = new ParsePosition(initialWhere.getIndex());</span>
-<span class="nc" id="L590">            SimpleDateFormat sdf = new SimpleDateFormat(fmt, Locale.ENGLISH);</span>
-<span class="nc" id="L591">            GregorianCalendar retCal = newGreg();</span>
-<span class="nc" id="L592">            sdf.setCalendar(retCal);</span>
-<span class="nc bnc" id="L593" title="All 2 branches missed.">            if (sdf.parse(text, where) != null)</span>
+<span class="fc" id="L589">            ParsePosition where = new ParsePosition(initialWhere.getIndex());</span>
+<span class="fc" id="L590">            SimpleDateFormat sdf = new SimpleDateFormat(fmt, Locale.ENGLISH);</span>
+<span class="fc" id="L591">            GregorianCalendar retCal = newGreg();</span>
+<span class="fc" id="L592">            sdf.setCalendar(retCal);</span>
+<span class="fc bfc" id="L593" title="All 2 branches covered.">            if (sdf.parse(text, where) != null)</span>
             {
-<span class="nc" id="L595">                initialWhere.setIndex(where.getIndex());</span>
-<span class="nc" id="L596">                skipOptionals(text, initialWhere, &quot; &quot;);</span>
-<span class="nc" id="L597">                return retCal;</span>
+<span class="fc" id="L595">                initialWhere.setIndex(where.getIndex());</span>
+<span class="fc" id="L596">                skipOptionals(text, initialWhere, &quot; &quot;);</span>
+<span class="fc" id="L597">                return retCal;</span>
             }
         }
-<span class="nc" id="L600">        return null;</span>
+<span class="fc" id="L600">        return null;</span>
     }
 
     /*
@@ -620,59 +620,59 @@ public final class DateConverter
      */
     private static Calendar parseDate(String text, ParsePosition initialWhere)
     {
-<span class="nc bnc" id="L623" title="All 6 branches missed.">        if (text == null || text.isEmpty() || &quot;D:&quot;.equals(text.trim()))</span>
+<span class="pc bpc" id="L623" title="2 of 6 branches missed.">        if (text == null || text.isEmpty() || &quot;D:&quot;.equals(text.trim()))</span>
         {
-<span class="nc" id="L625">            return null;</span>
+<span class="fc" id="L625">            return null;</span>
         }
 
         // remember longestr date string
-<span class="nc" id="L629">        int longestLen = -999999;</span>
+<span class="fc" id="L629">        int longestLen = -999999;</span>
         // theorem: the above value will never be used
         // proof: longestLen is only used if longestDate is not null
 
-<span class="nc" id="L633">        GregorianCalendar longestDate = null; // null says no date found yet</span>
+<span class="fc" id="L633">        GregorianCalendar longestDate = null; // null says no date found yet</span>
         int whereLen;   // tempcopy of where.getIndex()
         
-<span class="nc" id="L636">        ParsePosition where = new ParsePosition(initialWhere.getIndex());</span>
+<span class="fc" id="L636">        ParsePosition where = new ParsePosition(initialWhere.getIndex());</span>
         // check for null (throws exception) and trim off surrounding spaces
-<span class="nc" id="L638">        skipOptionals(text, where, &quot; &quot;);</span>
-<span class="nc" id="L639">        int startPosition = where.getIndex();</span>
+<span class="fc" id="L638">        skipOptionals(text, where, &quot; &quot;);</span>
+<span class="fc" id="L639">        int startPosition = where.getIndex();</span>
 
         // try big-endian parse
-<span class="nc" id="L642">        GregorianCalendar retCal = parseBigEndianDate(text, where);</span>
+<span class="fc" id="L642">        GregorianCalendar retCal = parseBigEndianDate(text, where);</span>
         // check for success and a timezone
-<span class="nc bnc" id="L644" title="All 4 branches missed.">        if (retCal != null &amp;&amp; (where.getIndex() == text.length() ||</span>
-<span class="nc bnc" id="L645" title="All 2 branches missed.">                               parseTZoffset(text, retCal, where)))</span>
+<span class="fc bfc" id="L644" title="All 4 branches covered.">        if (retCal != null &amp;&amp; (where.getIndex() == text.length() ||</span>
+<span class="fc bfc" id="L645" title="All 2 branches covered.">                               parseTZoffset(text, retCal, where)))</span>
         {
             // if text is fully consumed, return the date else remember it and its length
-<span class="nc" id="L648">            whereLen = where.getIndex();</span>
-<span class="nc bnc" id="L649" title="All 2 branches missed.">            if (whereLen == text.length()) </span>
+<span class="fc" id="L648">            whereLen = where.getIndex();</span>
+<span class="fc bfc" id="L649" title="All 2 branches covered.">            if (whereLen == text.length()) </span>
             {
-<span class="nc" id="L651">                initialWhere.setIndex(whereLen);</span>
-<span class="nc" id="L652">                return retCal;</span>
+<span class="fc" id="L651">                initialWhere.setIndex(whereLen);</span>
+<span class="fc" id="L652">                return retCal;</span>
             }
-<span class="nc" id="L654">            longestLen = whereLen;</span>
-<span class="nc" id="L655">            longestDate = retCal;</span>
+<span class="fc" id="L654">            longestLen = whereLen;</span>
+<span class="fc" id="L655">            longestDate = retCal;</span>
         }
 
         // try one of the sets of standard formats
-<span class="nc" id="L659">        where.setIndex(startPosition);</span>
+<span class="fc" id="L659">        where.setIndex(startPosition);</span>
         String [] formats 
-<span class="nc bnc" id="L661" title="All 2 branches missed.">                = Character.isDigit(text.charAt(startPosition))</span>
-<span class="nc" id="L662">                ? DIGIT_START_FORMATS</span>
-<span class="nc" id="L663">                : ALPHA_START_FORMATS;</span>
-<span class="nc" id="L664">        retCal = parseSimpleDate(text, formats, where);</span>
+<span class="fc bfc" id="L661" title="All 2 branches covered.">                = Character.isDigit(text.charAt(startPosition))</span>
+<span class="fc" id="L662">                ? DIGIT_START_FORMATS</span>
+<span class="fc" id="L663">                : ALPHA_START_FORMATS;</span>
+<span class="fc" id="L664">        retCal = parseSimpleDate(text, formats, where);</span>
         // check for success and a timezone
-<span class="nc bnc" id="L666" title="All 2 branches missed.">        if (retCal != null &amp;&amp;</span>
-<span class="nc bnc" id="L667" title="All 2 branches missed.">                (where.getIndex() == text.length() ||</span>
-<span class="nc bnc" id="L668" title="All 2 branches missed.">                 parseTZoffset(text, retCal, where)))</span>
+<span class="fc bfc" id="L666" title="All 2 branches covered.">        if (retCal != null &amp;&amp;</span>
+<span class="fc bfc" id="L667" title="All 2 branches covered.">                (where.getIndex() == text.length() ||</span>
+<span class="pc bpc" id="L668" title="1 of 2 branches missed.">                 parseTZoffset(text, retCal, where)))</span>
         {
             // if text is fully consumed, return the date else remember it and its length
-<span class="nc" id="L671">            whereLen = where.getIndex();</span>
-<span class="nc bnc" id="L672" title="All 2 branches missed.">            if (whereLen == text.length()) </span>
+<span class="fc" id="L671">            whereLen = where.getIndex();</span>
+<span class="pc bpc" id="L672" title="1 of 2 branches missed.">            if (whereLen == text.length()) </span>
             {
-<span class="nc" id="L674">                initialWhere.setIndex(whereLen);</span>
-<span class="nc" id="L675">                return retCal;</span>
+<span class="fc" id="L674">                initialWhere.setIndex(whereLen);</span>
+<span class="fc" id="L675">                return retCal;</span>
             }
 <span class="nc bnc" id="L677" title="All 2 branches missed.">            if (whereLen &gt; longestLen) </span>
             {
@@ -681,12 +681,12 @@ public final class DateConverter
             }
         }
 
-<span class="nc bnc" id="L684" title="All 2 branches missed.">        if (longestDate != null) </span>
+<span class="fc bfc" id="L684" title="All 2 branches covered.">        if (longestDate != null) </span>
         {
-<span class="nc" id="L686">            initialWhere.setIndex(longestLen);</span>
-<span class="nc" id="L687">            return longestDate;</span>
+<span class="fc" id="L686">            initialWhere.setIndex(longestLen);</span>
+<span class="fc" id="L687">            return longestDate;</span>
         }
-<span class="nc" id="L689">        return retCal;</span>
+<span class="fc" id="L689">        return retCal;</span>
     }
        
     /**
@@ -700,11 +700,11 @@ public final class DateConverter
      */
     public static Calendar toCalendar(COSString text)
     {
-<span class="nc bnc" id="L703" title="All 2 branches missed.">        if (text == null)</span>
+<span class="fc bfc" id="L703" title="All 2 branches covered.">        if (text == null)</span>
         {
-<span class="nc" id="L705">            return null;    </span>
+<span class="fc" id="L705">            return null;    </span>
         }
-<span class="nc" id="L707">        return toCalendar(text.getString());</span>
+<span class="fc" id="L707">        return toCalendar(text.getString());</span>
     }
 
     /**
@@ -718,22 +718,22 @@ public final class DateConverter
      */
     public static Calendar toCalendar(String text)
     {
-<span class="nc bnc" id="L721" title="All 4 branches missed.">        if (text == null || text.isBlank())</span>
+<span class="fc bfc" id="L721" title="All 4 branches covered.">        if (text == null || text.isBlank())</span>
         {
-<span class="nc" id="L723">            return null;</span>
+<span class="fc" id="L723">            return null;</span>
         }
 
-<span class="nc" id="L726">        ParsePosition where = new ParsePosition(0);</span>
-<span class="nc" id="L727">        skipOptionals(text, where, &quot; &quot;);</span>
-<span class="nc" id="L728">        skipString(text, &quot;D:&quot;, where);</span>
-<span class="nc" id="L729">        Calendar calendar = parseDate(text, where);</span>
+<span class="fc" id="L726">        ParsePosition where = new ParsePosition(0);</span>
+<span class="fc" id="L727">        skipOptionals(text, where, &quot; &quot;);</span>
+<span class="fc" id="L728">        skipString(text, &quot;D:&quot;, where);</span>
+<span class="fc" id="L729">        Calendar calendar = parseDate(text, where);</span>
 
-<span class="nc bnc" id="L731" title="All 4 branches missed.">        if (calendar == null || where.getIndex() != text.length())</span>
+<span class="fc bfc" id="L731" title="All 4 branches covered.">        if (calendar == null || where.getIndex() != text.length())</span>
         {
             // the date string is invalid
-<span class="nc" id="L734">            return null;</span>
+<span class="fc" id="L734">            return null;</span>
         }
-<span class="nc" id="L736">        return calendar;</span>
+<span class="fc" id="L736">        return calendar;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

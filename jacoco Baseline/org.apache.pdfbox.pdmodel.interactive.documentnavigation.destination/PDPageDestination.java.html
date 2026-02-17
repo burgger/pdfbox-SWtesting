@@ -41,9 +41,9 @@ public abstract class PDPageDestination extends PDDestination
      *
      */
     protected PDPageDestination()
-<span class="nc" id="L44">    {</span>
-<span class="nc" id="L45">        array = new COSArray();</span>
-<span class="nc" id="L46">    }</span>
+<span class="fc" id="L44">    {</span>
+<span class="fc" id="L45">        array = new COSArray();</span>
+<span class="fc" id="L46">    }</span>
 
     /**
      * Constructor to create empty page destination.
@@ -51,9 +51,9 @@ public abstract class PDPageDestination extends PDDestination
      * @param arr A page destination array.
      */
     protected PDPageDestination( COSArray arr )
-<span class="nc" id="L54">    {</span>
-<span class="nc" id="L55">        array = arr;</span>
-<span class="nc" id="L56">    }</span>
+<span class="fc" id="L54">    {</span>
+<span class="fc" id="L55">        array = arr;</span>
+<span class="fc" id="L56">    }</span>
 
     /**
      * This will get the page for this destination. A page destination can either reference a page
@@ -65,16 +65,16 @@ public abstract class PDPageDestination extends PDDestination
      */
     public PDPage getPage()
     {
-<span class="nc" id="L68">        PDPage retval = null;</span>
-<span class="nc bnc" id="L69" title="All 2 branches missed.">        if (!array.isEmpty())</span>
+<span class="fc" id="L68">        PDPage retval = null;</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (!array.isEmpty())</span>
         {
-<span class="nc" id="L71">            COSBase page = array.getObject( 0 );</span>
-<span class="nc bnc" id="L72" title="All 2 branches missed.">            if( page instanceof COSDictionary )</span>
+<span class="fc" id="L71">            COSBase page = array.getObject( 0 );</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            if( page instanceof COSDictionary )</span>
             {
-<span class="nc" id="L74">                retval = new PDPage( (COSDictionary)page );</span>
+<span class="fc" id="L74">                retval = new PDPage( (COSDictionary)page );</span>
             }
         }
-<span class="nc" id="L77">        return retval;</span>
+<span class="fc" id="L77">        return retval;</span>
     }
 
     /**
@@ -84,8 +84,8 @@ public abstract class PDPageDestination extends PDDestination
      */
     public void setPage( PDPage page )
     {
-<span class="nc" id="L87">        array.set( 0, page );</span>
-<span class="nc" id="L88">    }</span>
+<span class="fc" id="L87">        array.set( 0, page );</span>
+<span class="fc" id="L88">    }</span>
 
     /**
      * This will get the page number for this destination. A page destination can either reference a
@@ -118,17 +118,17 @@ public abstract class PDPageDestination extends PDDestination
      */
     public int retrievePageNumber()
     {
-<span class="nc" id="L121">        int retval = -1;</span>
-<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (!array.isEmpty())</span>
+<span class="fc" id="L121">        int retval = -1;</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">        if (!array.isEmpty())</span>
         {
-<span class="nc" id="L124">            COSBase page = array.getObject(0);</span>
-<span class="nc bnc" id="L125" title="All 2 branches missed.">            if (page instanceof COSNumber)</span>
+<span class="fc" id="L124">            COSBase page = array.getObject(0);</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">            if (page instanceof COSNumber)</span>
             {
 <span class="nc" id="L127">                retval = ((COSNumber) page).intValue();</span>
             }
-<span class="nc bnc" id="L129" title="All 2 branches missed.">            else if (page instanceof COSDictionary)</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">            else if (page instanceof COSDictionary)</span>
             {
-<span class="nc" id="L131">                return indexOfPageTree((COSDictionary) page);</span>
+<span class="fc" id="L131">                return indexOfPageTree((COSDictionary) page);</span>
             }
         }
 <span class="nc" id="L134">        return retval;</span>
@@ -137,22 +137,22 @@ public abstract class PDPageDestination extends PDDestination
     // climb up the page tree up to the top to be able to call PageTree.indexOf for a page dictionary
     private int indexOfPageTree(COSDictionary pageDict)
     {
-<span class="nc" id="L140">        COSDictionary parent = pageDict;</span>
+<span class="fc" id="L140">        COSDictionary parent = pageDict;</span>
         while (true)
         {
-<span class="nc" id="L143">            COSDictionary prevParent = parent.getCOSDictionary(COSName.PARENT, COSName.P);</span>
-<span class="nc bnc" id="L144" title="All 2 branches missed.">            if (prevParent == null)</span>
+<span class="fc" id="L143">            COSDictionary prevParent = parent.getCOSDictionary(COSName.PARENT, COSName.P);</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">            if (prevParent == null)</span>
             {
-<span class="nc" id="L146">                break;</span>
+<span class="fc" id="L146">                break;</span>
             }
-<span class="nc" id="L148">            parent = prevParent;</span>
-<span class="nc" id="L149">        }</span>
-<span class="nc bnc" id="L150" title="All 2 branches missed.">        if (parent.containsKey(COSName.KIDS)</span>
-<span class="nc bnc" id="L151" title="All 2 branches missed.">                &amp;&amp; COSName.PAGES.equals(parent.getCOSName(COSName.TYPE)))</span>
+<span class="fc" id="L148">            parent = prevParent;</span>
+<span class="fc" id="L149">        }</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        if (parent.containsKey(COSName.KIDS)</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">                &amp;&amp; COSName.PAGES.equals(parent.getCOSName(COSName.TYPE)))</span>
         {
             // now parent is the highest pages node
-<span class="nc" id="L154">            PDPageTree pages = new PDPageTree(parent);</span>
-<span class="nc" id="L155">            return pages.indexOf(new PDPage(pageDict));</span>
+<span class="fc" id="L154">            PDPageTree pages = new PDPageTree(parent);</span>
+<span class="fc" id="L155">            return pages.indexOf(new PDPage(pageDict));</span>
         }
 <span class="nc" id="L157">        return -1;</span>
     }
@@ -176,7 +176,7 @@ public abstract class PDPageDestination extends PDDestination
     @Override
     public COSArray getCOSObject()
     {
-<span class="nc" id="L179">        return array;</span>
+<span class="fc" id="L179">        return array;</span>
     }
 
 }

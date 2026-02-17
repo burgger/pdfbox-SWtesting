@@ -54,54 +54,54 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
  * Based on code contributed by Balazs Jerk.
  * 
  */
-<span class="nc" id="L57">public class Overlay implements Closeable</span>
+<span class="fc" id="L57">public class Overlay implements Closeable</span>
 {
-<span class="nc" id="L59">    private static final Logger LOG = LogManager.getLogger(Overlay.class);</span>
+<span class="fc" id="L59">    private static final Logger LOG = LogManager.getLogger(Overlay.class);</span>
 
     /**
      * Possible location of the overlaid pages: foreground or background.
      */
-<span class="nc" id="L64">    public enum Position</span>
+<span class="fc" id="L64">    public enum Position</span>
     {
-<span class="nc" id="L66">        FOREGROUND, BACKGROUND</span>
+<span class="fc" id="L66">        FOREGROUND, BACKGROUND</span>
     }
 
     private LayoutPage defaultOverlayPage;
-<span class="nc" id="L70">    private final Map&lt;Integer,LayoutPage&gt; rotatedDefaultOverlayPagesMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L70">    private final Map&lt;Integer,LayoutPage&gt; rotatedDefaultOverlayPagesMap = new HashMap&lt;&gt;();</span>
     private LayoutPage firstPageOverlayPage;
     private LayoutPage lastPageOverlayPage;
     private LayoutPage oddPageOverlayPage;
     private LayoutPage evenPageOverlayPage;
 
-<span class="nc" id="L76">    private final Set&lt;PDDocument&gt; openDocumentsSet = new HashSet&lt;&gt;();</span>
-<span class="nc" id="L77">    private Map&lt;Integer, LayoutPage&gt; specificPageOverlayLayoutPageMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L76">    private final Set&lt;PDDocument&gt; openDocumentsSet = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L77">    private Map&lt;Integer, LayoutPage&gt; specificPageOverlayLayoutPageMap = new HashMap&lt;&gt;();</span>
 
-<span class="nc" id="L79">    private Position position = Position.BACKGROUND;</span>
+<span class="fc" id="L79">    private Position position = Position.BACKGROUND;</span>
 
-<span class="nc" id="L81">    private String inputFileName = null;</span>
-<span class="nc" id="L82">    private PDDocument inputPDFDocument = null;</span>
+<span class="fc" id="L81">    private String inputFileName = null;</span>
+<span class="fc" id="L82">    private PDDocument inputPDFDocument = null;</span>
 
-<span class="nc" id="L84">    private String defaultOverlayFilename = null;</span>
-<span class="nc" id="L85">    private PDDocument defaultOverlayDocument = null;</span>
+<span class="fc" id="L84">    private String defaultOverlayFilename = null;</span>
+<span class="fc" id="L85">    private PDDocument defaultOverlayDocument = null;</span>
 
-<span class="nc" id="L87">    private String firstPageOverlayFilename = null;</span>
-<span class="nc" id="L88">    private PDDocument firstPageOverlayDocument = null;</span>
+<span class="fc" id="L87">    private String firstPageOverlayFilename = null;</span>
+<span class="fc" id="L88">    private PDDocument firstPageOverlayDocument = null;</span>
 
-<span class="nc" id="L90">    private String lastPageOverlayFilename = null;</span>
-<span class="nc" id="L91">    private PDDocument lastPageOverlayDocument = null;</span>
+<span class="fc" id="L90">    private String lastPageOverlayFilename = null;</span>
+<span class="fc" id="L91">    private PDDocument lastPageOverlayDocument = null;</span>
     
-<span class="nc" id="L93">    private String allPagesOverlayFilename = null;</span>
-<span class="nc" id="L94">    private PDDocument allPagesOverlayDocument = null;</span>
+<span class="fc" id="L93">    private String allPagesOverlayFilename = null;</span>
+<span class="fc" id="L94">    private PDDocument allPagesOverlayDocument = null;</span>
     
-<span class="nc" id="L96">    private String oddPageOverlayFilename = null;</span>
-<span class="nc" id="L97">    private PDDocument oddPageOverlayDocument = null;</span>
+<span class="fc" id="L96">    private String oddPageOverlayFilename = null;</span>
+<span class="fc" id="L97">    private PDDocument oddPageOverlayDocument = null;</span>
     
-<span class="nc" id="L99">    private String evenPageOverlayFilename = null;</span>
-<span class="nc" id="L100">    private PDDocument evenPageOverlayDocument = null;</span>
+<span class="fc" id="L99">    private String evenPageOverlayFilename = null;</span>
+<span class="fc" id="L100">    private PDDocument evenPageOverlayDocument = null;</span>
 
-<span class="nc" id="L102">    private int numberOfOverlayPages = 0;</span>
-<span class="nc" id="L103">    private boolean useAllOverlayPages = false;</span>
-<span class="nc" id="L104">    private boolean adjustRotation = false;</span>
+<span class="fc" id="L102">    private int numberOfOverlayPages = 0;</span>
+<span class="fc" id="L103">    private boolean useAllOverlayPages = false;</span>
+<span class="fc" id="L104">    private boolean adjustRotation = false;</span>
 
     /**
      * This will add overlays to a document.
@@ -119,24 +119,24 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
      */
     public PDDocument overlay(Map&lt;Integer, String&gt; specificPageOverlayMap) throws IOException
     {
-<span class="nc" id="L122">        Map&lt;String, LayoutPage&gt; layouts = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L122">        Map&lt;String, LayoutPage&gt; layouts = new HashMap&lt;&gt;();</span>
         String path;
-<span class="nc" id="L124">        loadPDFs();</span>
-<span class="nc bnc" id="L125" title="All 2 branches missed.">        for (Map.Entry&lt;Integer, String&gt; e : specificPageOverlayMap.entrySet())</span>
+<span class="fc" id="L124">        loadPDFs();</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, String&gt; e : specificPageOverlayMap.entrySet())</span>
         {
-<span class="nc" id="L127">            path = e.getValue();</span>
-<span class="nc" id="L128">            LayoutPage layoutPage = layouts.get(path);</span>
-<span class="nc bnc" id="L129" title="All 2 branches missed.">            if (layoutPage == null)</span>
+<span class="fc" id="L127">            path = e.getValue();</span>
+<span class="fc" id="L128">            LayoutPage layoutPage = layouts.get(path);</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">            if (layoutPage == null)</span>
             {
-<span class="nc" id="L131">                PDDocument doc = loadPDF(path);</span>
-<span class="nc" id="L132">                layoutPage = createLayoutPageFromDocument(doc);</span>
-<span class="nc" id="L133">                layouts.put(path, layoutPage);</span>
-<span class="nc" id="L134">                openDocumentsSet.add(doc);</span>
+<span class="fc" id="L131">                PDDocument doc = loadPDF(path);</span>
+<span class="fc" id="L132">                layoutPage = createLayoutPageFromDocument(doc);</span>
+<span class="fc" id="L133">                layouts.put(path, layoutPage);</span>
+<span class="fc" id="L134">                openDocumentsSet.add(doc);</span>
             }
-<span class="nc" id="L136">            specificPageOverlayLayoutPageMap.put(e.getKey(), layoutPage);</span>
-<span class="nc" id="L137">        }</span>
-<span class="nc" id="L138">        processPages(inputPDFDocument);</span>
-<span class="nc" id="L139">        return inputPDFDocument;</span>
+<span class="fc" id="L136">            specificPageOverlayLayoutPageMap.put(e.getKey(), layoutPage);</span>
+<span class="fc" id="L137">        }</span>
+<span class="fc" id="L138">        processPages(inputPDFDocument);</span>
+<span class="fc" id="L139">        return inputPDFDocument;</span>
     }
 
     /**
@@ -176,111 +176,111 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
     @Override
     public void close() throws IOException
     {
-<span class="nc bnc" id="L179" title="All 2 branches missed.">        if (defaultOverlayDocument != null)</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        if (defaultOverlayDocument != null)</span>
         {
-<span class="nc" id="L181">            defaultOverlayDocument.close();</span>
+<span class="fc" id="L181">            defaultOverlayDocument.close();</span>
         }
-<span class="nc bnc" id="L183" title="All 2 branches missed.">        if (firstPageOverlayDocument != null)</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        if (firstPageOverlayDocument != null)</span>
         {
 <span class="nc" id="L185">            firstPageOverlayDocument.close();</span>
         }
-<span class="nc bnc" id="L187" title="All 2 branches missed.">        if (lastPageOverlayDocument != null)</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        if (lastPageOverlayDocument != null)</span>
         {
 <span class="nc" id="L189">            lastPageOverlayDocument.close();</span>
         }
-<span class="nc bnc" id="L191" title="All 2 branches missed.">        if (allPagesOverlayDocument != null)</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">        if (allPagesOverlayDocument != null)</span>
         {
 <span class="nc" id="L193">            allPagesOverlayDocument.close();</span>
         }
-<span class="nc bnc" id="L195" title="All 2 branches missed.">        if (oddPageOverlayDocument != null)</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">        if (oddPageOverlayDocument != null)</span>
         {
 <span class="nc" id="L197">            oddPageOverlayDocument.close();</span>
         }
-<span class="nc bnc" id="L199" title="All 2 branches missed.">        if (evenPageOverlayDocument != null)</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">        if (evenPageOverlayDocument != null)</span>
         {
 <span class="nc" id="L201">            evenPageOverlayDocument.close();</span>
         }
-<span class="nc bnc" id="L203" title="All 2 branches missed.">        for (PDDocument doc : openDocumentsSet)</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">        for (PDDocument doc : openDocumentsSet)</span>
         {
-<span class="nc" id="L205">            doc.close();</span>
-<span class="nc" id="L206">        }</span>
-<span class="nc" id="L207">        openDocumentsSet.clear();</span>
-<span class="nc" id="L208">        specificPageOverlayLayoutPageMap.clear();</span>
-<span class="nc" id="L209">        rotatedDefaultOverlayPagesMap.clear();</span>
-<span class="nc" id="L210">    }</span>
+<span class="fc" id="L205">            doc.close();</span>
+<span class="fc" id="L206">        }</span>
+<span class="fc" id="L207">        openDocumentsSet.clear();</span>
+<span class="fc" id="L208">        specificPageOverlayLayoutPageMap.clear();</span>
+<span class="fc" id="L209">        rotatedDefaultOverlayPagesMap.clear();</span>
+<span class="fc" id="L210">    }</span>
 
     private void loadPDFs() throws IOException
     {
         // input PDF
-<span class="nc bnc" id="L215" title="All 2 branches missed.">        if (inputFileName != null)</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        if (inputFileName != null)</span>
         {
-<span class="nc" id="L217">            inputPDFDocument = loadPDF(inputFileName);</span>
+<span class="fc" id="L217">            inputPDFDocument = loadPDF(inputFileName);</span>
         }
-<span class="nc bnc" id="L219" title="All 2 branches missed.">        if (inputPDFDocument == null)</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">        if (inputPDFDocument == null)</span>
         {
-<span class="nc" id="L221">            throw new IllegalArgumentException(&quot;No input document&quot;);</span>
+<span class="fc" id="L221">            throw new IllegalArgumentException(&quot;No input document&quot;);</span>
         }
         // default overlay PDF
-<span class="nc bnc" id="L224" title="All 2 branches missed.">        if (defaultOverlayFilename != null)</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">        if (defaultOverlayFilename != null)</span>
         {
-<span class="nc" id="L226">            defaultOverlayDocument = loadPDF(defaultOverlayFilename);</span>
+<span class="fc" id="L226">            defaultOverlayDocument = loadPDF(defaultOverlayFilename);</span>
         }
-<span class="nc bnc" id="L228" title="All 2 branches missed.">        if (defaultOverlayDocument != null)</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">        if (defaultOverlayDocument != null)</span>
         {
-<span class="nc" id="L230">            defaultOverlayPage = createLayoutPageFromDocument(defaultOverlayDocument);</span>
+<span class="fc" id="L230">            defaultOverlayPage = createLayoutPageFromDocument(defaultOverlayDocument);</span>
         }
         // first page overlay PDF
-<span class="nc bnc" id="L233" title="All 2 branches missed.">        if (firstPageOverlayFilename != null)</span>
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">        if (firstPageOverlayFilename != null)</span>
         {
 <span class="nc" id="L235">            firstPageOverlayDocument = loadPDF(firstPageOverlayFilename);</span>
         }
-<span class="nc bnc" id="L237" title="All 2 branches missed.">        if (firstPageOverlayDocument != null)</span>
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">        if (firstPageOverlayDocument != null)</span>
         {
 <span class="nc" id="L239">            firstPageOverlayPage = createLayoutPageFromDocument(firstPageOverlayDocument);</span>
         }
         // last page overlay PDF
-<span class="nc bnc" id="L242" title="All 2 branches missed.">        if (lastPageOverlayFilename != null)</span>
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">        if (lastPageOverlayFilename != null)</span>
         {
 <span class="nc" id="L244">            lastPageOverlayDocument = loadPDF(lastPageOverlayFilename);</span>
         }
-<span class="nc bnc" id="L246" title="All 2 branches missed.">        if (lastPageOverlayDocument != null)</span>
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">        if (lastPageOverlayDocument != null)</span>
         {
 <span class="nc" id="L248">            lastPageOverlayPage = createLayoutPageFromDocument(lastPageOverlayDocument);</span>
         }
         // odd pages overlay PDF
-<span class="nc bnc" id="L251" title="All 2 branches missed.">        if (oddPageOverlayFilename != null)</span>
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">        if (oddPageOverlayFilename != null)</span>
         {
 <span class="nc" id="L253">            oddPageOverlayDocument = loadPDF(oddPageOverlayFilename);</span>
         }
-<span class="nc bnc" id="L255" title="All 2 branches missed.">        if (oddPageOverlayDocument != null)</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">        if (oddPageOverlayDocument != null)</span>
         {
 <span class="nc" id="L257">            oddPageOverlayPage = createLayoutPageFromDocument(oddPageOverlayDocument);</span>
         }
         // even pages overlay PDF
-<span class="nc bnc" id="L260" title="All 2 branches missed.">        if (evenPageOverlayFilename != null)</span>
+<span class="pc bpc" id="L260" title="1 of 2 branches missed.">        if (evenPageOverlayFilename != null)</span>
         {
 <span class="nc" id="L262">            evenPageOverlayDocument = loadPDF(evenPageOverlayFilename);</span>
         }
-<span class="nc bnc" id="L264" title="All 2 branches missed.">        if (evenPageOverlayDocument != null)</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">        if (evenPageOverlayDocument != null)</span>
         {
 <span class="nc" id="L266">            evenPageOverlayPage = createLayoutPageFromDocument(evenPageOverlayDocument);</span>
         }
         // all pages overlay PDF
-<span class="nc bnc" id="L269" title="All 2 branches missed.">        if (allPagesOverlayFilename != null)</span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">        if (allPagesOverlayFilename != null)</span>
         {
 <span class="nc" id="L271">            allPagesOverlayDocument = loadPDF(allPagesOverlayFilename);</span>
         }
-<span class="nc bnc" id="L273" title="All 2 branches missed.">        if (allPagesOverlayDocument != null)</span>
+<span class="pc bpc" id="L273" title="1 of 2 branches missed.">        if (allPagesOverlayDocument != null)</span>
         {
 <span class="nc" id="L275">            specificPageOverlayLayoutPageMap = createPageOverlayLayoutPageMap(allPagesOverlayDocument);</span>
 <span class="nc" id="L276">            useAllOverlayPages = true;</span>
 <span class="nc" id="L277">            numberOfOverlayPages = specificPageOverlayLayoutPageMap.size();</span>
         }
-<span class="nc" id="L279">    }</span>
+<span class="fc" id="L279">    }</span>
     
     private PDDocument loadPDF(String pdfName) throws IOException
     {
-<span class="nc" id="L283">        return Loader.loadPDF(new File(pdfName));</span>
+<span class="fc" id="L283">        return Loader.loadPDF(new File(pdfName));</span>
     }
 
     /**
@@ -294,12 +294,12 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
         private int overlayRotation;
 
         private LayoutPage(PDRectangle mediaBox, COSStream contentStream, COSDictionary resources, int rotation)
-<span class="nc" id="L297">        {</span>
-<span class="nc" id="L298">            overlayMediaBox = mediaBox;</span>
-<span class="nc" id="L299">            overlayCOSStream = contentStream;</span>
-<span class="nc" id="L300">            overlayResources = resources;</span>
-<span class="nc" id="L301">            overlayRotation = rotation;</span>
-<span class="nc" id="L302">        }</span>
+<span class="fc" id="L297">        {</span>
+<span class="fc" id="L298">            overlayMediaBox = mediaBox;</span>
+<span class="fc" id="L299">            overlayCOSStream = contentStream;</span>
+<span class="fc" id="L300">            overlayResources = resources;</span>
+<span class="fc" id="L301">            overlayRotation = rotation;</span>
+<span class="fc" id="L302">        }</span>
     }
 
     /**
@@ -311,7 +311,7 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
      */
     private LayoutPage createLayoutPageFromDocument(PDDocument doc) throws IOException
     {
-<span class="nc" id="L314">        return createLayoutPage(doc.getPage(0));</span>
+<span class="fc" id="L314">        return createLayoutPage(doc.getPage(0));</span>
     }
 
     /**
@@ -322,14 +322,14 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
      */
     private LayoutPage createLayoutPage(PDPage page) throws IOException
     {
-<span class="nc" id="L325">        COSBase contents = page.getCOSObject().getDictionaryObject(COSName.CONTENTS);</span>
-<span class="nc" id="L326">        PDResources resources = page.getResources();</span>
-<span class="nc bnc" id="L327" title="All 2 branches missed.">        if (resources == null)</span>
+<span class="fc" id="L325">        COSBase contents = page.getCOSObject().getDictionaryObject(COSName.CONTENTS);</span>
+<span class="fc" id="L326">        PDResources resources = page.getResources();</span>
+<span class="pc bpc" id="L327" title="1 of 2 branches missed.">        if (resources == null)</span>
         {
 <span class="nc" id="L329">            resources = new PDResources();</span>
         }
-<span class="nc" id="L331">        return new LayoutPage(page.getMediaBox(), createCombinedContentStream(contents),</span>
-<span class="nc" id="L332">                resources.getCOSObject(), page.getRotation());</span>
+<span class="fc" id="L331">        return new LayoutPage(page.getMediaBox(), createCombinedContentStream(contents),</span>
+<span class="fc" id="L332">                resources.getCOSObject(), page.getRotation());</span>
     }
     
     private Map&lt;Integer,LayoutPage&gt; createPageOverlayLayoutPageMap(PDDocument doc) throws IOException
@@ -347,33 +347,33 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
     
     private COSStream createCombinedContentStream(COSBase contents) throws IOException
     {
-<span class="nc" id="L350">        List&lt;COSStream&gt; contentStreams = createContentStreamList(contents);</span>
+<span class="fc" id="L350">        List&lt;COSStream&gt; contentStreams = createContentStreamList(contents);</span>
         // concatenate streams
-<span class="nc" id="L352">        COSStream concatStream = inputPDFDocument.getDocument().createCOSStream();</span>
-<span class="nc" id="L353">        try (OutputStream out = concatStream.createOutputStream(COSName.FLATE_DECODE))</span>
+<span class="fc" id="L352">        COSStream concatStream = inputPDFDocument.getDocument().createCOSStream();</span>
+<span class="fc" id="L353">        try (OutputStream out = concatStream.createOutputStream(COSName.FLATE_DECODE))</span>
         {
-<span class="nc bnc" id="L355" title="All 2 branches missed.">            for (COSStream contentStream : contentStreams)</span>
+<span class="fc bfc" id="L355" title="All 2 branches covered.">            for (COSStream contentStream : contentStreams)</span>
             {
-<span class="nc" id="L357">                try (InputStream in = contentStream.createInputStream())</span>
+<span class="fc" id="L357">                try (InputStream in = contentStream.createInputStream())</span>
                 {
-<span class="nc" id="L359">                    in.transferTo(out);</span>
-<span class="nc" id="L360">                    out.flush();</span>
+<span class="fc" id="L359">                    in.transferTo(out);</span>
+<span class="fc" id="L360">                    out.flush();</span>
                 }
-<span class="nc" id="L362">            }</span>
+<span class="fc" id="L362">            }</span>
         }
-<span class="nc" id="L364">        return concatStream;</span>
+<span class="fc" id="L364">        return concatStream;</span>
     }
 
     // get the content streams as a list
     private List&lt;COSStream&gt; createContentStreamList(COSBase contents) throws IOException
     {
-<span class="nc bnc" id="L370" title="All 2 branches missed.">        if (contents == null)</span>
+<span class="pc bpc" id="L370" title="1 of 2 branches missed.">        if (contents == null)</span>
         {
 <span class="nc" id="L372">            return Collections.emptyList();</span>
         }
-<span class="nc bnc" id="L374" title="All 2 branches missed.">        if (contents instanceof COSStream)</span>
+<span class="pc bpc" id="L374" title="1 of 2 branches missed.">        if (contents instanceof COSStream)</span>
         {
-<span class="nc" id="L376">            return Collections.singletonList((COSStream) contents);</span>
+<span class="fc" id="L376">            return Collections.singletonList((COSStream) contents);</span>
         }
 
 <span class="nc" id="L379">        List&lt;COSStream&gt; contentStreams = new ArrayList&lt;&gt;();</span>
@@ -397,55 +397,55 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
 
     private void processPages(PDDocument document) throws IOException
     {
-<span class="nc" id="L400">        int pageCounter = 0;</span>
-<span class="nc" id="L401">        PDFCloneUtility cloner = new PDFCloneUtility(document);</span>
-<span class="nc" id="L402">        PDPageTree pageTree = document.getPages();</span>
-<span class="nc" id="L403">        int numberOfPages = pageTree.getCount();</span>
-<span class="nc bnc" id="L404" title="All 2 branches missed.">        for (PDPage page : pageTree)</span>
+<span class="fc" id="L400">        int pageCounter = 0;</span>
+<span class="fc" id="L401">        PDFCloneUtility cloner = new PDFCloneUtility(document);</span>
+<span class="fc" id="L402">        PDPageTree pageTree = document.getPages();</span>
+<span class="fc" id="L403">        int numberOfPages = pageTree.getCount();</span>
+<span class="fc bfc" id="L404" title="All 2 branches covered.">        for (PDPage page : pageTree)</span>
         {
-<span class="nc" id="L406">            pageCounter++;</span>
-<span class="nc" id="L407">            LayoutPage layoutPage = getLayoutPage(pageCounter, numberOfPages);</span>
-<span class="nc bnc" id="L408" title="All 2 branches missed.">            if (layoutPage == null)</span>
+<span class="fc" id="L406">            pageCounter++;</span>
+<span class="fc" id="L407">            LayoutPage layoutPage = getLayoutPage(pageCounter, numberOfPages);</span>
+<span class="pc bpc" id="L408" title="1 of 2 branches missed.">            if (layoutPage == null)</span>
             {
 <span class="nc" id="L410">                continue;</span>
             }
-<span class="nc" id="L412">            COSDictionary pageDictionary = page.getCOSObject();</span>
-<span class="nc" id="L413">            COSBase originalContent = pageDictionary.getDictionaryObject(COSName.CONTENTS);</span>
-<span class="nc" id="L414">            COSArray newContentArray = new COSArray();</span>
-<span class="nc bnc" id="L415" title="All 3 branches missed.">            switch (position)</span>
+<span class="fc" id="L412">            COSDictionary pageDictionary = page.getCOSObject();</span>
+<span class="fc" id="L413">            COSBase originalContent = pageDictionary.getDictionaryObject(COSName.CONTENTS);</span>
+<span class="fc" id="L414">            COSArray newContentArray = new COSArray();</span>
+<span class="pc bpc" id="L415" title="1 of 3 branches missed.">            switch (position)</span>
             {
                 case FOREGROUND:
                     // save state
-<span class="nc" id="L419">                    newContentArray.add(createStream(&quot;q\n&quot;));</span>
-<span class="nc" id="L420">                    addOriginalContent(originalContent, newContentArray);</span>
+<span class="fc" id="L419">                    newContentArray.add(createStream(&quot;q\n&quot;));</span>
+<span class="fc" id="L420">                    addOriginalContent(originalContent, newContentArray);</span>
                     // restore state
-<span class="nc" id="L422">                    newContentArray.add(createStream(&quot;Q\n&quot;));</span>
+<span class="fc" id="L422">                    newContentArray.add(createStream(&quot;Q\n&quot;));</span>
                     // overlay content last
-<span class="nc" id="L424">                    overlayPage(page, layoutPage, newContentArray, cloner);</span>
-<span class="nc" id="L425">                    break;</span>
+<span class="fc" id="L424">                    overlayPage(page, layoutPage, newContentArray, cloner);</span>
+<span class="fc" id="L425">                    break;</span>
                 case BACKGROUND:
                     // overlay content first
-<span class="nc" id="L428">                    overlayPage(page, layoutPage, newContentArray, cloner);</span>
+<span class="fc" id="L428">                    overlayPage(page, layoutPage, newContentArray, cloner);</span>
 
-<span class="nc" id="L430">                    addOriginalContent(originalContent, newContentArray);</span>
-<span class="nc" id="L431">                    break;</span>
+<span class="fc" id="L430">                    addOriginalContent(originalContent, newContentArray);</span>
+<span class="fc" id="L431">                    break;</span>
                 default:
 <span class="nc" id="L433">                    throw new IOException(&quot;Unknown type of position:&quot; + position);</span>
             }
-<span class="nc" id="L435">            pageDictionary.setItem(COSName.CONTENTS, newContentArray);</span>
-<span class="nc" id="L436">        }</span>
-<span class="nc" id="L437">    }</span>
+<span class="fc" id="L435">            pageDictionary.setItem(COSName.CONTENTS, newContentArray);</span>
+<span class="fc" id="L436">        }</span>
+<span class="fc" id="L437">    }</span>
 
     private void addOriginalContent(COSBase contents, COSArray contentArray) throws IOException
     {
-<span class="nc bnc" id="L441" title="All 2 branches missed.">        if (contents == null)</span>
+<span class="pc bpc" id="L441" title="1 of 2 branches missed.">        if (contents == null)</span>
         {
 <span class="nc" id="L443">            return;</span>
         }
 
-<span class="nc bnc" id="L446" title="All 2 branches missed.">        if (contents instanceof COSStream)</span>
+<span class="pc bpc" id="L446" title="1 of 2 branches missed.">        if (contents instanceof COSStream)</span>
         {
-<span class="nc" id="L448">            contentArray.add(contents);</span>
+<span class="fc" id="L448">            contentArray.add(contents);</span>
         }
 <span class="nc bnc" id="L450" title="All 2 branches missed.">        else if (contents instanceof COSArray)</span>
         {
@@ -455,147 +455,147 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
         {
 <span class="nc" id="L456">            throw new IOException(&quot;Unknown content type: &quot; + contents.getClass().getName());</span>
         }
-<span class="nc" id="L458">    }</span>
+<span class="fc" id="L458">    }</span>
 
     private void overlayPage(PDPage page, LayoutPage layoutPage, COSArray array,
             PDFCloneUtility cloner)
             throws IOException
     {
-<span class="nc" id="L464">        PDResources resources = page.getResources();</span>
-<span class="nc bnc" id="L465" title="All 2 branches missed.">        if (resources == null)</span>
+<span class="fc" id="L464">        PDResources resources = page.getResources();</span>
+<span class="pc bpc" id="L465" title="1 of 2 branches missed.">        if (resources == null)</span>
         {
 <span class="nc" id="L467">            resources = new PDResources();</span>
 <span class="nc" id="L468">            page.setResources(resources);</span>
         }
-<span class="nc" id="L470">        PDFormXObject overlayFormXObject = createOverlayFormXObject(layoutPage, cloner);</span>
-<span class="nc" id="L471">        COSName formXObjectId = resources.add(overlayFormXObject, &quot;OL&quot;);</span>
-<span class="nc" id="L472">        array.add(createOverlayStream(page, layoutPage, formXObjectId));</span>
-<span class="nc" id="L473">    }</span>
+<span class="fc" id="L470">        PDFormXObject overlayFormXObject = createOverlayFormXObject(layoutPage, cloner);</span>
+<span class="fc" id="L471">        COSName formXObjectId = resources.add(overlayFormXObject, &quot;OL&quot;);</span>
+<span class="fc" id="L472">        array.add(createOverlayStream(page, layoutPage, formXObjectId));</span>
+<span class="fc" id="L473">    }</span>
 
     private LayoutPage getLayoutPage(int pageNumber, int numberOfPages) throws IOException
     {
-<span class="nc" id="L477">        LayoutPage layoutPage = null;</span>
-<span class="nc bnc" id="L478" title="All 4 branches missed.">        if (!useAllOverlayPages &amp;&amp; specificPageOverlayLayoutPageMap.containsKey(pageNumber))</span>
+<span class="fc" id="L477">        LayoutPage layoutPage = null;</span>
+<span class="pc bpc" id="L478" title="1 of 4 branches missed.">        if (!useAllOverlayPages &amp;&amp; specificPageOverlayLayoutPageMap.containsKey(pageNumber))</span>
         {
-<span class="nc" id="L480">            layoutPage = specificPageOverlayLayoutPageMap.get(pageNumber);</span>
+<span class="fc" id="L480">            layoutPage = specificPageOverlayLayoutPageMap.get(pageNumber);</span>
         }
-<span class="nc bnc" id="L482" title="All 4 branches missed.">        else if ((pageNumber == 1) &amp;&amp; (firstPageOverlayPage != null))</span>
+<span class="pc bpc" id="L482" title="1 of 4 branches missed.">        else if ((pageNumber == 1) &amp;&amp; (firstPageOverlayPage != null))</span>
         {
 <span class="nc" id="L484">            layoutPage = firstPageOverlayPage;</span>
         }
-<span class="nc bnc" id="L486" title="All 4 branches missed.">        else if ((pageNumber == numberOfPages) &amp;&amp; (lastPageOverlayPage != null))</span>
+<span class="pc bpc" id="L486" title="1 of 4 branches missed.">        else if ((pageNumber == numberOfPages) &amp;&amp; (lastPageOverlayPage != null))</span>
         {
 <span class="nc" id="L488">            layoutPage = lastPageOverlayPage;</span>
         }
-<span class="nc bnc" id="L490" title="All 4 branches missed.">        else if ((pageNumber % 2 == 1) &amp;&amp; (oddPageOverlayPage != null))</span>
+<span class="pc bpc" id="L490" title="1 of 4 branches missed.">        else if ((pageNumber % 2 == 1) &amp;&amp; (oddPageOverlayPage != null))</span>
         {
 <span class="nc" id="L492">            layoutPage = oddPageOverlayPage;</span>
         }
-<span class="nc bnc" id="L494" title="All 4 branches missed.">        else if ((pageNumber % 2 == 0) &amp;&amp; (evenPageOverlayPage != null))</span>
+<span class="pc bpc" id="L494" title="1 of 4 branches missed.">        else if ((pageNumber % 2 == 0) &amp;&amp; (evenPageOverlayPage != null))</span>
         {
 <span class="nc" id="L496">            layoutPage = evenPageOverlayPage;</span>
         }
-<span class="nc bnc" id="L498" title="All 2 branches missed.">        else if (defaultOverlayPage != null)</span>
+<span class="pc bpc" id="L498" title="1 of 2 branches missed.">        else if (defaultOverlayPage != null)</span>
         {
-<span class="nc" id="L500">            layoutPage = defaultOverlayPage;</span>
+<span class="fc" id="L500">            layoutPage = defaultOverlayPage;</span>
 
-<span class="nc bnc" id="L502" title="All 2 branches missed.">            if (adjustRotation)</span>
+<span class="fc bfc" id="L502" title="All 2 branches covered.">            if (adjustRotation)</span>
             {
                 // PDFBOX-6049: consider the rotation of the document page
                 // Note that this segment is only the second best solution to the problem. The best
                 // would be to make appropriate transforms in calculateAffineTransform()                
-<span class="nc" id="L507">                PDPage page = inputPDFDocument.getPage(pageNumber - 1);</span>
-<span class="nc" id="L508">                int rotation = page.getRotation();</span>
-<span class="nc bnc" id="L509" title="All 2 branches missed.">                if (rotation != 0)</span>
+<span class="fc" id="L507">                PDPage page = inputPDFDocument.getPage(pageNumber - 1);</span>
+<span class="fc" id="L508">                int rotation = page.getRotation();</span>
+<span class="fc bfc" id="L509" title="All 2 branches covered.">                if (rotation != 0)</span>
                 {
-<span class="nc" id="L511">                    return createAdjustedLayoutPage(rotation);</span>
+<span class="fc" id="L511">                    return createAdjustedLayoutPage(rotation);</span>
                 }
-<span class="nc" id="L513">            }</span>
+<span class="fc" id="L513">            }</span>
         }
 <span class="nc bnc" id="L515" title="All 2 branches missed.">        else if (useAllOverlayPages)</span>
         {
 <span class="nc" id="L517">            int usePageNum = (pageNumber -1 ) % numberOfOverlayPages;</span>
 <span class="nc" id="L518">            layoutPage = specificPageOverlayLayoutPageMap.get(usePageNum);</span>
         }
-<span class="nc" id="L520">        return layoutPage;</span>
+<span class="fc" id="L520">        return layoutPage;</span>
     }
 
     private LayoutPage createAdjustedLayoutPage(int rotation) throws IOException
     {
-<span class="nc" id="L525">        LayoutPage rotatedLayoutPage = rotatedDefaultOverlayPagesMap.get(rotation);</span>
-<span class="nc bnc" id="L526" title="All 2 branches missed.">        if (rotatedLayoutPage == null)</span>
+<span class="fc" id="L525">        LayoutPage rotatedLayoutPage = rotatedDefaultOverlayPagesMap.get(rotation);</span>
+<span class="fc bfc" id="L526" title="All 2 branches covered.">        if (rotatedLayoutPage == null)</span>
         {
             // createLayoutPage must be called because we can't reuse the COSStream
-<span class="nc" id="L529">            rotatedLayoutPage = createLayoutPage(defaultOverlayDocument.getPage(0));</span>
-<span class="nc" id="L530">            int newRotation = (rotatedLayoutPage.overlayRotation - rotation + 360) % 360;</span>
-<span class="nc" id="L531">            rotatedLayoutPage.overlayRotation = newRotation;</span>
-<span class="nc" id="L532">            rotatedDefaultOverlayPagesMap.put(rotation, rotatedLayoutPage);</span>
+<span class="fc" id="L529">            rotatedLayoutPage = createLayoutPage(defaultOverlayDocument.getPage(0));</span>
+<span class="fc" id="L530">            int newRotation = (rotatedLayoutPage.overlayRotation - rotation + 360) % 360;</span>
+<span class="fc" id="L531">            rotatedLayoutPage.overlayRotation = newRotation;</span>
+<span class="fc" id="L532">            rotatedDefaultOverlayPagesMap.put(rotation, rotatedLayoutPage);</span>
         }
-<span class="nc" id="L534">        return rotatedLayoutPage;</span>
+<span class="fc" id="L534">        return rotatedLayoutPage;</span>
     }
 
     private PDFormXObject createOverlayFormXObject(LayoutPage layoutPage, PDFCloneUtility cloner)
             throws IOException
     {
-<span class="nc" id="L540">        PDFormXObject xobjForm = new PDFormXObject(layoutPage.overlayCOSStream);</span>
-<span class="nc" id="L541">        xobjForm.setResources(new PDResources(</span>
-<span class="nc" id="L542">                cloner.cloneForNewDocument(layoutPage.overlayResources)));</span>
-<span class="nc" id="L543">        xobjForm.setFormType(1);</span>
-<span class="nc" id="L544">        xobjForm.setBBox(layoutPage.overlayMediaBox.createRetranslatedRectangle());</span>
-<span class="nc" id="L545">        AffineTransform at = new AffineTransform();</span>
-<span class="nc bnc" id="L546" title="All 4 branches missed.">        switch (layoutPage.overlayRotation)</span>
+<span class="fc" id="L540">        PDFormXObject xobjForm = new PDFormXObject(layoutPage.overlayCOSStream);</span>
+<span class="fc" id="L541">        xobjForm.setResources(new PDResources(</span>
+<span class="fc" id="L542">                cloner.cloneForNewDocument(layoutPage.overlayResources)));</span>
+<span class="fc" id="L543">        xobjForm.setFormType(1);</span>
+<span class="fc" id="L544">        xobjForm.setBBox(layoutPage.overlayMediaBox.createRetranslatedRectangle());</span>
+<span class="fc" id="L545">        AffineTransform at = new AffineTransform();</span>
+<span class="fc bfc" id="L546" title="All 4 branches covered.">        switch (layoutPage.overlayRotation)</span>
         {
             case 90:
-<span class="nc" id="L549">                at.translate(0, layoutPage.overlayMediaBox.getWidth());</span>
-<span class="nc" id="L550">                at.quadrantRotate(3); // 270</span>
-<span class="nc" id="L551">                break;</span>
+<span class="fc" id="L549">                at.translate(0, layoutPage.overlayMediaBox.getWidth());</span>
+<span class="fc" id="L550">                at.quadrantRotate(3); // 270</span>
+<span class="fc" id="L551">                break;</span>
             case 180:
-<span class="nc" id="L553">                at.translate(layoutPage.overlayMediaBox.getWidth(), layoutPage.overlayMediaBox.getHeight());</span>
-<span class="nc" id="L554">                at.quadrantRotate(2); // 180</span>
-<span class="nc" id="L555">                break;</span>
+<span class="fc" id="L553">                at.translate(layoutPage.overlayMediaBox.getWidth(), layoutPage.overlayMediaBox.getHeight());</span>
+<span class="fc" id="L554">                at.quadrantRotate(2); // 180</span>
+<span class="fc" id="L555">                break;</span>
             case 270:
-<span class="nc" id="L557">                at.translate(layoutPage.overlayMediaBox.getHeight(), 0);</span>
-<span class="nc" id="L558">                at.quadrantRotate(1); // 90</span>
-<span class="nc" id="L559">                break;</span>
+<span class="fc" id="L557">                at.translate(layoutPage.overlayMediaBox.getHeight(), 0);</span>
+<span class="fc" id="L558">                at.quadrantRotate(1); // 90</span>
+<span class="fc" id="L559">                break;</span>
             default:
                 break;
         }
-<span class="nc" id="L563">        xobjForm.setMatrix(at);</span>
-<span class="nc" id="L564">        return xobjForm;</span>
+<span class="fc" id="L563">        xobjForm.setMatrix(at);</span>
+<span class="fc" id="L564">        return xobjForm;</span>
     }
 
     private COSStream createOverlayStream(PDPage page, LayoutPage layoutPage, COSName xObjectId)
             throws IOException
     {
         // create a new content stream that executes the XObject content
-<span class="nc" id="L571">        StringBuilder overlayStream = new StringBuilder();</span>
-<span class="nc" id="L572">        overlayStream.append(&quot;q\nq\n&quot;);</span>
-<span class="nc" id="L573">        PDRectangle overlayMediaBox = new PDRectangle(layoutPage.overlayMediaBox.getCOSArray());</span>
-<span class="nc bnc" id="L574" title="All 4 branches missed.">        if (layoutPage.overlayRotation == 90 || layoutPage.overlayRotation == 270)</span>
+<span class="fc" id="L571">        StringBuilder overlayStream = new StringBuilder();</span>
+<span class="fc" id="L572">        overlayStream.append(&quot;q\nq\n&quot;);</span>
+<span class="fc" id="L573">        PDRectangle overlayMediaBox = new PDRectangle(layoutPage.overlayMediaBox.getCOSArray());</span>
+<span class="fc bfc" id="L574" title="All 4 branches covered.">        if (layoutPage.overlayRotation == 90 || layoutPage.overlayRotation == 270)</span>
         {
-<span class="nc" id="L576">            overlayMediaBox.setLowerLeftX(layoutPage.overlayMediaBox.getLowerLeftY());</span>
-<span class="nc" id="L577">            overlayMediaBox.setLowerLeftY(layoutPage.overlayMediaBox.getLowerLeftX());</span>
-<span class="nc" id="L578">            overlayMediaBox.setUpperRightX(layoutPage.overlayMediaBox.getUpperRightY());</span>
-<span class="nc" id="L579">            overlayMediaBox.setUpperRightY(layoutPage.overlayMediaBox.getUpperRightX());</span>
+<span class="fc" id="L576">            overlayMediaBox.setLowerLeftX(layoutPage.overlayMediaBox.getLowerLeftY());</span>
+<span class="fc" id="L577">            overlayMediaBox.setLowerLeftY(layoutPage.overlayMediaBox.getLowerLeftX());</span>
+<span class="fc" id="L578">            overlayMediaBox.setUpperRightX(layoutPage.overlayMediaBox.getUpperRightY());</span>
+<span class="fc" id="L579">            overlayMediaBox.setUpperRightY(layoutPage.overlayMediaBox.getUpperRightX());</span>
         }
-<span class="nc" id="L581">        AffineTransform at = calculateAffineTransform(page, overlayMediaBox);</span>
-<span class="nc" id="L582">        double[] flatmatrix = new double[6];</span>
-<span class="nc" id="L583">        at.getMatrix(flatmatrix);</span>
-<span class="nc bnc" id="L584" title="All 2 branches missed.">        for (double v : flatmatrix)</span>
+<span class="fc" id="L581">        AffineTransform at = calculateAffineTransform(page, overlayMediaBox);</span>
+<span class="fc" id="L582">        double[] flatmatrix = new double[6];</span>
+<span class="fc" id="L583">        at.getMatrix(flatmatrix);</span>
+<span class="fc bfc" id="L584" title="All 2 branches covered.">        for (double v : flatmatrix)</span>
         {
-<span class="nc" id="L586">            overlayStream.append(float2String((float) v));</span>
-<span class="nc" id="L587">            overlayStream.append(' ');</span>
+<span class="fc" id="L586">            overlayStream.append(float2String((float) v));</span>
+<span class="fc" id="L587">            overlayStream.append(' ');</span>
         }
-<span class="nc" id="L589">        overlayStream.append(&quot; cm\n&quot;);</span>
+<span class="fc" id="L589">        overlayStream.append(&quot; cm\n&quot;);</span>
 
         // if debugging, insert
         // 0 0 overlayMediaBox.getHeight() overlayMediaBox.getWidth() re\ns\n
         // into the content stream
 
-<span class="nc" id="L595">        overlayStream.append(&quot; /&quot;);</span>
-<span class="nc" id="L596">        overlayStream.append(xObjectId.getName());</span>
-<span class="nc" id="L597">        overlayStream.append(&quot; Do Q\nQ\n&quot;);</span>
-<span class="nc" id="L598">        return createStream(overlayStream.toString());</span>
+<span class="fc" id="L595">        overlayStream.append(&quot; /&quot;);</span>
+<span class="fc" id="L596">        overlayStream.append(xObjectId.getName());</span>
+<span class="fc" id="L597">        overlayStream.append(&quot; Do Q\nQ\n&quot;);</span>
+<span class="fc" id="L598">        return createStream(overlayStream.toString());</span>
     }
 
     /**
@@ -610,41 +610,41 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
      */
     protected AffineTransform calculateAffineTransform(PDPage page, PDRectangle overlayMediaBox)
     {
-<span class="nc" id="L613">        AffineTransform at = new AffineTransform();</span>
-<span class="nc" id="L614">        PDRectangle pageMediaBox = page.getMediaBox();</span>
-<span class="nc" id="L615">        float hShift = pageMediaBox.getLowerLeftX() + (pageMediaBox.getWidth() - overlayMediaBox.getWidth()) / 2.0f;</span>
-<span class="nc" id="L616">        float vShift = pageMediaBox.getLowerLeftY() + (pageMediaBox.getHeight() - overlayMediaBox.getHeight()) / 2.0f;</span>
-<span class="nc" id="L617">        LOG.debug(&quot;Overlay position: ({},{})&quot;, hShift, vShift);</span>
-<span class="nc" id="L618">        at.translate(hShift, vShift);</span>
-<span class="nc" id="L619">        return at;</span>
+<span class="fc" id="L613">        AffineTransform at = new AffineTransform();</span>
+<span class="fc" id="L614">        PDRectangle pageMediaBox = page.getMediaBox();</span>
+<span class="fc" id="L615">        float hShift = pageMediaBox.getLowerLeftX() + (pageMediaBox.getWidth() - overlayMediaBox.getWidth()) / 2.0f;</span>
+<span class="fc" id="L616">        float vShift = pageMediaBox.getLowerLeftY() + (pageMediaBox.getHeight() - overlayMediaBox.getHeight()) / 2.0f;</span>
+<span class="fc" id="L617">        LOG.debug(&quot;Overlay position: ({},{})&quot;, hShift, vShift);</span>
+<span class="fc" id="L618">        at.translate(hShift, vShift);</span>
+<span class="fc" id="L619">        return at;</span>
     }
 
     private String float2String(float floatValue)
     {
         // use a BigDecimal as intermediate state to avoid 
         // a floating point string representation of the float value
-<span class="nc" id="L626">        BigDecimal value = new BigDecimal(String.valueOf(floatValue));</span>
-<span class="nc" id="L627">        String stringValue = value.toPlainString();</span>
+<span class="fc" id="L626">        BigDecimal value = new BigDecimal(String.valueOf(floatValue));</span>
+<span class="fc" id="L627">        String stringValue = value.toPlainString();</span>
         // remove fraction digit &quot;0&quot; only
-<span class="nc bnc" id="L629" title="All 4 branches missed.">        if (stringValue.indexOf('.') &gt; -1 &amp;&amp; !stringValue.endsWith(&quot;.0&quot;))</span>
+<span class="pc bpc" id="L629" title="1 of 4 branches missed.">        if (stringValue.indexOf('.') &gt; -1 &amp;&amp; !stringValue.endsWith(&quot;.0&quot;))</span>
         {
-<span class="nc bnc" id="L631" title="All 4 branches missed.">            while (stringValue.endsWith(&quot;0&quot;) &amp;&amp; !stringValue.endsWith(&quot;.0&quot;))</span>
+<span class="pc bpc" id="L631" title="3 of 4 branches missed.">            while (stringValue.endsWith(&quot;0&quot;) &amp;&amp; !stringValue.endsWith(&quot;.0&quot;))</span>
             {
 <span class="nc" id="L633">                stringValue = stringValue.substring(0,stringValue.length()-1);</span>
             }
         }
-<span class="nc" id="L636">        return stringValue;</span>
+<span class="fc" id="L636">        return stringValue;</span>
     }
     
     private COSStream createStream(String content) throws IOException
     {
-<span class="nc" id="L641">        COSStream stream = inputPDFDocument.getDocument().createCOSStream();</span>
-<span class="nc" id="L642">        try (OutputStream out = stream.createOutputStream(</span>
-<span class="nc bnc" id="L643" title="All 2 branches missed.">                content.length() &gt; 20 ? COSName.FLATE_DECODE : null))</span>
+<span class="fc" id="L641">        COSStream stream = inputPDFDocument.getDocument().createCOSStream();</span>
+<span class="fc" id="L642">        try (OutputStream out = stream.createOutputStream(</span>
+<span class="fc bfc" id="L643" title="All 2 branches covered.">                content.length() &gt; 20 ? COSName.FLATE_DECODE : null))</span>
         {
-<span class="nc" id="L645">            out.write(content.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L645">            out.write(content.getBytes(StandardCharsets.ISO_8859_1));</span>
         }
-<span class="nc" id="L647">        return stream;</span>
+<span class="fc" id="L647">        return stream;</span>
     }
 
     /**
@@ -654,8 +654,8 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
      */
     public void setOverlayPosition(Position overlayPosition)
     {
-<span class="nc" id="L657">        position = overlayPosition;</span>
-<span class="nc" id="L658">    }</span>
+<span class="fc" id="L657">        position = overlayPosition;</span>
+<span class="fc" id="L658">    }</span>
 
     /**
      * Sets the file to be overlaid.
@@ -666,8 +666,8 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
      */
     public void setInputFile(String inputFile)
     {
-<span class="nc" id="L669">        inputFileName = inputFile;</span>
-<span class="nc" id="L670">    }</span>
+<span class="fc" id="L669">        inputFileName = inputFile;</span>
+<span class="fc" id="L670">    }</span>
 
     /**
      * Sets the PDF to be overlaid.
@@ -677,8 +677,8 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
      */
     public void setInputPDF(PDDocument inputPDF)
     {
-<span class="nc" id="L680">        inputPDFDocument = inputPDF;</span>
-<span class="nc" id="L681">    }</span>
+<span class="fc" id="L680">        inputPDFDocument = inputPDF;</span>
+<span class="fc" id="L681">    }</span>
 
     /**
      * Returns the input file.
@@ -697,8 +697,8 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
      */
     public void setDefaultOverlayFile(String defaultOverlayFile)
     {
-<span class="nc" id="L700">        defaultOverlayFilename = defaultOverlayFile;</span>
-<span class="nc" id="L701">    }</span>
+<span class="fc" id="L700">        defaultOverlayFilename = defaultOverlayFile;</span>
+<span class="fc" id="L701">    }</span>
 
     /**
      * Sets the default overlay PDF. If you created the overlay document with
@@ -708,8 +708,8 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
      */
     public void setDefaultOverlayPDF(PDDocument defaultOverlayPDF)
     {
-<span class="nc" id="L711">        defaultOverlayDocument = defaultOverlayPDF;</span>
-<span class="nc" id="L712">    }</span>
+<span class="fc" id="L711">        defaultOverlayDocument = defaultOverlayPDF;</span>
+<span class="fc" id="L712">    }</span>
 
     /**
      * Returns the default overlay file.
@@ -842,7 +842,7 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
      */
     public void setAdjustRotation(boolean adjustRotation)
     {
-<span class="nc" id="L845">        this.adjustRotation = adjustRotation;</span>
-<span class="nc" id="L846">    }</span>
+<span class="fc" id="L845">        this.adjustRotation = adjustRotation;</span>
+<span class="fc" id="L846">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

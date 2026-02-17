@@ -60,21 +60,21 @@ import org.apache.pdfbox.pdmodel.PDDocument;
  */
 public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
 {
-<span class="nc" id="L63">    private static final Logger LOG = LogManager.getLogger(SecurityHandler.class);</span>
+<span class="fc" id="L63">    private static final Logger LOG = LogManager.getLogger(SecurityHandler.class);</span>
 
     private static final short DEFAULT_KEY_LENGTH = 40;
 
     // see 7.6.2, page 58, PDF 32000-1:2008
-<span class="nc" id="L68">    private static final byte[] AES_SALT = { (byte) 0x73, (byte) 0x41, (byte) 0x6c, (byte) 0x54 };</span>
+<span class="fc" id="L68">    private static final byte[] AES_SALT = { (byte) 0x73, (byte) 0x41, (byte) 0x6c, (byte) 0x54 };</span>
 
     /** The length in bits of the secret key used to encrypt the document. */
-<span class="nc" id="L71">    private short keyLength = DEFAULT_KEY_LENGTH;</span>
+<span class="fc" id="L71">    private short keyLength = DEFAULT_KEY_LENGTH;</span>
 
     /** The encryption key that will be used to encrypt / decrypt.*/
     private byte[] encryptionKey;
 
     /** The RC4 implementation used for cryptographic functions. */
-<span class="nc" id="L77">    private final RC4Cipher rc4 = new RC4Cipher();</span>
+<span class="fc" id="L77">    private final RC4Cipher rc4 = new RC4Cipher();</span>
 
     /** Indicates if the Metadata have to be decrypted of not. */
     private boolean decryptMetadata;
@@ -87,20 +87,20 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
     // Because COSString.equals() checks the contents, decryption was then skipped.
     // This solution keeps all different &quot;equal&quot; objects.
     // IdentityHashMap solves this problem and is also faster than a HashMap
-<span class="nc" id="L90">    private final Set&lt;COSBase&gt; objects = Collections.newSetFromMap(new IdentityHashMap&lt;&gt;());</span>
+<span class="fc" id="L90">    private final Set&lt;COSBase&gt; objects = Collections.newSetFromMap(new IdentityHashMap&lt;&gt;());</span>
 
     private boolean useAES;
 
     /**
      * The typed {@link ProtectionPolicy} to be used for encryption.
      */
-<span class="nc" id="L97">    private T_POLICY protectionPolicy = null;</span>
+<span class="fc" id="L97">    private T_POLICY protectionPolicy = null;</span>
     
     /**
      * The access permission granted to the current user for the document. These
      * permissions are computed during decryption and are in read only mode.
      */
-<span class="nc" id="L103">    private AccessPermission currentAccessPermission = null;</span>
+<span class="fc" id="L103">    private AccessPermission currentAccessPermission = null;</span>
 
     /**
      * The stream filter name.
@@ -116,8 +116,8 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      * Constructor.
      */
     protected SecurityHandler()
-<span class="nc" id="L119">    {</span>
-<span class="nc" id="L120">    }</span>
+<span class="fc" id="L119">    {</span>
+<span class="fc" id="L120">    }</span>
 
     /**
      * Constructor used for encryption.
@@ -125,10 +125,10 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      * @param protectionPolicy The protection policy.
      */
     protected SecurityHandler(T_POLICY protectionPolicy)
-<span class="nc" id="L128">    {</span>
-<span class="nc" id="L129">        this.protectionPolicy = protectionPolicy;</span>
-<span class="nc" id="L130">        keyLength = (short) protectionPolicy.getEncryptionKeyLength();</span>
-<span class="nc" id="L131">    }</span>
+<span class="fc" id="L128">    {</span>
+<span class="fc" id="L129">        this.protectionPolicy = protectionPolicy;</span>
+<span class="fc" id="L130">        keyLength = (short) protectionPolicy.getEncryptionKeyLength();</span>
+<span class="fc" id="L131">    }</span>
 
     /**
      * Set whether to decrypt meta data.
@@ -137,8 +137,8 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     protected void setDecryptMetadata(boolean decryptMetadata)
     {
-<span class="nc" id="L140">        this.decryptMetadata = decryptMetadata;</span>
-<span class="nc" id="L141">    }</span>
+<span class="fc" id="L140">        this.decryptMetadata = decryptMetadata;</span>
+<span class="fc" id="L141">    }</span>
 
     /**
      * Returns true if meta data is to be decrypted.
@@ -147,7 +147,7 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     public boolean isDecryptMetadata()
     {
-<span class="nc" id="L150">        return decryptMetadata;</span>
+<span class="fc" id="L150">        return decryptMetadata;</span>
     }
 
     /**
@@ -157,8 +157,8 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     protected void setStringFilterName(COSName stringFilterName)
     {
-<span class="nc" id="L160">        this.stringFilterName = stringFilterName;</span>
-<span class="nc" id="L161">    }</span>
+<span class="fc" id="L160">        this.stringFilterName = stringFilterName;</span>
+<span class="fc" id="L161">    }</span>
 
     /**
      * Set the stream filter name.
@@ -167,8 +167,8 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     protected void setStreamFilterName(COSName streamFilterName)
     {
-<span class="nc" id="L170">        this.streamFilterName = streamFilterName;</span>
-<span class="nc" id="L171">    }</span>
+<span class="fc" id="L170">        this.streamFilterName = streamFilterName;</span>
+<span class="fc" id="L171">    }</span>
 
     /**
      * Set the custom SecureRandom.
@@ -217,25 +217,25 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
                             OutputStream output, boolean decrypt) throws IOException
     {
         // Determine whether we're using Algorithm 1 (for RC4 and AES-128), or 1.A (for AES-256)
-<span class="nc bnc" id="L220" title="All 4 branches missed.">        if (useAES &amp;&amp; encryptionKey.length == 32)</span>
+<span class="fc bfc" id="L220" title="All 4 branches covered.">        if (useAES &amp;&amp; encryptionKey.length == 32)</span>
         {
-<span class="nc" id="L222">            encryptDataAES256(data, output, decrypt);</span>
+<span class="fc" id="L222">            encryptDataAES256(data, output, decrypt);</span>
         }
         else
         {
-<span class="nc" id="L226">            byte[] finalKey = calcFinalKey(objectNumber, genNumber);</span>
+<span class="fc" id="L226">            byte[] finalKey = calcFinalKey(objectNumber, genNumber);</span>
 
-<span class="nc bnc" id="L228" title="All 2 branches missed.">            if (useAES)</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">            if (useAES)</span>
             {
-<span class="nc" id="L230">                encryptDataAESother(finalKey, data, output, decrypt);</span>
+<span class="fc" id="L230">                encryptDataAESother(finalKey, data, output, decrypt);</span>
             }
             else
             {
-<span class="nc" id="L234">                encryptDataRC4(finalKey, data, output);</span>
+<span class="fc" id="L234">                encryptDataRC4(finalKey, data, output);</span>
             }
         }
-<span class="nc" id="L237">        output.flush();</span>
-<span class="nc" id="L238">    }</span>
+<span class="fc" id="L237">        output.flush();</span>
+<span class="fc" id="L238">    }</span>
 
     /**
      * Calculate the key to be used for RC4 and AES-128.
@@ -246,30 +246,30 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     private byte[] calcFinalKey(long objectNumber, long genNumber)
     {
-<span class="nc" id="L249">        byte[] newKey = new byte[encryptionKey.length + 5];</span>
-<span class="nc" id="L250">        System.arraycopy(encryptionKey, 0, newKey, 0, encryptionKey.length);</span>
+<span class="fc" id="L249">        byte[] newKey = new byte[encryptionKey.length + 5];</span>
+<span class="fc" id="L250">        System.arraycopy(encryptionKey, 0, newKey, 0, encryptionKey.length);</span>
         // PDF 1.4 reference pg 73
         // step 1
         // we have the reference
         // step 2
-<span class="nc" id="L255">        newKey[newKey.length - 5] = (byte) (objectNumber &amp; 0xff);</span>
-<span class="nc" id="L256">        newKey[newKey.length - 4] = (byte) (objectNumber &gt;&gt; 8 &amp; 0xff);</span>
-<span class="nc" id="L257">        newKey[newKey.length - 3] = (byte) (objectNumber &gt;&gt; 16 &amp; 0xff);</span>
-<span class="nc" id="L258">        newKey[newKey.length - 2] = (byte) (genNumber &amp; 0xff);</span>
-<span class="nc" id="L259">        newKey[newKey.length - 1] = (byte) (genNumber &gt;&gt; 8 &amp; 0xff);</span>
+<span class="fc" id="L255">        newKey[newKey.length - 5] = (byte) (objectNumber &amp; 0xff);</span>
+<span class="fc" id="L256">        newKey[newKey.length - 4] = (byte) (objectNumber &gt;&gt; 8 &amp; 0xff);</span>
+<span class="fc" id="L257">        newKey[newKey.length - 3] = (byte) (objectNumber &gt;&gt; 16 &amp; 0xff);</span>
+<span class="fc" id="L258">        newKey[newKey.length - 2] = (byte) (genNumber &amp; 0xff);</span>
+<span class="fc" id="L259">        newKey[newKey.length - 1] = (byte) (genNumber &gt;&gt; 8 &amp; 0xff);</span>
         // step 3
-<span class="nc" id="L261">        MessageDigest md = MessageDigests.getMD5();</span>
-<span class="nc" id="L262">        md.update(newKey);</span>
-<span class="nc bnc" id="L263" title="All 2 branches missed.">        if (useAES)</span>
+<span class="fc" id="L261">        MessageDigest md = MessageDigests.getMD5();</span>
+<span class="fc" id="L262">        md.update(newKey);</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">        if (useAES)</span>
         {
-<span class="nc" id="L265">            md.update(AES_SALT);</span>
+<span class="fc" id="L265">            md.update(AES_SALT);</span>
         }
-<span class="nc" id="L267">        byte[] digestedKey = md.digest();</span>
+<span class="fc" id="L267">        byte[] digestedKey = md.digest();</span>
         // step 4
-<span class="nc" id="L269">        int length = Math.min(newKey.length, 16);</span>
-<span class="nc" id="L270">        byte[] finalKey = new byte[length];</span>
-<span class="nc" id="L271">        System.arraycopy(digestedKey, 0, finalKey, 0, length);</span>
-<span class="nc" id="L272">        return finalKey;</span>
+<span class="fc" id="L269">        int length = Math.min(newKey.length, 16);</span>
+<span class="fc" id="L270">        byte[] finalKey = new byte[length];</span>
+<span class="fc" id="L271">        System.arraycopy(digestedKey, 0, finalKey, 0, length);</span>
+<span class="fc" id="L272">        return finalKey;</span>
     }
 
     /**
@@ -284,9 +284,9 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
     protected void encryptDataRC4(byte[] finalKey, InputStream input, OutputStream output)
             throws IOException
     {
-<span class="nc" id="L287">        rc4.setKey(finalKey);</span>
-<span class="nc" id="L288">        rc4.write(input, output);</span>
-<span class="nc" id="L289">    }</span>
+<span class="fc" id="L287">        rc4.setKey(finalKey);</span>
+<span class="fc" id="L288">        rc4.write(input, output);</span>
+<span class="fc" id="L289">    }</span>
 
     /**
      * Encrypt or decrypt data with RC4.
@@ -299,9 +299,9 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     protected void encryptDataRC4(byte[] finalKey, byte[] input, OutputStream output) throws IOException
     {
-<span class="nc" id="L302">        rc4.setKey(finalKey);</span>
-<span class="nc" id="L303">        rc4.write(input, output);</span>
-<span class="nc" id="L304">    }</span>
+<span class="fc" id="L302">        rc4.setKey(finalKey);</span>
+<span class="fc" id="L303">        rc4.write(input, output);</span>
+<span class="fc" id="L304">    }</span>
 
 
     /**
@@ -317,33 +317,33 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
     private void encryptDataAESother(byte[] finalKey, InputStream data, OutputStream output, boolean decrypt)
             throws IOException
     {
-<span class="nc" id="L320">        byte[] iv = new byte[16];</span>
+<span class="fc" id="L320">        byte[] iv = new byte[16];</span>
 
-<span class="nc bnc" id="L322" title="All 2 branches missed.">        if (!prepareAESInitializationVector(decrypt, iv, data, output))</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">        if (!prepareAESInitializationVector(decrypt, iv, data, output))</span>
         {
 <span class="nc" id="L324">            return;</span>
         }
 
         try
         {
-<span class="nc" id="L329">            Cipher decryptCipher = createCipher(finalKey, iv, decrypt);</span>
-<span class="nc" id="L330">            byte[] buffer = new byte[256];</span>
+<span class="fc" id="L329">            Cipher decryptCipher = createCipher(finalKey, iv, decrypt);</span>
+<span class="fc" id="L330">            byte[] buffer = new byte[256];</span>
             int n;
-<span class="nc bnc" id="L332" title="All 2 branches missed.">            while ((n = data.read(buffer)) != -1)</span>
+<span class="fc bfc" id="L332" title="All 2 branches covered.">            while ((n = data.read(buffer)) != -1)</span>
             {
-<span class="nc" id="L334">                byte[] dst = decryptCipher.update(buffer, 0, n);</span>
-<span class="nc bnc" id="L335" title="All 2 branches missed.">                if (dst != null)</span>
+<span class="fc" id="L334">                byte[] dst = decryptCipher.update(buffer, 0, n);</span>
+<span class="pc bpc" id="L335" title="1 of 2 branches missed.">                if (dst != null)</span>
                 {
-<span class="nc" id="L337">                    output.write(dst);</span>
+<span class="fc" id="L337">                    output.write(dst);</span>
                 }
-<span class="nc" id="L339">            }</span>
-<span class="nc" id="L340">            output.write(decryptCipher.doFinal());</span>
+<span class="fc" id="L339">            }</span>
+<span class="fc" id="L340">            output.write(decryptCipher.doFinal());</span>
         }
 <span class="nc" id="L342">        catch (GeneralSecurityException e)</span>
         {
 <span class="nc" id="L344">            throw new IOException(e);</span>
-<span class="nc" id="L345">        }</span>
-<span class="nc" id="L346">    }</span>
+<span class="fc" id="L345">        }</span>
+<span class="fc" id="L346">    }</span>
 
     /**
      * Encrypt or decrypt data with AES256.
@@ -356,9 +356,9 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     private void encryptDataAES256(InputStream data, OutputStream output, boolean decrypt) throws IOException
     {
-<span class="nc" id="L359">        byte[] iv = new byte[16];</span>
+<span class="fc" id="L359">        byte[] iv = new byte[16];</span>
 
-<span class="nc bnc" id="L361" title="All 2 branches missed.">        if (!prepareAESInitializationVector(decrypt, iv, data, output))</span>
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">        if (!prepareAESInitializationVector(decrypt, iv, data, output))</span>
         {
 <span class="nc" id="L363">            return;</span>
         }
@@ -366,65 +366,65 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
         Cipher cipher;
         try
         {
-<span class="nc" id="L369">            cipher = createCipher(this.encryptionKey, iv, decrypt);</span>
+<span class="fc" id="L369">            cipher = createCipher(this.encryptionKey, iv, decrypt);</span>
         }
 <span class="nc" id="L371">        catch (GeneralSecurityException e)</span>
         {
 <span class="nc" id="L373">            throw new IOException(e);</span>
-<span class="nc" id="L374">        }</span>
+<span class="fc" id="L374">        }</span>
 
-<span class="nc" id="L376">        try (CipherInputStream cis = new CipherInputStream(data, cipher))</span>
+<span class="fc" id="L376">        try (CipherInputStream cis = new CipherInputStream(data, cipher))</span>
         {
-<span class="nc" id="L378">            cis.transferTo(output);</span>
+<span class="fc" id="L378">            cis.transferTo(output);</span>
         }
-<span class="nc" id="L380">        catch (IOException exception)</span>
+<span class="fc" id="L380">        catch (IOException exception)</span>
         {
             // starting with java 8 the JVM wraps an IOException around a GeneralSecurityException
             // it should be safe to swallow a GeneralSecurityException
-<span class="nc bnc" id="L384" title="All 2 branches missed.">            if (!(exception.getCause() instanceof GeneralSecurityException))</span>
+<span class="pc bpc" id="L384" title="1 of 2 branches missed.">            if (!(exception.getCause() instanceof GeneralSecurityException))</span>
             {
 <span class="nc" id="L386">                throw exception;</span>
             }
-<span class="nc" id="L388">            LOG.debug(&quot;A GeneralSecurityException occurred when decrypting some stream data&quot;, exception);</span>
-<span class="nc" id="L389">        }</span>
-<span class="nc" id="L390">    }</span>
+<span class="fc" id="L388">            LOG.debug(&quot;A GeneralSecurityException occurred when decrypting some stream data&quot;, exception);</span>
+<span class="fc" id="L389">        }</span>
+<span class="fc" id="L390">    }</span>
 
     private Cipher createCipher(byte[] key, byte[] iv, boolean decrypt) throws GeneralSecurityException
     {
         // PKCS#5 padding is requested by PDF specification
         @SuppressWarnings({&quot;squid:S5542&quot;,&quot;lgtm [java/weak-cryptographic-algorithm]&quot;})
-<span class="nc" id="L396">        Cipher cipher = Cipher.getInstance(&quot;AES/CBC/PKCS5Padding&quot;);</span>
-<span class="nc" id="L397">        Key keySpec = new SecretKeySpec(key, &quot;AES&quot;);</span>
-<span class="nc" id="L398">        IvParameterSpec ips = new IvParameterSpec(iv);</span>
-<span class="nc bnc" id="L399" title="All 2 branches missed.">        cipher.init(decrypt ? Cipher.DECRYPT_MODE : Cipher.ENCRYPT_MODE, keySpec, ips);</span>
-<span class="nc" id="L400">        return cipher;</span>
+<span class="fc" id="L396">        Cipher cipher = Cipher.getInstance(&quot;AES/CBC/PKCS5Padding&quot;);</span>
+<span class="fc" id="L397">        Key keySpec = new SecretKeySpec(key, &quot;AES&quot;);</span>
+<span class="fc" id="L398">        IvParameterSpec ips = new IvParameterSpec(iv);</span>
+<span class="fc bfc" id="L399" title="All 2 branches covered.">        cipher.init(decrypt ? Cipher.DECRYPT_MODE : Cipher.ENCRYPT_MODE, keySpec, ips);</span>
+<span class="fc" id="L400">        return cipher;</span>
     }
 
     private boolean prepareAESInitializationVector(boolean decrypt, byte[] iv, InputStream data, OutputStream output) throws IOException
     {
-<span class="nc bnc" id="L405" title="All 2 branches missed.">        if (decrypt)</span>
+<span class="fc bfc" id="L405" title="All 2 branches covered.">        if (decrypt)</span>
         {
             // read IV from stream
-<span class="nc" id="L408">            int ivSize = data.readNBytes(iv, 0, iv.length);</span>
-<span class="nc bnc" id="L409" title="All 2 branches missed.">            if (ivSize == 0)</span>
+<span class="fc" id="L408">            int ivSize = data.readNBytes(iv, 0, iv.length);</span>
+<span class="pc bpc" id="L409" title="1 of 2 branches missed.">            if (ivSize == 0)</span>
             {
 <span class="nc" id="L411">                return false;</span>
             }
-<span class="nc bnc" id="L413" title="All 2 branches missed.">            if (ivSize != iv.length)</span>
+<span class="pc bpc" id="L413" title="1 of 2 branches missed.">            if (ivSize != iv.length)</span>
             {
 <span class="nc" id="L415">                throw new IOException(</span>
                         &quot;AES initialization vector not fully read: only &quot;
                                 + ivSize + &quot; bytes read instead of &quot; + iv.length);
             }
-<span class="nc" id="L419">        }</span>
+<span class="fc" id="L419">        }</span>
         else
         {
             // generate random IV and write to stream
-<span class="nc" id="L423">            SecureRandom rnd = getSecureRandom();</span>
-<span class="nc" id="L424">            rnd.nextBytes(iv);</span>
-<span class="nc" id="L425">            output.write(iv);</span>
+<span class="fc" id="L423">            SecureRandom rnd = getSecureRandom();</span>
+<span class="fc" id="L424">            rnd.nextBytes(iv);</span>
+<span class="fc" id="L425">            output.write(iv);</span>
         }
-<span class="nc" id="L427">        return true;</span>
+<span class="fc" id="L427">        return true;</span>
     }
 
     /**
@@ -434,11 +434,11 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     private SecureRandom getSecureRandom()
     {
-<span class="nc bnc" id="L437" title="All 2 branches missed.">        if (customSecureRandom != null)</span>
+<span class="pc bpc" id="L437" title="1 of 2 branches missed.">        if (customSecureRandom != null)</span>
         {
 <span class="nc" id="L439">            return customSecureRandom;</span>
         }
-<span class="nc" id="L441">        return new SecureRandom();</span>
+<span class="fc" id="L441">        return new SecureRandom();</span>
     }
 
     /**
@@ -455,18 +455,18 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
     public COSBase decrypt(COSBase obj, long objNum, long genNum) throws IOException
     {
         // PDFBOX-4477: only cache strings and streams, this improves speed and memory footprint
-<span class="nc bnc" id="L458" title="All 2 branches missed.">        if (obj instanceof COSString)</span>
+<span class="fc bfc" id="L458" title="All 2 branches covered.">        if (obj instanceof COSString)</span>
         {
-<span class="nc bnc" id="L460" title="All 2 branches missed.">            if (objects.contains(obj))</span>
+<span class="pc bpc" id="L460" title="1 of 2 branches missed.">            if (objects.contains(obj))</span>
             {
 <span class="nc" id="L462">                return obj;</span>
             }
             // replace the given COSString object with the encrypted/decrypted version
-<span class="nc" id="L465">            COSBase decryptedString = decryptString((COSString) obj, objNum, genNum);</span>
-<span class="nc" id="L466">            objects.add(decryptedString);</span>
-<span class="nc" id="L467">            return decryptedString;</span>
+<span class="fc" id="L465">            COSBase decryptedString = decryptString((COSString) obj, objNum, genNum);</span>
+<span class="fc" id="L466">            objects.add(decryptedString);</span>
+<span class="fc" id="L467">            return decryptedString;</span>
         }
-<span class="nc bnc" id="L469" title="All 2 branches missed.">        if (obj instanceof COSStream)</span>
+<span class="pc bpc" id="L469" title="1 of 2 branches missed.">        if (obj instanceof COSStream)</span>
         {
 <span class="nc bnc" id="L471" title="All 2 branches missed.">            if (objects.contains(obj))</span>
             {
@@ -475,15 +475,15 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
 <span class="nc" id="L475">            objects.add(obj);</span>
 <span class="nc" id="L476">            decryptStream((COSStream) obj, objNum, genNum);</span>
         }
-<span class="nc bnc" id="L478" title="All 2 branches missed.">        else if (obj instanceof COSDictionary)</span>
+<span class="fc bfc" id="L478" title="All 2 branches covered.">        else if (obj instanceof COSDictionary)</span>
         {
-<span class="nc" id="L480">            decryptDictionary((COSDictionary) obj, objNum, genNum);</span>
+<span class="fc" id="L480">            decryptDictionary((COSDictionary) obj, objNum, genNum);</span>
         }
-<span class="nc bnc" id="L482" title="All 2 branches missed.">        else if (obj instanceof COSArray)</span>
+<span class="fc bfc" id="L482" title="All 2 branches covered.">        else if (obj instanceof COSArray)</span>
         {
-<span class="nc" id="L484">            decryptArray((COSArray) obj, objNum, genNum);</span>
+<span class="fc" id="L484">            decryptArray((COSArray) obj, objNum, genNum);</span>
         }
-<span class="nc" id="L486">        return obj;</span>
+<span class="fc" id="L486">        return obj;</span>
     }
 
     /**
@@ -498,59 +498,59 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
     public void decryptStream(COSStream stream, long objNum, long genNum) throws IOException
     {
         // Stream encrypted with identity filter
-<span class="nc bnc" id="L501" title="All 2 branches missed.">        if (COSName.IDENTITY.equals(streamFilterName))</span>
+<span class="pc bpc" id="L501" title="1 of 2 branches missed.">        if (COSName.IDENTITY.equals(streamFilterName))</span>
         {
 <span class="nc" id="L503">            return;</span>
         }
         
-<span class="nc" id="L506">        COSBase type = stream.getCOSName(COSName.TYPE);</span>
-<span class="nc bnc" id="L507" title="All 4 branches missed.">        if (!decryptMetadata &amp;&amp; COSName.METADATA.equals(type))</span>
+<span class="fc" id="L506">        COSBase type = stream.getCOSName(COSName.TYPE);</span>
+<span class="pc bpc" id="L507" title="1 of 4 branches missed.">        if (!decryptMetadata &amp;&amp; COSName.METADATA.equals(type))</span>
         {
 <span class="nc" id="L509">            return;</span>
         }
         // &quot;The cross-reference stream shall not be encrypted&quot;
-<span class="nc bnc" id="L512" title="All 2 branches missed.">        if (COSName.XREF.equals(type))</span>
+<span class="pc bpc" id="L512" title="1 of 2 branches missed.">        if (COSName.XREF.equals(type))</span>
         {
 <span class="nc" id="L514">            return;</span>
         }
-<span class="nc bnc" id="L516" title="All 2 branches missed.">        if (COSName.METADATA.equals(type))</span>
+<span class="fc bfc" id="L516" title="All 2 branches covered.">        if (COSName.METADATA.equals(type))</span>
         {
             byte[] buf;
             // PDFBOX-3229 check case where metadata is not encrypted despite /EncryptMetadata missing
-<span class="nc" id="L520">            try (InputStream is = stream.createRawInputStream())</span>
+<span class="fc" id="L520">            try (InputStream is = stream.createRawInputStream())</span>
             {
-<span class="nc" id="L522">                int nBytes = 10;</span>
-<span class="nc" id="L523">                buf = is.readNBytes(nBytes);</span>
-<span class="nc" id="L524">                int isResult = buf.length;</span>
+<span class="fc" id="L522">                int nBytes = 10;</span>
+<span class="fc" id="L523">                buf = is.readNBytes(nBytes);</span>
+<span class="fc" id="L524">                int isResult = buf.length;</span>
 
-<span class="nc bnc" id="L526" title="All 2 branches missed.">                if (buf.length != nBytes)</span>
+<span class="pc bpc" id="L526" title="1 of 2 branches missed.">                if (buf.length != nBytes)</span>
                 {
 <span class="nc" id="L528">                    LOG.debug(&quot;Tried reading {} bytes but only {} bytes read&quot;, buf.length,</span>
 <span class="nc" id="L529">                            isResult);</span>
                 }
             }
-<span class="nc bnc" id="L532" title="All 2 branches missed.">            if (Arrays.equals(buf, &quot;&lt;?xpacket &quot;.getBytes(StandardCharsets.ISO_8859_1)))</span>
+<span class="pc bpc" id="L532" title="1 of 2 branches missed.">            if (Arrays.equals(buf, &quot;&lt;?xpacket &quot;.getBytes(StandardCharsets.ISO_8859_1)))</span>
             {
 <span class="nc" id="L534">                LOG.warn(&quot;Metadata is not encrypted, but was expected to be&quot;);</span>
 <span class="nc" id="L535">                LOG.warn(&quot;Read PDF specification about EncryptMetadata (default value: true)&quot;);</span>
 <span class="nc" id="L536">                return;</span>
             }
         }
-<span class="nc" id="L539">        decryptDictionary(stream, objNum, genNum);</span>
+<span class="fc" id="L539">        decryptDictionary(stream, objNum, genNum);</span>
         // the input and the output stream of a still encrypted COSStream aren't no longer based
         // on the same object so that it is safe to omit the intermediate ByteArrayStream
-<span class="nc" id="L542">        try (InputStream encryptedStream = stream.createRawInputStream(); //</span>
-<span class="nc" id="L543">                OutputStream output = stream.createRawOutputStream())</span>
+<span class="fc" id="L542">        try (InputStream encryptedStream = stream.createRawInputStream(); //</span>
+<span class="fc" id="L543">                OutputStream output = stream.createRawOutputStream())</span>
         {
-<span class="nc" id="L545">            encryptData(objNum, genNum, encryptedStream, output, true /* decrypt */);</span>
+<span class="fc" id="L545">            encryptData(objNum, genNum, encryptedStream, output, true /* decrypt */);</span>
         }
 <span class="nc" id="L547">        catch (IOException ex)</span>
         {
 <span class="nc" id="L549">            LOG.error(&quot;{} thrown when decrypting object {} {} obj&quot;, ex.getClass().getSimpleName(),</span>
 <span class="nc" id="L550">                    objNum, genNum);</span>
 <span class="nc" id="L551">            throw ex;</span>
-<span class="nc" id="L552">        }</span>
-<span class="nc" id="L553">    }</span>
+<span class="fc" id="L552">        }</span>
+<span class="fc" id="L553">    }</span>
 
     /**
      * This will encrypt a stream, but not the dictionary as the dictionary is
@@ -566,21 +566,21 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
     public void encryptStream(COSStream stream, long objNum, int genNum) throws IOException
     {
         // empty streams don't need to be encrypted
-<span class="nc bnc" id="L569" title="All 2 branches missed.">        if (!stream.hasData())</span>
+<span class="pc bpc" id="L569" title="1 of 2 branches missed.">        if (!stream.hasData())</span>
         {
 <span class="nc" id="L571">            return;</span>
         }
         byte[] rawData;
-<span class="nc" id="L574">        try (InputStream in = stream.createRawInputStream())</span>
+<span class="fc" id="L574">        try (InputStream in = stream.createRawInputStream())</span>
         {
-<span class="nc" id="L576">            rawData = in.readAllBytes();</span>
+<span class="fc" id="L576">            rawData = in.readAllBytes();</span>
         }
-<span class="nc" id="L578">        ByteArrayInputStream encryptedStream = new ByteArrayInputStream(rawData);</span>
-<span class="nc" id="L579">        try (OutputStream output = stream.createRawOutputStream())</span>
+<span class="fc" id="L578">        ByteArrayInputStream encryptedStream = new ByteArrayInputStream(rawData);</span>
+<span class="fc" id="L579">        try (OutputStream output = stream.createRawOutputStream())</span>
         {
-<span class="nc" id="L581">            encryptData(objNum, genNum, encryptedStream, output, false /* encrypt */);</span>
+<span class="fc" id="L581">            encryptData(objNum, genNum, encryptedStream, output, false /* encrypt */);</span>
         }
-<span class="nc" id="L583">    }</span>
+<span class="fc" id="L583">    }</span>
 
     /**
      * This will decrypt a dictionary.
@@ -593,32 +593,32 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     private void decryptDictionary(COSDictionary dictionary, long objNum, long genNum) throws IOException
     {
-<span class="nc bnc" id="L596" title="All 2 branches missed.">        if (dictionary.getItem(COSName.CF) != null)</span>
+<span class="pc bpc" id="L596" title="1 of 2 branches missed.">        if (dictionary.getItem(COSName.CF) != null)</span>
         {
             // PDFBOX-2936: avoid orphan /CF dictionaries found in US govt &quot;I-&quot; files
 <span class="nc" id="L599">            return;</span>
         }
-<span class="nc" id="L601">        COSName type = dictionary.getCOSName(COSName.TYPE);</span>
-<span class="nc bnc" id="L602" title="All 4 branches missed.">        boolean isSignature = COSName.SIG.equals(type) || COSName.DOC_TIME_STAMP.equals(type) ||</span>
+<span class="fc" id="L601">        COSName type = dictionary.getCOSName(COSName.TYPE);</span>
+<span class="pc bpc" id="L602" title="1 of 4 branches missed.">        boolean isSignature = COSName.SIG.equals(type) || COSName.DOC_TIME_STAMP.equals(type) ||</span>
                 // PDFBOX-4466: /Type is optional, see
                 // https://ec.europa.eu/cefdigital/tracker/browse/DSS-1538
-<span class="nc bnc" id="L605" title="All 2 branches missed.">                (dictionary.getDictionaryObject(COSName.CONTENTS) instanceof COSString &amp;&amp; </span>
-<span class="nc bnc" id="L606" title="All 2 branches missed.">                 dictionary.getDictionaryObject(COSName.BYTERANGE) instanceof COSArray);</span>
-<span class="nc bnc" id="L607" title="All 2 branches missed.">        for (Map.Entry&lt;COSName, COSBase&gt; entry : dictionary.entrySet())</span>
+<span class="fc bfc" id="L605" title="All 2 branches covered.">                (dictionary.getDictionaryObject(COSName.CONTENTS) instanceof COSString &amp;&amp; </span>
+<span class="pc bpc" id="L606" title="1 of 2 branches missed.">                 dictionary.getDictionaryObject(COSName.BYTERANGE) instanceof COSArray);</span>
+<span class="fc bfc" id="L607" title="All 2 branches covered.">        for (Map.Entry&lt;COSName, COSBase&gt; entry : dictionary.entrySet())</span>
         {
-<span class="nc bnc" id="L609" title="All 4 branches missed.">            if (isSignature &amp;&amp; COSName.CONTENTS.equals(entry.getKey()))</span>
+<span class="fc bfc" id="L609" title="All 4 branches covered.">            if (isSignature &amp;&amp; COSName.CONTENTS.equals(entry.getKey()))</span>
             {
                 // do not decrypt the signature contents string
-<span class="nc" id="L612">                continue;</span>
+<span class="fc" id="L612">                continue;</span>
             }
-<span class="nc" id="L614">            COSBase value = entry.getValue();</span>
+<span class="fc" id="L614">            COSBase value = entry.getValue();</span>
             // within a dictionary only the following kind of COS objects have to be decrypted
-<span class="nc bnc" id="L616" title="All 6 branches missed.">            if (value instanceof COSString || value instanceof COSArray || value instanceof COSDictionary)</span>
+<span class="fc bfc" id="L616" title="All 6 branches covered.">            if (value instanceof COSString || value instanceof COSArray || value instanceof COSDictionary)</span>
             {
-<span class="nc" id="L618">                entry.setValue(decrypt(value, objNum, genNum));</span>
+<span class="fc" id="L618">                entry.setValue(decrypt(value, objNum, genNum));</span>
             }
-<span class="nc" id="L620">        }</span>
-<span class="nc" id="L621">    }</span>
+<span class="fc" id="L620">        }</span>
+<span class="fc" id="L621">    }</span>
 
     /**
      * This will decrypt a string.
@@ -632,17 +632,17 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
     private COSBase decryptString(COSString string, long objNum, long genNum)
     {
         // String encrypted with identity filter
-<span class="nc bnc" id="L635" title="All 2 branches missed.">        if (COSName.IDENTITY.equals(stringFilterName))</span>
+<span class="pc bpc" id="L635" title="1 of 2 branches missed.">        if (COSName.IDENTITY.equals(stringFilterName))</span>
         {
 <span class="nc" id="L637">            return string;</span>
         }
         
-<span class="nc" id="L640">        ByteArrayInputStream data = new ByteArrayInputStream(string.getBytes());</span>
-<span class="nc" id="L641">        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();</span>
+<span class="fc" id="L640">        ByteArrayInputStream data = new ByteArrayInputStream(string.getBytes());</span>
+<span class="fc" id="L641">        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();</span>
         try
         {
-<span class="nc" id="L644">            encryptData(objNum, genNum, data, outputStream, true /* decrypt */);</span>
-<span class="nc" id="L645">            return new COSString(outputStream.toByteArray());</span>
+<span class="fc" id="L644">            encryptData(objNum, genNum, data, outputStream, true /* decrypt */);</span>
+<span class="fc" id="L645">            return new COSString(outputStream.toByteArray());</span>
         }
 <span class="nc" id="L647">        catch (IOException ex)</span>
         {
@@ -665,10 +665,10 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     public COSBase encryptString(COSString string, long objNum, int genNum) throws IOException
     {
-<span class="nc" id="L668">        ByteArrayInputStream data = new ByteArrayInputStream(string.getBytes());</span>
-<span class="nc" id="L669">        ByteArrayOutputStream buffer = new ByteArrayOutputStream();</span>
-<span class="nc" id="L670">        encryptData(objNum, genNum, data, buffer, false /* encrypt */);</span>
-<span class="nc" id="L671">        return new COSString(buffer.toByteArray());</span>
+<span class="fc" id="L668">        ByteArrayInputStream data = new ByteArrayInputStream(string.getBytes());</span>
+<span class="fc" id="L669">        ByteArrayOutputStream buffer = new ByteArrayOutputStream();</span>
+<span class="fc" id="L670">        encryptData(objNum, genNum, data, buffer, false /* encrypt */);</span>
+<span class="fc" id="L671">        return new COSString(buffer.toByteArray());</span>
     }
 
     /**
@@ -682,11 +682,11 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     private void decryptArray(COSArray array, long objNum, long genNum) throws IOException
     {
-<span class="nc bnc" id="L685" title="All 2 branches missed.">        for (int i = 0; i &lt; array.size(); i++)</span>
+<span class="fc bfc" id="L685" title="All 2 branches covered.">        for (int i = 0; i &lt; array.size(); i++)</span>
         {
-<span class="nc" id="L687">            array.set(i, decrypt(array.get(i), objNum, genNum));</span>
+<span class="fc" id="L687">            array.set(i, decrypt(array.get(i), objNum, genNum));</span>
         }
-<span class="nc" id="L689">    }</span>
+<span class="fc" id="L689">    }</span>
 
     /**
      * Getter of the property keyLength.
@@ -695,7 +695,7 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     public int getKeyLength()
     {
-<span class="nc" id="L698">        return keyLength;</span>
+<span class="fc" id="L698">        return keyLength;</span>
     }
 
     /**
@@ -705,8 +705,8 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     public void setKeyLength(int keyLen)
     {
-<span class="nc" id="L708">        this.keyLength = (short) keyLen;</span>
-<span class="nc" id="L709">    }</span>
+<span class="fc" id="L708">        this.keyLength = (short) keyLen;</span>
+<span class="fc" id="L709">    }</span>
 
     /**
      * Sets the access permissions.
@@ -715,8 +715,8 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     public void setCurrentAccessPermission(AccessPermission currentAccessPermission)
     {
-<span class="nc" id="L718">        this.currentAccessPermission = currentAccessPermission;</span>
-<span class="nc" id="L719">    }</span>
+<span class="fc" id="L718">        this.currentAccessPermission = currentAccessPermission;</span>
+<span class="fc" id="L719">    }</span>
 
     /**
      * Returns the access permissions that were computed during document decryption.
@@ -726,7 +726,7 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     public AccessPermission getCurrentAccessPermission()
     {
-<span class="nc" id="L729">        return currentAccessPermission;</span>
+<span class="fc" id="L729">        return currentAccessPermission;</span>
     }
 
     /**
@@ -747,8 +747,8 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     public void setAES(boolean aesValue)
     {
-<span class="nc" id="L750">        useAES = aesValue;</span>
-<span class="nc" id="L751">    }</span>
+<span class="fc" id="L750">        useAES = aesValue;</span>
+<span class="fc" id="L751">    }</span>
 
     /**
      * Returns whether a protection policy has been set.
@@ -757,7 +757,7 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     public boolean hasProtectionPolicy()
     {
-<span class="nc bnc" id="L760" title="All 2 branches missed.">        return protectionPolicy != null;</span>
+<span class="pc bpc" id="L760" title="1 of 2 branches missed.">        return protectionPolicy != null;</span>
     }
 
     /**
@@ -767,7 +767,7 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     protected T_POLICY getProtectionPolicy()
     {
-<span class="nc" id="L770">        return protectionPolicy;</span>
+<span class="fc" id="L770">        return protectionPolicy;</span>
     }
 
     /**
@@ -786,7 +786,7 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     public byte[] getEncryptionKey()
     {
-<span class="nc" id="L789">        return encryptionKey;</span>
+<span class="fc" id="L789">        return encryptionKey;</span>
     }
 
     /**
@@ -796,8 +796,8 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     public void setEncryptionKey(byte[] encryptionKey)
     {
-<span class="nc" id="L799">        this.encryptionKey = encryptionKey;</span>
-<span class="nc" id="L800">    }</span>
+<span class="fc" id="L799">        this.encryptionKey = encryptionKey;</span>
+<span class="fc" id="L800">    }</span>
 
     /**
      * Computes the version number of the {@link SecurityHandler} based on the encryption key
@@ -811,19 +811,19 @@ public abstract class SecurityHandler&lt;T_POLICY extends ProtectionPolicy&gt;
      */
     protected int computeVersionNumber()
     {
-<span class="nc bnc" id="L814" title="All 2 branches missed.">        if (keyLength == 40)</span>
+<span class="fc bfc" id="L814" title="All 2 branches covered.">        if (keyLength == 40)</span>
         {
-<span class="nc" id="L816">            return 1;</span>
+<span class="fc" id="L816">            return 1;</span>
         }
-<span class="nc bnc" id="L818" title="All 4 branches missed.">        else if (keyLength == 128 &amp;&amp; protectionPolicy.isPreferAES())</span>
+<span class="fc bfc" id="L818" title="All 4 branches covered.">        else if (keyLength == 128 &amp;&amp; protectionPolicy.isPreferAES())</span>
         {
-<span class="nc" id="L820">            return 4;</span>
+<span class="fc" id="L820">            return 4;</span>
         }
-<span class="nc bnc" id="L822" title="All 2 branches missed.">        else if (keyLength == 256)</span>
+<span class="fc bfc" id="L822" title="All 2 branches covered.">        else if (keyLength == 256)</span>
         {
-<span class="nc" id="L824">            return 5;</span>
+<span class="fc" id="L824">            return 5;</span>
         }
-<span class="nc" id="L826">        return 2;</span>
+<span class="fc" id="L826">        return 2;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

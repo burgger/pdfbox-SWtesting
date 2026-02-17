@@ -43,8 +43,8 @@ public abstract class PDTerminalField extends PDField
      */
     protected PDTerminalField(PDAcroForm acroForm)
     {
-<span class="nc" id="L46">        super(acroForm);</span>
-<span class="nc" id="L47">    }</span>
+<span class="fc" id="L46">        super(acroForm);</span>
+<span class="fc" id="L47">    }</span>
 
     /**
      * Constructor.
@@ -55,8 +55,8 @@ public abstract class PDTerminalField extends PDField
      */
     PDTerminalField(PDAcroForm acroForm, COSDictionary field, PDNonTerminalField parent)
     {
-<span class="nc" id="L58">        super(acroForm, field, parent);</span>
-<span class="nc" id="L59">    }</span>
+<span class="fc" id="L58">        super(acroForm, field, parent);</span>
+<span class="fc" id="L59">    }</span>
 
     /**
      * Set the actions of the field.
@@ -71,55 +71,55 @@ public abstract class PDTerminalField extends PDField
     @Override
     public int getFieldFlags()
     {
-<span class="nc" id="L74">        int retval = 0;</span>
-<span class="nc" id="L75">        COSInteger ff = (COSInteger) getCOSObject().getDictionaryObject(COSName.FF);</span>
-<span class="nc bnc" id="L76" title="All 2 branches missed.">        if (ff != null)</span>
+<span class="fc" id="L74">        int retval = 0;</span>
+<span class="fc" id="L75">        COSInteger ff = (COSInteger) getCOSObject().getDictionaryObject(COSName.FF);</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">        if (ff != null)</span>
         {
 <span class="nc" id="L78">            retval = ff.intValue();</span>
         }
-<span class="nc bnc" id="L80" title="All 2 branches missed.">        else if (getParent() != null)</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        else if (getParent() != null)</span>
         {
 <span class="nc" id="L82">            retval = getParent().getFieldFlags();</span>
         }
-<span class="nc" id="L84">        return retval;</span>
+<span class="fc" id="L84">        return retval;</span>
     }
     
     @Override
     public String getFieldType()
     {
-<span class="nc" id="L90">        String fieldType = getCOSObject().getNameAsString(COSName.FT);</span>
-<span class="nc bnc" id="L91" title="All 4 branches missed.">        if (fieldType == null &amp;&amp; getParent() != null)</span>
+<span class="fc" id="L90">        String fieldType = getCOSObject().getNameAsString(COSName.FT);</span>
+<span class="pc bpc" id="L91" title="3 of 4 branches missed.">        if (fieldType == null &amp;&amp; getParent() != null)</span>
         {
 <span class="nc" id="L93">            fieldType = getParent().getFieldType();</span>
         }
-<span class="nc" id="L95">        return fieldType;</span>
+<span class="fc" id="L95">        return fieldType;</span>
     }
 
     @Override
     public void importFDF(FDFField fdfField) throws IOException
     {
-<span class="nc" id="L101">        super.importFDF(fdfField);</span>
+<span class="fc" id="L101">        super.importFDF(fdfField);</span>
         
-<span class="nc" id="L103">        Integer f = fdfField.getWidgetFieldFlags();</span>
-<span class="nc bnc" id="L104" title="All 2 branches missed.">        for (PDAnnotationWidget widget : getWidgets())</span>
+<span class="fc" id="L103">        Integer f = fdfField.getWidgetFieldFlags();</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        for (PDAnnotationWidget widget : getWidgets())</span>
         {
-<span class="nc bnc" id="L106" title="All 2 branches missed.">            if (f != null)</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">            if (f != null)</span>
             {
 <span class="nc" id="L108">                widget.setAnnotationFlags(f);</span>
             }
             else
             {
                 // these are supposed to be ignored if the F is set.
-<span class="nc" id="L113">                Integer setF = fdfField.getSetWidgetFieldFlags();</span>
-<span class="nc" id="L114">                int annotFlags = widget.getAnnotationFlags();</span>
-<span class="nc bnc" id="L115" title="All 2 branches missed.">                if (setF != null)</span>
+<span class="fc" id="L113">                Integer setF = fdfField.getSetWidgetFieldFlags();</span>
+<span class="fc" id="L114">                int annotFlags = widget.getAnnotationFlags();</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">                if (setF != null)</span>
                 {
 <span class="nc" id="L117">                    annotFlags = annotFlags | setF;</span>
 <span class="nc" id="L118">                    widget.setAnnotationFlags(annotFlags);</span>
                 }
 
-<span class="nc" id="L121">                Integer clrF = fdfField.getClearWidgetFieldFlags();</span>
-<span class="nc bnc" id="L122" title="All 2 branches missed.">                if (clrF != null)</span>
+<span class="fc" id="L121">                Integer clrF = fdfField.getClearWidgetFieldFlags();</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">                if (clrF != null)</span>
                 {
                     // we have to clear the bits of the document fields for every bit that is
                     // set in this field.
@@ -135,8 +135,8 @@ public abstract class PDTerminalField extends PDField
 <span class="nc" id="L135">                    widget.setAnnotationFlags(annotFlags);</span>
                 }
             }
-<span class="nc" id="L138">        }</span>
-<span class="nc" id="L139">    }</span>
+<span class="fc" id="L138">        }</span>
+<span class="fc" id="L139">    }</span>
 
     @Override
     FDFField exportFDF() throws IOException
@@ -162,26 +162,26 @@ public abstract class PDTerminalField extends PDField
     @Override
     public List&lt;PDAnnotationWidget&gt; getWidgets()
     {
-<span class="nc" id="L165">        List&lt;PDAnnotationWidget&gt; widgets = new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L166">        COSArray kids = getCOSObject().getCOSArray(COSName.KIDS);</span>
-<span class="nc bnc" id="L167" title="All 2 branches missed.">        if (kids == null)</span>
+<span class="fc" id="L165">        List&lt;PDAnnotationWidget&gt; widgets = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L166">        COSArray kids = getCOSObject().getCOSArray(COSName.KIDS);</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        if (kids == null)</span>
         {
             // the field itself is a widget
-<span class="nc" id="L170">            widgets.add(new PDAnnotationWidget(getCOSObject()));</span>
+<span class="fc" id="L170">            widgets.add(new PDAnnotationWidget(getCOSObject()));</span>
         }
-<span class="nc bnc" id="L172" title="All 2 branches missed.">        else if (!kids.isEmpty())</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        else if (!kids.isEmpty())</span>
         {
             // there are multiple widgets
-<span class="nc bnc" id="L175" title="All 2 branches missed.">            for (int i = 0; i &lt; kids.size(); i++)</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            for (int i = 0; i &lt; kids.size(); i++)</span>
             {
-<span class="nc" id="L177">                COSBase kid = kids.getObject(i);</span>
-<span class="nc bnc" id="L178" title="All 2 branches missed.">                if (kid instanceof COSDictionary)</span>
+<span class="fc" id="L177">                COSBase kid = kids.getObject(i);</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">                if (kid instanceof COSDictionary)</span>
                 {
-<span class="nc" id="L180">                    widgets.add(new PDAnnotationWidget((COSDictionary)kid));</span>
+<span class="fc" id="L180">                    widgets.add(new PDAnnotationWidget((COSDictionary)kid));</span>
                 }
             }
         }
-<span class="nc" id="L184">        return widgets;</span>
+<span class="fc" id="L184">        return widgets;</span>
     }
 
     /**
@@ -191,13 +191,13 @@ public abstract class PDTerminalField extends PDField
      */
     public void setWidgets(List&lt;PDAnnotationWidget&gt; children)
     {
-<span class="nc" id="L194">        COSArray kidsArray = new COSArray(children);</span>
-<span class="nc" id="L195">        getCOSObject().setItem(COSName.KIDS, kidsArray);</span>
-<span class="nc bnc" id="L196" title="All 2 branches missed.">        for (PDAnnotationWidget widget : children)</span>
+<span class="fc" id="L194">        COSArray kidsArray = new COSArray(children);</span>
+<span class="fc" id="L195">        getCOSObject().setItem(COSName.KIDS, kidsArray);</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">        for (PDAnnotationWidget widget : children)</span>
         {
-<span class="nc" id="L198">            widget.getCOSObject().setItem(COSName.PARENT, this);</span>
-<span class="nc" id="L199">        }</span>
-<span class="nc" id="L200">    }</span>
+<span class="fc" id="L198">            widget.getCOSObject().setItem(COSName.PARENT, this);</span>
+<span class="fc" id="L199">        }</span>
+<span class="fc" id="L200">    }</span>
     
     /**
      * Applies a value change to the field. Generates appearances if required and raises events.
@@ -206,9 +206,9 @@ public abstract class PDTerminalField extends PDField
      */
     protected final void applyChange() throws IOException
     {
-<span class="nc" id="L209">        constructAppearances();</span>
+<span class="fc" id="L209">        constructAppearances();</span>
         // if we supported JavaScript we would raise a field changed event here
-<span class="nc" id="L211">    }</span>
+<span class="fc" id="L211">    }</span>
     
     /**
      * Constructs appearance streams and appearance dictionaries for all widget annotations.

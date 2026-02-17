@@ -37,38 +37,38 @@ public final class FileTypeDetector
 
     static
     {
-<span class="nc" id="L40">        root = new ByteTrie&lt;&gt;();</span>
-<span class="nc" id="L41">        root.setDefaultValue(FileType.UNKNOWN);</span>
+<span class="fc" id="L40">        root = new ByteTrie&lt;&gt;();</span>
+<span class="fc" id="L41">        root.setDefaultValue(FileType.UNKNOWN);</span>
 
         // https://en.wikipedia.org/wiki/List_of_file_signatures
 
-<span class="nc" id="L45">        root.addPath(FileType.JPEG, new byte[]{(byte)0xff, (byte)0xd8});</span>
-<span class="nc" id="L46">        root.addPath(FileType.TIFF, &quot;II&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{0x2a, 0x00});</span>
-<span class="nc" id="L47">        root.addPath(FileType.TIFF, &quot;MM&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{0x00, 0x2a});</span>
-<span class="nc" id="L48">        root.addPath(FileType.PSD, &quot;8BPS&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
-<span class="nc" id="L49">        root.addPath(FileType.PNG, new byte[]{(byte)0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52});</span>
+<span class="fc" id="L45">        root.addPath(FileType.JPEG, new byte[]{(byte)0xff, (byte)0xd8});</span>
+<span class="fc" id="L46">        root.addPath(FileType.TIFF, &quot;II&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{0x2a, 0x00});</span>
+<span class="fc" id="L47">        root.addPath(FileType.TIFF, &quot;MM&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{0x00, 0x2a});</span>
+<span class="fc" id="L48">        root.addPath(FileType.PSD, &quot;8BPS&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L49">        root.addPath(FileType.PNG, new byte[]{(byte)0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52});</span>
         // TODO technically there are other very rare magic numbers for OS/2 BMP files...
-<span class="nc" id="L51">        root.addPath(FileType.BMP, &quot;BM&quot;.getBytes(StandardCharsets.ISO_8859_1)); </span>
-<span class="nc" id="L52">        root.addPath(FileType.GIF, &quot;GIF87a&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
-<span class="nc" id="L53">        root.addPath(FileType.GIF, &quot;GIF89a&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
-<span class="nc" id="L54">        root.addPath(FileType.ICO, new byte[]{0x00, 0x00, 0x01, 0x00});</span>
+<span class="fc" id="L51">        root.addPath(FileType.BMP, &quot;BM&quot;.getBytes(StandardCharsets.ISO_8859_1)); </span>
+<span class="fc" id="L52">        root.addPath(FileType.GIF, &quot;GIF87a&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L53">        root.addPath(FileType.GIF, &quot;GIF89a&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L54">        root.addPath(FileType.ICO, new byte[]{0x00, 0x00, 0x01, 0x00});</span>
         // multiple PCX versions, explicitly listed
-<span class="nc" id="L56">        root.addPath(FileType.PCX, new byte[]{0x0A, 0x00, 0x01}); </span>
-<span class="nc" id="L57">        root.addPath(FileType.PCX, new byte[]{0x0A, 0x02, 0x01});</span>
-<span class="nc" id="L58">        root.addPath(FileType.PCX, new byte[]{0x0A, 0x03, 0x01});</span>
-<span class="nc" id="L59">        root.addPath(FileType.PCX, new byte[]{0x0A, 0x05, 0x01});</span>
-<span class="nc" id="L60">        root.addPath(FileType.RIFF, &quot;RIFF&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L56">        root.addPath(FileType.PCX, new byte[]{0x0A, 0x00, 0x01}); </span>
+<span class="fc" id="L57">        root.addPath(FileType.PCX, new byte[]{0x0A, 0x02, 0x01});</span>
+<span class="fc" id="L58">        root.addPath(FileType.PCX, new byte[]{0x0A, 0x03, 0x01});</span>
+<span class="fc" id="L59">        root.addPath(FileType.PCX, new byte[]{0x0A, 0x05, 0x01});</span>
+<span class="fc" id="L60">        root.addPath(FileType.RIFF, &quot;RIFF&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
 
         // https://github.com/drewnoakes/metadata-extractor/issues/217
         // root.addPath(FileType.ARW, &quot;II&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{0x2a, 0x00, 0x08, 0x00})
-<span class="nc" id="L64">        root.addPath(FileType.CRW, &quot;II&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{0x1a, 0x00, 0x00, 0x00}, &quot;HEAPCCDR&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
-<span class="nc" id="L65">        root.addPath(FileType.CR2, &quot;II&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{0x2a, 0x00, 0x10, 0x00, 0x00, 0x00, 0x43, 0x52});</span>
-<span class="nc" id="L66">        root.addPath(FileType.NEF, &quot;MM&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{0x00, 0x2a, 0x00, 0x00, 0x00, (byte)0x80, 0x00});</span>
-<span class="nc" id="L67">        root.addPath(FileType.ORF, &quot;IIRO&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{(byte)0x08, 0x00});</span>
-<span class="nc" id="L68">        root.addPath(FileType.ORF, &quot;IIRS&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{(byte)0x08, 0x00});</span>
-<span class="nc" id="L69">        root.addPath(FileType.RAF, &quot;FUJIFILMCCD-RAW&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
-<span class="nc" id="L70">        root.addPath(FileType.RW2, &quot;II&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{0x55, 0x00});</span>
-<span class="nc" id="L71">    }</span>
+<span class="fc" id="L64">        root.addPath(FileType.CRW, &quot;II&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{0x1a, 0x00, 0x00, 0x00}, &quot;HEAPCCDR&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L65">        root.addPath(FileType.CR2, &quot;II&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{0x2a, 0x00, 0x10, 0x00, 0x00, 0x00, 0x43, 0x52});</span>
+<span class="fc" id="L66">        root.addPath(FileType.NEF, &quot;MM&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{0x00, 0x2a, 0x00, 0x00, 0x00, (byte)0x80, 0x00});</span>
+<span class="fc" id="L67">        root.addPath(FileType.ORF, &quot;IIRO&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{(byte)0x08, 0x00});</span>
+<span class="fc" id="L68">        root.addPath(FileType.ORF, &quot;IIRS&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{(byte)0x08, 0x00});</span>
+<span class="fc" id="L69">        root.addPath(FileType.RAF, &quot;FUJIFILMCCD-RAW&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L70">        root.addPath(FileType.RW2, &quot;II&quot;.getBytes(StandardCharsets.ISO_8859_1), new byte[]{0x55, 0x00});</span>
+<span class="fc" id="L71">    }</span>
 
     private FileTypeDetector()
     {
@@ -88,32 +88,32 @@ public final class FileTypeDetector
      */
     public static FileType detectFileType(final BufferedInputStream inputStream) throws IOException
     {
-<span class="nc bnc" id="L91" title="All 2 branches missed.">        if (!inputStream.markSupported())</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (!inputStream.markSupported())</span>
         {
 <span class="nc" id="L93">            throw new IOException(&quot;Stream must support mark/reset&quot;);</span>
         }
 
-<span class="nc" id="L96">        int maxByteCount = root.getMaxDepth();</span>
+<span class="fc" id="L96">        int maxByteCount = root.getMaxDepth();</span>
 
-<span class="nc" id="L98">        inputStream.mark(maxByteCount);</span>
+<span class="fc" id="L98">        inputStream.mark(maxByteCount);</span>
 
-<span class="nc" id="L100">        byte[] bytes = new byte[maxByteCount];</span>
-<span class="nc" id="L101">        int bytesRead = inputStream.read(bytes);</span>
+<span class="fc" id="L100">        byte[] bytes = new byte[maxByteCount];</span>
+<span class="fc" id="L101">        int bytesRead = inputStream.read(bytes);</span>
 
-<span class="nc bnc" id="L103" title="All 2 branches missed.">        if (bytesRead == -1)</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">        if (bytesRead == -1)</span>
         {
 <span class="nc" id="L105">            throw new IOException(&quot;Stream ended before file's magic number could be determined.&quot;);</span>
         }
 
-<span class="nc" id="L108">        inputStream.reset();</span>
+<span class="fc" id="L108">        inputStream.reset();</span>
 
         //noinspection ConstantConditions
-<span class="nc" id="L111">        return root.find(bytes);</span>
+<span class="fc" id="L111">        return root.find(bytes);</span>
     }
 
     public static FileType detectFileType(final byte[] fileBytes)
     {
-<span class="nc" id="L116">        return root.find(fileBytes);</span>
+<span class="fc" id="L116">        return root.find(fileBytes);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

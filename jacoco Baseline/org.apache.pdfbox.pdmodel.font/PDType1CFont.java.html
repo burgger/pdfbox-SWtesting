@@ -54,15 +54,15 @@ import static org.apache.pdfbox.pdmodel.font.UniUtil.getUniNameOfCodePoint;
  */
 public class PDType1CFont extends PDSimpleFont implements PDVectorFont
 {
-<span class="nc" id="L57">    private static final Logger LOG = LogManager.getLogger(PDType1CFont.class);</span>
+<span class="fc" id="L57">    private static final Logger LOG = LogManager.getLogger(PDType1CFont.class);</span>
 
-<span class="nc" id="L59">    private final Map&lt;String, Float&gt; glyphHeights = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L59">    private final Map&lt;String, Float&gt; glyphHeights = new HashMap&lt;&gt;();</span>
     private final AffineTransform fontMatrixTransform;
     private final CFFType1Font cffFont; // embedded font
     private final FontBoxFont genericFont; // embedded or system font for rendering
     private final boolean isEmbedded;
     private final boolean isDamaged;
-<span class="nc" id="L65">    private Float avgWidth = null;</span>
+<span class="fc" id="L65">    private Float avgWidth = null;</span>
     private Matrix fontMatrix;
     private BoundingBox fontBBox;
 
@@ -74,31 +74,31 @@ public class PDType1CFont extends PDSimpleFont implements PDVectorFont
      */
     public PDType1CFont(COSDictionary fontDictionary) throws IOException
     {
-<span class="nc" id="L77">        super(fontDictionary);</span>
+<span class="fc" id="L77">        super(fontDictionary);</span>
 
-<span class="nc" id="L79">        boolean fontIsDamaged = false;</span>
-<span class="nc" id="L80">        CFFType1Font cffEmbedded = null;</span>
-<span class="nc" id="L81">        PDFontDescriptor fd = getFontDescriptor();</span>
-<span class="nc bnc" id="L82" title="All 2 branches missed.">        if (fd != null)</span>
+<span class="fc" id="L79">        boolean fontIsDamaged = false;</span>
+<span class="fc" id="L80">        CFFType1Font cffEmbedded = null;</span>
+<span class="fc" id="L81">        PDFontDescriptor fd = getFontDescriptor();</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        if (fd != null)</span>
         {
-<span class="nc" id="L84">            PDStream ff3Stream = fd.getFontFile3();</span>
-<span class="nc bnc" id="L85" title="All 2 branches missed.">            if (ff3Stream != null)</span>
+<span class="fc" id="L84">            PDStream ff3Stream = fd.getFontFile3();</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">            if (ff3Stream != null)</span>
             {
-<span class="nc" id="L87">                try (RandomAccessRead randomAccessRead = ff3Stream.getCOSObject()</span>
-<span class="nc" id="L88">                        .createView())</span>
+<span class="fc" id="L87">                try (RandomAccessRead randomAccessRead = ff3Stream.getCOSObject()</span>
+<span class="fc" id="L88">                        .createView())</span>
                 {
-<span class="nc bnc" id="L90" title="All 2 branches missed.">                    if (randomAccessRead.length() == 0)</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">                    if (randomAccessRead.length() == 0)</span>
                     {
 <span class="nc" id="L92">                        LOG.error(&quot;Invalid data for embedded Type1C font {}&quot;, getName());</span>
                     }
                     else
                     {
                         // note: this could be an OpenType file, fortunately CFFParser can handle that
-<span class="nc" id="L97">                        CFFParser cffParser = new CFFParser();</span>
-<span class="nc" id="L98">                        CFFFont parsedCffFont = cffParser.parse(randomAccessRead).get(0);</span>
-<span class="nc bnc" id="L99" title="All 2 branches missed.">                        if (parsedCffFont instanceof CFFType1Font)</span>
+<span class="fc" id="L97">                        CFFParser cffParser = new CFFParser();</span>
+<span class="fc" id="L98">                        CFFFont parsedCffFont = cffParser.parse(randomAccessRead).get(0);</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">                        if (parsedCffFont instanceof CFFType1Font)</span>
                         {
-<span class="nc" id="L101">                            cffEmbedded = (CFFType1Font) parsedCffFont;</span>
+<span class="fc" id="L101">                            cffEmbedded = (CFFType1Font) parsedCffFont;</span>
                         }
                         else
                         {
@@ -108,37 +108,37 @@ public class PDType1CFont extends PDSimpleFont implements PDVectorFont
                         }
                     }
                 }
-<span class="nc" id="L111">                catch (IOException e)</span>
+<span class="fc" id="L111">                catch (IOException e)</span>
                 {
-<span class="nc" id="L113">                    LOG.error(() -&gt; &quot;Can't read the embedded Type1C font &quot; + getName(), e);</span>
-<span class="nc" id="L114">                    fontIsDamaged = true;</span>
-<span class="nc" id="L115">                }</span>
+<span class="fc" id="L113">                    LOG.error(() -&gt; &quot;Can't read the embedded Type1C font &quot; + getName(), e);</span>
+<span class="fc" id="L114">                    fontIsDamaged = true;</span>
+<span class="fc" id="L115">                }</span>
             }
         }
-<span class="nc" id="L118">        isDamaged = fontIsDamaged;</span>
-<span class="nc" id="L119">        cffFont = cffEmbedded;</span>
-<span class="nc bnc" id="L120" title="All 2 branches missed.">        if (cffFont != null)</span>
+<span class="fc" id="L118">        isDamaged = fontIsDamaged;</span>
+<span class="fc" id="L119">        cffFont = cffEmbedded;</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        if (cffFont != null)</span>
         {
-<span class="nc" id="L122">            genericFont = cffFont;</span>
-<span class="nc" id="L123">            isEmbedded = true;</span>
+<span class="fc" id="L122">            genericFont = cffFont;</span>
+<span class="fc" id="L123">            isEmbedded = true;</span>
         }
         else
         {
-<span class="nc" id="L127">            String baseFont = getBaseFont();</span>
-<span class="nc" id="L128">            FontMapping&lt;FontBoxFont&gt; mapping = FontMappers.instance()</span>
-<span class="nc" id="L129">                                                          .getFontBoxFont(baseFont, fd);</span>
-<span class="nc" id="L130">            genericFont = mapping.getFont();</span>
+<span class="fc" id="L127">            String baseFont = getBaseFont();</span>
+<span class="fc" id="L128">            FontMapping&lt;FontBoxFont&gt; mapping = FontMappers.instance()</span>
+<span class="fc" id="L129">                                                          .getFontBoxFont(baseFont, fd);</span>
+<span class="fc" id="L130">            genericFont = mapping.getFont();</span>
             
-<span class="nc bnc" id="L132" title="All 2 branches missed.">            if (mapping.isFallback())</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">            if (mapping.isFallback())</span>
             {
-<span class="nc" id="L134">                LOG.warn(&quot;Using fallback font {} for {}&quot;, genericFont.getName(), baseFont);</span>
+<span class="fc" id="L134">                LOG.warn(&quot;Using fallback font {} for {}&quot;, genericFont.getName(), baseFont);</span>
             }
-<span class="nc" id="L136">            isEmbedded = false;</span>
+<span class="fc" id="L136">            isEmbedded = false;</span>
         }
-<span class="nc" id="L138">        readEncoding();</span>
-<span class="nc" id="L139">        fontMatrixTransform = getFontMatrix().createAffineTransform();</span>
-<span class="nc" id="L140">        fontMatrixTransform.scale(1000, 1000);</span>
-<span class="nc" id="L141">    }</span>
+<span class="fc" id="L138">        readEncoding();</span>
+<span class="fc" id="L139">        fontMatrixTransform = getFontMatrix().createAffineTransform();</span>
+<span class="fc" id="L140">        fontMatrixTransform.scale(1000, 1000);</span>
+<span class="fc" id="L141">    }</span>
     
     @Override
     public FontBoxFont getFontBoxFont()
@@ -153,22 +153,22 @@ public class PDType1CFont extends PDSimpleFont implements PDVectorFont
      */
     public final String getBaseFont()
     {
-<span class="nc" id="L156">        return dict.getNameAsString(COSName.BASE_FONT);</span>
+<span class="fc" id="L156">        return dict.getNameAsString(COSName.BASE_FONT);</span>
     }
 
     @Override
     public GeneralPath getPath(String name) throws IOException
     {
         // Acrobat only draws .notdef for embedded or &quot;Standard 14&quot; fonts, see PDFBOX-2372
-<span class="nc bnc" id="L163" title="All 6 branches missed.">        if (name.equals(&quot;.notdef&quot;) &amp;&amp; !isEmbedded() &amp;&amp; !isStandard14())</span>
+<span class="pc bpc" id="L163" title="5 of 6 branches missed.">        if (name.equals(&quot;.notdef&quot;) &amp;&amp; !isEmbedded() &amp;&amp; !isStandard14())</span>
         {
 <span class="nc" id="L165">            return new GeneralPath();</span>
         }
-<span class="nc bnc" id="L167" title="All 2 branches missed.">        if (&quot;sfthyphen&quot;.equals(name))</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">        if (&quot;sfthyphen&quot;.equals(name))</span>
         {
 <span class="nc" id="L169">            return genericFont.getPath(&quot;hyphen&quot;);</span>
         }
-<span class="nc bnc" id="L171" title="All 2 branches missed.">        if (&quot;nbspace&quot;.equals(name))</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">        if (&quot;nbspace&quot;.equals(name))</span>
         {
 <span class="nc bnc" id="L173" title="All 2 branches missed.">            if (!hasGlyph(&quot;space&quot;))</span>
             {
@@ -176,23 +176,23 @@ public class PDType1CFont extends PDSimpleFont implements PDVectorFont
             }
 <span class="nc" id="L177">            return genericFont.getPath(&quot;space&quot;);</span>
         }
-<span class="nc" id="L179">        return genericFont.getPath(name);</span>
+<span class="fc" id="L179">        return genericFont.getPath(name);</span>
     }
 
     @Override
     public boolean hasGlyph(int code) throws IOException
     {
-<span class="nc" id="L185">        String name = getEncoding().getName(code);</span>
-<span class="nc" id="L186">        name = getNameInFont(name);</span>
-<span class="nc bnc" id="L187" title="All 2 branches missed.">        if (&quot;sfthyphen&quot;.equals(name))</span>
+<span class="fc" id="L185">        String name = getEncoding().getName(code);</span>
+<span class="fc" id="L186">        name = getNameInFont(name);</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        if (&quot;sfthyphen&quot;.equals(name))</span>
         {
 <span class="nc" id="L189">            return hasGlyph(&quot;hyphen&quot;);</span>
         }
-<span class="nc bnc" id="L191" title="All 2 branches missed.">        if (&quot;nbspace&quot;.equals(name))</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">        if (&quot;nbspace&quot;.equals(name))</span>
         {
 <span class="nc" id="L193">            return hasGlyph(&quot;space&quot;);</span>
         }
-<span class="nc" id="L195">        return hasGlyph(name);</span>
+<span class="fc" id="L195">        return hasGlyph(name);</span>
     }
 
     @Override
@@ -218,9 +218,9 @@ public class PDType1CFont extends PDSimpleFont implements PDVectorFont
     @Override
     public GeneralPath getNormalizedPath(int code) throws IOException
     {
-<span class="nc" id="L221">        String name = getEncoding().getName(code);</span>
-<span class="nc" id="L222">        name = getNameInFont(name);</span>
-<span class="nc bnc" id="L223" title="All 2 branches missed.">        if (&quot;nbspace&quot;.equals(name))</span>
+<span class="fc" id="L221">        String name = getEncoding().getName(code);</span>
+<span class="fc" id="L222">        name = getNameInFont(name);</span>
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">        if (&quot;nbspace&quot;.equals(name))</span>
         {
 <span class="nc bnc" id="L225" title="All 2 branches missed.">            if (!hasGlyph(&quot;space&quot;))</span>
             {
@@ -228,48 +228,48 @@ public class PDType1CFont extends PDSimpleFont implements PDVectorFont
             }
 <span class="nc" id="L229">            name = &quot;space&quot;;</span>
         }
-<span class="nc bnc" id="L231" title="All 2 branches missed.">        else if (&quot;sfthyphen&quot;.equals(name))</span>
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">        else if (&quot;sfthyphen&quot;.equals(name))</span>
         {
 <span class="nc" id="L233">            name = &quot;hyphen&quot;;</span>
         }
-<span class="nc" id="L235">        GeneralPath path = getPath(name);</span>
-<span class="nc bnc" id="L236" title="All 2 branches missed.">        if (path == null)</span>
+<span class="fc" id="L235">        GeneralPath path = getPath(name);</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">        if (path == null)</span>
         {
 <span class="nc" id="L238">            return getPath(&quot;.notdef&quot;);</span>
         }
-<span class="nc" id="L240">        return path;</span>
+<span class="fc" id="L240">        return path;</span>
     }
 
     @Override
     public boolean hasGlyph(String name) throws IOException
     {
-<span class="nc" id="L246">        return genericFont.hasGlyph(name);</span>
+<span class="fc" id="L246">        return genericFont.hasGlyph(name);</span>
     }
 
     @Override
     public final String getName()
     {
-<span class="nc" id="L252">        return getBaseFont();</span>
+<span class="fc" id="L252">        return getBaseFont();</span>
     }
 
     @Override
     public BoundingBox getBoundingBox() throws IOException
     {
-<span class="nc bnc" id="L258" title="All 2 branches missed.">        if (fontBBox == null)</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        if (fontBBox == null)</span>
         {
-<span class="nc" id="L260">            fontBBox = generateBoundingBox();</span>
+<span class="fc" id="L260">            fontBBox = generateBoundingBox();</span>
         }
-<span class="nc" id="L262">        return fontBBox;</span>
+<span class="fc" id="L262">        return fontBBox;</span>
     }
 
     private BoundingBox generateBoundingBox() throws IOException
     {
-<span class="nc bnc" id="L267" title="All 2 branches missed.">        if (getFontDescriptor() != null) {</span>
-<span class="nc" id="L268">            PDRectangle bbox = getFontDescriptor().getFontBoundingBox();</span>
-<span class="nc bnc" id="L269" title="All 2 branches missed.">            if (isNonZeroBoundingBox(bbox))</span>
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">        if (getFontDescriptor() != null) {</span>
+<span class="fc" id="L268">            PDRectangle bbox = getFontDescriptor().getFontBoundingBox();</span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">            if (isNonZeroBoundingBox(bbox))</span>
             {
-<span class="nc" id="L271">                return new BoundingBox(bbox.getLowerLeftX(), bbox.getLowerLeftY(),</span>
-<span class="nc" id="L272">                                       bbox.getUpperRightX(), bbox.getUpperRightY());</span>
+<span class="fc" id="L271">                return new BoundingBox(bbox.getLowerLeftX(), bbox.getLowerLeftY(),</span>
+<span class="fc" id="L272">                                       bbox.getUpperRightX(), bbox.getUpperRightY());</span>
             }
         }
 <span class="nc" id="L275">        return genericFont.getFontBBox();</span>
@@ -278,13 +278,13 @@ public class PDType1CFont extends PDSimpleFont implements PDVectorFont
     //@Override
     public String codeToName(int code)
     {
-<span class="nc" id="L281">        return getEncoding().getName(code);</span>
+<span class="fc" id="L281">        return getEncoding().getName(code);</span>
     }
 
     @Override
     protected Encoding readEncodingFromFont() throws IOException
     {
-<span class="nc bnc" id="L287" title="All 4 branches missed.">        if (!isEmbedded() &amp;&amp; getStandard14AFM() != null)</span>
+<span class="pc bpc" id="L287" title="3 of 4 branches missed.">        if (!isEmbedded() &amp;&amp; getStandard14AFM() != null)</span>
         {
             // read from AFM
 <span class="nc" id="L290">            return new Type1Encoding(getStandard14AFM());</span>
@@ -292,9 +292,9 @@ public class PDType1CFont extends PDSimpleFont implements PDVectorFont
         else
         {
             // extract from Type1 font/substitute
-<span class="nc bnc" id="L295" title="All 2 branches missed.">            if (genericFont instanceof EncodedFont)</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">            if (genericFont instanceof EncodedFont)</span>
             {
-<span class="nc" id="L297">                return Type1Encoding.fromFontBox(((EncodedFont) genericFont).getEncoding());</span>
+<span class="fc" id="L297">                return Type1Encoding.fromFontBox(((EncodedFont) genericFont).getEncoding());</span>
             }
             else
             {
@@ -307,75 +307,75 @@ public class PDType1CFont extends PDSimpleFont implements PDVectorFont
     @Override
     public int readCode(InputStream in) throws IOException
     {
-<span class="nc" id="L310">        return in.read();</span>
+<span class="fc" id="L310">        return in.read();</span>
     }
 
     @Override
     public final Matrix getFontMatrix()
     {
-<span class="nc bnc" id="L316" title="All 2 branches missed.">        if (fontMatrix == null)</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">        if (fontMatrix == null)</span>
         {
-<span class="nc" id="L318">            List&lt;Number&gt; numbers = null;</span>
+<span class="fc" id="L318">            List&lt;Number&gt; numbers = null;</span>
             try
             {
-<span class="nc" id="L321">                numbers = genericFont.getFontMatrix();</span>
+<span class="fc" id="L321">                numbers = genericFont.getFontMatrix();</span>
             }
 <span class="nc" id="L323">            catch (IOException e)</span>
             {
 <span class="nc" id="L325">                LOG.debug(&quot;Couldn't get font matrix - returning default value&quot;, e);</span>
 <span class="nc" id="L326">                fontMatrix = DEFAULT_FONT_MATRIX;</span>
-<span class="nc" id="L327">            }</span>
+<span class="fc" id="L327">            }</span>
 
-<span class="nc bnc" id="L329" title="All 4 branches missed.">            if (numbers != null &amp;&amp; numbers.size() == 6)</span>
+<span class="pc bpc" id="L329" title="2 of 4 branches missed.">            if (numbers != null &amp;&amp; numbers.size() == 6)</span>
             {
-<span class="nc" id="L331">                fontMatrix = new Matrix(</span>
-<span class="nc" id="L332">                        numbers.get(0).floatValue(), numbers.get(1).floatValue(),</span>
-<span class="nc" id="L333">                        numbers.get(2).floatValue(), numbers.get(3).floatValue(),</span>
-<span class="nc" id="L334">                        numbers.get(4).floatValue(), numbers.get(5).floatValue());</span>
+<span class="fc" id="L331">                fontMatrix = new Matrix(</span>
+<span class="fc" id="L332">                        numbers.get(0).floatValue(), numbers.get(1).floatValue(),</span>
+<span class="fc" id="L333">                        numbers.get(2).floatValue(), numbers.get(3).floatValue(),</span>
+<span class="fc" id="L334">                        numbers.get(4).floatValue(), numbers.get(5).floatValue());</span>
             }
             else
             {
 <span class="nc" id="L338">                return super.getFontMatrix();</span>
             }
         }
-<span class="nc" id="L341">        return fontMatrix;</span>
+<span class="fc" id="L341">        return fontMatrix;</span>
     }
 
     @Override
     public boolean isDamaged()
     {
-<span class="nc" id="L347">        return isDamaged;</span>
+<span class="fc" id="L347">        return isDamaged;</span>
     }
 
     @Override
     public float getWidthFromFont(int code) throws IOException
     {
-<span class="nc" id="L353">        String name = codeToName(code);</span>
-<span class="nc" id="L354">        name = getNameInFont(name);</span>
-<span class="nc" id="L355">        float width = genericFont.getWidth(name);</span>
+<span class="fc" id="L353">        String name = codeToName(code);</span>
+<span class="fc" id="L354">        name = getNameInFont(name);</span>
+<span class="fc" id="L355">        float width = genericFont.getWidth(name);</span>
 
-<span class="nc" id="L357">        Point2D p = new Point2D.Float(width, 0);</span>
-<span class="nc" id="L358">        fontMatrixTransform.transform(p, p);</span>
-<span class="nc" id="L359">        return (float)p.getX();</span>
+<span class="fc" id="L357">        Point2D p = new Point2D.Float(width, 0);</span>
+<span class="fc" id="L358">        fontMatrixTransform.transform(p, p);</span>
+<span class="fc" id="L359">        return (float)p.getX();</span>
     }
 
     @Override
     public boolean isEmbedded()
     {
-<span class="nc" id="L365">        return isEmbedded;</span>
+<span class="fc" id="L365">        return isEmbedded;</span>
     }
 
     @Override
     public float getHeight(int code) throws IOException
     {
-<span class="nc" id="L371">        String name = codeToName(code);</span>
+<span class="fc" id="L371">        String name = codeToName(code);</span>
         float height;
-<span class="nc bnc" id="L373" title="All 2 branches missed.">        if (!glyphHeights.containsKey(name))</span>
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">        if (!glyphHeights.containsKey(name))</span>
         {
-<span class="nc bnc" id="L375" title="All 2 branches missed.">            if (cffFont == null)</span>
+<span class="pc bpc" id="L375" title="1 of 2 branches missed.">            if (cffFont == null)</span>
             {
-<span class="nc" id="L377">                LOG.warn(&quot;No embedded CFF font, returning 0&quot;);</span>
-<span class="nc" id="L378">                return 0;</span>
+<span class="fc" id="L377">                LOG.warn(&quot;No embedded CFF font, returning 0&quot;);</span>
+<span class="fc" id="L378">                return 0;</span>
             }
 <span class="nc" id="L380">            height = (float) cffFont.getType1CharString(name).getBounds().getHeight();</span>
 <span class="nc" id="L381">            glyphHeights.put(name, height);</span>
@@ -415,35 +415,35 @@ public class PDType1CFont extends PDSimpleFont implements PDVectorFont
     @Override
     public float getStringWidth(String string) throws IOException
     {
-<span class="nc bnc" id="L418" title="All 2 branches missed.">        if (cffFont == null)</span>
+<span class="fc bfc" id="L418" title="All 2 branches covered.">        if (cffFont == null)</span>
         {
-<span class="nc" id="L420">            LOG.warn(&quot;No embedded CFF font, returning 0&quot;);</span>
-<span class="nc" id="L421">            return 0;</span>
+<span class="fc" id="L420">            LOG.warn(&quot;No embedded CFF font, returning 0&quot;);</span>
+<span class="fc" id="L421">            return 0;</span>
         }
-<span class="nc" id="L423">        float width = 0;</span>
-<span class="nc bnc" id="L424" title="All 2 branches missed.">        for (int i = 0; i &lt; string.length(); i++)</span>
+<span class="fc" id="L423">        float width = 0;</span>
+<span class="fc bfc" id="L424" title="All 2 branches covered.">        for (int i = 0; i &lt; string.length(); i++)</span>
         {
-<span class="nc" id="L426">            int codePoint = string.codePointAt(i);</span>
-<span class="nc" id="L427">            String name = getGlyphList().codePointToName(codePoint);</span>
-<span class="nc bnc" id="L428" title="All 2 branches missed.">            if (!cffFont.hasGlyph(name))</span>
+<span class="fc" id="L426">            int codePoint = string.codePointAt(i);</span>
+<span class="fc" id="L427">            String name = getGlyphList().codePointToName(codePoint);</span>
+<span class="fc bfc" id="L428" title="All 2 branches covered.">            if (!cffFont.hasGlyph(name))</span>
             {
-<span class="nc" id="L430">                throw new IllegalArgumentException(</span>
-<span class="nc" id="L431">                    String.format(&quot;U+%04X ('%s') is not available in font %s&quot;,</span>
-<span class="nc" id="L432">                                  codePoint, name, getName()));</span>
+<span class="fc" id="L430">                throw new IllegalArgumentException(</span>
+<span class="fc" id="L431">                    String.format(&quot;U+%04X ('%s') is not available in font %s&quot;,</span>
+<span class="fc" id="L432">                                  codePoint, name, getName()));</span>
             }
-<span class="nc" id="L434">            width += cffFont.getType1CharString(name).getWidth();</span>
+<span class="fc" id="L434">            width += cffFont.getType1CharString(name).getWidth();</span>
         }
-<span class="nc" id="L436">        return width;</span>
+<span class="fc" id="L436">        return width;</span>
     }
     
     @Override
     public float getAverageFontWidth()
     {
-<span class="nc bnc" id="L442" title="All 2 branches missed.">        if (avgWidth == null)</span>
+<span class="pc bpc" id="L442" title="1 of 2 branches missed.">        if (avgWidth == null)</span>
         {
-<span class="nc" id="L444">            avgWidth = getAverageCharacterWidth();</span>
+<span class="fc" id="L444">            avgWidth = getAverageCharacterWidth();</span>
         }
-<span class="nc" id="L446">        return avgWidth;</span>
+<span class="fc" id="L446">        return avgWidth;</span>
     }
 
     /**
@@ -460,7 +460,7 @@ public class PDType1CFont extends PDSimpleFont implements PDVectorFont
     private float getAverageCharacterWidth()
     {
         // todo: not implemented, highly suspect
-<span class="nc" id="L463">        return 500;</span>
+<span class="fc" id="L463">        return 500;</span>
     }
 
     /**
@@ -469,9 +469,9 @@ public class PDType1CFont extends PDSimpleFont implements PDVectorFont
      */
     private String getNameInFont(String name) throws IOException
     {
-<span class="nc bnc" id="L472" title="All 4 branches missed.">        if (isEmbedded() || genericFont.hasGlyph(name))</span>
+<span class="pc bpc" id="L472" title="3 of 4 branches missed.">        if (isEmbedded() || genericFont.hasGlyph(name))</span>
         {
-<span class="nc" id="L474">            return name;</span>
+<span class="fc" id="L474">            return name;</span>
         }
         else
         {

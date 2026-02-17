@@ -66,9 +66,9 @@ public class PDFormXObject extends PDXObject implements PDContentStream
      */
     public PDFormXObject(PDStream stream)
     {
-<span class="nc" id="L69">        super(stream, COSName.FORM);</span>
-<span class="nc" id="L70">        cache = null;</span>
-<span class="nc" id="L71">    }</span>
+<span class="fc" id="L69">        super(stream, COSName.FORM);</span>
+<span class="fc" id="L70">        cache = null;</span>
+<span class="fc" id="L71">    }</span>
 
     /**
      * Creates a Form XObject for reading.
@@ -76,9 +76,9 @@ public class PDFormXObject extends PDXObject implements PDContentStream
      */
     public PDFormXObject(COSStream stream)
     {
-<span class="nc" id="L79">        super(stream, COSName.FORM);</span>
-<span class="nc" id="L80">        cache = null;</span>
-<span class="nc" id="L81">    }</span>
+<span class="fc" id="L79">        super(stream, COSName.FORM);</span>
+<span class="fc" id="L80">        cache = null;</span>
+<span class="fc" id="L81">    }</span>
 
     /**
      * Creates a Form XObject for reading.
@@ -88,9 +88,9 @@ public class PDFormXObject extends PDXObject implements PDContentStream
      */
     public PDFormXObject(COSStream stream, ResourceCache cache)
     {
-<span class="nc" id="L91">        super(stream, COSName.FORM);</span>
-<span class="nc" id="L92">        this.cache = cache;</span>
-<span class="nc" id="L93">    }</span>
+<span class="fc" id="L91">        super(stream, COSName.FORM);</span>
+<span class="fc" id="L92">        this.cache = cache;</span>
+<span class="fc" id="L93">    }</span>
     
     /**
      * Creates a Form Image XObject for writing, in the given document.
@@ -98,9 +98,9 @@ public class PDFormXObject extends PDXObject implements PDContentStream
      */
     public PDFormXObject(PDDocument document)
     {
-<span class="nc" id="L101">        super(document, COSName.FORM);</span>
-<span class="nc" id="L102">        cache = null;</span>
-<span class="nc" id="L103">    }</span>
+<span class="fc" id="L101">        super(document, COSName.FORM);</span>
+<span class="fc" id="L102">        cache = null;</span>
+<span class="fc" id="L103">    }</span>
 
     /**
      * This will get the form type, currently 1 is the only form type.
@@ -117,8 +117,8 @@ public class PDFormXObject extends PDXObject implements PDContentStream
      */
     public void setFormType(int formType)
     {
-<span class="nc" id="L120">        getCOSObject().setInt(COSName.FORMTYPE, formType);</span>
-<span class="nc" id="L121">    }</span>
+<span class="fc" id="L120">        getCOSObject().setInt(COSName.FORMTYPE, formType);</span>
+<span class="fc" id="L121">    }</span>
 
     /**
      * Returns the transparency group attributes dictionary.
@@ -127,15 +127,15 @@ public class PDFormXObject extends PDXObject implements PDContentStream
      */
     public PDTransparencyGroupAttributes getGroup()
     {
-<span class="nc bnc" id="L130" title="All 2 branches missed.">        if( group == null ) </span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        if( group == null ) </span>
         {
-<span class="nc" id="L132">            COSDictionary dic = getCOSObject().getCOSDictionary(COSName.GROUP);</span>
-<span class="nc bnc" id="L133" title="All 2 branches missed.">            if( dic != null ) </span>
+<span class="fc" id="L132">            COSDictionary dic = getCOSObject().getCOSDictionary(COSName.GROUP);</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">            if( dic != null ) </span>
             {
-<span class="nc" id="L135">                group = new PDTransparencyGroupAttributes(dic);</span>
+<span class="fc" id="L135">                group = new PDTransparencyGroupAttributes(dic);</span>
             }
         }
-<span class="nc" id="L138">        return group;</span>
+<span class="fc" id="L138">        return group;</span>
     }
 
     /**
@@ -151,7 +151,7 @@ public class PDFormXObject extends PDXObject implements PDContentStream
 
     public PDStream getContentStream()
     {
-<span class="nc" id="L154">        return new PDStream(getCOSObject());</span>
+<span class="fc" id="L154">        return new PDStream(getCOSObject());</span>
     }
 
     @Override
@@ -163,7 +163,7 @@ public class PDFormXObject extends PDXObject implements PDContentStream
     @Override
     public RandomAccessRead getContentsForRandomAccess() throws IOException
     {
-<span class="nc" id="L166">        return getCOSObject().createView();</span>
+<span class="fc" id="L166">        return getCOSObject().createView();</span>
     }
     /**
      * This will get the resources for this Form XObject.
@@ -174,19 +174,19 @@ public class PDFormXObject extends PDXObject implements PDContentStream
     @Override
     public PDResources getResources()
     {
-<span class="nc" id="L177">        COSDictionary resources = getCOSObject().getCOSDictionary(COSName.RESOURCES);</span>
-<span class="nc bnc" id="L178" title="All 2 branches missed.">        if (resources != null)</span>
+<span class="fc" id="L177">        COSDictionary resources = getCOSObject().getCOSDictionary(COSName.RESOURCES);</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        if (resources != null)</span>
         {
-<span class="nc" id="L180">            return new PDResources(resources, cache);</span>
+<span class="fc" id="L180">            return new PDResources(resources, cache);</span>
         }
-<span class="nc bnc" id="L182" title="All 2 branches missed.">        if (getCOSObject().containsKey(COSName.RESOURCES))</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">        if (getCOSObject().containsKey(COSName.RESOURCES))</span>
         {
             // PDFBOX-4372 if the resource key exists but has nothing, return empty resources,
             // to avoid a self-reference (xobject form Fm0 contains &quot;/Fm0 Do&quot;)
             // See also the mention of PDFBOX-1359 in PDFStreamEngine
-<span class="nc" id="L187">            return new PDResources();</span>
+<span class="fc" id="L187">            return new PDResources();</span>
         }
-<span class="nc" id="L189">        return null;</span>
+<span class="fc" id="L189">        return null;</span>
     }
 
     /**
@@ -195,8 +195,8 @@ public class PDFormXObject extends PDXObject implements PDContentStream
      */
     public void setResources(PDResources resources)
     {
-<span class="nc" id="L198">        getCOSObject().setItem(COSName.RESOURCES, resources);</span>
-<span class="nc" id="L199">    }</span>
+<span class="fc" id="L198">        getCOSObject().setItem(COSName.RESOURCES, resources);</span>
+<span class="fc" id="L199">    }</span>
 
     /**
      * An array of four numbers in the form coordinate system (see below),
@@ -208,8 +208,8 @@ public class PDFormXObject extends PDXObject implements PDContentStream
     @Override
     public PDRectangle getBBox()
     {
-<span class="nc" id="L211">        COSArray array = getCOSObject().getCOSArray(COSName.BBOX);</span>
-<span class="nc bnc" id="L212" title="All 2 branches missed.">        return array != null ? new PDRectangle(array) : null;</span>
+<span class="fc" id="L211">        COSArray array = getCOSObject().getCOSArray(COSName.BBOX);</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">        return array != null ? new PDRectangle(array) : null;</span>
     }
 
     /**
@@ -218,15 +218,15 @@ public class PDFormXObject extends PDXObject implements PDContentStream
      */
     public void setBBox(PDRectangle bbox)
     {
-<span class="nc bnc" id="L221" title="All 2 branches missed.">        if (bbox == null)</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">        if (bbox == null)</span>
         {
 <span class="nc" id="L223">            getCOSObject().removeItem(COSName.BBOX);</span>
         }
         else
         {
-<span class="nc" id="L227">            getCOSObject().setItem(COSName.BBOX, bbox.getCOSArray());</span>
+<span class="fc" id="L227">            getCOSObject().setItem(COSName.BBOX, bbox.getCOSArray());</span>
         }
-<span class="nc" id="L229">    }</span>
+<span class="fc" id="L229">    }</span>
 
     /**
      * This will get the optional matrix of an XObjectForm. It maps the form space to user space.
@@ -235,7 +235,7 @@ public class PDFormXObject extends PDXObject implements PDContentStream
     @Override
     public Matrix getMatrix()
     {
-<span class="nc" id="L238">        return Matrix.createMatrix(getCOSObject().getDictionaryObject(COSName.MATRIX));</span>
+<span class="fc" id="L238">        return Matrix.createMatrix(getCOSObject().getDictionaryObject(COSName.MATRIX));</span>
     }
 
     /**
@@ -244,15 +244,15 @@ public class PDFormXObject extends PDXObject implements PDContentStream
      */
     public void setMatrix(AffineTransform transform)
     {
-<span class="nc" id="L247">        COSArray matrix = new COSArray();</span>
-<span class="nc" id="L248">        double[] values = new double[6];</span>
-<span class="nc" id="L249">        transform.getMatrix(values);</span>
-<span class="nc bnc" id="L250" title="All 2 branches missed.">        for (double v : values)</span>
+<span class="fc" id="L247">        COSArray matrix = new COSArray();</span>
+<span class="fc" id="L248">        double[] values = new double[6];</span>
+<span class="fc" id="L249">        transform.getMatrix(values);</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">        for (double v : values)</span>
         {
-<span class="nc" id="L252">            matrix.add(new COSFloat((float) v));</span>
+<span class="fc" id="L252">            matrix.add(new COSFloat((float) v));</span>
         }
-<span class="nc" id="L254">        getCOSObject().setItem(COSName.MATRIX, matrix);</span>
-<span class="nc" id="L255">    }</span>
+<span class="fc" id="L254">        getCOSObject().setItem(COSName.MATRIX, matrix);</span>
+<span class="fc" id="L255">    }</span>
 
     /**
      * This will get the key of this XObjectForm in the structural parent tree. Required if the form
@@ -283,8 +283,8 @@ public class PDFormXObject extends PDXObject implements PDContentStream
      */
     public PDPropertyList getOptionalContent()
     {
-<span class="nc" id="L286">        COSDictionary optionalContent = getCOSObject().getCOSDictionary(COSName.OC);</span>
-<span class="nc bnc" id="L287" title="All 2 branches missed.">        return optionalContent != null ? PDPropertyList.create(optionalContent) : null;</span>
+<span class="fc" id="L286">        COSDictionary optionalContent = getCOSObject().getCOSDictionary(COSName.OC);</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        return optionalContent != null ? PDPropertyList.create(optionalContent) : null;</span>
     }
 
     /**

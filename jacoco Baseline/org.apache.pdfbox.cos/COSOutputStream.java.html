@@ -53,12 +53,12 @@ public final class COSOutputStream extends FilterOutputStream
     COSOutputStream(List&lt;Filter&gt; filters, COSDictionary parameters, OutputStream output,
             RandomAccessStreamCache streamCache) throws IOException
     {
-<span class="nc" id="L56">        super(output);</span>
-<span class="nc" id="L57">        this.filters = filters;</span>
-<span class="nc" id="L58">        this.parameters = parameters;</span>
-<span class="nc" id="L59">        this.streamCache = streamCache;</span>
-<span class="nc bnc" id="L60" title="All 2 branches missed.">        buffer = filters.isEmpty() ? null : streamCache.createBuffer();</span>
-<span class="nc" id="L61">    }</span>
+<span class="fc" id="L56">        super(output);</span>
+<span class="fc" id="L57">        this.filters = filters;</span>
+<span class="fc" id="L58">        this.parameters = parameters;</span>
+<span class="fc" id="L59">        this.streamCache = streamCache;</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        buffer = filters.isEmpty() ? null : streamCache.createBuffer();</span>
+<span class="fc" id="L61">    }</span>
 
     @Override
     public void write(byte[] b) throws IOException
@@ -69,71 +69,71 @@ public final class COSOutputStream extends FilterOutputStream
     @Override
     public void write(byte[] b, int off, int len) throws IOException
     {
-<span class="nc bnc" id="L72" title="All 2 branches missed.">        if (buffer != null)</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (buffer != null)</span>
         {
-<span class="nc" id="L74">            buffer.write(b, off, len);</span>
+<span class="fc" id="L74">            buffer.write(b, off, len);</span>
         }
         else
         {
-<span class="nc" id="L78">            super.write(b, off, len);</span>
+<span class="fc" id="L78">            super.write(b, off, len);</span>
         }
-<span class="nc" id="L80">    }</span>
+<span class="fc" id="L80">    }</span>
 
     @Override
     public void write(int b) throws IOException
     {
-<span class="nc bnc" id="L85" title="All 2 branches missed.">        if (buffer != null)</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (buffer != null)</span>
         {
-<span class="nc" id="L87">            buffer.write(b);</span>
+<span class="fc" id="L87">            buffer.write(b);</span>
         }
         else
         {
-<span class="nc" id="L91">            super.write(b);</span>
+<span class="fc" id="L91">            super.write(b);</span>
         }
-<span class="nc" id="L93">    }</span>
+<span class="fc" id="L93">    }</span>
 
     @Override
     public void flush() throws IOException
     {
-<span class="nc bnc" id="L98" title="All 2 branches missed.">        if (buffer == null)</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        if (buffer == null)</span>
         {
-<span class="nc" id="L100">            super.flush();</span>
+<span class="fc" id="L100">            super.flush();</span>
         }
-<span class="nc" id="L102">    }</span>
+<span class="fc" id="L102">    }</span>
 
     @Override
     public void close() throws IOException
     {
         try
         {
-<span class="nc bnc" id="L109" title="All 2 branches missed.">            if (buffer != null)</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">            if (buffer != null)</span>
             {
                 try
                 {
                     // apply filters in reverse order
-<span class="nc bnc" id="L114" title="All 2 branches missed.">                    for (int i = filters.size() - 1; i &gt;= 0; i--)</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">                    for (int i = filters.size() - 1; i &gt;= 0; i--)</span>
                     {
-<span class="nc" id="L116">                        try (InputStream unfilteredIn = new RandomAccessInputStream(buffer))</span>
+<span class="fc" id="L116">                        try (InputStream unfilteredIn = new RandomAccessInputStream(buffer))</span>
                         {
-<span class="nc bnc" id="L118" title="All 2 branches missed.">                            if (i == 0)</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">                            if (i == 0)</span>
                             {
                                 /*
                                  * The last filter to run can encode directly to the enclosed output
                                  * stream.
                                  */
-<span class="nc" id="L124">                                filters.get(i).encode(unfilteredIn, out, parameters, i);</span>
+<span class="fc" id="L124">                                filters.get(i).encode(unfilteredIn, out, parameters, i);</span>
                             }
                             else
                             {
-<span class="nc" id="L128">                                RandomAccess filteredBuffer = streamCache.createBuffer();</span>
-<span class="nc" id="L129">                                try (OutputStream filteredOut = new RandomAccessOutputStream(filteredBuffer))</span>
+<span class="fc" id="L128">                                RandomAccess filteredBuffer = streamCache.createBuffer();</span>
+<span class="fc" id="L129">                                try (OutputStream filteredOut = new RandomAccessOutputStream(filteredBuffer))</span>
                                 {
-<span class="nc" id="L131">                                    filters.get(i).encode(unfilteredIn, filteredOut, parameters, i);</span>
+<span class="fc" id="L131">                                    filters.get(i).encode(unfilteredIn, filteredOut, parameters, i);</span>
                                 }
                                 finally
                                 {
-<span class="nc" id="L135">                                    buffer.close();</span>
-<span class="nc" id="L136">                                    buffer = filteredBuffer;</span>
+<span class="fc" id="L135">                                    buffer.close();</span>
+<span class="fc" id="L136">                                    buffer = filteredBuffer;</span>
                                 }
                             }
                         }
@@ -141,15 +141,15 @@ public final class COSOutputStream extends FilterOutputStream
                 }
                 finally
                 {
-<span class="nc" id="L144">                    buffer.close();</span>
-<span class="nc" id="L145">                    buffer = null;</span>
+<span class="fc" id="L144">                    buffer.close();</span>
+<span class="fc" id="L145">                    buffer = null;</span>
                 }
             }
         }
         finally
         {
-<span class="nc" id="L151">            super.close();</span>
+<span class="fc" id="L151">            super.close();</span>
         }
-<span class="nc" id="L153">    }</span>
+<span class="fc" id="L153">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

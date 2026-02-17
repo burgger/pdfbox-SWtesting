@@ -38,8 +38,8 @@ import org.apache.pdfbox.cos.COSObjectKey;
  */
 public class PDFXrefStreamParser
 {
-<span class="nc" id="L41">    private final int[] w = new int[3];</span>
-<span class="nc" id="L42">    private ObjectNumbers objectNumbers = null;</span>
+<span class="fc" id="L41">    private final int[] w = new int[3];</span>
+<span class="fc" id="L42">    private ObjectNumbers objectNumbers = null;</span>
     private final RandomAccessRead source;
 
     /**
@@ -50,70 +50,70 @@ public class PDFXrefStreamParser
      * @throws IOException If there is an error initializing the stream.
      */
     public PDFXrefStreamParser(COSStream stream) throws IOException
-<span class="nc" id="L53">    {</span>
-<span class="nc" id="L54">        source = stream.createView();</span>
+<span class="fc" id="L53">    {</span>
+<span class="fc" id="L54">        source = stream.createView();</span>
         try
         {
-<span class="nc" id="L57">            initParserValues(stream);</span>
+<span class="fc" id="L57">            initParserValues(stream);</span>
         }
 <span class="nc" id="L59">        catch (IOException exception)</span>
         {
 <span class="nc" id="L61">            close();</span>
 <span class="nc" id="L62">            throw exception;</span>
-<span class="nc" id="L63">        }</span>
-<span class="nc" id="L64">    }</span>
+<span class="fc" id="L63">        }</span>
+<span class="fc" id="L64">    }</span>
 
     private void initParserValues(COSStream stream) throws IOException
     {
-<span class="nc" id="L68">        COSArray wArray = stream.getCOSArray(COSName.W);</span>
-<span class="nc bnc" id="L69" title="All 2 branches missed.">        if (wArray == null)</span>
+<span class="fc" id="L68">        COSArray wArray = stream.getCOSArray(COSName.W);</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (wArray == null)</span>
         {
 <span class="nc" id="L71">            throw new IOException(&quot;/W array is missing in Xref stream&quot;);</span>
         }
-<span class="nc bnc" id="L73" title="All 2 branches missed.">        if (wArray.size() != 3)</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (wArray.size() != 3)</span>
         {
 <span class="nc" id="L75">            throw new IOException(</span>
 <span class="nc" id="L76">                    &quot;Wrong number of values for /W array in XRef: &quot; + Arrays.toString(w));</span>
         }
-<span class="nc bnc" id="L78" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; i++)</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; i++)</span>
         {
-<span class="nc" id="L80">            w[i] = wArray.getInt(i, 0);</span>
+<span class="fc" id="L80">            w[i] = wArray.getInt(i, 0);</span>
         }
-<span class="nc bnc" id="L82" title="All 6 branches missed.">        if (w[0] &lt; 0 || w[1] &lt; 0 || w[2] &lt; 0)</span>
+<span class="pc bpc" id="L82" title="3 of 6 branches missed.">        if (w[0] &lt; 0 || w[1] &lt; 0 || w[2] &lt; 0)</span>
         {
 <span class="nc" id="L84">            throw new IOException(&quot;Incorrect /W array in XRef: &quot; + Arrays.toString(w));</span>
         }
-<span class="nc bnc" id="L86" title="All 2 branches missed.">        if (w[0] + w[1] + w[2] &gt; 20)</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        if (w[0] + w[1] + w[2] &gt; 20)</span>
         {
             // PDFBOX-6037
 <span class="nc" id="L89">            throw new IOException(&quot;Incorrect /W array in XRef: &quot; + Arrays.toString(w));</span>
         }
 
-<span class="nc" id="L92">        COSArray indexArray = stream.getCOSArray(COSName.INDEX);</span>
-<span class="nc bnc" id="L93" title="All 2 branches missed.">        if (indexArray == null)</span>
+<span class="fc" id="L92">        COSArray indexArray = stream.getCOSArray(COSName.INDEX);</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        if (indexArray == null)</span>
         {
             // If /Index doesn't exist, we will use the default values.
-<span class="nc" id="L96">            indexArray = new COSArray();</span>
-<span class="nc" id="L97">            indexArray.add(COSInteger.ZERO);</span>
-<span class="nc" id="L98">            indexArray.add(COSInteger.get(stream.getInt(COSName.SIZE, 0)));</span>
+<span class="fc" id="L96">            indexArray = new COSArray();</span>
+<span class="fc" id="L97">            indexArray.add(COSInteger.ZERO);</span>
+<span class="fc" id="L98">            indexArray.add(COSInteger.get(stream.getInt(COSName.SIZE, 0)));</span>
         }
-<span class="nc bnc" id="L100" title="All 4 branches missed.">        if (indexArray.isEmpty() || indexArray.size() % 2 == 1)</span>
+<span class="pc bpc" id="L100" title="2 of 4 branches missed.">        if (indexArray.isEmpty() || indexArray.size() % 2 == 1)</span>
         {
 <span class="nc" id="L102">            throw new IOException(</span>
 <span class="nc" id="L103">                    &quot;Wrong number of values for /Index array in XRef: &quot; + Arrays.toString(w));</span>
         }
         // create an Iterator for all object numbers using the index array
-<span class="nc" id="L106">        objectNumbers = new ObjectNumbers(indexArray);</span>
-<span class="nc" id="L107">    }</span>
+<span class="fc" id="L106">        objectNumbers = new ObjectNumbers(indexArray);</span>
+<span class="fc" id="L107">    }</span>
 
     private void close() throws IOException
     {
-<span class="nc bnc" id="L111" title="All 2 branches missed.">        if (source != null)</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        if (source != null)</span>
         {
-<span class="nc" id="L113">            source.close();</span>
+<span class="fc" id="L113">            source.close();</span>
         }
-<span class="nc" id="L115">        objectNumbers = null;</span>
-<span class="nc" id="L116">    }</span>
+<span class="fc" id="L115">        objectNumbers = null;</span>
+<span class="fc" id="L116">    }</span>
 
     /**
      * Parses through the unfiltered stream and populates the xrefTable HashMap.
@@ -123,123 +123,123 @@ public class PDFXrefStreamParser
      */
     public void parse(XrefTrailerResolver resolver) throws IOException
     {
-<span class="nc" id="L126">        byte[] currLine = new byte[w[0] + w[1] + w[2]];</span>
-<span class="nc bnc" id="L127" title="All 4 branches missed.">        while (!source.isEOF() &amp;&amp; objectNumbers.hasNext())</span>
+<span class="fc" id="L126">        byte[] currLine = new byte[w[0] + w[1] + w[2]];</span>
+<span class="pc bpc" id="L127" title="1 of 4 branches missed.">        while (!source.isEOF() &amp;&amp; objectNumbers.hasNext())</span>
         {
-<span class="nc" id="L129">            readNextValue(currLine);</span>
+<span class="fc" id="L129">            readNextValue(currLine);</span>
             // get the current objID
-<span class="nc" id="L131">            long objID = objectNumbers.next();</span>
+<span class="fc" id="L131">            long objID = objectNumbers.next();</span>
             // default value is 1 if w[0] == 0, otherwise parse first field
-<span class="nc bnc" id="L133" title="All 2 branches missed.">            int type = w[0] == 0 ? 1 : (int) parseValue(currLine, 0, w[0]);</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">            int type = w[0] == 0 ? 1 : (int) parseValue(currLine, 0, w[0]);</span>
             // Skip free objects (type 0) and invalid types
-<span class="nc bnc" id="L135" title="All 2 branches missed.">            if (type == 0)</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">            if (type == 0)</span>
             {
-<span class="nc" id="L137">                continue;</span>
+<span class="fc" id="L137">                continue;</span>
             }
             // second field holds the offset (type 1) or the object stream number (type 2)
-<span class="nc" id="L140">            long offset = parseValue(currLine, w[0], w[1]);</span>
+<span class="fc" id="L140">            long offset = parseValue(currLine, w[0], w[1]);</span>
             // third filed may hold the generation number (type1) or the index within a object stream (type2)
-<span class="nc" id="L142">            int thirdValue = (int) parseValue(currLine, w[0] + w[1], w[2]);</span>
-<span class="nc bnc" id="L143" title="All 2 branches missed.">            if (type == 1)</span>
+<span class="fc" id="L142">            int thirdValue = (int) parseValue(currLine, w[0] + w[1], w[2]);</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">            if (type == 1)</span>
             {
                 // third field holds the generation number for type 1 entries
-<span class="nc" id="L146">                resolver.setXRef(new COSObjectKey(objID, thirdValue), offset);</span>
+<span class="fc" id="L146">                resolver.setXRef(new COSObjectKey(objID, thirdValue), offset);</span>
             }
             else
             {
                 // For XRef aware parsers we have to know which objects contain object streams. We will store this
                 // information in normal xref mapping table but add object stream number with minus sign in order to
                 // distinguish from file offsets
-<span class="nc" id="L153">                resolver.setXRef(new COSObjectKey(objID, 0, thirdValue), -offset);</span>
+<span class="fc" id="L153">                resolver.setXRef(new COSObjectKey(objID, 0, thirdValue), -offset);</span>
             }
-<span class="nc" id="L155">        }</span>
-<span class="nc" id="L156">        close();</span>
-<span class="nc" id="L157">    }</span>
+<span class="fc" id="L155">        }</span>
+<span class="fc" id="L156">        close();</span>
+<span class="fc" id="L157">    }</span>
 
     private void readNextValue(byte[] value) throws IOException
     {
-<span class="nc" id="L161">        int remainingBytes = value.length;</span>
+<span class="fc" id="L161">        int remainingBytes = value.length;</span>
         int amountRead;
-<span class="nc bnc" id="L163" title="All 2 branches missed.">        while ((amountRead = source.read(value, value.length - remainingBytes, remainingBytes)) &gt; 0)</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">        while ((amountRead = source.read(value, value.length - remainingBytes, remainingBytes)) &gt; 0)</span>
         {
-<span class="nc" id="L165">            remainingBytes -= amountRead;</span>
+<span class="fc" id="L165">            remainingBytes -= amountRead;</span>
         }
-<span class="nc" id="L167">    }</span>
+<span class="fc" id="L167">    }</span>
 
     private long parseValue(byte[] data, int start, int length)
     {
-<span class="nc" id="L171">        long value = 0;</span>
-<span class="nc bnc" id="L172" title="All 2 branches missed.">        for (int i = 0; i &lt; length; i++)</span>
+<span class="fc" id="L171">        long value = 0;</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">        for (int i = 0; i &lt; length; i++)</span>
         {
-<span class="nc" id="L174">            value += ((long) data[i + start] &amp; 0x00ff) &lt;&lt; ((length - i - 1) * 8);</span>
+<span class="fc" id="L174">            value += ((long) data[i + start] &amp; 0x00ff) &lt;&lt; ((length - i - 1) * 8);</span>
         }
-<span class="nc" id="L176">        return value;</span>
+<span class="fc" id="L176">        return value;</span>
     }
 
     private static class ObjectNumbers implements Iterator&lt;Long&gt;
     {
         private final long[] start;
         private final long[] end;
-<span class="nc" id="L183">        private int currentRange = 0;</span>
-<span class="nc" id="L184">        private long currentEnd = 0;</span>
-<span class="nc" id="L185">        private long currentNumber = 0;</span>
+<span class="fc" id="L183">        private int currentRange = 0;</span>
+<span class="fc" id="L184">        private long currentEnd = 0;</span>
+<span class="fc" id="L185">        private long currentNumber = 0;</span>
 
         private ObjectNumbers(COSArray indexArray) throws IOException
-<span class="nc" id="L188">        {</span>
-<span class="nc" id="L189">            start = new long[indexArray.size() / 2];</span>
-<span class="nc" id="L190">            end = new long[start.length];</span>
-<span class="nc" id="L191">            int counter = 0;</span>
-<span class="nc" id="L192">            Iterator&lt;COSBase&gt; indexIter = indexArray.iterator();</span>
-<span class="nc bnc" id="L193" title="All 2 branches missed.">            while (indexIter.hasNext())</span>
+<span class="fc" id="L188">        {</span>
+<span class="fc" id="L189">            start = new long[indexArray.size() / 2];</span>
+<span class="fc" id="L190">            end = new long[start.length];</span>
+<span class="fc" id="L191">            int counter = 0;</span>
+<span class="fc" id="L192">            Iterator&lt;COSBase&gt; indexIter = indexArray.iterator();</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">            while (indexIter.hasNext())</span>
             {
-<span class="nc" id="L195">                COSBase base = indexIter.next();</span>
-<span class="nc bnc" id="L196" title="All 2 branches missed.">                if (!(base instanceof COSInteger))</span>
+<span class="fc" id="L195">                COSBase base = indexIter.next();</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">                if (!(base instanceof COSInteger))</span>
                 {
 <span class="nc" id="L198">                    throw new IOException(&quot;Xref stream must have integer in /Index array&quot;);</span>
                 }
-<span class="nc" id="L200">                long startValue = ((COSInteger) base).longValue();</span>
-<span class="nc bnc" id="L201" title="All 2 branches missed.">                if (!indexIter.hasNext())</span>
+<span class="fc" id="L200">                long startValue = ((COSInteger) base).longValue();</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">                if (!indexIter.hasNext())</span>
                 {
 <span class="nc" id="L203">                    break;</span>
                 }
-<span class="nc" id="L205">                base = indexIter.next();</span>
-<span class="nc bnc" id="L206" title="All 2 branches missed.">                if (!(base instanceof COSInteger))</span>
+<span class="fc" id="L205">                base = indexIter.next();</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">                if (!(base instanceof COSInteger))</span>
                 {
 <span class="nc" id="L208">                    throw new IOException(&quot;Xref stream must have integer in /Index array&quot;);</span>
                 }
-<span class="nc" id="L210">                long sizeValue = ((COSInteger) base).longValue();</span>
-<span class="nc" id="L211">                start[counter] = startValue;</span>
-<span class="nc" id="L212">                end[counter] = startValue + sizeValue;</span>
-<span class="nc" id="L213">                counter++;</span>
-<span class="nc" id="L214">            }</span>
-<span class="nc" id="L215">            currentNumber = start[0];</span>
-<span class="nc" id="L216">            currentEnd = end[0];</span>
-<span class="nc" id="L217">        }</span>
+<span class="fc" id="L210">                long sizeValue = ((COSInteger) base).longValue();</span>
+<span class="fc" id="L211">                start[counter] = startValue;</span>
+<span class="fc" id="L212">                end[counter] = startValue + sizeValue;</span>
+<span class="fc" id="L213">                counter++;</span>
+<span class="fc" id="L214">            }</span>
+<span class="fc" id="L215">            currentNumber = start[0];</span>
+<span class="fc" id="L216">            currentEnd = end[0];</span>
+<span class="fc" id="L217">        }</span>
 
         @Override
         public boolean hasNext()
         {
-<span class="nc bnc" id="L222" title="All 2 branches missed.">            if (start.length == 1)</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">            if (start.length == 1)</span>
             {
-<span class="nc bnc" id="L224" title="All 2 branches missed.">                return currentNumber &lt; currentEnd;</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">                return currentNumber &lt; currentEnd;</span>
             }
-<span class="nc bnc" id="L226" title="All 4 branches missed.">            return currentRange &lt; start.length - 1 || currentNumber &lt; currentEnd;</span>
+<span class="pc bpc" id="L226" title="1 of 4 branches missed.">            return currentRange &lt; start.length - 1 || currentNumber &lt; currentEnd;</span>
         }
 
         @Override
         public Long next()
         {
-<span class="nc bnc" id="L232" title="All 2 branches missed.">            if (currentNumber &lt; currentEnd)</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">            if (currentNumber &lt; currentEnd)</span>
             {
-<span class="nc" id="L234">                return currentNumber++;</span>
+<span class="fc" id="L234">                return currentNumber++;</span>
             }
-<span class="nc bnc" id="L236" title="All 2 branches missed.">            if (currentRange &gt;= start.length - 1)</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">            if (currentRange &gt;= start.length - 1)</span>
             {
 <span class="nc" id="L238">                throw new NoSuchElementException();</span>
             }
-<span class="nc" id="L240">            currentNumber = start[++currentRange];</span>
-<span class="nc" id="L241">            currentEnd = end[currentRange];</span>
-<span class="nc" id="L242">            return currentNumber++;</span>
+<span class="fc" id="L240">            currentNumber = start[++currentRange];</span>
+<span class="fc" id="L241">            currentEnd = end[currentRange];</span>
+<span class="fc" id="L242">            return currentNumber++;</span>
         }
     }
 

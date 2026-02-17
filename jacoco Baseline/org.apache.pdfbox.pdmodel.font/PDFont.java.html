@@ -49,8 +49,8 @@ import org.apache.pdfbox.util.Vector;
  */
 public abstract class PDFont implements COSObjectable, PDFontLike
 {
-<span class="nc" id="L52">    private static final Logger LOG = LogManager.getLogger(PDFont.class);</span>
-<span class="nc" id="L53">    protected static final Matrix DEFAULT_FONT_MATRIX = new Matrix(0.001f, 0, 0, 0.001f, 0, 0);</span>
+<span class="fc" id="L52">    private static final Logger LOG = LogManager.getLogger(PDFont.class);</span>
+<span class="fc" id="L53">    protected static final Matrix DEFAULT_FONT_MATRIX = new Matrix(0.001f, 0, 0, 0.001f, 0, 0);</span>
 
     protected final COSDictionary dict;
     private final CMap toUnicodeCMap;
@@ -63,39 +63,39 @@ public abstract class PDFont implements COSObjectable, PDFontLike
     private PDFontDescriptor fontDescriptor;
     private List&lt;Float&gt; widths;
     private float avgFontWidth;
-<span class="nc" id="L66">    private float fontWidthOfSpace = -1f;</span>
+<span class="fc" id="L66">    private float fontWidthOfSpace = -1f;</span>
     private final Map&lt;Integer, Float&gt; codeToWidthMap;
 
     /**
      * Constructor for embedding.
      */
     PDFont()
-<span class="nc" id="L73">    {</span>
-<span class="nc" id="L74">        dict = new COSDictionary();</span>
-<span class="nc" id="L75">        dict.setItem(COSName.TYPE, COSName.FONT);</span>
-<span class="nc" id="L76">        toUnicodeCMap = null;</span>
-<span class="nc" id="L77">        fontDescriptor = null;</span>
-<span class="nc" id="L78">        afmStandard14 = null;</span>
-<span class="nc" id="L79">        codeToWidthMap = new HashMap&lt;&gt;();</span>
-<span class="nc" id="L80">    }</span>
+<span class="fc" id="L73">    {</span>
+<span class="fc" id="L74">        dict = new COSDictionary();</span>
+<span class="fc" id="L75">        dict.setItem(COSName.TYPE, COSName.FONT);</span>
+<span class="fc" id="L76">        toUnicodeCMap = null;</span>
+<span class="fc" id="L77">        fontDescriptor = null;</span>
+<span class="fc" id="L78">        afmStandard14 = null;</span>
+<span class="fc" id="L79">        codeToWidthMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L80">    }</span>
 
     /**
      * Constructor for Standard 14.
      */
     PDFont(FontName baseFont)
-<span class="nc" id="L86">    {</span>
-<span class="nc" id="L87">        dict = new COSDictionary();</span>
-<span class="nc" id="L88">        dict.setItem(COSName.TYPE, COSName.FONT);</span>
-<span class="nc" id="L89">        toUnicodeCMap = null;</span>
-<span class="nc" id="L90">        afmStandard14 = Standard14Fonts.getAFM(baseFont.getName());</span>
-<span class="nc bnc" id="L91" title="All 2 branches missed.">        if (afmStandard14 == null)</span>
+<span class="fc" id="L86">    {</span>
+<span class="fc" id="L87">        dict = new COSDictionary();</span>
+<span class="fc" id="L88">        dict.setItem(COSName.TYPE, COSName.FONT);</span>
+<span class="fc" id="L89">        toUnicodeCMap = null;</span>
+<span class="fc" id="L90">        afmStandard14 = Standard14Fonts.getAFM(baseFont.getName());</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (afmStandard14 == null)</span>
         {
 <span class="nc" id="L93">            throw new IllegalArgumentException(&quot;No AFM for font &quot; + baseFont);</span>
         }
-<span class="nc" id="L95">        fontDescriptor = PDType1FontEmbedder.buildFontDescriptor(afmStandard14);</span>
+<span class="fc" id="L95">        fontDescriptor = PDType1FontEmbedder.buildFontDescriptor(afmStandard14);</span>
         // standard 14 fonts may be accessed concurrently, as they are singletons
-<span class="nc" id="L97">        codeToWidthMap = new ConcurrentHashMap&lt;&gt;();</span>
-<span class="nc" id="L98">    }</span>
+<span class="fc" id="L97">        codeToWidthMap = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc" id="L98">    }</span>
 
     /**
      * Constructor.
@@ -103,63 +103,63 @@ public abstract class PDFont implements COSObjectable, PDFontLike
      * @param fontDictionary Font dictionary.
      */
     protected PDFont(COSDictionary fontDictionary)
-<span class="nc" id="L106">    {</span>
-<span class="nc" id="L107">        dict = fontDictionary;</span>
-<span class="nc" id="L108">        codeToWidthMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L106">    {</span>
+<span class="fc" id="L107">        dict = fontDictionary;</span>
+<span class="fc" id="L108">        codeToWidthMap = new HashMap&lt;&gt;();</span>
 
         // standard 14 fonts use an AFM
-<span class="nc" id="L111">        afmStandard14 = Standard14Fonts.getAFM(getName()); // may be null (it usually is)</span>
-<span class="nc" id="L112">        fontDescriptor = loadFontDescriptor();</span>
-<span class="nc" id="L113">        toUnicodeCMap = loadUnicodeCmap();</span>
-<span class="nc" id="L114">    }</span>
+<span class="fc" id="L111">        afmStandard14 = Standard14Fonts.getAFM(getName()); // may be null (it usually is)</span>
+<span class="fc" id="L112">        fontDescriptor = loadFontDescriptor();</span>
+<span class="fc" id="L113">        toUnicodeCMap = loadUnicodeCmap();</span>
+<span class="fc" id="L114">    }</span>
 
     private PDFontDescriptor loadFontDescriptor()
     {
-<span class="nc" id="L118">        COSDictionary fd = dict.getCOSDictionary(COSName.FONT_DESC);</span>
-<span class="nc bnc" id="L119" title="All 2 branches missed.">        if (fd != null)</span>
+<span class="fc" id="L118">        COSDictionary fd = dict.getCOSDictionary(COSName.FONT_DESC);</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        if (fd != null)</span>
         {
-<span class="nc" id="L121">            return new PDFontDescriptor(fd);</span>
+<span class="fc" id="L121">            return new PDFontDescriptor(fd);</span>
         }
-<span class="nc bnc" id="L123" title="All 2 branches missed.">        else if (afmStandard14 != null)</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        else if (afmStandard14 != null)</span>
         {
             // build font descriptor from the AFM
-<span class="nc" id="L126">            return PDType1FontEmbedder.buildFontDescriptor(afmStandard14);</span>
+<span class="fc" id="L126">            return PDType1FontEmbedder.buildFontDescriptor(afmStandard14);</span>
         }
         else
         {
-<span class="nc" id="L130">            return null;</span>
+<span class="fc" id="L130">            return null;</span>
         }
     }
 
     private CMap loadUnicodeCmap()
     {
-<span class="nc" id="L136">        COSBase toUnicode = dict.getDictionaryObject(COSName.TO_UNICODE);</span>
-<span class="nc bnc" id="L137" title="All 2 branches missed.">        if (toUnicode == null)</span>
+<span class="fc" id="L136">        COSBase toUnicode = dict.getDictionaryObject(COSName.TO_UNICODE);</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        if (toUnicode == null)</span>
         {
-<span class="nc" id="L139">            return null;</span>
+<span class="fc" id="L139">            return null;</span>
         }
-<span class="nc" id="L141">        CMap cmap = null;</span>
+<span class="fc" id="L141">        CMap cmap = null;</span>
         try
         {
-<span class="nc" id="L144">            cmap = readCMap(toUnicode);</span>
-<span class="nc bnc" id="L145" title="All 4 branches missed.">            if (cmap != null &amp;&amp; !cmap.hasUnicodeMappings())</span>
+<span class="fc" id="L144">            cmap = readCMap(toUnicode);</span>
+<span class="pc bpc" id="L145" title="1 of 4 branches missed.">            if (cmap != null &amp;&amp; !cmap.hasUnicodeMappings())</span>
             {
-<span class="nc" id="L147">                String name = getName();</span>
-<span class="nc" id="L148">                LOG.warn(&quot;Invalid ToUnicode CMap in font {}&quot;, name);</span>
-<span class="nc bnc" id="L149" title="All 2 branches missed.">                String cmapName = cmap.getName() != null ? cmap.getName() : &quot;&quot;;</span>
-<span class="nc bnc" id="L150" title="All 2 branches missed.">                String ordering = cmap.getOrdering() != null ? cmap.getOrdering() : &quot;&quot;;</span>
-<span class="nc" id="L151">                COSName encoding = dict.getCOSName(COSName.ENCODING);</span>
-<span class="nc bnc" id="L152" title="All 2 branches missed.">                if (cmapName.contains(&quot;Identity&quot;) //</span>
+<span class="fc" id="L147">                String name = getName();</span>
+<span class="fc" id="L148">                LOG.warn(&quot;Invalid ToUnicode CMap in font {}&quot;, name);</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">                String cmapName = cmap.getName() != null ? cmap.getName() : &quot;&quot;;</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">                String ordering = cmap.getOrdering() != null ? cmap.getOrdering() : &quot;&quot;;</span>
+<span class="fc" id="L151">                COSName encoding = dict.getCOSName(COSName.ENCODING);</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">                if (cmapName.contains(&quot;Identity&quot;) //</span>
 <span class="nc bnc" id="L153" title="All 2 branches missed.">                        || ordering.contains(&quot;Identity&quot;) //</span>
 <span class="nc bnc" id="L154" title="All 2 branches missed.">                        || COSName.IDENTITY_H.equals(encoding) //</span>
 <span class="nc bnc" id="L155" title="All 2 branches missed.">                        || COSName.IDENTITY_V.equals(encoding))</span>
                 {
-<span class="nc" id="L157">                    COSDictionary encodingDict = dict.getCOSDictionary(COSName.ENCODING);</span>
-<span class="nc bnc" id="L158" title="All 4 branches missed.">                    if (encodingDict == null || !encodingDict.containsKey(COSName.DIFFERENCES))</span>
+<span class="fc" id="L157">                    COSDictionary encodingDict = dict.getCOSDictionary(COSName.ENCODING);</span>
+<span class="pc bpc" id="L158" title="1 of 4 branches missed.">                    if (encodingDict == null || !encodingDict.containsKey(COSName.DIFFERENCES))</span>
                     {
                         // assume that if encoding is identity, then the reverse is also true
-<span class="nc" id="L161">                        cmap = CMapManager.getPredefinedCMap(COSName.IDENTITY_H.getName());</span>
-<span class="nc" id="L162">                        LOG.warn(&quot;Using predefined identity CMap instead&quot;);</span>
+<span class="fc" id="L161">                        cmap = CMapManager.getPredefinedCMap(COSName.IDENTITY_H.getName());</span>
+<span class="fc" id="L162">                        LOG.warn(&quot;Using predefined identity CMap instead&quot;);</span>
                     }
                 }
             }
@@ -167,8 +167,8 @@ public abstract class PDFont implements COSObjectable, PDFontLike
 <span class="nc" id="L167">        catch (IOException ex)</span>
         {
 <span class="nc" id="L169">            LOG.error(() -&gt; &quot;Could not read ToUnicode CMap in font &quot; + getName(), ex);</span>
-<span class="nc" id="L170">        }</span>
-<span class="nc" id="L171">        return cmap;</span>
+<span class="fc" id="L170">        }</span>
+<span class="fc" id="L171">        return cmap;</span>
     }
 
     /**
@@ -178,13 +178,13 @@ public abstract class PDFont implements COSObjectable, PDFontLike
      */
     protected final FontMetrics getStandard14AFM()
     {
-<span class="nc" id="L181">        return afmStandard14;</span>
+<span class="fc" id="L181">        return afmStandard14;</span>
     }
 
     @Override
     public PDFontDescriptor getFontDescriptor()
     {
-<span class="nc" id="L187">        return fontDescriptor;</span>
+<span class="fc" id="L187">        return fontDescriptor;</span>
     }
 
     /**
@@ -194,8 +194,8 @@ public abstract class PDFont implements COSObjectable, PDFontLike
      */
     protected final void setFontDescriptor(PDFontDescriptor fontDescriptor)
     {
-<span class="nc" id="L197">        this.fontDescriptor = fontDescriptor;</span>
-<span class="nc" id="L198">    }</span>
+<span class="fc" id="L197">        this.fontDescriptor = fontDescriptor;</span>
+<span class="fc" id="L198">    }</span>
 
     /**
      * Reads a CMap given a COS Stream or Name. May return null if a predefined CMap does not exist.
@@ -207,18 +207,18 @@ public abstract class PDFont implements COSObjectable, PDFontLike
      */
     protected final CMap readCMap(COSBase base) throws IOException
     {
-<span class="nc bnc" id="L210" title="All 2 branches missed.">        if (base instanceof COSName)</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">        if (base instanceof COSName)</span>
         {
             // predefined CMap
-<span class="nc" id="L213">            String name = ((COSName)base).getName();</span>
-<span class="nc" id="L214">            return CMapManager.getPredefinedCMap(name);</span>
+<span class="fc" id="L213">            String name = ((COSName)base).getName();</span>
+<span class="fc" id="L214">            return CMapManager.getPredefinedCMap(name);</span>
         }
-<span class="nc bnc" id="L216" title="All 2 branches missed.">        else if (base instanceof COSStream)</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">        else if (base instanceof COSStream)</span>
         {
             // embedded CMap
-<span class="nc" id="L219">            try (RandomAccessRead input = ((COSStream) base).createView())</span>
+<span class="fc" id="L219">            try (RandomAccessRead input = ((COSStream) base).createView())</span>
             {
-<span class="nc" id="L221">                return CMapManager.parseCMap(input);</span>
+<span class="fc" id="L221">                return CMapManager.parseCMap(input);</span>
             }
         }
         else
@@ -230,7 +230,7 @@ public abstract class PDFont implements COSObjectable, PDFontLike
     @Override
     public COSDictionary getCOSObject()
     {
-<span class="nc" id="L233">        return dict;</span>
+<span class="fc" id="L233">        return dict;</span>
     }
 
     @Override
@@ -249,16 +249,16 @@ public abstract class PDFont implements COSObjectable, PDFontLike
      */
     public Vector getDisplacement(int code) throws IOException
     {
-<span class="nc" id="L252">        return new Vector(getWidth(code) / 1000, 0);</span>
+<span class="fc" id="L252">        return new Vector(getWidth(code) / 1000, 0);</span>
     }
 
     @Override
     public float getWidth(int code) throws IOException
     {
-<span class="nc" id="L258">        Float width = codeToWidthMap.get(code);</span>
-<span class="nc bnc" id="L259" title="All 2 branches missed.">        if (width != null)</span>
+<span class="fc" id="L258">        Float width = codeToWidthMap.get(code);</span>
+<span class="fc bfc" id="L259" title="All 2 branches covered.">        if (width != null)</span>
         {
-<span class="nc" id="L261">            return width;</span>
+<span class="fc" id="L261">            return width;</span>
         }
         
         // Acrobat overrides the widths in the font program on the conforming reader's system with
@@ -268,46 +268,46 @@ public abstract class PDFont implements COSObjectable, PDFontLike
         // embedded&quot;, however PDFBOX-427 shows that it also applies to embedded fonts.
 
         // Type1, Type1C, Type3
-<span class="nc bnc" id="L271" title="All 2 branches missed.">        if (dict.getDictionaryObject(COSName.WIDTHS) != null</span>
-<span class="nc bnc" id="L272" title="All 2 branches missed.">                || dict.containsKey(COSName.MISSING_WIDTH))</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">        if (dict.getDictionaryObject(COSName.WIDTHS) != null</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">                || dict.containsKey(COSName.MISSING_WIDTH))</span>
         {
-<span class="nc" id="L274">            int firstChar = dict.getInt(COSName.FIRST_CHAR, -1);</span>
-<span class="nc" id="L275">            int lastChar = dict.getInt(COSName.LAST_CHAR, -1);</span>
-<span class="nc" id="L276">            int siz = getWidths().size();</span>
-<span class="nc" id="L277">            int idx = code - firstChar;</span>
-<span class="nc bnc" id="L278" title="All 8 branches missed.">            if (siz &gt; 0 &amp;&amp; code &gt;= firstChar &amp;&amp; code &lt;= lastChar &amp;&amp; idx &lt; siz)</span>
+<span class="fc" id="L274">            int firstChar = dict.getInt(COSName.FIRST_CHAR, -1);</span>
+<span class="fc" id="L275">            int lastChar = dict.getInt(COSName.LAST_CHAR, -1);</span>
+<span class="fc" id="L276">            int siz = getWidths().size();</span>
+<span class="fc" id="L277">            int idx = code - firstChar;</span>
+<span class="pc bpc" id="L278" title="2 of 8 branches missed.">            if (siz &gt; 0 &amp;&amp; code &gt;= firstChar &amp;&amp; code &lt;= lastChar &amp;&amp; idx &lt; siz)</span>
             {
-<span class="nc" id="L280">                width = getWidths().get(idx);</span>
-<span class="nc bnc" id="L281" title="All 2 branches missed.">                if (width == null)</span>
+<span class="fc" id="L280">                width = getWidths().get(idx);</span>
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">                if (width == null)</span>
                 {
 <span class="nc" id="L283">                    width = 0f;</span>
                 }
-<span class="nc" id="L285">                codeToWidthMap.put(code, width);</span>
-<span class="nc" id="L286">                return width;</span>
+<span class="fc" id="L285">                codeToWidthMap.put(code, width);</span>
+<span class="fc" id="L286">                return width;</span>
             }
 
-<span class="nc" id="L289">            PDFontDescriptor fd = getFontDescriptor();</span>
-<span class="nc bnc" id="L290" title="All 2 branches missed.">            if (fd != null)</span>
+<span class="fc" id="L289">            PDFontDescriptor fd = getFontDescriptor();</span>
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">            if (fd != null)</span>
             {
                 // get entry from /MissingWidth entry
-<span class="nc" id="L293">                width = fd.getMissingWidth();</span>
-<span class="nc" id="L294">                codeToWidthMap.put(code, width);</span>
-<span class="nc" id="L295">                return width;</span>
+<span class="fc" id="L293">                width = fd.getMissingWidth();</span>
+<span class="fc" id="L294">                codeToWidthMap.put(code, width);</span>
+<span class="fc" id="L295">                return width;</span>
             }
         }
 
         // standard 14 font widths are specified by an AFM
-<span class="nc bnc" id="L300" title="All 2 branches missed.">        if (isStandard14())</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">        if (isStandard14())</span>
         {
-<span class="nc" id="L302">            width = getStandard14Width(code);</span>
-<span class="nc" id="L303">            codeToWidthMap.put(code, width);</span>
-<span class="nc" id="L304">            return width;</span>
+<span class="fc" id="L302">            width = getStandard14Width(code);</span>
+<span class="fc" id="L303">            codeToWidthMap.put(code, width);</span>
+<span class="fc" id="L304">            return width;</span>
         }
         
         // if there's nothing to override with, then obviously we fall back to the font
-<span class="nc" id="L308">        width = getWidthFromFont(code);</span>
-<span class="nc" id="L309">        codeToWidthMap.put(code, width);</span>
-<span class="nc" id="L310">        return width;</span>
+<span class="fc" id="L308">        width = getWidthFromFont(code);</span>
+<span class="fc" id="L309">        codeToWidthMap.put(code, width);</span>
+<span class="fc" id="L310">        return width;</span>
     }
 
     /**
@@ -328,19 +328,19 @@ public abstract class PDFont implements COSObjectable, PDFontLike
      */
     public final byte[] encode(String text) throws IOException
     {
-<span class="nc" id="L331">        ByteArrayOutputStream out = new ByteArrayOutputStream(Math.max(32, text.length()));</span>
-<span class="nc" id="L332">        int offset = 0;</span>
-<span class="nc bnc" id="L333" title="All 2 branches missed.">        while (offset &lt; text.length())</span>
+<span class="fc" id="L331">        ByteArrayOutputStream out = new ByteArrayOutputStream(Math.max(32, text.length()));</span>
+<span class="fc" id="L332">        int offset = 0;</span>
+<span class="fc bfc" id="L333" title="All 2 branches covered.">        while (offset &lt; text.length())</span>
         {
-<span class="nc" id="L335">            int codePoint = text.codePointAt(offset);</span>
+<span class="fc" id="L335">            int codePoint = text.codePointAt(offset);</span>
 
             // multi-byte encoding with 1 to 4 bytes
-<span class="nc" id="L338">            byte[] bytes = encode(codePoint);</span>
-<span class="nc" id="L339">            out.writeBytes(bytes);</span>
+<span class="fc" id="L338">            byte[] bytes = encode(codePoint);</span>
+<span class="fc" id="L339">            out.writeBytes(bytes);</span>
 
-<span class="nc" id="L341">            offset += Character.charCount(codePoint);</span>
-<span class="nc" id="L342">        }</span>
-<span class="nc" id="L343">        return out.toByteArray();</span>
+<span class="fc" id="L341">            offset += Character.charCount(codePoint);</span>
+<span class="fc" id="L342">        }</span>
+<span class="fc" id="L343">        return out.toByteArray();</span>
     }
 
     /**
@@ -366,17 +366,17 @@ public abstract class PDFont implements COSObjectable, PDFontLike
      */
     public float getStringWidth(String text) throws IOException
     {
-<span class="nc" id="L369">        byte[] bytes = encode(text);</span>
-<span class="nc" id="L370">        ByteArrayInputStream in = new ByteArrayInputStream(bytes);</span>
+<span class="fc" id="L369">        byte[] bytes = encode(text);</span>
+<span class="fc" id="L370">        ByteArrayInputStream in = new ByteArrayInputStream(bytes);</span>
         
-<span class="nc" id="L372">        float width = 0;</span>
-<span class="nc bnc" id="L373" title="All 2 branches missed.">        while (in.available() &gt; 0)</span>
+<span class="fc" id="L372">        float width = 0;</span>
+<span class="fc bfc" id="L373" title="All 2 branches covered.">        while (in.available() &gt; 0)</span>
         {
-<span class="nc" id="L375">            int code = readCode(in);</span>
-<span class="nc" id="L376">            width += getWidth(code);</span>
-<span class="nc" id="L377">        }</span>
+<span class="fc" id="L375">            int code = readCode(in);</span>
+<span class="fc" id="L376">            width += getWidth(code);</span>
+<span class="fc" id="L377">        }</span>
         
-<span class="nc" id="L379">        return width;</span>
+<span class="fc" id="L379">        return width;</span>
     }
 
     /**
@@ -389,44 +389,44 @@ public abstract class PDFont implements COSObjectable, PDFontLike
     public float getAverageFontWidth()
     {
         float average;
-<span class="nc bnc" id="L392" title="All 2 branches missed.">        if (Float.compare(avgFontWidth, 0.0f) != 0)</span>
+<span class="pc bpc" id="L392" title="1 of 2 branches missed.">        if (Float.compare(avgFontWidth, 0.0f) != 0)</span>
         {
 <span class="nc" id="L394">            average = avgFontWidth;</span>
         }
         else
         {
-<span class="nc" id="L398">            float totalWidth = 0.0f;</span>
-<span class="nc" id="L399">            float characterCount = 0.0f;</span>
-<span class="nc" id="L400">            COSArray widths = dict.getCOSArray(COSName.WIDTHS);</span>
-<span class="nc bnc" id="L401" title="All 2 branches missed.">            if (widths != null)</span>
+<span class="fc" id="L398">            float totalWidth = 0.0f;</span>
+<span class="fc" id="L399">            float characterCount = 0.0f;</span>
+<span class="fc" id="L400">            COSArray widths = dict.getCOSArray(COSName.WIDTHS);</span>
+<span class="pc bpc" id="L401" title="1 of 2 branches missed.">            if (widths != null)</span>
             {
-<span class="nc bnc" id="L403" title="All 2 branches missed.">                for (int i = 0; i &lt; widths.size(); i++)</span>
+<span class="fc bfc" id="L403" title="All 2 branches covered.">                for (int i = 0; i &lt; widths.size(); i++)</span>
                 {
-<span class="nc" id="L405">                    COSBase base = widths.getObject(i);</span>
-<span class="nc bnc" id="L406" title="All 2 branches missed.">                    if (base instanceof COSNumber)</span>
+<span class="fc" id="L405">                    COSBase base = widths.getObject(i);</span>
+<span class="pc bpc" id="L406" title="1 of 2 branches missed.">                    if (base instanceof COSNumber)</span>
                     {
-<span class="nc" id="L408">                        COSNumber fontWidth = (COSNumber) base;</span>
-<span class="nc" id="L409">                        float floatValue = fontWidth.floatValue();</span>
-<span class="nc bnc" id="L410" title="All 2 branches missed.">                        if (floatValue &gt; 0)</span>
+<span class="fc" id="L408">                        COSNumber fontWidth = (COSNumber) base;</span>
+<span class="fc" id="L409">                        float floatValue = fontWidth.floatValue();</span>
+<span class="pc bpc" id="L410" title="1 of 2 branches missed.">                        if (floatValue &gt; 0)</span>
                         {
-<span class="nc" id="L412">                            totalWidth += floatValue;</span>
-<span class="nc" id="L413">                            characterCount += 1;</span>
+<span class="fc" id="L412">                            totalWidth += floatValue;</span>
+<span class="fc" id="L413">                            characterCount += 1;</span>
                         }
                     }
                 }
             }
 
-<span class="nc bnc" id="L419" title="All 2 branches missed.">            if (totalWidth &gt; 0)</span>
+<span class="pc bpc" id="L419" title="1 of 2 branches missed.">            if (totalWidth &gt; 0)</span>
             {
-<span class="nc" id="L421">                average = totalWidth / characterCount;</span>
+<span class="fc" id="L421">                average = totalWidth / characterCount;</span>
             }
             else
             {
 <span class="nc" id="L425">                average = 0;</span>
             }
-<span class="nc" id="L427">            avgFontWidth = average;</span>
+<span class="fc" id="L427">            avgFontWidth = average;</span>
         }
-<span class="nc" id="L429">        return average;</span>
+<span class="fc" id="L429">        return average;</span>
     }
 
     /**
@@ -447,7 +447,7 @@ public abstract class PDFont implements COSObjectable, PDFontLike
      */
     public String toUnicode(int code, GlyphList customGlyphList)
     {
-<span class="nc" id="L450">        return toUnicode(code);</span>
+<span class="fc" id="L450">        return toUnicode(code);</span>
     }
 
     /**
@@ -459,42 +459,42 @@ public abstract class PDFont implements COSObjectable, PDFontLike
     public String toUnicode(int code)
     {
         // if the font dictionary containsName a ToUnicode CMap, use that CMap
-<span class="nc bnc" id="L462" title="All 2 branches missed.">        if (toUnicodeCMap != null)</span>
+<span class="fc bfc" id="L462" title="All 2 branches covered.">        if (toUnicodeCMap != null)</span>
         {
-<span class="nc bnc" id="L464" title="All 2 branches missed.">            if (toUnicodeCMap.getName() != null &amp;&amp; </span>
-<span class="nc bnc" id="L465" title="All 2 branches missed.">                toUnicodeCMap.getName().startsWith(&quot;Identity-&quot;) &amp;&amp; </span>
-<span class="nc bnc" id="L466" title="All 2 branches missed.">                    (dict.getCOSName(COSName.TO_UNICODE) != null</span>
-<span class="nc bnc" id="L467" title="All 2 branches missed.">                            || !toUnicodeCMap.hasUnicodeMappings()))</span>
+<span class="fc bfc" id="L464" title="All 2 branches covered.">            if (toUnicodeCMap.getName() != null &amp;&amp; </span>
+<span class="fc bfc" id="L465" title="All 2 branches covered.">                toUnicodeCMap.getName().startsWith(&quot;Identity-&quot;) &amp;&amp; </span>
+<span class="fc bfc" id="L466" title="All 2 branches covered.">                    (dict.getCOSName(COSName.TO_UNICODE) != null</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">                            || !toUnicodeCMap.hasUnicodeMappings()))</span>
             {
                 // handle the undocumented case of using Identity-H/V as a ToUnicode CMap, this
                 // isn't actually valid as the Identity-x CMaps are code-&gt;CID maps, not
                 // code-&gt;Unicode maps. See sample_fonts_solidconvertor.pdf for an example.
                 // PDFBOX-3123: do this only if the /ToUnicode entry is a name
                 // PDFBOX-4322: identity streams are OK too
-<span class="nc" id="L474">                return String.valueOf((char) code);</span>
+<span class="fc" id="L474">                return String.valueOf((char) code);</span>
             }
             else
             {
-<span class="nc bnc" id="L478" title="All 4 branches missed.">                if (code &lt; 256 &amp;&amp; !(this instanceof PDType0Font))</span>
+<span class="fc bfc" id="L478" title="All 4 branches covered.">                if (code &lt; 256 &amp;&amp; !(this instanceof PDType0Font))</span>
                 {
-<span class="nc" id="L480">                    COSName encoding = dict.getCOSName(COSName.ENCODING);</span>
-<span class="nc bnc" id="L481" title="All 4 branches missed.">                    if (encoding != null &amp;&amp; !encoding.getName().startsWith(&quot;Identity&quot;))</span>
+<span class="fc" id="L480">                    COSName encoding = dict.getCOSName(COSName.ENCODING);</span>
+<span class="pc bpc" id="L481" title="1 of 4 branches missed.">                    if (encoding != null &amp;&amp; !encoding.getName().startsWith(&quot;Identity&quot;))</span>
                     {
                         // due to the conversion to an int it is no longer possible to determine
                         // if the code is based on a one or two byte value. We should consider to
                         // refactor that part of the code.
                         // However, simple fonts with a predefined encoding are using one byte codes so that
                         // we can limit the CMap mappings to one byte codes by passing the origin length
-<span class="nc" id="L488">                        return toUnicodeCMap.toUnicode(code, 1);</span>
+<span class="fc" id="L488">                        return toUnicodeCMap.toUnicode(code, 1);</span>
                     }
                 }
-<span class="nc" id="L491">                return toUnicodeCMap.toUnicode(code);</span>
+<span class="fc" id="L491">                return toUnicodeCMap.toUnicode(code);</span>
             }
         }
 
         // if no value has been produced, there is no way to obtain Unicode for the character.
         // this behaviour can be overridden is subclasses, but this method *must* return null here
-<span class="nc" id="L497">        return null;</span>
+<span class="fc" id="L497">        return null;</span>
     }
 
     /**
@@ -524,25 +524,25 @@ public abstract class PDFont implements COSObjectable, PDFontLike
      */
     protected final List&lt;Float&gt; getWidths()
     {
-<span class="nc bnc" id="L527" title="All 2 branches missed.">        if (widths == null)</span>
+<span class="fc bfc" id="L527" title="All 2 branches covered.">        if (widths == null)</span>
         {
-<span class="nc" id="L529">            COSArray array = dict.getCOSArray(COSName.WIDTHS);</span>
-<span class="nc bnc" id="L530" title="All 2 branches missed.">            if (array != null)</span>
+<span class="fc" id="L529">            COSArray array = dict.getCOSArray(COSName.WIDTHS);</span>
+<span class="fc bfc" id="L530" title="All 2 branches covered.">            if (array != null)</span>
             {
-<span class="nc" id="L532">                widths = array.toCOSNumberFloatList();</span>
+<span class="fc" id="L532">                widths = array.toCOSNumberFloatList();</span>
             }
             else
             {
-<span class="nc" id="L536">                widths = Collections.emptyList();</span>
+<span class="fc" id="L536">                widths = Collections.emptyList();</span>
             }
         }
-<span class="nc" id="L539">        return widths;</span>
+<span class="fc" id="L539">        return widths;</span>
     }
 
     @Override
     public Matrix getFontMatrix()
     {
-<span class="nc" id="L545">        return DEFAULT_FONT_MATRIX;</span>
+<span class="fc" id="L545">        return DEFAULT_FONT_MATRIX;</span>
     }
 
     /**
@@ -552,45 +552,45 @@ public abstract class PDFont implements COSObjectable, PDFontLike
      */
     public float getSpaceWidth()
     {
-<span class="nc bnc" id="L555" title="All 2 branches missed.">        if (Float.compare(fontWidthOfSpace, -1f) == 0)</span>
+<span class="fc bfc" id="L555" title="All 2 branches covered.">        if (Float.compare(fontWidthOfSpace, -1f) == 0)</span>
         {
             try
             {
-<span class="nc bnc" id="L559" title="All 4 branches missed.">                if (toUnicodeCMap != null &amp;&amp; dict.containsKey(COSName.TO_UNICODE))</span>
+<span class="pc bpc" id="L559" title="1 of 4 branches missed.">                if (toUnicodeCMap != null &amp;&amp; dict.containsKey(COSName.TO_UNICODE))</span>
                 {
-<span class="nc" id="L561">                    int spaceMapping = toUnicodeCMap.getSpaceMapping();</span>
-<span class="nc bnc" id="L562" title="All 2 branches missed.">                    if (spaceMapping &gt; -1)</span>
+<span class="fc" id="L561">                    int spaceMapping = toUnicodeCMap.getSpaceMapping();</span>
+<span class="fc bfc" id="L562" title="All 2 branches covered.">                    if (spaceMapping &gt; -1)</span>
                     {
-<span class="nc" id="L564">                        fontWidthOfSpace = getWidth(spaceMapping);</span>
+<span class="fc" id="L564">                        fontWidthOfSpace = getWidth(spaceMapping);</span>
                     }
-<span class="nc" id="L566">                }</span>
+<span class="fc" id="L566">                }</span>
                 else
                 {
                     try
                     {
                         // PDFBOX-5920: try with encoding, which gets the correct code
-<span class="nc" id="L572">                        fontWidthOfSpace = getStringWidth(&quot; &quot;);</span>
+<span class="fc" id="L572">                        fontWidthOfSpace = getStringWidth(&quot; &quot;);</span>
                     }
-<span class="nc" id="L574">                    catch (IllegalArgumentException | UnsupportedOperationException ex)</span>
+<span class="fc" id="L574">                    catch (IllegalArgumentException | UnsupportedOperationException ex)</span>
                     {
                         // Happens if space is not available in the font
                         // or if encoding isn't implemented
-<span class="nc" id="L578">                        LOG.debug(ex.getMessage(), ex);</span>
-<span class="nc" id="L579">                    }</span>
-<span class="nc bnc" id="L580" title="All 2 branches missed.">                    if (fontWidthOfSpace &lt;= 0)</span>
+<span class="fc" id="L578">                        LOG.debug(ex.getMessage(), ex);</span>
+<span class="fc" id="L579">                    }</span>
+<span class="fc bfc" id="L580" title="All 2 branches covered.">                    if (fontWidthOfSpace &lt;= 0)</span>
                     {
-<span class="nc" id="L582">                        fontWidthOfSpace = getWidth(32);</span>
+<span class="fc" id="L582">                        fontWidthOfSpace = getWidth(32);</span>
                     }
                 }
                 
                 // try to get it from the font itself
-<span class="nc bnc" id="L587" title="All 2 branches missed.">                if (fontWidthOfSpace &lt;= 0)</span>
+<span class="fc bfc" id="L587" title="All 2 branches covered.">                if (fontWidthOfSpace &lt;= 0)</span>
                 {
-<span class="nc" id="L589">                    fontWidthOfSpace = getWidthFromFont(32);</span>
+<span class="fc" id="L589">                    fontWidthOfSpace = getWidthFromFont(32);</span>
                     // use the average font width as fall back
-<span class="nc bnc" id="L591" title="All 2 branches missed.">                    if (fontWidthOfSpace &lt;= 0)</span>
+<span class="fc bfc" id="L591" title="All 2 branches covered.">                    if (fontWidthOfSpace &lt;= 0)</span>
                     {
-<span class="nc" id="L593">                        fontWidthOfSpace = getAverageFontWidth();</span>
+<span class="fc" id="L593">                        fontWidthOfSpace = getAverageFontWidth();</span>
                     }
                 }
             }
@@ -598,10 +598,10 @@ public abstract class PDFont implements COSObjectable, PDFontLike
             {
 <span class="nc" id="L599">                LOG.error(&quot;Can't determine the width of the space character for font {}, assuming 250&quot;, getName(),e);</span>
 <span class="nc" id="L600">                fontWidthOfSpace = 250f;</span>
-<span class="nc" id="L601">            }</span>
-<span class="nc" id="L602">            LOG.debug(&quot;Space width for font {} is {}&quot;, getName(), fontWidthOfSpace);</span>
+<span class="fc" id="L601">            }</span>
+<span class="fc" id="L602">            LOG.debug(&quot;Space width for font {} is {}&quot;, getName(), fontWidthOfSpace);</span>
         }
-<span class="nc" id="L604">        return fontWidthOfSpace;</span>
+<span class="fc" id="L604">        return fontWidthOfSpace;</span>
     }
 
     /**
@@ -621,13 +621,13 @@ public abstract class PDFont implements COSObjectable, PDFontLike
         // this logic is based on Acrobat's behaviour, see PDFBOX-2372
 
         // embedded fonts never get special treatment
-<span class="nc bnc" id="L624" title="All 2 branches missed.">        if (isEmbedded())</span>
+<span class="fc bfc" id="L624" title="All 2 branches covered.">        if (isEmbedded())</span>
         {
-<span class="nc" id="L626">            return false;</span>
+<span class="fc" id="L626">            return false;</span>
         }
 
         // if the name matches, this is a Standard 14 font
-<span class="nc" id="L630">        return Standard14Fonts.containsName(getName());</span>
+<span class="fc" id="L630">        return Standard14Fonts.containsName(getName());</span>
     }
 
     /**
@@ -654,13 +654,13 @@ public abstract class PDFont implements COSObjectable, PDFontLike
     @Override
     public boolean equals(Object other)
     {
-<span class="nc bnc" id="L657" title="All 4 branches missed.">        return other instanceof PDFont &amp;&amp; ((PDFont) other).getCOSObject() == this.getCOSObject();</span>
+<span class="pc bpc" id="L657" title="2 of 4 branches missed.">        return other instanceof PDFont &amp;&amp; ((PDFont) other).getCOSObject() == this.getCOSObject();</span>
     }
 
     @Override
     public int hashCode()
     {
-<span class="nc" id="L663">        return this.getCOSObject().hashCode();</span>
+<span class="fc" id="L663">        return this.getCOSObject().hashCode();</span>
     }
 
     @Override
@@ -676,7 +676,7 @@ public abstract class PDFont implements COSObjectable, PDFontLike
      */
     protected CMap getToUnicodeCMap()
     {
-<span class="nc" id="L679">        return toUnicodeCMap;</span>
+<span class="fc" id="L679">        return toUnicodeCMap;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

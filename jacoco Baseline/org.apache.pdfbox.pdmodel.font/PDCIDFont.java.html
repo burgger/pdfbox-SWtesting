@@ -43,7 +43,7 @@ import org.apache.pdfbox.util.Vector;
  */
 public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFont
 {
-<span class="nc" id="L46">    private static final Logger LOG = LogManager.getLogger(PDCIDFont.class);</span>
+<span class="fc" id="L46">    private static final Logger LOG = LogManager.getLogger(PDCIDFont.class);</span>
 
     protected final PDType0Font parent;
 
@@ -51,9 +51,9 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
     private float defaultWidth;
     private float averageWidth;
 
-<span class="nc" id="L54">    private final Map&lt;Integer, Float&gt; verticalDisplacementY = new HashMap&lt;&gt;(); // w1y</span>
-<span class="nc" id="L55">    private final Map&lt;Integer, Vector&gt; positionVectors = new HashMap&lt;&gt;();     // v</span>
-<span class="nc" id="L56">    private final float[] dw2 = { 880, -1000 };</span>
+<span class="fc" id="L54">    private final Map&lt;Integer, Float&gt; verticalDisplacementY = new HashMap&lt;&gt;(); // w1y</span>
+<span class="fc" id="L55">    private final Map&lt;Integer, Vector&gt; positionVectors = new HashMap&lt;&gt;();     // v</span>
+<span class="fc" id="L56">    private final float[] dw2 = { 880, -1000 };</span>
 
     protected final COSDictionary dict;
     private PDFontDescriptor fontDescriptor;
@@ -64,85 +64,85 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
      * @param fontDictionary The font dictionary according to the PDF specification.
      */
     PDCIDFont(COSDictionary fontDictionary, PDType0Font parent)
-<span class="nc" id="L67">    {</span>
-<span class="nc" id="L68">        this.dict = fontDictionary;</span>
-<span class="nc" id="L69">        this.parent = parent;</span>
-<span class="nc" id="L70">        readWidths();</span>
-<span class="nc" id="L71">        readVerticalDisplacements();</span>
-<span class="nc" id="L72">    }</span>
+<span class="fc" id="L67">    {</span>
+<span class="fc" id="L68">        this.dict = fontDictionary;</span>
+<span class="fc" id="L69">        this.parent = parent;</span>
+<span class="fc" id="L70">        readWidths();</span>
+<span class="fc" id="L71">        readVerticalDisplacements();</span>
+<span class="fc" id="L72">    }</span>
 
     private void readWidths()
     {
         // see 9.7.4.3, &quot;Glyph Metrics in CIDFonts&quot;
-<span class="nc" id="L77">        widths = new HashMap&lt;&gt;();</span>
-<span class="nc" id="L78">        COSArray wArray = dict.getCOSArray(COSName.W);</span>
-<span class="nc bnc" id="L79" title="All 2 branches missed.">        if (wArray != null)</span>
+<span class="fc" id="L77">        widths = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L78">        COSArray wArray = dict.getCOSArray(COSName.W);</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        if (wArray != null)</span>
         {
-<span class="nc" id="L81">            int size = wArray.size();</span>
-<span class="nc" id="L82">            int counter = 0;</span>
-<span class="nc bnc" id="L83" title="All 2 branches missed.">            while (counter &lt; size - 1)</span>
+<span class="fc" id="L81">            int size = wArray.size();</span>
+<span class="fc" id="L82">            int counter = 0;</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">            while (counter &lt; size - 1)</span>
             {
-<span class="nc" id="L85">                COSBase firstCodeBase = wArray.getObject(counter++);</span>
-<span class="nc bnc" id="L86" title="All 2 branches missed.">                if (!(firstCodeBase instanceof COSNumber))</span>
+<span class="fc" id="L85">                COSBase firstCodeBase = wArray.getObject(counter++);</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">                if (!(firstCodeBase instanceof COSNumber))</span>
                 {
 <span class="nc" id="L88">                    LOG.warn(&quot;Expected a number array member, got {}&quot;, firstCodeBase);</span>
 <span class="nc" id="L89">                    continue;</span>
                 }
-<span class="nc" id="L91">                COSNumber firstCode = (COSNumber) firstCodeBase;</span>
-<span class="nc" id="L92">                COSBase next = wArray.getObject(counter++);</span>
-<span class="nc bnc" id="L93" title="All 2 branches missed.">                if (next instanceof COSArray)</span>
+<span class="fc" id="L91">                COSNumber firstCode = (COSNumber) firstCodeBase;</span>
+<span class="fc" id="L92">                COSBase next = wArray.getObject(counter++);</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">                if (next instanceof COSArray)</span>
                 {
-<span class="nc" id="L95">                    COSArray array = (COSArray) next;</span>
-<span class="nc" id="L96">                    int startRange = firstCode.intValue();</span>
-<span class="nc" id="L97">                    int arraySize = array.size();</span>
-<span class="nc bnc" id="L98" title="All 2 branches missed.">                    for (int i = 0; i &lt; arraySize; i++)</span>
+<span class="fc" id="L95">                    COSArray array = (COSArray) next;</span>
+<span class="fc" id="L96">                    int startRange = firstCode.intValue();</span>
+<span class="fc" id="L97">                    int arraySize = array.size();</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">                    for (int i = 0; i &lt; arraySize; i++)</span>
                     {
-<span class="nc" id="L100">                        COSBase widthBase = array.getObject(i);</span>
-<span class="nc bnc" id="L101" title="All 2 branches missed.">                        if (widthBase instanceof COSNumber)</span>
+<span class="fc" id="L100">                        COSBase widthBase = array.getObject(i);</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">                        if (widthBase instanceof COSNumber)</span>
                         {
-<span class="nc" id="L103">                            COSNumber width = (COSNumber) widthBase;</span>
-<span class="nc" id="L104">                            widths.put(startRange + i, width.floatValue());</span>
-<span class="nc" id="L105">                        }</span>
+<span class="fc" id="L103">                            COSNumber width = (COSNumber) widthBase;</span>
+<span class="fc" id="L104">                            widths.put(startRange + i, width.floatValue());</span>
+<span class="fc" id="L105">                        }</span>
                         else
                         {
 <span class="nc" id="L108">                            LOG.warn(&quot;Expected a number array member, got {}&quot;, widthBase);</span>
                         }
                     }
-<span class="nc" id="L111">                }</span>
+<span class="fc" id="L111">                }</span>
                 else
                 {
-<span class="nc bnc" id="L114" title="All 2 branches missed.">                    if (counter &gt;= size)</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">                    if (counter &gt;= size)</span>
                     {
 <span class="nc" id="L116">                        LOG.warn(&quot;premature end of widths array&quot;);</span>
 <span class="nc" id="L117">                        break;</span>
                     }
-<span class="nc" id="L119">                    COSBase secondCodeBase = next;</span>
-<span class="nc" id="L120">                    COSBase rangeWidthBase = wArray.getObject(counter++);</span>
-<span class="nc bnc" id="L121" title="All 4 branches missed.">                    if (!(secondCodeBase instanceof COSNumber) || !(rangeWidthBase instanceof COSNumber))</span>
+<span class="fc" id="L119">                    COSBase secondCodeBase = next;</span>
+<span class="fc" id="L120">                    COSBase rangeWidthBase = wArray.getObject(counter++);</span>
+<span class="pc bpc" id="L121" title="2 of 4 branches missed.">                    if (!(secondCodeBase instanceof COSNumber) || !(rangeWidthBase instanceof COSNumber))</span>
                     {
 <span class="nc" id="L123">                        LOG.warn(&quot;Expected two numbers, got {} and {}&quot;, secondCodeBase,</span>
                                 rangeWidthBase);
 <span class="nc" id="L125">                        continue;</span>
                     }
-<span class="nc" id="L127">                    COSNumber secondCode = (COSNumber) secondCodeBase;</span>
-<span class="nc" id="L128">                    COSNumber rangeWidth = (COSNumber) rangeWidthBase;</span>
-<span class="nc" id="L129">                    int startRange = firstCode.intValue();</span>
-<span class="nc" id="L130">                    int endRange = secondCode.intValue();</span>
-<span class="nc" id="L131">                    float width = rangeWidth.floatValue();</span>
-<span class="nc bnc" id="L132" title="All 2 branches missed.">                    for (int i = startRange; i &lt;= endRange; i++)</span>
+<span class="fc" id="L127">                    COSNumber secondCode = (COSNumber) secondCodeBase;</span>
+<span class="fc" id="L128">                    COSNumber rangeWidth = (COSNumber) rangeWidthBase;</span>
+<span class="fc" id="L129">                    int startRange = firstCode.intValue();</span>
+<span class="fc" id="L130">                    int endRange = secondCode.intValue();</span>
+<span class="fc" id="L131">                    float width = rangeWidth.floatValue();</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">                    for (int i = startRange; i &lt;= endRange; i++)</span>
                     {
-<span class="nc" id="L134">                        widths.put(i, width);</span>
+<span class="fc" id="L134">                        widths.put(i, width);</span>
                     }
                 }
-<span class="nc" id="L137">            }</span>
+<span class="fc" id="L137">            }</span>
         }
-<span class="nc" id="L139">    }</span>
+<span class="fc" id="L139">    }</span>
 
     private void readVerticalDisplacements()
     {
         // default position vector and vertical displacement vector
-<span class="nc" id="L144">        COSArray dw2Array = dict.getCOSArray(COSName.DW2);</span>
-<span class="nc bnc" id="L145" title="All 2 branches missed.">        if (dw2Array != null)</span>
+<span class="fc" id="L144">        COSArray dw2Array = dict.getCOSArray(COSName.DW2);</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        if (dw2Array != null)</span>
         {
 <span class="nc" id="L147">            COSBase base0 = dw2Array.getObject(0);</span>
 <span class="nc" id="L148">            COSBase base1 = dw2Array.getObject(1);</span>
@@ -154,47 +154,47 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
         }
 
         // vertical metrics for individual CIDs.
-<span class="nc" id="L157">        COSArray w2Array = dict.getCOSArray(COSName.W2);</span>
-<span class="nc bnc" id="L158" title="All 2 branches missed.">        if (w2Array != null)</span>
+<span class="fc" id="L157">        COSArray w2Array = dict.getCOSArray(COSName.W2);</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        if (w2Array != null)</span>
         {
-<span class="nc bnc" id="L160" title="All 2 branches missed.">            for (int i = 0; i &lt; w2Array.size(); i++)</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">            for (int i = 0; i &lt; w2Array.size(); i++)</span>
             {
-<span class="nc" id="L162">                COSNumber c = (COSNumber) w2Array.getObject(i);</span>
-<span class="nc" id="L163">                COSBase next = w2Array.getObject(++i);</span>
-<span class="nc bnc" id="L164" title="All 2 branches missed.">                if (next instanceof COSArray)</span>
+<span class="fc" id="L162">                COSNumber c = (COSNumber) w2Array.getObject(i);</span>
+<span class="fc" id="L163">                COSBase next = w2Array.getObject(++i);</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">                if (next instanceof COSArray)</span>
                 {
-<span class="nc" id="L166">                    COSArray array = (COSArray)next;</span>
-<span class="nc bnc" id="L167" title="All 2 branches missed.">                    for (int j = 0; j &lt; array.size(); j++)</span>
+<span class="fc" id="L166">                    COSArray array = (COSArray)next;</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">                    for (int j = 0; j &lt; array.size(); j++)</span>
                     {
-<span class="nc" id="L169">                        int cid = c.intValue() + j / 3;</span>
-<span class="nc" id="L170">                        COSNumber w1y = (COSNumber) array.getObject(j);</span>
-<span class="nc" id="L171">                        COSNumber v1x = (COSNumber) array.getObject(++j);</span>
-<span class="nc" id="L172">                        COSNumber v1y = (COSNumber) array.getObject(++j);</span>
-<span class="nc" id="L173">                        verticalDisplacementY.put(cid, w1y.floatValue());</span>
-<span class="nc" id="L174">                        positionVectors.put(cid, new Vector(v1x.floatValue(), v1y.floatValue()));</span>
+<span class="fc" id="L169">                        int cid = c.intValue() + j / 3;</span>
+<span class="fc" id="L170">                        COSNumber w1y = (COSNumber) array.getObject(j);</span>
+<span class="fc" id="L171">                        COSNumber v1x = (COSNumber) array.getObject(++j);</span>
+<span class="fc" id="L172">                        COSNumber v1y = (COSNumber) array.getObject(++j);</span>
+<span class="fc" id="L173">                        verticalDisplacementY.put(cid, w1y.floatValue());</span>
+<span class="fc" id="L174">                        positionVectors.put(cid, new Vector(v1x.floatValue(), v1y.floatValue()));</span>
                     }
-<span class="nc" id="L176">                }</span>
+<span class="fc" id="L176">                }</span>
                 else
                 {
-<span class="nc" id="L179">                    int first = c.intValue();</span>
-<span class="nc" id="L180">                    int last = ((COSNumber) next).intValue();</span>
-<span class="nc" id="L181">                    COSNumber w1y = (COSNumber) w2Array.getObject(++i);</span>
-<span class="nc" id="L182">                    COSNumber v1x = (COSNumber) w2Array.getObject(++i);</span>
-<span class="nc" id="L183">                    COSNumber v1y = (COSNumber) w2Array.getObject(++i);</span>
-<span class="nc bnc" id="L184" title="All 2 branches missed.">                    for (int cid = first; cid &lt;= last; cid++)</span>
+<span class="fc" id="L179">                    int first = c.intValue();</span>
+<span class="fc" id="L180">                    int last = ((COSNumber) next).intValue();</span>
+<span class="fc" id="L181">                    COSNumber w1y = (COSNumber) w2Array.getObject(++i);</span>
+<span class="fc" id="L182">                    COSNumber v1x = (COSNumber) w2Array.getObject(++i);</span>
+<span class="fc" id="L183">                    COSNumber v1y = (COSNumber) w2Array.getObject(++i);</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">                    for (int cid = first; cid &lt;= last; cid++)</span>
                     {
-<span class="nc" id="L186">                        verticalDisplacementY.put(cid, w1y.floatValue());</span>
-<span class="nc" id="L187">                        positionVectors.put(cid, new Vector(v1x.floatValue(), v1y.floatValue()));</span>
+<span class="fc" id="L186">                        verticalDisplacementY.put(cid, w1y.floatValue());</span>
+<span class="fc" id="L187">                        positionVectors.put(cid, new Vector(v1x.floatValue(), v1y.floatValue()));</span>
                     }
                 }
             }
         }
-<span class="nc" id="L192">    }</span>
+<span class="fc" id="L192">    }</span>
 
     @Override
     public COSDictionary getCOSObject()
     {
-<span class="nc" id="L197">        return dict;</span>
+<span class="fc" id="L197">        return dict;</span>
     }
 
     /**
@@ -216,15 +216,15 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
     @Override
     public PDFontDescriptor getFontDescriptor()
     {
-<span class="nc bnc" id="L219" title="All 2 branches missed.">        if (fontDescriptor == null)</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">        if (fontDescriptor == null)</span>
         {
-<span class="nc" id="L221">            COSDictionary fd = dict.getCOSDictionary(COSName.FONT_DESC);</span>
-<span class="nc bnc" id="L222" title="All 2 branches missed.">            if (fd != null)</span>
+<span class="fc" id="L221">            COSDictionary fd = dict.getCOSDictionary(COSName.FONT_DESC);</span>
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">            if (fd != null)</span>
             {
-<span class="nc" id="L224">                fontDescriptor = new PDFontDescriptor(fd);</span>
+<span class="fc" id="L224">                fontDescriptor = new PDFontDescriptor(fd);</span>
             }
         }
-<span class="nc" id="L227">        return fontDescriptor;</span>
+<span class="fc" id="L227">        return fontDescriptor;</span>
     }
 
     /**
@@ -244,19 +244,19 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
      */
     private float getDefaultWidth()
     {
-<span class="nc bnc" id="L247" title="All 2 branches missed.">        if (Float.compare(defaultWidth, 0) == 0)</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">        if (Float.compare(defaultWidth, 0) == 0)</span>
         {
-<span class="nc" id="L249">            COSBase base = dict.getDictionaryObject(COSName.DW);</span>
-<span class="nc bnc" id="L250" title="All 2 branches missed.">            if (base instanceof COSNumber)</span>
+<span class="fc" id="L249">            COSBase base = dict.getDictionaryObject(COSName.DW);</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">            if (base instanceof COSNumber)</span>
             {
-<span class="nc" id="L252">                defaultWidth = ((COSNumber) base).floatValue();</span>
+<span class="fc" id="L252">                defaultWidth = ((COSNumber) base).floatValue();</span>
             }
             else
             {
-<span class="nc" id="L256">                defaultWidth = 1000;</span>
+<span class="fc" id="L256">                defaultWidth = 1000;</span>
             }
         }
-<span class="nc" id="L259">        return defaultWidth;</span>
+<span class="fc" id="L259">        return defaultWidth;</span>
     }
 
     /**
@@ -266,17 +266,17 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
      */
     private Vector getDefaultPositionVector(int cid)
     {
-<span class="nc" id="L269">        return new Vector(getWidthForCID(cid) / 2, dw2[0]);</span>
+<span class="fc" id="L269">        return new Vector(getWidthForCID(cid) / 2, dw2[0]);</span>
     }
 
     private float getWidthForCID(int cid)
     {
-<span class="nc" id="L274">        Float width = widths.get(cid);</span>
-<span class="nc bnc" id="L275" title="All 2 branches missed.">        if (width == null)</span>
+<span class="fc" id="L274">        Float width = widths.get(cid);</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">        if (width == null)</span>
         {
-<span class="nc" id="L277">            width = getDefaultWidth();</span>
+<span class="fc" id="L277">            width = getDefaultWidth();</span>
         }
-<span class="nc" id="L279">        return width;</span>
+<span class="fc" id="L279">        return width;</span>
     }
 
     @Override
@@ -288,13 +288,13 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
     @Override
     public Vector getPositionVector(int code)
     {
-<span class="nc" id="L291">        int cid = codeToCID(code);</span>
-<span class="nc" id="L292">        Vector v = positionVectors.get(cid);</span>
-<span class="nc bnc" id="L293" title="All 2 branches missed.">        if (v == null)</span>
+<span class="fc" id="L291">        int cid = codeToCID(code);</span>
+<span class="fc" id="L292">        Vector v = positionVectors.get(cid);</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">        if (v == null)</span>
         {
-<span class="nc" id="L295">            v = getDefaultPositionVector(cid);</span>
+<span class="fc" id="L295">            v = getDefaultPositionVector(cid);</span>
         }
-<span class="nc" id="L297">        return v;</span>
+<span class="fc" id="L297">        return v;</span>
     }
 
     /**
@@ -305,13 +305,13 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
      */
     public float getVerticalDisplacementVectorY(int code)
     {
-<span class="nc" id="L308">        int cid = codeToCID(code);</span>
-<span class="nc" id="L309">        Float w1y = verticalDisplacementY.get(cid);</span>
-<span class="nc bnc" id="L310" title="All 2 branches missed.">        if (w1y == null)</span>
+<span class="fc" id="L308">        int cid = codeToCID(code);</span>
+<span class="fc" id="L309">        Float w1y = verticalDisplacementY.get(cid);</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">        if (w1y == null)</span>
         {
-<span class="nc" id="L312">            w1y = dw2[1];</span>
+<span class="fc" id="L312">            w1y = dw2[1];</span>
         }
-<span class="nc" id="L314">        return w1y;</span>
+<span class="fc" id="L314">        return w1y;</span>
     }
 
     @Override
@@ -320,38 +320,38 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
         // these widths are supposed to be consistent with the actual widths given in the CIDFont
         // program, but PDFBOX-563 shows that when they are not, Acrobat overrides the embedded
         // font widths with the widths given in the font dictionary
-<span class="nc" id="L323">        return getWidthForCID(codeToCID(code));</span>
+<span class="fc" id="L323">        return getWidthForCID(codeToCID(code));</span>
     }
 
     @Override
     // todo: this method is highly suspicious, the average glyph width is not usually a good metric
     public float getAverageFontWidth()
     {
-<span class="nc bnc" id="L330" title="All 2 branches missed.">        if (Float.compare(averageWidth, 0) == 0)</span>
+<span class="pc bpc" id="L330" title="1 of 2 branches missed.">        if (Float.compare(averageWidth, 0) == 0)</span>
         {
-<span class="nc" id="L332">            float totalWidths = 0.0f;</span>
-<span class="nc" id="L333">            int characterCount = 0;</span>
-<span class="nc bnc" id="L334" title="All 2 branches missed.">            if (widths != null)</span>
+<span class="fc" id="L332">            float totalWidths = 0.0f;</span>
+<span class="fc" id="L333">            int characterCount = 0;</span>
+<span class="pc bpc" id="L334" title="1 of 2 branches missed.">            if (widths != null)</span>
             {
-<span class="nc bnc" id="L336" title="All 2 branches missed.">                for (Float width : widths.values())</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">                for (Float width : widths.values())</span>
                 {
-<span class="nc bnc" id="L338" title="All 2 branches missed.">                    if (width &gt; 0)</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">                    if (width &gt; 0)</span>
                     {
-<span class="nc" id="L340">                        totalWidths += width;</span>
-<span class="nc" id="L341">                        ++characterCount;</span>
+<span class="fc" id="L340">                        totalWidths += width;</span>
+<span class="fc" id="L341">                        ++characterCount;</span>
                     }
-<span class="nc" id="L343">                }</span>
+<span class="fc" id="L343">                }</span>
             }
-<span class="nc bnc" id="L345" title="All 2 branches missed.">            if (characterCount != 0)</span>
+<span class="pc bpc" id="L345" title="1 of 2 branches missed.">            if (characterCount != 0)</span>
             {
-<span class="nc" id="L347">                averageWidth = totalWidths / characterCount;</span>
+<span class="fc" id="L347">                averageWidth = totalWidths / characterCount;</span>
             }
-<span class="nc bnc" id="L349" title="All 4 branches missed.">            if (averageWidth &lt;= 0 || Float.isNaN(averageWidth))</span>
+<span class="pc bpc" id="L349" title="2 of 4 branches missed.">            if (averageWidth &lt;= 0 || Float.isNaN(averageWidth))</span>
             {
 <span class="nc" id="L351">                averageWidth = getDefaultWidth();</span>
             }
         }
-<span class="nc" id="L354">        return averageWidth;</span>
+<span class="fc" id="L354">        return averageWidth;</span>
     }
 
     /**
@@ -361,8 +361,8 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
      */
     public PDCIDSystemInfo getCIDSystemInfo()
     {
-<span class="nc" id="L364">        COSDictionary cidSystemInfo = dict.getCOSDictionary(COSName.CIDSYSTEMINFO);</span>
-<span class="nc bnc" id="L365" title="All 2 branches missed.">        return cidSystemInfo != null ? new PDCIDSystemInfo(cidSystemInfo) : null;</span>
+<span class="fc" id="L364">        COSDictionary cidSystemInfo = dict.getCOSDictionary(COSName.CIDSYSTEMINFO);</span>
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">        return cidSystemInfo != null ? new PDCIDSystemInfo(cidSystemInfo) : null;</span>
     }
     
     /**
@@ -398,24 +398,24 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
 
     final int[] readCIDToGIDMap() throws IOException
     {
-<span class="nc" id="L401">        int[] cid2gid = null;</span>
-<span class="nc" id="L402">        COSStream stream = dict.getCOSStream(COSName.CID_TO_GID_MAP);</span>
-<span class="nc bnc" id="L403" title="All 2 branches missed.">        if (stream != null)</span>
+<span class="fc" id="L401">        int[] cid2gid = null;</span>
+<span class="fc" id="L402">        COSStream stream = dict.getCOSStream(COSName.CID_TO_GID_MAP);</span>
+<span class="fc bfc" id="L403" title="All 2 branches covered.">        if (stream != null)</span>
         {
-<span class="nc" id="L405">            InputStream is = stream.createInputStream();</span>
-<span class="nc" id="L406">            byte[] mapAsBytes = is.readAllBytes();</span>
-<span class="nc" id="L407">            IOUtils.closeQuietly(is);</span>
-<span class="nc" id="L408">            int numberOfInts = mapAsBytes.length / 2;</span>
-<span class="nc" id="L409">            cid2gid = new int[numberOfInts];</span>
-<span class="nc" id="L410">            int offset = 0;</span>
-<span class="nc bnc" id="L411" title="All 2 branches missed.">            for (int index = 0; index &lt; numberOfInts; index++)</span>
+<span class="fc" id="L405">            InputStream is = stream.createInputStream();</span>
+<span class="fc" id="L406">            byte[] mapAsBytes = is.readAllBytes();</span>
+<span class="fc" id="L407">            IOUtils.closeQuietly(is);</span>
+<span class="fc" id="L408">            int numberOfInts = mapAsBytes.length / 2;</span>
+<span class="fc" id="L409">            cid2gid = new int[numberOfInts];</span>
+<span class="fc" id="L410">            int offset = 0;</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">            for (int index = 0; index &lt; numberOfInts; index++)</span>
             {
-<span class="nc" id="L413">                int gid = (mapAsBytes[offset] &amp; 0xff) &lt;&lt; 8 | mapAsBytes[offset + 1] &amp; 0xff;</span>
-<span class="nc" id="L414">                cid2gid[index] = gid;</span>
-<span class="nc" id="L415">                offset += 2;</span>
+<span class="fc" id="L413">                int gid = (mapAsBytes[offset] &amp; 0xff) &lt;&lt; 8 | mapAsBytes[offset + 1] &amp; 0xff;</span>
+<span class="fc" id="L414">                cid2gid[index] = gid;</span>
+<span class="fc" id="L415">                offset += 2;</span>
             }
         }
-<span class="nc" id="L418">        return cid2gid;</span>
+<span class="fc" id="L418">        return cid2gid;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

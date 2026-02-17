@@ -65,51 +65,51 @@ public class COSFloat extends COSNumber
      * @throws IOException If aFloat is not a float.
      */
     public COSFloat( String aFloat ) throws IOException
-<span class="nc" id="L68">    {</span>
+<span class="fc" id="L68">    {</span>
         float parsedValue;
-<span class="nc" id="L70">        String stringValue = null;</span>
+<span class="fc" id="L70">        String stringValue = null;</span>
         try
         {
-<span class="nc" id="L73">            float f = Float.parseFloat(aFloat);</span>
-<span class="nc" id="L74">            parsedValue = coerce(f);</span>
-<span class="nc bnc" id="L75" title="All 2 branches missed.">            stringValue = f == parsedValue ? aFloat : null;</span>
+<span class="fc" id="L73">            float f = Float.parseFloat(aFloat);</span>
+<span class="fc" id="L74">            parsedValue = coerce(f);</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">            stringValue = f == parsedValue ? aFloat : null;</span>
         }
-<span class="nc" id="L77">        catch( NumberFormatException e )</span>
+<span class="fc" id="L77">        catch( NumberFormatException e )</span>
         {
-<span class="nc bnc" id="L79" title="All 2 branches missed.">            if (aFloat.startsWith(&quot;--&quot;))</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">            if (aFloat.startsWith(&quot;--&quot;))</span>
             {
                 // PDFBOX-4289 has --16.33
-<span class="nc" id="L82">                aFloat = aFloat.substring(1);</span>
+<span class="fc" id="L82">                aFloat = aFloat.substring(1);</span>
             }
-<span class="nc bnc" id="L84" title="All 2 branches missed.">            else if (aFloat.matches(&quot;^0\\.0*-\\d+&quot;))</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">            else if (aFloat.matches(&quot;^0\\.0*-\\d+&quot;))</span>
             {
                 // PDFBOX-2990 has 0.00000-33917698
                 // PDFBOX-3369 has 0.00-35095424
                 // PDFBOX-3500 has 0.-262
-<span class="nc" id="L89">                aFloat = &quot;-&quot; + aFloat.replaceFirst(&quot;-&quot;, &quot;&quot;);</span>
+<span class="fc" id="L89">                aFloat = &quot;-&quot; + aFloat.replaceFirst(&quot;-&quot;, &quot;&quot;);</span>
             }
-<span class="nc bnc" id="L91" title="All 2 branches missed.">            else if (aFloat.matches(&quot;^-\\d+\\.-\\d+&quot;))</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            else if (aFloat.matches(&quot;^-\\d+\\.-\\d+&quot;))</span>
             {
                 // PDFBOX-5829 has -12.-1
-<span class="nc" id="L94">                aFloat = &quot;-&quot; + aFloat.replace(&quot;-&quot;, &quot;&quot;);</span>
+<span class="fc" id="L94">                aFloat = &quot;-&quot; + aFloat.replace(&quot;-&quot;, &quot;&quot;);</span>
             }
             else
             {
-<span class="nc" id="L98">                throw new IOException(&quot;Error expected floating point number actual='&quot; + aFloat + &quot;'&quot;, e);</span>
+<span class="fc" id="L98">                throw new IOException(&quot;Error expected floating point number actual='&quot; + aFloat + &quot;'&quot;, e);</span>
             }
 
             try
             {
-<span class="nc" id="L103">                parsedValue = coerce(Float.parseFloat(aFloat));</span>
+<span class="fc" id="L103">                parsedValue = coerce(Float.parseFloat(aFloat));</span>
             }
-<span class="nc" id="L105">            catch (NumberFormatException e2)</span>
+<span class="fc" id="L105">            catch (NumberFormatException e2)</span>
             {
-<span class="nc" id="L107">                throw new IOException(&quot;Error expected floating point number actual='&quot; + aFloat + &quot;'&quot;, e2);</span>
-<span class="nc" id="L108">            }</span>
-<span class="nc" id="L109">        }</span>
-<span class="nc" id="L110">        value = parsedValue;</span>
-<span class="nc" id="L111">        valueAsString = stringValue;</span>
-<span class="nc" id="L112">    }</span>
+<span class="fc" id="L107">                throw new IOException(&quot;Error expected floating point number actual='&quot; + aFloat + &quot;'&quot;, e2);</span>
+<span class="fc" id="L108">            }</span>
+<span class="fc" id="L109">        }</span>
+<span class="fc" id="L110">        value = parsedValue;</span>
+<span class="fc" id="L111">        valueAsString = stringValue;</span>
+<span class="fc" id="L112">    }</span>
 
     /**
      * Check and coerce the value field to be between MIN_NORMAL and MAX_VALUE.
@@ -119,21 +119,21 @@ public class COSFloat extends COSNumber
      */
     private float coerce(float floatValue)
     {
-<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (floatValue == Float.POSITIVE_INFINITY)</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        if (floatValue == Float.POSITIVE_INFINITY)</span>
         {
-<span class="nc" id="L124">            return Float.MAX_VALUE;</span>
+<span class="fc" id="L124">            return Float.MAX_VALUE;</span>
         }
-<span class="nc bnc" id="L126" title="All 2 branches missed.">        if (floatValue == Float.NEGATIVE_INFINITY)</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        if (floatValue == Float.NEGATIVE_INFINITY)</span>
         {
-<span class="nc" id="L128">            return -Float.MAX_VALUE;</span>
+<span class="fc" id="L128">            return -Float.MAX_VALUE;</span>
         }
-<span class="nc bnc" id="L130" title="All 2 branches missed.">        if (Math.abs(floatValue) &lt; Float.MIN_NORMAL)</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        if (Math.abs(floatValue) &lt; Float.MIN_NORMAL)</span>
         {
             // values smaller than the smallest possible float value are converted to 0
             // see PDF spec, chapter 2 of Appendix C Implementation Limits
-<span class="nc" id="L134">            return 0f;</span>
+<span class="fc" id="L134">            return 0f;</span>
         }
-<span class="nc" id="L136">        return floatValue;</span>
+<span class="fc" id="L136">        return floatValue;</span>
     }
     
     /**
@@ -144,7 +144,7 @@ public class COSFloat extends COSNumber
     @Override
     public float floatValue()
     {
-<span class="nc" id="L147">        return value;</span>
+<span class="fc" id="L147">        return value;</span>
     }
 
     /**
@@ -155,7 +155,7 @@ public class COSFloat extends COSNumber
     @Override
     public long longValue()
     {
-<span class="nc" id="L158">        return (long) value;</span>
+<span class="fc" id="L158">        return (long) value;</span>
     }
 
     /**
@@ -166,7 +166,7 @@ public class COSFloat extends COSNumber
     @Override
     public int intValue()
     {
-<span class="nc" id="L169">        return (int) value;</span>
+<span class="fc" id="L169">        return (int) value;</span>
     }
 
     /**
@@ -175,8 +175,8 @@ public class COSFloat extends COSNumber
     @Override
     public boolean equals( Object o )
     {
-<span class="nc bnc" id="L178" title="All 2 branches missed.">        return o instanceof COSFloat &amp;&amp;</span>
-<span class="nc bnc" id="L179" title="All 2 branches missed.">                Float.floatToIntBits(((COSFloat)o).value) == Float.floatToIntBits(value);</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        return o instanceof COSFloat &amp;&amp;</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">                Float.floatToIntBits(((COSFloat)o).value) == Float.floatToIntBits(value);</span>
     }
 
     /**
@@ -185,7 +185,7 @@ public class COSFloat extends COSNumber
     @Override
     public int hashCode()
     {
-<span class="nc" id="L188">        return Float.hashCode(value);</span>
+<span class="fc" id="L188">        return Float.hashCode(value);</span>
     }
 
     /**
@@ -194,7 +194,7 @@ public class COSFloat extends COSNumber
     @Override
     public String toString()
     {
-<span class="nc" id="L197">        return &quot;COSFloat{&quot; + formatString() + &quot;}&quot;;</span>
+<span class="fc" id="L197">        return &quot;COSFloat{&quot; + formatString() + &quot;}&quot;;</span>
     }
 
     /**
@@ -206,9 +206,9 @@ public class COSFloat extends COSNumber
 <span class="fc bfc" id="L206" title="All 2 branches covered.">        if (valueAsString == null)</span>
         {
 <span class="fc" id="L208">            String s = String.valueOf(value);</span>
-<span class="pc bpc" id="L209" title="1 of 2 branches missed.">            boolean simpleFormat = s.indexOf('E') &lt; 0;</span>
-<span class="pc bpc" id="L210" title="1 of 2 branches missed.">            valueAsString = simpleFormat ? s</span>
-<span class="pc" id="L211">                    : new BigDecimal(s).stripTrailingZeros().toPlainString();</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">            boolean simpleFormat = s.indexOf('E') &lt; 0;</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">            valueAsString = simpleFormat ? s</span>
+<span class="fc" id="L211">                    : new BigDecimal(s).stripTrailingZeros().toPlainString();</span>
         }
 <span class="fc" id="L213">        return valueAsString;</span>
     }

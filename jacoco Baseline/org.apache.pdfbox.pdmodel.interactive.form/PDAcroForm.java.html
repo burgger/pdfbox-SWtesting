@@ -64,7 +64,7 @@ import org.apache.pdfbox.util.Matrix;
  */
 public final class PDAcroForm implements COSObjectable
 {
-<span class="nc" id="L67">    private static final Logger LOG = LogManager.getLogger(PDAcroForm.class);</span>
+<span class="fc" id="L67">    private static final Logger LOG = LogManager.getLogger(PDAcroForm.class);</span>
 
     private static final int FLAG_SIGNATURES_EXIST = 1;
     private static final int FLAG_APPEND_ONLY = 1 &lt;&lt; 1;
@@ -76,7 +76,7 @@ public final class PDAcroForm implements COSObjectable
 
     private ScriptingHandler scriptingHandler;
 
-<span class="nc" id="L79">    private final Map&lt;COSName, SoftReference&lt;PDFont&gt;&gt; directFontCache = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L79">    private final Map&lt;COSName, SoftReference&lt;PDFont&gt;&gt; directFontCache = new HashMap&lt;&gt;();</span>
 
     /**
      * Constructor.
@@ -84,11 +84,11 @@ public final class PDAcroForm implements COSObjectable
      * @param doc The document that this form is part of.
      */
     public PDAcroForm(PDDocument doc)
-<span class="nc" id="L87">    {</span>
-<span class="nc" id="L88">        document = doc;</span>
-<span class="nc" id="L89">        dictionary = new COSDictionary();</span>
-<span class="nc" id="L90">        dictionary.setItem(COSName.FIELDS, new COSArray());</span>
-<span class="nc" id="L91">    }</span>
+<span class="fc" id="L87">    {</span>
+<span class="fc" id="L88">        document = doc;</span>
+<span class="fc" id="L89">        dictionary = new COSDictionary();</span>
+<span class="fc" id="L90">        dictionary.setItem(COSName.FIELDS, new COSArray());</span>
+<span class="fc" id="L91">    }</span>
 
     /**
      * Constructor.
@@ -97,10 +97,10 @@ public final class PDAcroForm implements COSObjectable
      * @param form The existing acroForm.
      */
     public PDAcroForm(PDDocument doc, COSDictionary form)
-<span class="nc" id="L100">    {</span>
-<span class="nc" id="L101">        document = doc;</span>
-<span class="nc" id="L102">        dictionary = form;</span>
-<span class="nc" id="L103">    }</span>
+<span class="fc" id="L100">    {</span>
+<span class="fc" id="L101">        document = doc;</span>
+<span class="fc" id="L102">        dictionary = form;</span>
+<span class="fc" id="L103">    }</span>
 
     /**
      * This will get the document associated with this form.
@@ -109,13 +109,13 @@ public final class PDAcroForm implements COSObjectable
      */
     PDDocument getDocument()
     {
-<span class="nc" id="L112">        return document;</span>
+<span class="fc" id="L112">        return document;</span>
     }
 
     @Override
     public COSDictionary getCOSObject()
     {
-<span class="nc" id="L118">        return dictionary;</span>
+<span class="fc" id="L118">        return dictionary;</span>
     }
 
     /**
@@ -128,20 +128,20 @@ public final class PDAcroForm implements COSObjectable
      */
     public void importFDF(FDFDocument fdf) throws IOException
     {
-<span class="nc" id="L131">        List&lt;FDFField&gt; fields = fdf.getCatalog().getFDF().getFields();</span>
-<span class="nc bnc" id="L132" title="All 2 branches missed.">        if (fields != null)</span>
+<span class="fc" id="L131">        List&lt;FDFField&gt; fields = fdf.getCatalog().getFDF().getFields();</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">        if (fields != null)</span>
         {
-<span class="nc bnc" id="L134" title="All 2 branches missed.">            for (FDFField field : fields)</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">            for (FDFField field : fields)</span>
             {
-<span class="nc" id="L136">                FDFField fdfField = field;</span>
-<span class="nc" id="L137">                PDField docField = getField(fdfField.getPartialFieldName());</span>
-<span class="nc bnc" id="L138" title="All 2 branches missed.">                if (docField != null)</span>
+<span class="fc" id="L136">                FDFField fdfField = field;</span>
+<span class="fc" id="L137">                PDField docField = getField(fdfField.getPartialFieldName());</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">                if (docField != null)</span>
                 {
-<span class="nc" id="L140">                    docField.importFDF(fdfField);</span>
+<span class="fc" id="L140">                    docField.importFDF(fdfField);</span>
                 }
-<span class="nc" id="L142">            }</span>
+<span class="fc" id="L142">            }</span>
         }
-<span class="nc" id="L144">    }</span>
+<span class="fc" id="L144">    }</span>
 
     /**
      * This will export all FDF form data.
@@ -194,19 +194,19 @@ public final class PDAcroForm implements COSObjectable
     {
         // for dynamic XFA forms there is no flatten as this would mean to do a rendering
         // from the XFA content into a static PDF.
-<span class="nc bnc" id="L197" title="All 2 branches missed.">        if (xfaIsDynamic())</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">        if (xfaIsDynamic())</span>
         {
 <span class="nc" id="L199">            LOG.warn(&quot;Flatten for a dynamix XFA form is not supported&quot;);</span>
 <span class="nc" id="L200">            return;</span>
         }
 
-<span class="nc" id="L203">        List&lt;PDField&gt; fields = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L204" title="All 2 branches missed.">        for (PDField field: getFieldTree())</span>
+<span class="fc" id="L203">        List&lt;PDField&gt; fields = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">        for (PDField field: getFieldTree())</span>
         {
-<span class="nc" id="L206">            fields.add(field);</span>
-<span class="nc" id="L207">        }</span>
-<span class="nc" id="L208">        flatten(fields, false);</span>
-<span class="nc" id="L209">    }</span>
+<span class="fc" id="L206">            fields.add(field);</span>
+<span class="fc" id="L207">        }</span>
+<span class="fc" id="L208">        flatten(fields, false);</span>
+<span class="fc" id="L209">    }</span>
 
 
     /**
@@ -228,108 +228,108 @@ public final class PDAcroForm implements COSObjectable
     public void flatten(List&lt;PDField&gt; fields, boolean refreshAppearances) throws IOException
     {
         // Nothing to flatten if there are no fields provided
-<span class="nc bnc" id="L231" title="All 2 branches missed.">        if (fields.isEmpty())</span>
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">        if (fields.isEmpty())</span>
         {
 <span class="nc" id="L233">            return;</span>
         }
 
-<span class="nc bnc" id="L236" title="All 4 branches missed.">        if (!refreshAppearances &amp;&amp; getNeedAppearances())</span>
+<span class="fc bfc" id="L236" title="All 4 branches covered.">        if (!refreshAppearances &amp;&amp; getNeedAppearances())</span>
         {
-<span class="nc" id="L238">            LOG.warn(&quot;acroForm.getNeedAppearances() returns true, &quot; +</span>
+<span class="fc" id="L238">            LOG.warn(&quot;acroForm.getNeedAppearances() returns true, &quot; +</span>
                      &quot;visual field appearances may not have been set&quot;);
-<span class="nc" id="L240">            LOG.warn(&quot;call acroForm.refreshAppearances() or &quot; +</span>
+<span class="fc" id="L240">            LOG.warn(&quot;call acroForm.refreshAppearances() or &quot; +</span>
                      &quot;use the flatten() method with refreshAppearances parameter&quot;);
         }
 
         // for dynamic XFA forms there is no flatten as this would mean to do a rendering
         // from the XFA content into a static PDF.
-<span class="nc bnc" id="L246" title="All 2 branches missed.">        if (xfaIsDynamic())</span>
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">        if (xfaIsDynamic())</span>
         {
 <span class="nc" id="L248">            LOG.warn(&quot;Flatten for a dynamix XFA form is not supported&quot;);</span>
 <span class="nc" id="L249">            return;</span>
         }
 
         // refresh the appearances if set
-<span class="nc bnc" id="L253" title="All 2 branches missed.">        if (refreshAppearances)</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">        if (refreshAppearances)</span>
         {
-<span class="nc" id="L255">            refreshAppearances(fields);</span>
+<span class="fc" id="L255">            refreshAppearances(fields);</span>
         }
 
-<span class="nc" id="L258">        PDPageTree pages = document.getPages();</span>
-<span class="nc" id="L259">        Map&lt;COSDictionary,Set&lt;COSDictionary&gt;&gt; pagesWidgetsMap = buildPagesWidgetsMap(fields, pages);</span>
+<span class="fc" id="L258">        PDPageTree pages = document.getPages();</span>
+<span class="fc" id="L259">        Map&lt;COSDictionary,Set&lt;COSDictionary&gt;&gt; pagesWidgetsMap = buildPagesWidgetsMap(fields, pages);</span>
 
         // preserve all non widget annotations
-<span class="nc bnc" id="L262" title="All 2 branches missed.">        for (PDPage page : pages)</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">        for (PDPage page : pages)</span>
         {
             // get the widgets that are to be flattened for this page
-<span class="nc" id="L265">            Set&lt;COSDictionary&gt; widgetsForPageMap = pagesWidgetsMap.get(page.getCOSObject());</span>
+<span class="fc" id="L265">            Set&lt;COSDictionary&gt; widgetsForPageMap = pagesWidgetsMap.get(page.getCOSObject());</span>
 
             // indicates if the original content stream
             // has been wrapped in a q...Q pair.
-<span class="nc" id="L269">            boolean isContentStreamWrapped = false;</span>
+<span class="fc" id="L269">            boolean isContentStreamWrapped = false;</span>
 
-<span class="nc" id="L271">            List&lt;PDAnnotation&gt; annotations = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L271">            List&lt;PDAnnotation&gt; annotations = new ArrayList&lt;&gt;();</span>
 
-<span class="nc bnc" id="L273" title="All 2 branches missed.">            for (PDAnnotation annotation: page.getAnnotations())</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">            for (PDAnnotation annotation: page.getAnnotations())</span>
             {                
-<span class="nc bnc" id="L275" title="All 4 branches missed.">                if (widgetsForPageMap == null || !widgetsForPageMap.contains(annotation.getCOSObject()))</span>
+<span class="fc bfc" id="L275" title="All 4 branches covered.">                if (widgetsForPageMap == null || !widgetsForPageMap.contains(annotation.getCOSObject()))</span>
                 {
-<span class="nc" id="L277">                    annotations.add(annotation);</span>
+<span class="fc" id="L277">                    annotations.add(annotation);</span>
                 }
-<span class="nc bnc" id="L279" title="All 2 branches missed.">                else if (isVisibleAnnotation(annotation))</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">                else if (isVisibleAnnotation(annotation))</span>
                 {
-<span class="nc bnc" id="L281" title="All 2 branches missed.">                    try (PDPageContentStream contentStream = new PDPageContentStream(</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">                    try (PDPageContentStream contentStream = new PDPageContentStream(</span>
                             document, page, AppendMode.APPEND, true, !isContentStreamWrapped))
                     {
-<span class="nc" id="L284">                        isContentStreamWrapped = true;</span>
+<span class="fc" id="L284">                        isContentStreamWrapped = true;</span>
 
-<span class="nc" id="L286">                        PDAppearanceStream appearanceStream = annotation.getNormalAppearanceStream();</span>
+<span class="fc" id="L286">                        PDAppearanceStream appearanceStream = annotation.getNormalAppearanceStream();</span>
 
-<span class="nc" id="L288">                        PDFormXObject fieldObject = new PDFormXObject(appearanceStream.getCOSObject());</span>
+<span class="fc" id="L288">                        PDFormXObject fieldObject = new PDFormXObject(appearanceStream.getCOSObject());</span>
 
-<span class="nc" id="L290">                        contentStream.saveGraphicsState();</span>
+<span class="fc" id="L290">                        contentStream.saveGraphicsState();</span>
 
                         // see https://stackoverflow.com/a/54091766/1729265 for an explanation
                         // of the steps required
                         // this will transform the appearance stream form object into the rectangle of the
                         // annotation bbox and map the coordinate systems
-<span class="nc" id="L296">                        Matrix transformationMatrix = resolveTransformationMatrix(annotation, appearanceStream);</span>
+<span class="fc" id="L296">                        Matrix transformationMatrix = resolveTransformationMatrix(annotation, appearanceStream);</span>
 
-<span class="nc" id="L298">                        contentStream.transform(transformationMatrix);</span>
-<span class="nc" id="L299">                        contentStream.drawForm(fieldObject);</span>
-<span class="nc" id="L300">                        contentStream.restoreGraphicsState();</span>
+<span class="fc" id="L298">                        contentStream.transform(transformationMatrix);</span>
+<span class="fc" id="L299">                        contentStream.drawForm(fieldObject);</span>
+<span class="fc" id="L300">                        contentStream.restoreGraphicsState();</span>
                     }
                 }
-<span class="nc" id="L303">            }</span>
-<span class="nc" id="L304">            page.setAnnotations(annotations);</span>
-<span class="nc" id="L305">        }</span>
+<span class="fc" id="L303">            }</span>
+<span class="fc" id="L304">            page.setAnnotations(annotations);</span>
+<span class="fc" id="L305">        }</span>
 
         // remove the fields
-<span class="nc" id="L308">        removeFields(fields);</span>
+<span class="fc" id="L308">        removeFields(fields);</span>
 
         // remove XFA for hybrid forms
-<span class="nc" id="L311">        dictionary.removeItem(COSName.XFA);</span>
+<span class="fc" id="L311">        dictionary.removeItem(COSName.XFA);</span>
 
         // remove SigFlags if no signature left
-<span class="nc bnc" id="L314" title="All 2 branches missed.">        if (this.document.getSignatureDictionaries().isEmpty())</span>
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">        if (this.document.getSignatureDictionaries().isEmpty())</span>
         {
-<span class="nc" id="L316">            this.getCOSObject().removeItem(COSName.SIG_FLAGS);</span>
+<span class="fc" id="L316">            this.getCOSObject().removeItem(COSName.SIG_FLAGS);</span>
         }
-<span class="nc" id="L318">    }</span>
+<span class="fc" id="L318">    }</span>
 
     private boolean isVisibleAnnotation(PDAnnotation annotation)
     {
-<span class="nc bnc" id="L322" title="All 4 branches missed.">        if (annotation.isInvisible() || annotation.isHidden())</span>
+<span class="pc bpc" id="L322" title="1 of 4 branches missed.">        if (annotation.isInvisible() || annotation.isHidden())</span>
         {
-<span class="nc" id="L324">            return false;</span>
+<span class="fc" id="L324">            return false;</span>
         }
-<span class="nc" id="L326">        PDAppearanceStream normalAppearanceStream = annotation.getNormalAppearanceStream();</span>
-<span class="nc bnc" id="L327" title="All 2 branches missed.">        if (normalAppearanceStream == null)</span>
+<span class="fc" id="L326">        PDAppearanceStream normalAppearanceStream = annotation.getNormalAppearanceStream();</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">        if (normalAppearanceStream == null)</span>
         {
-<span class="nc" id="L329">            return false;</span>
+<span class="fc" id="L329">            return false;</span>
         }
-<span class="nc" id="L331">        PDRectangle bbox = normalAppearanceStream.getBBox();</span>
-<span class="nc bnc" id="L332" title="All 6 branches missed.">        return bbox != null &amp;&amp; bbox.getWidth() &gt; 0 &amp;&amp; bbox.getHeight() &gt; 0;</span>
+<span class="fc" id="L331">        PDRectangle bbox = normalAppearanceStream.getBBox();</span>
+<span class="pc bpc" id="L332" title="3 of 6 branches missed.">        return bbox != null &amp;&amp; bbox.getWidth() &gt; 0 &amp;&amp; bbox.getHeight() &gt; 0;</span>
     }
 
     /**
@@ -339,14 +339,14 @@ public final class PDAcroForm implements COSObjectable
      */
     public void refreshAppearances() throws IOException
     {
-<span class="nc bnc" id="L342" title="All 2 branches missed.">        for (PDField field : getFieldTree())</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">        for (PDField field : getFieldTree())</span>
         {
-<span class="nc bnc" id="L344" title="All 2 branches missed.">            if (field instanceof PDTerminalField)</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">            if (field instanceof PDTerminalField)</span>
             {
-<span class="nc" id="L346">                ((PDTerminalField) field).constructAppearances();</span>
+<span class="fc" id="L346">                ((PDTerminalField) field).constructAppearances();</span>
             }
-<span class="nc" id="L348">        }</span>
-<span class="nc" id="L349">    }</span>
+<span class="fc" id="L348">        }</span>
+<span class="fc" id="L349">    }</span>
 
     /**
      * Refreshes the appearance streams and appearance dictionaries for the widget annotations of the specified fields.
@@ -356,14 +356,14 @@ public final class PDAcroForm implements COSObjectable
      */
     public void refreshAppearances(List&lt;PDField&gt; fields) throws IOException
     {
-<span class="nc bnc" id="L359" title="All 2 branches missed.">        for (PDField field : fields)</span>
+<span class="fc bfc" id="L359" title="All 2 branches covered.">        for (PDField field : fields)</span>
         {
-<span class="nc bnc" id="L361" title="All 2 branches missed.">            if (field instanceof PDTerminalField)</span>
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">            if (field instanceof PDTerminalField)</span>
             {
-<span class="nc" id="L363">                ((PDTerminalField) field).constructAppearances();</span>
+<span class="fc" id="L363">                ((PDTerminalField) field).constructAppearances();</span>
             }
-<span class="nc" id="L365">        }</span>
-<span class="nc" id="L366">    }</span>
+<span class="fc" id="L365">        }</span>
+<span class="fc" id="L366">    }</span>
 
 
     /**
@@ -381,25 +381,25 @@ public final class PDAcroForm implements COSObjectable
      */
     public List&lt;PDField&gt; getFields()
     {
-<span class="nc" id="L384">        COSArray cosFields = dictionary.getCOSArray(COSName.FIELDS);</span>
-<span class="nc bnc" id="L385" title="All 2 branches missed.">        if (cosFields == null)</span>
+<span class="fc" id="L384">        COSArray cosFields = dictionary.getCOSArray(COSName.FIELDS);</span>
+<span class="fc bfc" id="L385" title="All 2 branches covered.">        if (cosFields == null)</span>
         {
-<span class="nc" id="L387">            return Collections.emptyList();</span>
+<span class="fc" id="L387">            return Collections.emptyList();</span>
         }
-<span class="nc" id="L389">        List&lt;PDField&gt; pdFields = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L390" title="All 2 branches missed.">        for (int i = 0; i &lt; cosFields.size(); i++)</span>
+<span class="fc" id="L389">        List&lt;PDField&gt; pdFields = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L390" title="All 2 branches covered.">        for (int i = 0; i &lt; cosFields.size(); i++)</span>
         {
-<span class="nc" id="L392">            COSBase element = cosFields.getObject(i);</span>
-<span class="nc bnc" id="L393" title="All 2 branches missed.">            if (element instanceof COSDictionary)</span>
+<span class="fc" id="L392">            COSBase element = cosFields.getObject(i);</span>
+<span class="pc bpc" id="L393" title="1 of 2 branches missed.">            if (element instanceof COSDictionary)</span>
             {
-<span class="nc" id="L395">                PDField field = PDField.fromDictionary(this, (COSDictionary) element, null);</span>
-<span class="nc bnc" id="L396" title="All 2 branches missed.">                if (field != null)</span>
+<span class="fc" id="L395">                PDField field = PDField.fromDictionary(this, (COSDictionary) element, null);</span>
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">                if (field != null)</span>
                 {
-<span class="nc" id="L398">                    pdFields.add(field);</span>
+<span class="fc" id="L398">                    pdFields.add(field);</span>
                 }
             }
         }
-<span class="nc" id="L402">        return new COSArrayList&lt;&gt;(pdFields, cosFields);</span>
+<span class="fc" id="L402">        return new COSArrayList&lt;&gt;(pdFields, cosFields);</span>
     }
 
     /**
@@ -409,8 +409,8 @@ public final class PDAcroForm implements COSObjectable
      */
     public void setFields(List&lt;PDField&gt; fields)
     {
-<span class="nc" id="L412">        dictionary.setItem(COSName.FIELDS, new COSArray(fields));</span>
-<span class="nc" id="L413">    }</span>
+<span class="fc" id="L412">        dictionary.setItem(COSName.FIELDS, new COSArray(fields));</span>
+<span class="fc" id="L413">    }</span>
 
     /**
      * Returns an iterator which walks all fields in the field tree, in order.
@@ -429,7 +429,7 @@ public final class PDAcroForm implements COSObjectable
      */
     public PDFieldTree getFieldTree()
     {
-<span class="nc" id="L432">        return new PDFieldTree(this);</span>
+<span class="fc" id="L432">        return new PDFieldTree(this);</span>
     }
 
     /**
@@ -476,21 +476,21 @@ public final class PDAcroForm implements COSObjectable
     public PDField getField(String fullyQualifiedName)
     {
         // get the field from the cache if there is one.
-<span class="nc bnc" id="L479" title="All 2 branches missed.">        if (fieldCache != null)</span>
+<span class="pc bpc" id="L479" title="1 of 2 branches missed.">        if (fieldCache != null)</span>
         {
 <span class="nc" id="L481">            return fieldCache.get(fullyQualifiedName);</span>
         }
 
         // get the field from the field tree
-<span class="nc bnc" id="L485" title="All 2 branches missed.">        for (PDField field : getFieldTree())</span>
+<span class="fc bfc" id="L485" title="All 2 branches covered.">        for (PDField field : getFieldTree())</span>
         {
-<span class="nc bnc" id="L487" title="All 2 branches missed.">            if (Objects.equals(field.getFullyQualifiedName(), fullyQualifiedName))</span>
+<span class="fc bfc" id="L487" title="All 2 branches covered.">            if (Objects.equals(field.getFullyQualifiedName(), fullyQualifiedName))</span>
             {
-<span class="nc" id="L489">                return field;</span>
+<span class="fc" id="L489">                return field;</span>
             }
-<span class="nc" id="L491">        }</span>
+<span class="fc" id="L491">        }</span>
 
-<span class="nc" id="L493">        return null;</span>
+<span class="fc" id="L493">        return null;</span>
     }
 
     /**
@@ -500,7 +500,7 @@ public final class PDAcroForm implements COSObjectable
      */
     public String getDefaultAppearance()
     {
-<span class="nc" id="L503">        return dictionary.getString(COSName.DA,&quot;&quot;);</span>
+<span class="fc" id="L503">        return dictionary.getString(COSName.DA,&quot;&quot;);</span>
     }
 
     /**
@@ -510,8 +510,8 @@ public final class PDAcroForm implements COSObjectable
      */
     public void setDefaultAppearance(String daValue)
     {
-<span class="nc" id="L513">        dictionary.setString(COSName.DA, daValue);</span>
-<span class="nc" id="L514">    }</span>
+<span class="fc" id="L513">        dictionary.setString(COSName.DA, daValue);</span>
+<span class="fc" id="L514">    }</span>
 
     /**
      * True if the viewing application should construct the appearances of all field widgets.
@@ -521,7 +521,7 @@ public final class PDAcroForm implements COSObjectable
      */
     public boolean getNeedAppearances()
     {
-<span class="nc" id="L524">        return dictionary.getBoolean(COSName.NEED_APPEARANCES, false);</span>
+<span class="fc" id="L524">        return dictionary.getBoolean(COSName.NEED_APPEARANCES, false);</span>
     }
 
     /**
@@ -532,8 +532,8 @@ public final class PDAcroForm implements COSObjectable
      */
     public void setNeedAppearances(Boolean value)
     {
-<span class="nc" id="L535">        dictionary.setBoolean(COSName.NEED_APPEARANCES, value);</span>
-<span class="nc" id="L536">    }</span>
+<span class="fc" id="L535">        dictionary.setBoolean(COSName.NEED_APPEARANCES, value);</span>
+<span class="fc" id="L536">    }</span>
 
     /**
      * This will get the default resources for the AcroForm.
@@ -542,9 +542,9 @@ public final class PDAcroForm implements COSObjectable
      */
     public PDResources getDefaultResources()
     {
-<span class="nc" id="L545">        COSDictionary dr = dictionary.getCOSDictionary(COSName.DR);</span>
-<span class="nc bnc" id="L546" title="All 2 branches missed.">        return dr != null ? new PDResources(dr, document.getResourceCache(), directFontCache)</span>
-<span class="nc" id="L547">                : null;</span>
+<span class="fc" id="L545">        COSDictionary dr = dictionary.getCOSDictionary(COSName.DR);</span>
+<span class="fc bfc" id="L546" title="All 2 branches covered.">        return dr != null ? new PDResources(dr, document.getResourceCache(), directFontCache)</span>
+<span class="fc" id="L547">                : null;</span>
     }
 
     /**
@@ -554,8 +554,8 @@ public final class PDAcroForm implements COSObjectable
      */
     public void setDefaultResources(PDResources dr)
     {
-<span class="nc" id="L557">        dictionary.setItem(COSName.DR, dr);</span>
-<span class="nc" id="L558">    }</span>
+<span class="fc" id="L557">        dictionary.setItem(COSName.DR, dr);</span>
+<span class="fc" id="L558">    }</span>
 
     /**
      * This will tell if the AcroForm has XFA content.
@@ -564,7 +564,7 @@ public final class PDAcroForm implements COSObjectable
      */
     public boolean hasXFA()
     {
-<span class="nc" id="L567">        return dictionary.containsKey(COSName.XFA);</span>
+<span class="fc" id="L567">        return dictionary.containsKey(COSName.XFA);</span>
     }
 
     /**
@@ -574,7 +574,7 @@ public final class PDAcroForm implements COSObjectable
      */
     public boolean xfaIsDynamic()
     {
-<span class="nc bnc" id="L577" title="All 4 branches missed.">        return hasXFA() &amp;&amp; getFields().isEmpty();</span>
+<span class="pc bpc" id="L577" title="1 of 4 branches missed.">        return hasXFA() &amp;&amp; getFields().isEmpty();</span>
     }
 
     /**
@@ -734,14 +734,14 @@ public final class PDAcroForm implements COSObjectable
     private Matrix resolveTransformationMatrix(PDAnnotation annotation, PDAppearanceStream appearanceStream)
     {
         // 1st step transform appearance stream bbox with appearance stream matrix
-<span class="nc" id="L737">        Rectangle2D transformedAppearanceBox = getTransformedAppearanceBBox(appearanceStream);</span>
-<span class="nc" id="L738">        PDRectangle annotationRect = annotation.getRectangle();</span>
+<span class="fc" id="L737">        Rectangle2D transformedAppearanceBox = getTransformedAppearanceBBox(appearanceStream);</span>
+<span class="fc" id="L738">        PDRectangle annotationRect = annotation.getRectangle();</span>
 
         // 2nd step caclulate matrix to transform calculated rectangle into the annotation Rect boundaries
-<span class="nc" id="L741">        Matrix transformationMatrix = new Matrix();</span>
-<span class="nc" id="L742">        transformationMatrix.translate((float) (annotationRect.getLowerLeftX()-transformedAppearanceBox.getX()), (float) (annotationRect.getLowerLeftY()-transformedAppearanceBox.getY()));</span>
-<span class="nc" id="L743">        transformationMatrix.scale((float) (annotationRect.getWidth()/transformedAppearanceBox.getWidth()), (float) (annotationRect.getHeight()/transformedAppearanceBox.getHeight()));</span>
-<span class="nc" id="L744">        return transformationMatrix;</span>
+<span class="fc" id="L741">        Matrix transformationMatrix = new Matrix();</span>
+<span class="fc" id="L742">        transformationMatrix.translate((float) (annotationRect.getLowerLeftX()-transformedAppearanceBox.getX()), (float) (annotationRect.getLowerLeftY()-transformedAppearanceBox.getY()));</span>
+<span class="fc" id="L743">        transformationMatrix.scale((float) (annotationRect.getWidth()/transformedAppearanceBox.getWidth()), (float) (annotationRect.getHeight()/transformedAppearanceBox.getHeight()));</span>
+<span class="fc" id="L744">        return transformationMatrix;</span>
     }
 
     /**
@@ -755,10 +755,10 @@ public final class PDAcroForm implements COSObjectable
      */
     private Rectangle2D getTransformedAppearanceBBox(PDAppearanceStream appearanceStream)
     {
-<span class="nc" id="L758">        Matrix appearanceStreamMatrix = appearanceStream.getMatrix();</span>
-<span class="nc" id="L759">        PDRectangle appearanceStreamBBox = appearanceStream.getBBox();</span>
-<span class="nc" id="L760">        GeneralPath transformedAppearanceBox = appearanceStreamBBox.transform(appearanceStreamMatrix);</span>
-<span class="nc" id="L761">        return transformedAppearanceBox.getBounds2D();</span>
+<span class="fc" id="L758">        Matrix appearanceStreamMatrix = appearanceStream.getMatrix();</span>
+<span class="fc" id="L759">        PDRectangle appearanceStreamBBox = appearanceStream.getBBox();</span>
+<span class="fc" id="L760">        GeneralPath transformedAppearanceBox = appearanceStreamBBox.transform(appearanceStreamMatrix);</span>
+<span class="fc" id="L761">        return transformedAppearanceBox.getBounds2D();</span>
     }
 
     /**
@@ -772,48 +772,48 @@ public final class PDAcroForm implements COSObjectable
     private Map&lt;COSDictionary,Set&lt;COSDictionary&gt;&gt; buildPagesWidgetsMap(
             List&lt;PDField&gt; fields, PDPageTree pages) throws IOException
     {
-<span class="nc" id="L775">        Map&lt;COSDictionary,Set&lt;COSDictionary&gt;&gt; pagesAnnotationsMap = new HashMap&lt;&gt;();</span>
-<span class="nc" id="L776">        boolean hasMissingPageRef = false;</span>
+<span class="fc" id="L775">        Map&lt;COSDictionary,Set&lt;COSDictionary&gt;&gt; pagesAnnotationsMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L776">        boolean hasMissingPageRef = false;</span>
 
-<span class="nc bnc" id="L778" title="All 2 branches missed.">        for (PDField field : fields)</span>
+<span class="fc bfc" id="L778" title="All 2 branches covered.">        for (PDField field : fields)</span>
         {
-<span class="nc" id="L780">            List&lt;PDAnnotationWidget&gt; widgets = field.getWidgets();</span>
-<span class="nc bnc" id="L781" title="All 2 branches missed.">            for (PDAnnotationWidget widget : widgets)</span>
+<span class="fc" id="L780">            List&lt;PDAnnotationWidget&gt; widgets = field.getWidgets();</span>
+<span class="fc bfc" id="L781" title="All 2 branches covered.">            for (PDAnnotationWidget widget : widgets)</span>
             {
-<span class="nc" id="L783">                PDPage page = widget.getPage();</span>
-<span class="nc bnc" id="L784" title="All 2 branches missed.">                if (page != null)</span>
+<span class="fc" id="L783">                PDPage page = widget.getPage();</span>
+<span class="fc bfc" id="L784" title="All 2 branches covered.">                if (page != null)</span>
                 {
-<span class="nc" id="L786">                    fillPagesAnnotationMap(pagesAnnotationsMap, page, widget);</span>
+<span class="fc" id="L786">                    fillPagesAnnotationMap(pagesAnnotationsMap, page, widget);</span>
                 }
                 else
                 {
-<span class="nc" id="L790">                    LOG.warn(&quot;missing /P entry (page reference) in a widget for field: {}&quot;, field);</span>
-<span class="nc" id="L791">                    hasMissingPageRef = true;</span>
+<span class="fc" id="L790">                    LOG.warn(&quot;missing /P entry (page reference) in a widget for field: {}&quot;, field);</span>
+<span class="fc" id="L791">                    hasMissingPageRef = true;</span>
                 }
-<span class="nc" id="L793">            }</span>
-<span class="nc" id="L794">        }</span>
+<span class="fc" id="L793">            }</span>
+<span class="fc" id="L794">        }</span>
 
-<span class="nc bnc" id="L796" title="All 2 branches missed.">        if (!hasMissingPageRef)</span>
+<span class="fc bfc" id="L796" title="All 2 branches covered.">        if (!hasMissingPageRef)</span>
         {
-<span class="nc" id="L798">            return pagesAnnotationsMap;</span>
+<span class="fc" id="L798">            return pagesAnnotationsMap;</span>
         }
 
         // If there is a widget with a missing page reference we need to build the map reverse i.e. 
         // from the annotations to the widget.
-<span class="nc" id="L803">        LOG.warn(&quot;There has been a widget with a missing page reference, will check all page annotations&quot;);</span>
-<span class="nc" id="L804">        Set&lt;COSDictionary&gt; widgetDictionarySet = createWidgetDictionarySet(fields);</span>
-<span class="nc bnc" id="L805" title="All 2 branches missed.">        for (PDPage page : pages)</span>
+<span class="fc" id="L803">        LOG.warn(&quot;There has been a widget with a missing page reference, will check all page annotations&quot;);</span>
+<span class="fc" id="L804">        Set&lt;COSDictionary&gt; widgetDictionarySet = createWidgetDictionarySet(fields);</span>
+<span class="fc bfc" id="L805" title="All 2 branches covered.">        for (PDPage page : pages)</span>
         {
-<span class="nc bnc" id="L807" title="All 2 branches missed.">            for (PDAnnotation annotation : page.getAnnotations())</span>
+<span class="fc bfc" id="L807" title="All 2 branches covered.">            for (PDAnnotation annotation : page.getAnnotations())</span>
             {
-<span class="nc bnc" id="L809" title="All 2 branches missed.">                if (widgetDictionarySet.contains(annotation.getCOSObject()))</span>
+<span class="fc bfc" id="L809" title="All 2 branches covered.">                if (widgetDictionarySet.contains(annotation.getCOSObject()))</span>
                 {
-<span class="nc" id="L811">                    fillPagesAnnotationMap(pagesAnnotationsMap, page, (PDAnnotationWidget) annotation);</span>
+<span class="fc" id="L811">                    fillPagesAnnotationMap(pagesAnnotationsMap, page, (PDAnnotationWidget) annotation);</span>
                 }
-<span class="nc" id="L813">            }</span>
-<span class="nc" id="L814">        }</span>
+<span class="fc" id="L813">            }</span>
+<span class="fc" id="L814">        }</span>
 
-<span class="nc" id="L816">        return pagesAnnotationsMap;</span>
+<span class="fc" id="L816">        return pagesAnnotationsMap;</span>
     }
 
     /**
@@ -824,51 +824,51 @@ public final class PDAcroForm implements COSObjectable
      */
     private Set&lt;COSDictionary&gt; createWidgetDictionarySet(List&lt;PDField&gt; fields)
     {
-<span class="nc" id="L827">        Set&lt;COSDictionary&gt; widgetDictionarySet = new HashSet&lt;&gt;();</span>
-<span class="nc bnc" id="L828" title="All 2 branches missed.">        for (PDField field : fields)</span>
+<span class="fc" id="L827">        Set&lt;COSDictionary&gt; widgetDictionarySet = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L828" title="All 2 branches covered.">        for (PDField field : fields)</span>
         {
-<span class="nc" id="L830">            List&lt;PDAnnotationWidget&gt; widgets = field.getWidgets();</span>
-<span class="nc bnc" id="L831" title="All 2 branches missed.">            for (PDAnnotationWidget widget : widgets)</span>
+<span class="fc" id="L830">            List&lt;PDAnnotationWidget&gt; widgets = field.getWidgets();</span>
+<span class="fc bfc" id="L831" title="All 2 branches covered.">            for (PDAnnotationWidget widget : widgets)</span>
             {
-<span class="nc" id="L833">                widgetDictionarySet.add(widget.getCOSObject());</span>
-<span class="nc" id="L834">            }</span>
-<span class="nc" id="L835">        }</span>
-<span class="nc" id="L836">        return widgetDictionarySet;</span>
+<span class="fc" id="L833">                widgetDictionarySet.add(widget.getCOSObject());</span>
+<span class="fc" id="L834">            }</span>
+<span class="fc" id="L835">        }</span>
+<span class="fc" id="L836">        return widgetDictionarySet;</span>
     }
 
     private void fillPagesAnnotationMap(Map&lt;COSDictionary, Set&lt;COSDictionary&gt;&gt; pagesAnnotationsMap,
             PDPage page, PDAnnotationWidget widget)
     {
-<span class="nc" id="L842">        Set&lt;COSDictionary&gt; widgetsForPage = pagesAnnotationsMap.get(page.getCOSObject());</span>
-<span class="nc bnc" id="L843" title="All 2 branches missed.">        if (widgetsForPage == null)</span>
+<span class="fc" id="L842">        Set&lt;COSDictionary&gt; widgetsForPage = pagesAnnotationsMap.get(page.getCOSObject());</span>
+<span class="fc bfc" id="L843" title="All 2 branches covered.">        if (widgetsForPage == null)</span>
         {
-<span class="nc" id="L845">            widgetsForPage = new HashSet&lt;&gt;();</span>
-<span class="nc" id="L846">            widgetsForPage.add(widget.getCOSObject());</span>
-<span class="nc" id="L847">            pagesAnnotationsMap.put(page.getCOSObject(), widgetsForPage);</span>
+<span class="fc" id="L845">            widgetsForPage = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L846">            widgetsForPage.add(widget.getCOSObject());</span>
+<span class="fc" id="L847">            pagesAnnotationsMap.put(page.getCOSObject(), widgetsForPage);</span>
         }
         else
         {
-<span class="nc" id="L851">            widgetsForPage.add(widget.getCOSObject());</span>
+<span class="fc" id="L851">            widgetsForPage.add(widget.getCOSObject());</span>
         }
-<span class="nc" id="L853">    }</span>
+<span class="fc" id="L853">    }</span>
 
     private void removeFields(List&lt;PDField&gt; fields)
     {
-<span class="nc bnc" id="L857" title="All 2 branches missed.">        for (PDField field : fields)</span>
+<span class="fc bfc" id="L857" title="All 2 branches covered.">        for (PDField field : fields)</span>
         {
             COSArray array;
-<span class="nc bnc" id="L860" title="All 2 branches missed.">            if (field.getParent() == null)</span>
+<span class="fc bfc" id="L860" title="All 2 branches covered.">            if (field.getParent() == null)</span>
             {
                 // if the field has no parent, assume it is at root level list, remove it from there
-<span class="nc" id="L863">                array = dictionary.getCOSArray(COSName.FIELDS);</span>
+<span class="fc" id="L863">                array = dictionary.getCOSArray(COSName.FIELDS);</span>
             }
             else
             {
                 // if the field has a parent, then remove from the list there
-<span class="nc" id="L868">                array = field.getParent().getCOSObject().getCOSArray(COSName.KIDS);</span>
+<span class="fc" id="L868">                array = field.getParent().getCOSObject().getCOSArray(COSName.KIDS);</span>
             }
-<span class="nc" id="L870">            array.removeObject(field.getCOSObject());</span>
-<span class="nc" id="L871">        }</span>
-<span class="nc" id="L872">    }</span>
+<span class="fc" id="L870">            array.removeObject(field.getCOSObject());</span>
+<span class="fc" id="L871">        }</span>
+<span class="fc" id="L872">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

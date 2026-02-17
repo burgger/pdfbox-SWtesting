@@ -41,13 +41,13 @@ import org.apache.pdfbox.pdfparser.xref.XReferenceEntry;
 public class PDFXRefStream
 {
 
-<span class="nc" id="L44">    private final List&lt;XReferenceEntry&gt; streamData = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L44">    private final List&lt;XReferenceEntry&gt; streamData = new ArrayList&lt;&gt;();</span>
 
-<span class="nc" id="L46">    private final Set&lt;Long&gt; objectNumbers = new TreeSet&lt;&gt;();</span>
+<span class="fc" id="L46">    private final Set&lt;Long&gt; objectNumbers = new TreeSet&lt;&gt;();</span>
 
     private final COSStream stream;
 
-<span class="nc" id="L50">    private long size = -1;</span>
+<span class="fc" id="L50">    private long size = -1;</span>
 
     /**
      * Create a fresh XRef stream like for a fresh file or an incremental update.
@@ -55,9 +55,9 @@ public class PDFXRefStream
      * @param cosDocument the COSDocument to be used to create a new COSStream
      */
     public PDFXRefStream(COSDocument cosDocument)
-<span class="nc" id="L58">    {</span>
-<span class="nc" id="L59">        stream = cosDocument.createCOSStream();</span>
-<span class="nc" id="L60">    }</span>
+<span class="fc" id="L58">    {</span>
+<span class="fc" id="L59">        stream = cosDocument.createCOSStream();</span>
+<span class="fc" id="L60">    }</span>
 
     /**
      * Returns the stream of the XRef.
@@ -66,53 +66,53 @@ public class PDFXRefStream
      */
     public COSStream getStream() throws IOException
     {
-<span class="nc" id="L69">        stream.setItem(COSName.TYPE, COSName.XREF);</span>
-<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (size == -1)</span>
+<span class="fc" id="L69">        stream.setItem(COSName.TYPE, COSName.XREF);</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (size == -1)</span>
         {
 <span class="nc" id="L72">            throw new IllegalArgumentException(&quot;size is not set in xrefstream&quot;);</span>
         }
-<span class="nc" id="L74">        stream.setLong(COSName.SIZE, size);</span>
+<span class="fc" id="L74">        stream.setLong(COSName.SIZE, size);</span>
     
-<span class="nc" id="L76">        List&lt;Long&gt; indexEntry = getIndexEntry();</span>
-<span class="nc" id="L77">        COSArray indexAsArray = new COSArray();</span>
-<span class="nc bnc" id="L78" title="All 2 branches missed.">        for ( Long i : indexEntry )</span>
+<span class="fc" id="L76">        List&lt;Long&gt; indexEntry = getIndexEntry();</span>
+<span class="fc" id="L77">        COSArray indexAsArray = new COSArray();</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        for ( Long i : indexEntry )</span>
         {
-<span class="nc" id="L80">            indexAsArray.add(COSInteger.get(i));</span>
-<span class="nc" id="L81">        }</span>
-<span class="nc" id="L82">        stream.setItem(COSName.INDEX, indexAsArray);</span>
+<span class="fc" id="L80">            indexAsArray.add(COSInteger.get(i));</span>
+<span class="fc" id="L81">        }</span>
+<span class="fc" id="L82">        stream.setItem(COSName.INDEX, indexAsArray);</span>
 
-<span class="nc" id="L84">        int[] wEntry = getWEntry();</span>
-<span class="nc" id="L85">        COSArray wAsArray = new COSArray();</span>
-<span class="nc bnc" id="L86" title="All 2 branches missed.">        for (int j : wEntry)</span>
+<span class="fc" id="L84">        int[] wEntry = getWEntry();</span>
+<span class="fc" id="L85">        COSArray wAsArray = new COSArray();</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        for (int j : wEntry)</span>
         {
-<span class="nc" id="L88">            wAsArray.add(COSInteger.get(j));</span>
+<span class="fc" id="L88">            wAsArray.add(COSInteger.get(j));</span>
         }
-<span class="nc" id="L90">        stream.setItem(COSName.W, wAsArray);</span>
+<span class="fc" id="L90">        stream.setItem(COSName.W, wAsArray);</span>
         
-<span class="nc" id="L92">        try (OutputStream outputStream = this.stream.createOutputStream(COSName.FLATE_DECODE))</span>
+<span class="fc" id="L92">        try (OutputStream outputStream = this.stream.createOutputStream(COSName.FLATE_DECODE))</span>
         {
-<span class="nc" id="L94">            writeStreamData(outputStream, wEntry);</span>
-<span class="nc" id="L95">            outputStream.flush();</span>
+<span class="fc" id="L94">            writeStreamData(outputStream, wEntry);</span>
+<span class="fc" id="L95">            outputStream.flush();</span>
         }
     
-<span class="nc" id="L98">        Set&lt;COSName&gt; keySet = this.stream.keySet();</span>
-<span class="nc bnc" id="L99" title="All 2 branches missed.">        for ( COSName cosName : keySet )</span>
+<span class="fc" id="L98">        Set&lt;COSName&gt; keySet = this.stream.keySet();</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        for ( COSName cosName : keySet )</span>
         {
             // &quot;Other cross-reference stream entries not listed in Table 17 may be indirect; in fact, 
             // some (such as Root in Table 15) shall be indirect.&quot;
-<span class="nc bnc" id="L103" title="All 6 branches missed.">            if (COSName.ROOT.equals(cosName) || COSName.INFO.equals(cosName) || COSName.PREV.equals(cosName))</span>
+<span class="fc bfc" id="L103" title="All 6 branches covered.">            if (COSName.ROOT.equals(cosName) || COSName.INFO.equals(cosName) || COSName.PREV.equals(cosName))</span>
             {
-<span class="nc" id="L105">                continue;</span>
+<span class="fc" id="L105">                continue;</span>
             }
             // this one too, because it has already been written in COSWriter.doWriteBody()
-<span class="nc bnc" id="L108" title="All 2 branches missed.">            if (COSName.ENCRYPT.equals(cosName))</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            if (COSName.ENCRYPT.equals(cosName))</span>
             {
-<span class="nc" id="L110">                continue;</span>
+<span class="fc" id="L110">                continue;</span>
             }
-<span class="nc" id="L112">            COSBase dictionaryObject = this.stream.getDictionaryObject(cosName);</span>
-<span class="nc" id="L113">            dictionaryObject.setDirect(true);</span>
-<span class="nc" id="L114">        }</span>
-<span class="nc" id="L115">        return this.stream;</span>
+<span class="fc" id="L112">            COSBase dictionaryObject = this.stream.getDictionaryObject(cosName);</span>
+<span class="fc" id="L113">            dictionaryObject.setDirect(true);</span>
+<span class="fc" id="L114">        }</span>
+<span class="fc" id="L115">        return this.stream;</span>
     }
 
     /**
@@ -122,15 +122,15 @@ public class PDFXRefStream
      */
     public void addTrailerInfo(COSDictionary trailerDict)
     {
-<span class="nc" id="L125">        trailerDict.forEach((key, value) -&gt;</span>
+<span class="fc" id="L125">        trailerDict.forEach((key, value) -&gt;</span>
         {
-<span class="nc bnc" id="L127" title="All 6 branches missed.">            if (COSName.INFO.equals(key) || COSName.ROOT.equals(key) || COSName.ENCRYPT.equals(key) </span>
-<span class="nc bnc" id="L128" title="All 4 branches missed.">                    || COSName.ID.equals(key) || COSName.PREV.equals(key))</span>
+<span class="fc bfc" id="L127" title="All 6 branches covered.">            if (COSName.INFO.equals(key) || COSName.ROOT.equals(key) || COSName.ENCRYPT.equals(key) </span>
+<span class="fc bfc" id="L128" title="All 4 branches covered.">                    || COSName.ID.equals(key) || COSName.PREV.equals(key))</span>
             {
-<span class="nc" id="L130">                stream.setItem(key, value);</span>
+<span class="fc" id="L130">                stream.setItem(key, value);</span>
             }
-<span class="nc" id="L132">        });</span>
-<span class="nc" id="L133">    }</span>
+<span class="fc" id="L132">        });</span>
+<span class="fc" id="L133">    }</span>
 
     /**
      * Add an new entry to the XRef stream.
@@ -139,13 +139,13 @@ public class PDFXRefStream
      */
     public void addEntry(XReferenceEntry entry)
     {
-<span class="nc bnc" id="L142" title="All 2 branches missed.">        if (objectNumbers.contains(entry.getReferencedKey().getNumber()))</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">        if (objectNumbers.contains(entry.getReferencedKey().getNumber()))</span>
         {
 <span class="nc" id="L144">            return;</span>
         }
-<span class="nc" id="L146">        objectNumbers.add(entry.getReferencedKey().getNumber());</span>
-<span class="nc" id="L147">        streamData.add(entry);</span>
-<span class="nc" id="L148">    }</span>
+<span class="fc" id="L146">        objectNumbers.add(entry.getReferencedKey().getNumber());</span>
+<span class="fc" id="L147">        streamData.add(entry);</span>
+<span class="fc" id="L148">    }</span>
 
     /**
      * determines the minimal length required for all the lengths.
@@ -154,24 +154,24 @@ public class PDFXRefStream
      */
     private int[] getWEntry()
     {
-<span class="nc" id="L157">        long[] wMax = new long[3];</span>
-<span class="nc bnc" id="L158" title="All 2 branches missed.">        for (XReferenceEntry entry : streamData)</span>
+<span class="fc" id="L157">        long[] wMax = new long[3];</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        for (XReferenceEntry entry : streamData)</span>
         {
-<span class="nc" id="L160">            wMax[0] = Math.max(wMax[0], entry.getFirstColumnValue());</span>
-<span class="nc" id="L161">            wMax[1] = Math.max(wMax[1], entry.getSecondColumnValue());</span>
-<span class="nc" id="L162">            wMax[2] = Math.max(wMax[2], entry.getThirdColumnValue());</span>
-<span class="nc" id="L163">        }</span>
+<span class="fc" id="L160">            wMax[0] = Math.max(wMax[0], entry.getFirstColumnValue());</span>
+<span class="fc" id="L161">            wMax[1] = Math.max(wMax[1], entry.getSecondColumnValue());</span>
+<span class="fc" id="L162">            wMax[2] = Math.max(wMax[2], entry.getThirdColumnValue());</span>
+<span class="fc" id="L163">        }</span>
         // find the max bytes needed to display that column
-<span class="nc" id="L165">        int[] w = new int[3];</span>
-<span class="nc bnc" id="L166" title="All 2 branches missed.">        for ( int i = 0; i &lt; w.length; i++ )</span>
+<span class="fc" id="L165">        int[] w = new int[3];</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        for ( int i = 0; i &lt; w.length; i++ )</span>
         {
-<span class="nc bnc" id="L168" title="All 2 branches missed.">            while (wMax[i] &gt; 0)</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">            while (wMax[i] &gt; 0)</span>
             {
-<span class="nc" id="L170">                w[i]++;</span>
-<span class="nc" id="L171">                wMax[i] &gt;&gt;= 8;</span>
+<span class="fc" id="L170">                w[i]++;</span>
+<span class="fc" id="L171">                wMax[i] &gt;&gt;= 8;</span>
             }
         }
-<span class="nc" id="L174">        return w;</span>
+<span class="fc" id="L174">        return w;</span>
     }
 
     /**
@@ -181,73 +181,73 @@ public class PDFXRefStream
      */
     public void setSize(long streamSize)
     {
-<span class="nc" id="L184">        this.size = streamSize;</span>
-<span class="nc" id="L185">    }</span>
+<span class="fc" id="L184">        this.size = streamSize;</span>
+<span class="fc" id="L185">    }</span>
 
     private List&lt;Long&gt; getIndexEntry()
     {
-<span class="nc" id="L189">        LinkedList&lt;Long&gt; linkedList = new LinkedList&lt;&gt;();</span>
-<span class="nc" id="L190">        Long first = null;</span>
-<span class="nc" id="L191">        Long length = null;</span>
-<span class="nc" id="L192">        Set&lt;Long&gt; objNumbers = new TreeSet&lt;&gt;();</span>
+<span class="fc" id="L189">        LinkedList&lt;Long&gt; linkedList = new LinkedList&lt;&gt;();</span>
+<span class="fc" id="L190">        Long first = null;</span>
+<span class="fc" id="L191">        Long length = null;</span>
+<span class="fc" id="L192">        Set&lt;Long&gt; objNumbers = new TreeSet&lt;&gt;();</span>
         // add object number 0 to the set
-<span class="nc" id="L194">        objNumbers.add(0L);</span>
-<span class="nc" id="L195">        objNumbers.addAll(objectNumbers);</span>
-<span class="nc bnc" id="L196" title="All 2 branches missed.">        for ( Long objNumber : objNumbers )</span>
+<span class="fc" id="L194">        objNumbers.add(0L);</span>
+<span class="fc" id="L195">        objNumbers.addAll(objectNumbers);</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">        for ( Long objNumber : objNumbers )</span>
         {
-<span class="nc bnc" id="L198" title="All 2 branches missed.">            if (first == null)</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">            if (first == null)</span>
             {
-<span class="nc" id="L200">                first = objNumber;</span>
-<span class="nc" id="L201">                length = 1L;</span>
+<span class="fc" id="L200">                first = objNumber;</span>
+<span class="fc" id="L201">                length = 1L;</span>
             }
-<span class="nc bnc" id="L203" title="All 2 branches missed.">            if (first + length == objNumber)</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">            if (first + length == objNumber)</span>
             {
-<span class="nc" id="L205">                length += 1;</span>
+<span class="fc" id="L205">                length += 1;</span>
             }
-<span class="nc bnc" id="L207" title="All 2 branches missed.">            if (first + length &lt; objNumber)</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">            if (first + length &lt; objNumber)</span>
             {
-<span class="nc" id="L209">                linkedList.add(first);</span>
-<span class="nc" id="L210">                linkedList.add(length);</span>
-<span class="nc" id="L211">                first = objNumber;</span>
-<span class="nc" id="L212">                length = 1L;</span>
+<span class="fc" id="L209">                linkedList.add(first);</span>
+<span class="fc" id="L210">                linkedList.add(length);</span>
+<span class="fc" id="L211">                first = objNumber;</span>
+<span class="fc" id="L212">                length = 1L;</span>
             }
-<span class="nc" id="L214">        }</span>
-<span class="nc" id="L215">        linkedList.add(first);</span>
-<span class="nc" id="L216">        linkedList.add(length);</span>
+<span class="fc" id="L214">        }</span>
+<span class="fc" id="L215">        linkedList.add(first);</span>
+<span class="fc" id="L216">        linkedList.add(length);</span>
 
-<span class="nc" id="L218">        return linkedList;</span>
+<span class="fc" id="L218">        return linkedList;</span>
     }
 
     private void writeNumber(OutputStream os, long number, int bytes) throws IOException
     {
-<span class="nc" id="L223">        byte[] buffer = new byte[bytes];</span>
-<span class="nc bnc" id="L224" title="All 2 branches missed.">        for ( int i = 0; i &lt; bytes; i++ )</span>
+<span class="fc" id="L223">        byte[] buffer = new byte[bytes];</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">        for ( int i = 0; i &lt; bytes; i++ )</span>
         {
-<span class="nc" id="L226">            buffer[i] = (byte)(number &amp; 0xff);</span>
-<span class="nc" id="L227">            number &gt;&gt;= 8;</span>
+<span class="fc" id="L226">            buffer[i] = (byte)(number &amp; 0xff);</span>
+<span class="fc" id="L227">            number &gt;&gt;= 8;</span>
         }
 
-<span class="nc bnc" id="L230" title="All 2 branches missed.">        for ( int i = 0; i &lt; bytes; i++ )</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">        for ( int i = 0; i &lt; bytes; i++ )</span>
         {
-<span class="nc" id="L232">            os.write(buffer[bytes-i-1]);</span>
+<span class="fc" id="L232">            os.write(buffer[bytes-i-1]);</span>
         }
-<span class="nc" id="L234">    }</span>
+<span class="fc" id="L234">    }</span>
 
     private void writeStreamData(OutputStream os, int[] w) throws IOException
     {
-<span class="nc" id="L238">        Collections.sort(streamData);</span>
-<span class="nc" id="L239">        FreeXReference nullEntry = FreeXReference.NULL_ENTRY;</span>
-<span class="nc" id="L240">        writeNumber(os, nullEntry.getFirstColumnValue(), w[0]);</span>
-<span class="nc" id="L241">        writeNumber(os, nullEntry.getSecondColumnValue(), w[1]);</span>
-<span class="nc" id="L242">        writeNumber(os, nullEntry.getThirdColumnValue(), w[2]);</span>
+<span class="fc" id="L238">        Collections.sort(streamData);</span>
+<span class="fc" id="L239">        FreeXReference nullEntry = FreeXReference.NULL_ENTRY;</span>
+<span class="fc" id="L240">        writeNumber(os, nullEntry.getFirstColumnValue(), w[0]);</span>
+<span class="fc" id="L241">        writeNumber(os, nullEntry.getSecondColumnValue(), w[1]);</span>
+<span class="fc" id="L242">        writeNumber(os, nullEntry.getThirdColumnValue(), w[2]);</span>
         // iterate over all streamData and write it in the required format
-<span class="nc bnc" id="L244" title="All 2 branches missed.">        for (XReferenceEntry entry : streamData)</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">        for (XReferenceEntry entry : streamData)</span>
         {
-<span class="nc" id="L246">            writeNumber(os, entry.getFirstColumnValue(), w[0]);</span>
-<span class="nc" id="L247">            writeNumber(os, entry.getSecondColumnValue(), w[1]);</span>
-<span class="nc" id="L248">            writeNumber(os, entry.getThirdColumnValue(), w[2]);</span>
-<span class="nc" id="L249">        }</span>
-<span class="nc" id="L250">    }</span>
+<span class="fc" id="L246">            writeNumber(os, entry.getFirstColumnValue(), w[0]);</span>
+<span class="fc" id="L247">            writeNumber(os, entry.getSecondColumnValue(), w[1]);</span>
+<span class="fc" id="L248">            writeNumber(os, entry.getThirdColumnValue(), w[2]);</span>
+<span class="fc" id="L249">        }</span>
+<span class="fc" id="L250">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

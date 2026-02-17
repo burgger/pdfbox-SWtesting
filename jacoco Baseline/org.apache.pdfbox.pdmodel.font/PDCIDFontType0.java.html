@@ -49,19 +49,19 @@ import static org.apache.pdfbox.pdmodel.font.UniUtil.getUniNameOfCodePoint;
  */
 public class PDCIDFontType0 extends PDCIDFont
 {
-<span class="nc" id="L52">    private static final Logger LOG = LogManager.getLogger(PDCIDFontType0.class);</span>
+<span class="fc" id="L52">    private static final Logger LOG = LogManager.getLogger(PDCIDFontType0.class);</span>
 
     private final CFFCIDFont cidFont;  // Top DICT that uses CIDFont operators
     private final FontBoxFont t1Font; // Top DICT that does not use CIDFont operators
     
-<span class="nc" id="L57">    private final Map&lt;Integer, Float&gt; glyphHeights = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L57">    private final Map&lt;Integer, Float&gt; glyphHeights = new HashMap&lt;&gt;();</span>
     private final boolean isEmbedded;
     private final boolean isDamaged;
     private final AffineTransform fontMatrixTransform;
-<span class="nc" id="L61">    private Float avgWidth = null;</span>
+<span class="fc" id="L61">    private Float avgWidth = null;</span>
     private Matrix fontMatrix;
     private BoundingBox fontBBox;
-<span class="nc" id="L64">    private int[] cid2gid = null;</span>
+<span class="fc" id="L64">    private int[] cid2gid = null;</span>
 
     /**
      * Constructor.
@@ -73,19 +73,19 @@ public class PDCIDFontType0 extends PDCIDFont
      */
     public PDCIDFontType0(COSDictionary fontDictionary, PDType0Font parent) throws IOException
     {
-<span class="nc" id="L76">        super(fontDictionary, parent);</span>
+<span class="fc" id="L76">        super(fontDictionary, parent);</span>
 
-<span class="nc" id="L78">        boolean fontIsDamaged = false;</span>
-<span class="nc" id="L79">        CFFFont cffFont = null;</span>
-<span class="nc" id="L80">        PDFontDescriptor fd = getFontDescriptor();</span>
-<span class="nc bnc" id="L81" title="All 2 branches missed.">        if (fd != null)</span>
+<span class="fc" id="L78">        boolean fontIsDamaged = false;</span>
+<span class="fc" id="L79">        CFFFont cffFont = null;</span>
+<span class="fc" id="L80">        PDFontDescriptor fd = getFontDescriptor();</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">        if (fd != null)</span>
         {
-<span class="nc" id="L83">            PDStream ff3Stream = fd.getFontFile3();</span>
-<span class="nc bnc" id="L84" title="All 2 branches missed.">            if (ff3Stream != null)</span>
+<span class="fc" id="L83">            PDStream ff3Stream = fd.getFontFile3();</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">            if (ff3Stream != null)</span>
             {
-<span class="nc" id="L86">                try (RandomAccessRead randomAccessRead = ff3Stream.getCOSObject().createView())</span>
+<span class="fc" id="L86">                try (RandomAccessRead randomAccessRead = ff3Stream.getCOSObject().createView())</span>
                 {
-<span class="nc bnc" id="L88" title="All 4 branches missed.">                    if (randomAccessRead.length() &gt; 0 &amp;&amp; randomAccessRead.peek() == '%')</span>
+<span class="pc bpc" id="L88" title="2 of 4 branches missed.">                    if (randomAccessRead.length() &gt; 0 &amp;&amp; randomAccessRead.peek() == '%')</span>
                     {
                         // PDFBOX-2642 contains a corrupt PFB font instead of a CFF
 <span class="nc" id="L91">                        LOG.warn(&quot;Found PFB but expected embedded CFF font {}&quot;, fd.getFontName());</span>
@@ -93,34 +93,34 @@ public class PDCIDFontType0 extends PDCIDFont
                     }
                     else
                     {
-<span class="nc" id="L96">                        CFFParser cffParser = new CFFParser();</span>
-<span class="nc" id="L97">                        cffFont = cffParser.parse(randomAccessRead).get(0);</span>
+<span class="fc" id="L96">                        CFFParser cffParser = new CFFParser();</span>
+<span class="fc" id="L97">                        cffFont = cffParser.parse(randomAccessRead).get(0);</span>
                     }
                 }
 <span class="nc" id="L100">                catch (IOException e)</span>
                 {
 <span class="nc" id="L102">                    LOG.error(() -&gt; &quot;Can't read the embedded CFF font &quot; + fd.getFontName(), e);</span>
 <span class="nc" id="L103">                    fontIsDamaged = true;</span>
-<span class="nc" id="L104">                }</span>
+<span class="fc" id="L104">                }</span>
             }
         }
 
-<span class="nc bnc" id="L108" title="All 2 branches missed.">        if (cffFont != null)</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (cffFont != null)</span>
         {
             // embedded
-<span class="nc bnc" id="L111" title="All 2 branches missed.">            if (cffFont instanceof CFFCIDFont)</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">            if (cffFont instanceof CFFCIDFont)</span>
             {
-<span class="nc" id="L113">                cidFont = (CFFCIDFont)cffFont;</span>
-<span class="nc" id="L114">                t1Font = null;</span>
+<span class="fc" id="L113">                cidFont = (CFFCIDFont)cffFont;</span>
+<span class="fc" id="L114">                t1Font = null;</span>
             }
             else
             {
 <span class="nc" id="L118">                cidFont = null;</span>
 <span class="nc" id="L119">                t1Font = cffFont;</span>
             }
-<span class="nc" id="L121">            cid2gid = readCIDToGIDMap();</span>
-<span class="nc" id="L122">            isEmbedded = true;</span>
-<span class="nc" id="L123">            isDamaged = false;</span>
+<span class="fc" id="L121">            cid2gid = readCIDToGIDMap();</span>
+<span class="fc" id="L122">            isEmbedded = true;</span>
+<span class="fc" id="L123">            isDamaged = false;</span>
         }
         else
         {
@@ -161,19 +161,19 @@ public class PDCIDFontType0 extends PDCIDFont
 <span class="nc" id="L161">            isEmbedded = false;</span>
 <span class="nc" id="L162">            isDamaged = fontIsDamaged;</span>
         }
-<span class="nc" id="L164">        fontMatrixTransform = getFontMatrix().createAffineTransform();</span>
-<span class="nc" id="L165">        fontMatrixTransform.scale(1000, 1000);</span>
-<span class="nc" id="L166">    }</span>
+<span class="fc" id="L164">        fontMatrixTransform = getFontMatrix().createAffineTransform();</span>
+<span class="fc" id="L165">        fontMatrixTransform.scale(1000, 1000);</span>
+<span class="fc" id="L166">    }</span>
     
     @Override
     public final Matrix getFontMatrix()
     {
-<span class="nc bnc" id="L171" title="All 2 branches missed.">        if (fontMatrix == null)</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">        if (fontMatrix == null)</span>
         {
             List&lt;Number&gt; numbers;
-<span class="nc bnc" id="L174" title="All 2 branches missed.">            if (cidFont != null)</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">            if (cidFont != null)</span>
             {
-<span class="nc" id="L176">                numbers = cidFont.getFontMatrix();</span>
+<span class="fc" id="L176">                numbers = cidFont.getFontMatrix();</span>
             }
             else
             {
@@ -188,41 +188,41 @@ public class PDCIDFontType0 extends PDCIDFont
 <span class="nc" id="L188">                }</span>
             }
 
-<span class="nc bnc" id="L191" title="All 4 branches missed.">            if (numbers != null &amp;&amp; numbers.size() == 6)</span>
+<span class="pc bpc" id="L191" title="2 of 4 branches missed.">            if (numbers != null &amp;&amp; numbers.size() == 6)</span>
             {
-<span class="nc" id="L193">                fontMatrix = new Matrix(numbers.get(0).floatValue(), numbers.get(1).floatValue(),</span>
-<span class="nc" id="L194">                                        numbers.get(2).floatValue(), numbers.get(3).floatValue(),</span>
-<span class="nc" id="L195">                                        numbers.get(4).floatValue(), numbers.get(5).floatValue());</span>
+<span class="fc" id="L193">                fontMatrix = new Matrix(numbers.get(0).floatValue(), numbers.get(1).floatValue(),</span>
+<span class="fc" id="L194">                                        numbers.get(2).floatValue(), numbers.get(3).floatValue(),</span>
+<span class="fc" id="L195">                                        numbers.get(4).floatValue(), numbers.get(5).floatValue());</span>
             }
             else
             {
 <span class="nc" id="L199">                fontMatrix = new Matrix(0.001f, 0, 0, 0.001f, 0, 0);</span>
             }
         }
-<span class="nc" id="L202">        return fontMatrix;</span>
+<span class="fc" id="L202">        return fontMatrix;</span>
     }
     
     @Override
     public BoundingBox getBoundingBox()
     {
-<span class="nc bnc" id="L208" title="All 2 branches missed.">        if (fontBBox == null)</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">        if (fontBBox == null)</span>
         {
-<span class="nc" id="L210">            fontBBox = generateBoundingBox();</span>
+<span class="fc" id="L210">            fontBBox = generateBoundingBox();</span>
         }
-<span class="nc" id="L212">        return fontBBox;</span>
+<span class="fc" id="L212">        return fontBBox;</span>
     }
 
     private BoundingBox generateBoundingBox()
     {
-<span class="nc bnc" id="L217" title="All 2 branches missed.">        if (getFontDescriptor() != null) {</span>
-<span class="nc" id="L218">            PDRectangle bbox = getFontDescriptor().getFontBoundingBox();</span>
-<span class="nc bnc" id="L219" title="All 4 branches missed.">            if (bbox != null &amp;&amp; (Float.compare(bbox.getLowerLeftX(),0) != 0 ||</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">        if (getFontDescriptor() != null) {</span>
+<span class="fc" id="L218">            PDRectangle bbox = getFontDescriptor().getFontBoundingBox();</span>
+<span class="pc bpc" id="L219" title="2 of 4 branches missed.">            if (bbox != null &amp;&amp; (Float.compare(bbox.getLowerLeftX(),0) != 0 ||</span>
 <span class="nc bnc" id="L220" title="All 2 branches missed.">                Float.compare(bbox.getLowerLeftY(),0) != 0 ||</span>
 <span class="nc bnc" id="L221" title="All 2 branches missed.">                Float.compare(bbox.getUpperRightX(),0) != 0 ||</span>
 <span class="nc bnc" id="L222" title="All 2 branches missed.">                Float.compare(bbox.getUpperRightY(),0) != 0))</span>
             {
-<span class="nc" id="L224">                return new BoundingBox(bbox.getLowerLeftX(), bbox.getLowerLeftY(),</span>
-<span class="nc" id="L225">                                          bbox.getUpperRightX(), bbox.getUpperRightY());</span>
+<span class="fc" id="L224">                return new BoundingBox(bbox.getLowerLeftX(), bbox.getLowerLeftY(),</span>
+<span class="fc" id="L225">                                          bbox.getUpperRightX(), bbox.getUpperRightY());</span>
             }
         }
         try
@@ -285,9 +285,9 @@ public class PDCIDFontType0 extends PDCIDFont
      */
     public Type2CharString getType2CharString(int cid) throws IOException
     {
-<span class="nc bnc" id="L288" title="All 2 branches missed.">        if (cidFont != null)</span>
+<span class="pc bpc" id="L288" title="1 of 2 branches missed.">        if (cidFont != null)</span>
         {
-<span class="nc" id="L290">            return cidFont.getType2CharString(cid);</span>
+<span class="fc" id="L290">            return cidFont.getType2CharString(cid);</span>
         }
 <span class="nc bnc" id="L292" title="All 2 branches missed.">        else if (t1Font instanceof CFFType1Font)</span>
         {
@@ -316,16 +316,16 @@ public class PDCIDFontType0 extends PDCIDFont
     @Override
     public GeneralPath getPath(int code) throws IOException
     {
-<span class="nc" id="L319">        int cid = codeToCID(code);</span>
-<span class="nc bnc" id="L320" title="All 4 branches missed.">        if (cid2gid != null &amp;&amp; isEmbedded)</span>
+<span class="fc" id="L319">        int cid = codeToCID(code);</span>
+<span class="pc bpc" id="L320" title="3 of 4 branches missed.">        if (cid2gid != null &amp;&amp; isEmbedded)</span>
         {
             // PDFBOX-4093: despite being a type 0 font, there is a CIDToGIDMap
 <span class="nc" id="L323">            cid = cid2gid[cid];</span>
         }
-<span class="nc" id="L325">        Type2CharString charstring = getType2CharString(cid);</span>
-<span class="nc bnc" id="L326" title="All 2 branches missed.">        if (charstring != null)</span>
+<span class="fc" id="L325">        Type2CharString charstring = getType2CharString(cid);</span>
+<span class="pc bpc" id="L326" title="1 of 2 branches missed.">        if (charstring != null)</span>
         {
-<span class="nc" id="L328">            return charstring.getPath();</span>
+<span class="fc" id="L328">            return charstring.getPath();</span>
         }
 <span class="nc bnc" id="L330" title="All 4 branches missed.">        else if (isEmbedded &amp;&amp; t1Font instanceof CFFType1Font)</span>
         {
@@ -340,17 +340,17 @@ public class PDCIDFontType0 extends PDCIDFont
     @Override
     public GeneralPath getNormalizedPath(int code) throws IOException
     {
-<span class="nc" id="L343">        return getPath(code);</span>
+<span class="fc" id="L343">        return getPath(code);</span>
     }
 
     @Override
     public boolean hasGlyph(int code) throws IOException
     {
-<span class="nc" id="L349">        int cid = codeToCID(code);</span>
-<span class="nc" id="L350">        Type2CharString charstring = getType2CharString(cid);</span>
-<span class="nc bnc" id="L351" title="All 2 branches missed.">        if (charstring != null)</span>
+<span class="fc" id="L349">        int cid = codeToCID(code);</span>
+<span class="fc" id="L350">        Type2CharString charstring = getType2CharString(cid);</span>
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">        if (charstring != null)</span>
         {
-<span class="nc bnc" id="L353" title="All 2 branches missed.">            return charstring.getGID() != 0;</span>
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">            return charstring.getGID() != 0;</span>
         }
 <span class="nc bnc" id="L355" title="All 4 branches missed.">        else if (isEmbedded &amp;&amp; t1Font instanceof CFFType1Font)</span>
         {
@@ -371,7 +371,7 @@ public class PDCIDFontType0 extends PDCIDFont
     @Override
     public int codeToCID(int code)
     {
-<span class="nc" id="L374">        return parent.getCMap().toCID(code);</span>
+<span class="fc" id="L374">        return parent.getCMap().toCID(code);</span>
     }
 
     @Override
@@ -408,11 +408,11 @@ public class PDCIDFontType0 extends PDCIDFont
     @Override
     public float getWidthFromFont(int code) throws IOException
     {
-<span class="nc" id="L411">        int cid = codeToCID(code);</span>
+<span class="fc" id="L411">        int cid = codeToCID(code);</span>
         float width;
-<span class="nc bnc" id="L413" title="All 2 branches missed.">        if (cidFont != null)</span>
+<span class="pc bpc" id="L413" title="1 of 2 branches missed.">        if (cidFont != null)</span>
         {
-<span class="nc" id="L415">            width = getType2CharString(cid).getWidth();</span>
+<span class="fc" id="L415">            width = getType2CharString(cid).getWidth();</span>
         }
 <span class="nc bnc" id="L417" title="All 4 branches missed.">        else if (isEmbedded &amp;&amp; t1Font instanceof CFFType1Font)</span>
         {
@@ -423,15 +423,15 @@ public class PDCIDFontType0 extends PDCIDFont
 <span class="nc" id="L423">            width = t1Font.getWidth(getGlyphName(code));</span>
         }
         
-<span class="nc" id="L426">        Point2D p = new Point2D.Float(width, 0);</span>
-<span class="nc" id="L427">        fontMatrixTransform.transform(p, p);</span>
-<span class="nc" id="L428">        return (float)p.getX();</span>
+<span class="fc" id="L426">        Point2D p = new Point2D.Float(width, 0);</span>
+<span class="fc" id="L427">        fontMatrixTransform.transform(p, p);</span>
+<span class="fc" id="L428">        return (float)p.getX();</span>
     }
 
     @Override
     public boolean isEmbedded()
     {
-<span class="nc" id="L434">        return isEmbedded;</span>
+<span class="fc" id="L434">        return isEmbedded;</span>
     }
 
     @Override

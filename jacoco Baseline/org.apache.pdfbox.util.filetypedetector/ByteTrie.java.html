@@ -32,32 +32,32 @@ import java.util.Map;
  *
  * @param &lt;T&gt; the type of value to store for byte sequences
  */
-<span class="nc" id="L35">class ByteTrie&lt;T&gt;</span>
+<span class="fc" id="L35">class ByteTrie&lt;T&gt;</span>
 {
     /**
      * A node in the trie. Has children and may have an associated value.
      */
-<span class="nc" id="L40">    static class ByteTrieNode&lt;T&gt;</span>
+<span class="fc" id="L40">    static class ByteTrieNode&lt;T&gt;</span>
     {
-<span class="nc" id="L42">        private final Map&lt;Byte, ByteTrieNode&lt;T&gt;&gt; children = new HashMap&lt;&gt;();</span>
-<span class="nc" id="L43">        private T value = null;</span>
+<span class="fc" id="L42">        private final Map&lt;Byte, ByteTrieNode&lt;T&gt;&gt; children = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L43">        private T value = null;</span>
 
         public void setValue(T value)
         {
-<span class="nc bnc" id="L47" title="All 2 branches missed.">            if (this.value != null)</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">            if (this.value != null)</span>
             {
 <span class="nc" id="L49">                throw new IllegalStateException(&quot;Value already set for this trie node&quot;);</span>
             }
-<span class="nc" id="L51">            this.value = value;</span>
-<span class="nc" id="L52">        }</span>
+<span class="fc" id="L51">            this.value = value;</span>
+<span class="fc" id="L52">        }</span>
 
         public T getValue()
         {
-<span class="nc" id="L56">            return value;</span>
+<span class="fc" id="L56">            return value;</span>
         }
     }
 
-<span class="nc" id="L60">    private final ByteTrieNode&lt;T&gt; root = new ByteTrieNode&lt;&gt;();</span>
+<span class="fc" id="L60">    private final ByteTrieNode&lt;T&gt; root = new ByteTrieNode&lt;&gt;();</span>
     private int maxDepth;
 
     /**
@@ -69,22 +69,22 @@ import java.util.Map;
      */
     public T find(byte[] bytes)
     {
-<span class="nc" id="L72">        ByteTrieNode&lt;T&gt; node = root;</span>
-<span class="nc" id="L73">        T val = node.getValue();</span>
-<span class="nc bnc" id="L74" title="All 2 branches missed.">        for (byte b : bytes)</span>
+<span class="fc" id="L72">        ByteTrieNode&lt;T&gt; node = root;</span>
+<span class="fc" id="L73">        T val = node.getValue();</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        for (byte b : bytes)</span>
         {
-<span class="nc" id="L76">            ByteTrieNode&lt;T&gt; child = node.children.get(b);</span>
-<span class="nc bnc" id="L77" title="All 2 branches missed.">            if (child == null)</span>
+<span class="fc" id="L76">            ByteTrieNode&lt;T&gt; child = node.children.get(b);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">            if (child == null)</span>
             {
-<span class="nc" id="L79">                break;</span>
+<span class="fc" id="L79">                break;</span>
             }
-<span class="nc" id="L81">            node = child;</span>
-<span class="nc bnc" id="L82" title="All 2 branches missed.">            if (node.getValue() != null)</span>
+<span class="fc" id="L81">            node = child;</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">            if (node.getValue() != null)</span>
             {
-<span class="nc" id="L84">                val = node.getValue();</span>
+<span class="fc" id="L84">                val = node.getValue();</span>
             }
         }
-<span class="nc" id="L87">        return val;</span>
+<span class="fc" id="L87">        return val;</span>
     }
 
     /**
@@ -94,25 +94,25 @@ import java.util.Map;
      */
     public void addPath(T value, byte[]... parts)
     {
-<span class="nc" id="L97">        int depth = 0;</span>
-<span class="nc" id="L98">        ByteTrieNode&lt;T&gt; node = root;</span>
-<span class="nc bnc" id="L99" title="All 2 branches missed.">        for (byte[] part : parts)</span>
+<span class="fc" id="L97">        int depth = 0;</span>
+<span class="fc" id="L98">        ByteTrieNode&lt;T&gt; node = root;</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        for (byte[] part : parts)</span>
         {
-<span class="nc bnc" id="L101" title="All 2 branches missed.">            for (byte b : part)</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">            for (byte b : part)</span>
             {
-<span class="nc" id="L103">                ByteTrieNode&lt;T&gt; child = node.children.get(b);</span>
-<span class="nc bnc" id="L104" title="All 2 branches missed.">                if (child == null)</span>
+<span class="fc" id="L103">                ByteTrieNode&lt;T&gt; child = node.children.get(b);</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">                if (child == null)</span>
                 {
-<span class="nc" id="L106">                    child = new ByteTrieNode&lt;&gt;();</span>
-<span class="nc" id="L107">                    node.children.put(b, child);</span>
+<span class="fc" id="L106">                    child = new ByteTrieNode&lt;&gt;();</span>
+<span class="fc" id="L107">                    node.children.put(b, child);</span>
                 }
-<span class="nc" id="L109">                node = child;</span>
-<span class="nc" id="L110">                depth++;</span>
+<span class="fc" id="L109">                node = child;</span>
+<span class="fc" id="L110">                depth++;</span>
             }
         }
-<span class="nc" id="L113">        node.setValue(value);</span>
-<span class="nc" id="L114">        maxDepth = Math.max(maxDepth, depth);</span>
-<span class="nc" id="L115">    }</span>
+<span class="fc" id="L113">        node.setValue(value);</span>
+<span class="fc" id="L114">        maxDepth = Math.max(maxDepth, depth);</span>
+<span class="fc" id="L115">    }</span>
 
     /**
      * Sets the default value to use in {@link ByteTrie#find(byte[])} when no path matches.
@@ -120,8 +120,8 @@ import java.util.Map;
      */
     public void setDefaultValue(T defaultValue)
     {
-<span class="nc" id="L123">        root.setValue(defaultValue);</span>
-<span class="nc" id="L124">    }</span>
+<span class="fc" id="L123">        root.setValue(defaultValue);</span>
+<span class="fc" id="L124">    }</span>
 
     /**
      * Gets the maximum depth stored in this trie.
@@ -129,7 +129,7 @@ import java.util.Map;
      */
     public int getMaxDepth()
     {
-<span class="nc" id="L132">        return maxDepth;</span>
+<span class="fc" id="L132">        return maxDepth;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

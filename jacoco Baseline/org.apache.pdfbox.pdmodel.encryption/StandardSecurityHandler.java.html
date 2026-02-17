@@ -51,7 +51,7 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
     /**
      * Log instance.
      */
-<span class="nc" id="L54">    private static final Logger LOG = LogManager.getLogger(StandardSecurityHandler.class);</span>
+<span class="fc" id="L54">    private static final Logger LOG = LogManager.getLogger(StandardSecurityHandler.class);</span>
 
     private static final int REVISION_2 = 2;
     private static final int REVISION_3 = 3;
@@ -63,10 +63,10 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
     public static final String FILTER = &quot;Standard&quot;;
 
     /** Protection policy class for this handler. */
-<span class="nc" id="L66">    public static final Class&lt;?&gt; PROTECTION_POLICY_CLASS = StandardProtectionPolicy.class;</span>
+<span class="fc" id="L66">    public static final Class&lt;?&gt; PROTECTION_POLICY_CLASS = StandardProtectionPolicy.class;</span>
 
     /** Standard padding for encryption. */
-<span class="nc" id="L69">    private static final byte[] ENCRYPT_PADDING =</span>
+<span class="fc" id="L69">    private static final byte[] ENCRYPT_PADDING =</span>
     {
         (byte)0x28, (byte)0xBF, (byte)0x4E, (byte)0x5E, (byte)0x4E,
         (byte)0x75, (byte)0x8A, (byte)0x41, (byte)0x64, (byte)0x00,
@@ -78,14 +78,14 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
     };
 
     // hashes used for Algorithm 2.B, depending on remainder from E modulo 3
-<span class="nc" id="L81">    private static final String[] HASHES_2B = {&quot;SHA-256&quot;, &quot;SHA-384&quot;, &quot;SHA-512&quot;};</span>
+<span class="fc" id="L81">    private static final String[] HASHES_2B = {&quot;SHA-256&quot;, &quot;SHA-384&quot;, &quot;SHA-512&quot;};</span>
 
     /**
      * Constructor.
      */
     public StandardSecurityHandler()
-<span class="nc" id="L87">    {</span>
-<span class="nc" id="L88">    }</span>
+<span class="fc" id="L87">    {</span>
+<span class="fc" id="L88">    }</span>
 
     /**
      * Constructor used for encryption.
@@ -94,8 +94,8 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
      */
     public StandardSecurityHandler(StandardProtectionPolicy standardProtectionPolicy)
     {
-<span class="nc" id="L97">        super(standardProtectionPolicy);</span>
-<span class="nc" id="L98">    }</span>
+<span class="fc" id="L97">        super(standardProtectionPolicy);</span>
+<span class="fc" id="L98">    }</span>
 
     /**
      * Computes the revision version of the StandardSecurityHandler to
@@ -108,24 +108,24 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
      */
     private int computeRevisionNumber(int version)
     {
-<span class="nc" id="L111">        StandardProtectionPolicy protectionPolicy = getProtectionPolicy();</span>
-<span class="nc" id="L112">        AccessPermission permissions = protectionPolicy.getPermissions();</span>
-<span class="nc bnc" id="L113" title="All 4 branches missed.">        if (version &lt; REVISION_2 &amp;&amp; !permissions.hasAnyRevision3PermissionSet())</span>
+<span class="fc" id="L111">        StandardProtectionPolicy protectionPolicy = getProtectionPolicy();</span>
+<span class="fc" id="L112">        AccessPermission permissions = protectionPolicy.getPermissions();</span>
+<span class="fc bfc" id="L113" title="All 4 branches covered.">        if (version &lt; REVISION_2 &amp;&amp; !permissions.hasAnyRevision3PermissionSet())</span>
         {
-<span class="nc" id="L115">            return REVISION_2;</span>
+<span class="fc" id="L115">            return REVISION_2;</span>
         }
-<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (version == REVISION_5)</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">        if (version == REVISION_5)</span>
         {
             // note about revision 5: &quot;Shall not be used. This value was used by a deprecated Adobe extension.&quot;
-<span class="nc" id="L120">            return REVISION_6;    </span>
+<span class="fc" id="L120">            return REVISION_6;    </span>
         }
-<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (version == REVISION_4)</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        if (version == REVISION_4)</span>
         {
-<span class="nc" id="L124">            return REVISION_4;</span>
+<span class="fc" id="L124">            return REVISION_4;</span>
         }
-<span class="nc bnc" id="L126" title="All 6 branches missed.">        if (version == REVISION_2 || version == REVISION_3 || permissions.hasAnyRevision3PermissionSet())</span>
+<span class="pc bpc" id="L126" title="2 of 6 branches missed.">        if (version == REVISION_2 || version == REVISION_3 || permissions.hasAnyRevision3PermissionSet())</span>
         {
-<span class="nc" id="L128">            return REVISION_3;</span>
+<span class="fc" id="L128">            return REVISION_3;</span>
         }
 <span class="nc" id="L130">        return REVISION_4;</span>
     }
@@ -147,47 +147,47 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
                                      DecryptionMaterial decryptionMaterial)
                                      throws IOException
     {
-<span class="nc bnc" id="L150" title="All 2 branches missed.">        if(!(decryptionMaterial instanceof StandardDecryptionMaterial))</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        if(!(decryptionMaterial instanceof StandardDecryptionMaterial))</span>
         {
 <span class="nc" id="L152">            throw new IOException(&quot;Decryption material is not compatible with the document&quot;);</span>
         }
         
         // This is only used with security version 4 and 5.
-<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (encryption.getVersion() &gt;= REVISION_4) {</span>
-<span class="nc" id="L157">            setStreamFilterName(encryption.getStreamFilterName());</span>
-<span class="nc" id="L158">            setStringFilterName(encryption.getStringFilterName());</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        if (encryption.getVersion() &gt;= REVISION_4) {</span>
+<span class="fc" id="L157">            setStreamFilterName(encryption.getStreamFilterName());</span>
+<span class="fc" id="L158">            setStringFilterName(encryption.getStringFilterName());</span>
         }
-<span class="nc" id="L160">        setDecryptMetadata(encryption.isEncryptMetaData());</span>
-<span class="nc" id="L161">        StandardDecryptionMaterial material = (StandardDecryptionMaterial)decryptionMaterial;</span>
+<span class="fc" id="L160">        setDecryptMetadata(encryption.isEncryptMetaData());</span>
+<span class="fc" id="L161">        StandardDecryptionMaterial material = (StandardDecryptionMaterial)decryptionMaterial;</span>
 
-<span class="nc" id="L163">        String password = material.getPassword();</span>
-<span class="nc bnc" id="L164" title="All 2 branches missed.">        if(password == null)</span>
+<span class="fc" id="L163">        String password = material.getPassword();</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        if(password == null)</span>
         {
-<span class="nc" id="L166">            password = &quot;&quot;;</span>
+<span class="fc" id="L166">            password = &quot;&quot;;</span>
         }
 
-<span class="nc" id="L169">        int dicPermissions = encryption.getPermissions();</span>
-<span class="nc" id="L170">        int dicRevision = encryption.getRevision();</span>
-<span class="nc bnc" id="L171" title="All 2 branches missed.">        int dicLength = encryption.getVersion() == 1 ? 5 : encryption.getLength() / 8;</span>
+<span class="fc" id="L169">        int dicPermissions = encryption.getPermissions();</span>
+<span class="fc" id="L170">        int dicRevision = encryption.getRevision();</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">        int dicLength = encryption.getVersion() == 1 ? 5 : encryption.getLength() / 8;</span>
         
-<span class="nc bnc" id="L173" title="All 4 branches missed.">        if (encryption.getVersion() == REVISION_4 || encryption.getVersion() == REVISION_5)</span>
+<span class="fc bfc" id="L173" title="All 4 branches covered.">        if (encryption.getVersion() == REVISION_4 || encryption.getVersion() == REVISION_5)</span>
         {
             // detect whether AES encryption is used. This assumes that the encryption algo is 
             // stored in the PDCryptFilterDictionary
             // However, crypt filters are used only when V is 4 or 5.
-<span class="nc" id="L178">            PDCryptFilterDictionary stdCryptFilterDictionary = encryption.getStdCryptFilterDictionary();</span>
-<span class="nc bnc" id="L179" title="All 2 branches missed.">            if (stdCryptFilterDictionary != null)</span>
+<span class="fc" id="L178">            PDCryptFilterDictionary stdCryptFilterDictionary = encryption.getStdCryptFilterDictionary();</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">            if (stdCryptFilterDictionary != null)</span>
             {
-<span class="nc" id="L181">                COSName cryptFilterMethod = stdCryptFilterDictionary.getCryptFilterMethod();</span>
-<span class="nc bnc" id="L182" title="All 2 branches missed.">                if (COSName.AESV2.equals(cryptFilterMethod))</span>
+<span class="fc" id="L181">                COSName cryptFilterMethod = stdCryptFilterDictionary.getCryptFilterMethod();</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">                if (COSName.AESV2.equals(cryptFilterMethod))</span>
                 {
-<span class="nc" id="L184">                    dicLength = 128 / 8;</span>
-<span class="nc" id="L185">                    setAES(true);</span>
-<span class="nc bnc" id="L186" title="All 2 branches missed.">                    if (encryption.getCOSObject().containsKey(COSName.LENGTH))</span>
+<span class="fc" id="L184">                    dicLength = 128 / 8;</span>
+<span class="fc" id="L185">                    setAES(true);</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">                    if (encryption.getCOSObject().containsKey(COSName.LENGTH))</span>
                     {
                         // PDFBOX-5345
-<span class="nc" id="L189">                        int newLength = encryption.getLength() / 8;</span>
-<span class="nc bnc" id="L190" title="All 2 branches missed.">                        if (newLength &lt; dicLength)</span>
+<span class="fc" id="L189">                        int newLength = encryption.getLength() / 8;</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">                        if (newLength &lt; dicLength)</span>
                         {
 <span class="nc" id="L192">                            LOG.warn(</span>
                                     &quot;Using {} bytes key length instead of {} in AESV2 encryption?!&quot;,
@@ -196,15 +196,15 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
                         }
                     }
                 }
-<span class="nc bnc" id="L199" title="All 2 branches missed.">                if (COSName.AESV3.equals(cryptFilterMethod))</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">                if (COSName.AESV3.equals(cryptFilterMethod))</span>
                 {
-<span class="nc" id="L201">                    dicLength = 256 / 8;</span>
-<span class="nc" id="L202">                    setAES(true);</span>
-<span class="nc bnc" id="L203" title="All 2 branches missed.">                    if (encryption.getCOSObject().containsKey(COSName.LENGTH))</span>
+<span class="fc" id="L201">                    dicLength = 256 / 8;</span>
+<span class="fc" id="L202">                    setAES(true);</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">                    if (encryption.getCOSObject().containsKey(COSName.LENGTH))</span>
                     {
                         // PDFBOX-5345
-<span class="nc" id="L206">                        int newLength = encryption.getLength() / 8;</span>
-<span class="nc bnc" id="L207" title="All 2 branches missed.">                        if (newLength &lt; dicLength)</span>
+<span class="fc" id="L206">                        int newLength = encryption.getLength() / 8;</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">                        if (newLength &lt; dicLength)</span>
                         {
 <span class="nc" id="L209">                            LOG.warn(</span>
                                     &quot;Using {} bytes key length instead of {} in AESV3 encryption?!&quot;,
@@ -216,26 +216,26 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
             }
         }
 
-<span class="nc" id="L219">        byte[] documentIDBytes = getDocumentIDBytes(documentIDArray);</span>
+<span class="fc" id="L219">        byte[] documentIDBytes = getDocumentIDBytes(documentIDArray);</span>
 
         // we need to know whether the meta data was encrypted for password calculation
-<span class="nc" id="L222">        boolean encryptMetadata = encryption.isEncryptMetaData();</span>
+<span class="fc" id="L222">        boolean encryptMetadata = encryption.isEncryptMetaData();</span>
         
-<span class="nc" id="L224">        byte[] userKey = encryption.getUserKey();</span>
-<span class="nc" id="L225">        byte[] ownerKey = encryption.getOwnerKey();</span>
-<span class="nc" id="L226">        byte[] ue = null, oe = null;</span>
+<span class="fc" id="L224">        byte[] userKey = encryption.getUserKey();</span>
+<span class="fc" id="L225">        byte[] ownerKey = encryption.getOwnerKey();</span>
+<span class="fc" id="L226">        byte[] ue = null, oe = null;</span>
 
-<span class="nc" id="L228">        Charset passwordCharset = StandardCharsets.ISO_8859_1;</span>
-<span class="nc bnc" id="L229" title="All 4 branches missed.">        if (dicRevision == REVISION_5 || dicRevision == REVISION_6)</span>
+<span class="fc" id="L228">        Charset passwordCharset = StandardCharsets.ISO_8859_1;</span>
+<span class="fc bfc" id="L229" title="All 4 branches covered.">        if (dicRevision == REVISION_5 || dicRevision == REVISION_6)</span>
         {
-<span class="nc" id="L231">            passwordCharset = StandardCharsets.UTF_8;</span>
-<span class="nc" id="L232">            ue = encryption.getUserEncryptionKey();</span>
-<span class="nc" id="L233">            oe = encryption.getOwnerEncryptionKey();</span>
+<span class="fc" id="L231">            passwordCharset = StandardCharsets.UTF_8;</span>
+<span class="fc" id="L232">            ue = encryption.getUserEncryptionKey();</span>
+<span class="fc" id="L233">            oe = encryption.getOwnerEncryptionKey();</span>
         }
 
-<span class="nc bnc" id="L236" title="All 2 branches missed.">        if (dicRevision == REVISION_6)</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">        if (dicRevision == REVISION_6)</span>
         {
-<span class="nc" id="L238">            password = SaslPrep.saslPrepQuery(password); // PDFBOX-4155</span>
+<span class="fc" id="L238">            password = SaslPrep.saslPrepQuery(password); // PDFBOX-4155</span>
         }
 
         AccessPermission currentAccessPermission;
@@ -243,39 +243,39 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
         byte[] encryptedKey;
         byte[] passwordBytes;
         boolean isOwnerPassword;
-<span class="nc bnc" id="L246" title="All 2 branches missed.">        if( isOwnerPassword(password.getBytes(passwordCharset), userKey, ownerKey,</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">        if( isOwnerPassword(password.getBytes(passwordCharset), userKey, ownerKey,</span>
                                  dicPermissions, documentIDBytes, dicRevision,
                                  dicLength, encryptMetadata) )
         {
-<span class="nc" id="L250">            currentAccessPermission = AccessPermission.getOwnerAccessPermission();</span>
-<span class="nc" id="L251">            setCurrentAccessPermission(currentAccessPermission);</span>
+<span class="fc" id="L250">            currentAccessPermission = AccessPermission.getOwnerAccessPermission();</span>
+<span class="fc" id="L251">            setCurrentAccessPermission(currentAccessPermission);</span>
             
-<span class="nc bnc" id="L253" title="All 4 branches missed.">            if (dicRevision == REVISION_5 || dicRevision == REVISION_6)</span>
+<span class="fc bfc" id="L253" title="All 4 branches covered.">            if (dicRevision == REVISION_5 || dicRevision == REVISION_6)</span>
             {
-<span class="nc" id="L255">                passwordBytes = password.getBytes(passwordCharset);</span>
+<span class="fc" id="L255">                passwordBytes = password.getBytes(passwordCharset);</span>
             }
             else
             {
-<span class="nc" id="L259">                passwordBytes = getUserPassword234(password.getBytes(passwordCharset),</span>
+<span class="fc" id="L259">                passwordBytes = getUserPassword234(password.getBytes(passwordCharset),</span>
                         ownerKey, dicRevision, dicLength );
             }
-<span class="nc" id="L262">            isOwnerPassword = true;</span>
+<span class="fc" id="L262">            isOwnerPassword = true;</span>
         }
-<span class="nc bnc" id="L264" title="All 2 branches missed.">        else if( isUserPassword(password.getBytes(passwordCharset), userKey, ownerKey,</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">        else if( isUserPassword(password.getBytes(passwordCharset), userKey, ownerKey,</span>
                            dicPermissions, documentIDBytes, dicRevision,
                            dicLength, encryptMetadata) )
         {
-<span class="nc" id="L268">            currentAccessPermission = new AccessPermission(dicPermissions);</span>
-<span class="nc" id="L269">            currentAccessPermission.setReadOnly();</span>
-<span class="nc" id="L270">            setCurrentAccessPermission(currentAccessPermission);</span>
-<span class="nc" id="L271">            passwordBytes = password.getBytes(passwordCharset);</span>
-<span class="nc" id="L272">            isOwnerPassword = false;</span>
+<span class="fc" id="L268">            currentAccessPermission = new AccessPermission(dicPermissions);</span>
+<span class="fc" id="L269">            currentAccessPermission.setReadOnly();</span>
+<span class="fc" id="L270">            setCurrentAccessPermission(currentAccessPermission);</span>
+<span class="fc" id="L271">            passwordBytes = password.getBytes(passwordCharset);</span>
+<span class="fc" id="L272">            isOwnerPassword = false;</span>
         }
         else
         {
-<span class="nc" id="L276">            throw new InvalidPasswordException(&quot;Cannot decrypt PDF, the password is incorrect&quot;);</span>
+<span class="fc" id="L276">            throw new InvalidPasswordException(&quot;Cannot decrypt PDF, the password is incorrect&quot;);</span>
         }
-<span class="nc" id="L278">        encryptedKey = computeEncryptedKey(</span>
+<span class="fc" id="L278">        encryptedKey = computeEncryptedKey(</span>
             passwordBytes,
             ownerKey, userKey, oe, ue,
             dicPermissions,
@@ -283,34 +283,34 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
             dicRevision,
             dicLength,
             encryptMetadata, isOwnerPassword);
-<span class="nc bnc" id="L286" title="All 4 branches missed.">        if (dicRevision == REVISION_4 &amp;&amp; encryptedKey.length &lt; 16)</span>
+<span class="fc bfc" id="L286" title="All 4 branches covered.">        if (dicRevision == REVISION_4 &amp;&amp; encryptedKey.length &lt; 16)</span>
         {
-<span class="nc" id="L288">            LOG.info(&quot;PDFBOX-5955: padding RC4 key to length 16&quot;);</span>
-<span class="nc" id="L289">            encryptedKey = Arrays.copyOf(encryptedKey, 16);</span>
+<span class="fc" id="L288">            LOG.info(&quot;PDFBOX-5955: padding RC4 key to length 16&quot;);</span>
+<span class="fc" id="L289">            encryptedKey = Arrays.copyOf(encryptedKey, 16);</span>
         }
-<span class="nc" id="L291">        setEncryptionKey(encryptedKey);</span>
+<span class="fc" id="L291">        setEncryptionKey(encryptedKey);</span>
 
-<span class="nc bnc" id="L293" title="All 4 branches missed.">        if (dicRevision == REVISION_5 || dicRevision == REVISION_6)</span>
+<span class="fc bfc" id="L293" title="All 4 branches covered.">        if (dicRevision == REVISION_5 || dicRevision == REVISION_6)</span>
         {
-<span class="nc" id="L295">            validatePerms(encryption, dicPermissions, encryptMetadata);</span>
+<span class="fc" id="L295">            validatePerms(encryption, dicPermissions, encryptMetadata);</span>
         }
-<span class="nc" id="L297">    }</span>
+<span class="fc" id="L297">    }</span>
 
     private byte[] getDocumentIDBytes(COSArray documentIDArray)
     {
         //some documents may not have document id, see
         //test\encryption\encrypted_doc_no_id.pdf
         byte[] documentIDBytes;
-<span class="nc bnc" id="L304" title="All 4 branches missed.">        if (documentIDArray != null &amp;&amp; !documentIDArray.isEmpty())</span>
+<span class="pc bpc" id="L304" title="2 of 4 branches missed.">        if (documentIDArray != null &amp;&amp; !documentIDArray.isEmpty())</span>
         {
-<span class="nc" id="L306">            COSString id = (COSString)documentIDArray.getObject( 0 );</span>
-<span class="nc" id="L307">            documentIDBytes = id.getBytes();</span>
-<span class="nc" id="L308">        }</span>
+<span class="fc" id="L306">            COSString id = (COSString)documentIDArray.getObject( 0 );</span>
+<span class="fc" id="L307">            documentIDBytes = id.getBytes();</span>
+<span class="fc" id="L308">        }</span>
         else
         {
 <span class="nc" id="L311">            documentIDBytes = new byte[0];</span>
         }
-<span class="nc" id="L313">        return documentIDBytes;</span>
+<span class="fc" id="L313">        return documentIDBytes;</span>
     }
 
     // Algorithm 13: validate permissions (&quot;Perms&quot; field). Relaxed to accommodate buggy encoders
@@ -322,28 +322,28 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
             // &quot;Decrypt the 16-byte Perms string using AES-256 in ECB mode with an 
             // initialization vector of zero and the file encryption key as the key.&quot;
             @SuppressWarnings({&quot;squid:S5542&quot;,&quot;lgtm [java/weak-cryptographic-algorithm]&quot;})
-<span class="nc" id="L325">            Cipher cipher = Cipher.getInstance(&quot;AES/ECB/NoPadding&quot;);</span>
-<span class="nc" id="L326">            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(getEncryptionKey(), &quot;AES&quot;));</span>
-<span class="nc" id="L327">            byte[] perms = cipher.doFinal(encryption.getPerms());</span>
+<span class="fc" id="L325">            Cipher cipher = Cipher.getInstance(&quot;AES/ECB/NoPadding&quot;);</span>
+<span class="fc" id="L326">            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(getEncryptionKey(), &quot;AES&quot;));</span>
+<span class="fc" id="L327">            byte[] perms = cipher.doFinal(encryption.getPerms());</span>
             
             // &quot;Verify that bytes 9-11 of the result are the characters ‘a’, ‘d’, ‘b’.&quot;
-<span class="nc bnc" id="L330" title="All 6 branches missed.">            if (perms[9] != 'a' || perms[10] != 'd' || perms[11] != 'b')</span>
+<span class="pc bpc" id="L330" title="3 of 6 branches missed.">            if (perms[9] != 'a' || perms[10] != 'd' || perms[11] != 'b')</span>
             {
 <span class="nc" id="L332">                LOG.warn(&quot;Verification of permissions failed (constant)&quot;);</span>
             }
             
             // &quot;Bytes 0-3 of the decrypted Perms entry, treated as a little-endian integer, 
             // are the user permissions. They should match the value in the P key.&quot;
-<span class="nc" id="L337">            int permsP = perms[0] &amp; 0xFF | (perms[1] &amp; 0xFF) &lt;&lt; 8 | (perms[2] &amp; 0xFF) &lt;&lt; 16 |</span>
+<span class="fc" id="L337">            int permsP = perms[0] &amp; 0xFF | (perms[1] &amp; 0xFF) &lt;&lt; 8 | (perms[2] &amp; 0xFF) &lt;&lt; 16 |</span>
                     (perms[3] &amp; 0xFF) &lt;&lt; 24;
             
-<span class="nc bnc" id="L340" title="All 2 branches missed.">            if (permsP != dicPermissions)</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">            if (permsP != dicPermissions)</span>
             {
 <span class="nc" id="L342">                LOG.warn(&quot;Verification of permissions failed ({} != {})&quot;,</span>
 <span class="nc" id="L343">                        String.format(&quot;%08X&quot;, permsP), String.format(&quot;%08X&quot;, dicPermissions));</span>
             }
             
-<span class="nc bnc" id="L346" title="All 8 branches missed.">            if (encryptMetadata &amp;&amp; perms[8] != 'T' || !encryptMetadata &amp;&amp; perms[8] != 'F')</span>
+<span class="pc bpc" id="L346" title="5 of 8 branches missed.">            if (encryptMetadata &amp;&amp; perms[8] != 'T' || !encryptMetadata &amp;&amp; perms[8] != 'F')</span>
             {
 <span class="nc" id="L348">                LOG.warn(&quot;Verification of permissions failed (EncryptMetadata)&quot;);</span>
             }
@@ -352,8 +352,8 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
         {
 <span class="nc" id="L353">            logIfStrongEncryptionMissing();</span>
 <span class="nc" id="L354">            throw new IOException(e);</span>
-<span class="nc" id="L355">        }</span>
-<span class="nc" id="L356">    }</span>
+<span class="fc" id="L355">        }</span>
+<span class="fc" id="L356">    }</span>
     
     /**
      * Prepare document for encryption.
@@ -365,63 +365,63 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
     @Override
     public void prepareDocumentForEncryption(PDDocument document) throws IOException
     {
-<span class="nc" id="L368">        PDEncryption encryptionDictionary = document.getEncryption();</span>
-<span class="nc bnc" id="L369" title="All 2 branches missed.">        if(encryptionDictionary == null)</span>
+<span class="fc" id="L368">        PDEncryption encryptionDictionary = document.getEncryption();</span>
+<span class="pc bpc" id="L369" title="1 of 2 branches missed.">        if(encryptionDictionary == null)</span>
         {
 <span class="nc" id="L371">            encryptionDictionary = new PDEncryption();</span>
         }
-<span class="nc" id="L373">        int version = computeVersionNumber();</span>
-<span class="nc" id="L374">        int revision = computeRevisionNumber(version);</span>
-<span class="nc" id="L375">        encryptionDictionary.setFilter(FILTER);</span>
-<span class="nc" id="L376">        encryptionDictionary.setVersion(version);</span>
-<span class="nc bnc" id="L377" title="All 4 branches missed.">        if (version != REVISION_4 &amp;&amp; version != REVISION_5)</span>
+<span class="fc" id="L373">        int version = computeVersionNumber();</span>
+<span class="fc" id="L374">        int revision = computeRevisionNumber(version);</span>
+<span class="fc" id="L375">        encryptionDictionary.setFilter(FILTER);</span>
+<span class="fc" id="L376">        encryptionDictionary.setVersion(version);</span>
+<span class="fc bfc" id="L377" title="All 4 branches covered.">        if (version != REVISION_4 &amp;&amp; version != REVISION_5)</span>
         {
             // remove CF, StmF, and StrF entries that may be left from a previous encryption
-<span class="nc" id="L380">            encryptionDictionary.removeV45filters();</span>
+<span class="fc" id="L380">            encryptionDictionary.removeV45filters();</span>
         }
-<span class="nc" id="L382">        encryptionDictionary.setRevision(revision);</span>
-<span class="nc" id="L383">        encryptionDictionary.setLength(getKeyLength());</span>
+<span class="fc" id="L382">        encryptionDictionary.setRevision(revision);</span>
+<span class="fc" id="L383">        encryptionDictionary.setLength(getKeyLength());</span>
 
-<span class="nc" id="L385">        StandardProtectionPolicy protectionPolicy = getProtectionPolicy();</span>
-<span class="nc" id="L386">        String ownerPassword = protectionPolicy.getOwnerPassword();</span>
-<span class="nc" id="L387">        String userPassword = protectionPolicy.getUserPassword();</span>
-<span class="nc bnc" id="L388" title="All 2 branches missed.">        if( ownerPassword == null )</span>
+<span class="fc" id="L385">        StandardProtectionPolicy protectionPolicy = getProtectionPolicy();</span>
+<span class="fc" id="L386">        String ownerPassword = protectionPolicy.getOwnerPassword();</span>
+<span class="fc" id="L387">        String userPassword = protectionPolicy.getUserPassword();</span>
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">        if( ownerPassword == null )</span>
         {
 <span class="nc" id="L390">            ownerPassword = &quot;&quot;;</span>
         }
-<span class="nc bnc" id="L392" title="All 2 branches missed.">        if( userPassword == null )</span>
+<span class="pc bpc" id="L392" title="1 of 2 branches missed.">        if( userPassword == null )</span>
         {
 <span class="nc" id="L394">            userPassword = &quot;&quot;;</span>
         }
  
         // If no owner password is set, use the user password instead.
-<span class="nc bnc" id="L398" title="All 2 branches missed.">        if (ownerPassword.isEmpty())</span>
+<span class="pc bpc" id="L398" title="1 of 2 branches missed.">        if (ownerPassword.isEmpty())</span>
         {
 <span class="nc" id="L400">            ownerPassword = userPassword;</span>
         }
 
-<span class="nc" id="L403">        int permissionInt = protectionPolicy.getPermissions().getPermissionBytes();</span>
+<span class="fc" id="L403">        int permissionInt = protectionPolicy.getPermissions().getPermissionBytes();</span>
 
-<span class="nc" id="L405">        encryptionDictionary.setPermissions(permissionInt);</span>
+<span class="fc" id="L405">        encryptionDictionary.setPermissions(permissionInt);</span>
 
-<span class="nc" id="L407">        int length = getKeyLength()/8;</span>
+<span class="fc" id="L407">        int length = getKeyLength()/8;</span>
 
-<span class="nc bnc" id="L409" title="All 2 branches missed.">        if (revision == REVISION_6)</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">        if (revision == REVISION_6)</span>
         {
             // PDFBOX-4155
-<span class="nc" id="L412">            ownerPassword = SaslPrep.saslPrepStored(ownerPassword);</span>
-<span class="nc" id="L413">            userPassword = SaslPrep.saslPrepStored(userPassword);</span>
-<span class="nc" id="L414">            prepareEncryptionDictRev6(ownerPassword, userPassword, encryptionDictionary, permissionInt);</span>
+<span class="fc" id="L412">            ownerPassword = SaslPrep.saslPrepStored(ownerPassword);</span>
+<span class="fc" id="L413">            userPassword = SaslPrep.saslPrepStored(userPassword);</span>
+<span class="fc" id="L414">            prepareEncryptionDictRev6(ownerPassword, userPassword, encryptionDictionary, permissionInt);</span>
         }
         else
         {
-<span class="nc" id="L418">            prepareEncryptionDictRev234(ownerPassword, userPassword, encryptionDictionary, permissionInt,</span>
+<span class="fc" id="L418">            prepareEncryptionDictRev234(ownerPassword, userPassword, encryptionDictionary, permissionInt,</span>
                     document, revision, length);
         }
 
-<span class="nc" id="L422">        document.setEncryptionDictionary( encryptionDictionary );</span>
-<span class="nc" id="L423">        document.getDocument().setEncryptionDictionary(encryptionDictionary.getCOSObject());</span>
-<span class="nc" id="L424">    }</span>
+<span class="fc" id="L422">        document.setEncryptionDictionary( encryptionDictionary );</span>
+<span class="fc" id="L423">        document.getDocument().setEncryptionDictionary(encryptionDictionary.getCOSObject());</span>
+<span class="fc" id="L424">    }</span>
 
     private void prepareEncryptionDictRev6(String ownerPassword, String userPassword,
             PDEncryption encryptionDictionary, int permissionInt)
@@ -429,146 +429,146 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
     {
         try
         {
-<span class="nc" id="L432">            SecureRandom rnd = new SecureRandom();</span>
-<span class="nc" id="L433">            Cipher cipher = Cipher.getInstance(&quot;AES/CBC/NoPadding&quot;);</span>
+<span class="fc" id="L432">            SecureRandom rnd = new SecureRandom();</span>
+<span class="fc" id="L433">            Cipher cipher = Cipher.getInstance(&quot;AES/CBC/NoPadding&quot;);</span>
 
             // make a random 256-bit file encryption key
-<span class="nc" id="L436">            setEncryptionKey(new byte[32]);</span>
-<span class="nc" id="L437">            rnd.nextBytes(getEncryptionKey());</span>
+<span class="fc" id="L436">            setEncryptionKey(new byte[32]);</span>
+<span class="fc" id="L437">            rnd.nextBytes(getEncryptionKey());</span>
 
             // Algorithm 8a: Compute U
-<span class="nc" id="L440">            byte[] userPasswordBytes = truncate127(userPassword.getBytes(StandardCharsets.UTF_8));</span>
-<span class="nc" id="L441">            byte[] userValidationSalt = new byte[8];</span>
-<span class="nc" id="L442">            byte[] userKeySalt = new byte[8];</span>
-<span class="nc" id="L443">            rnd.nextBytes(userValidationSalt);</span>
-<span class="nc" id="L444">            rnd.nextBytes(userKeySalt);</span>
-<span class="nc" id="L445">            byte[] hashU = computeHash2B(concat(userPasswordBytes, userValidationSalt),</span>
+<span class="fc" id="L440">            byte[] userPasswordBytes = truncate127(userPassword.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L441">            byte[] userValidationSalt = new byte[8];</span>
+<span class="fc" id="L442">            byte[] userKeySalt = new byte[8];</span>
+<span class="fc" id="L443">            rnd.nextBytes(userValidationSalt);</span>
+<span class="fc" id="L444">            rnd.nextBytes(userKeySalt);</span>
+<span class="fc" id="L445">            byte[] hashU = computeHash2B(concat(userPasswordBytes, userValidationSalt),</span>
                     userPasswordBytes, null);
-<span class="nc" id="L447">            byte[] u = concat(hashU, userValidationSalt, userKeySalt);</span>
+<span class="fc" id="L447">            byte[] u = concat(hashU, userValidationSalt, userKeySalt);</span>
 
             // Algorithm 8b: Compute UE
-<span class="nc" id="L450">            byte[] hashUE = computeHash2B(concat(userPasswordBytes, userKeySalt),</span>
+<span class="fc" id="L450">            byte[] hashUE = computeHash2B(concat(userPasswordBytes, userKeySalt),</span>
                     userPasswordBytes, null);
-<span class="nc" id="L452">            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(hashUE, &quot;AES&quot;),</span>
+<span class="fc" id="L452">            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(hashUE, &quot;AES&quot;),</span>
                     // &quot;an initialization vector of zero&quot;
                     new IvParameterSpec(new byte[16]));
-<span class="nc" id="L455">            byte[] ue = cipher.doFinal(getEncryptionKey());</span>
+<span class="fc" id="L455">            byte[] ue = cipher.doFinal(getEncryptionKey());</span>
 
             // Algorithm 9a: Compute O
-<span class="nc" id="L458">            byte[] ownerPasswordBytes = truncate127(ownerPassword.getBytes(StandardCharsets.UTF_8));</span>
-<span class="nc" id="L459">            byte[] ownerValidationSalt = new byte[8];</span>
-<span class="nc" id="L460">            byte[] ownerKeySalt = new byte[8];</span>
-<span class="nc" id="L461">            rnd.nextBytes(ownerValidationSalt);</span>
-<span class="nc" id="L462">            rnd.nextBytes(ownerKeySalt);</span>
-<span class="nc" id="L463">            byte[] hashO = computeHash2B(concat(ownerPasswordBytes, ownerValidationSalt, u),</span>
+<span class="fc" id="L458">            byte[] ownerPasswordBytes = truncate127(ownerPassword.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L459">            byte[] ownerValidationSalt = new byte[8];</span>
+<span class="fc" id="L460">            byte[] ownerKeySalt = new byte[8];</span>
+<span class="fc" id="L461">            rnd.nextBytes(ownerValidationSalt);</span>
+<span class="fc" id="L462">            rnd.nextBytes(ownerKeySalt);</span>
+<span class="fc" id="L463">            byte[] hashO = computeHash2B(concat(ownerPasswordBytes, ownerValidationSalt, u),</span>
                     ownerPasswordBytes, u);
-<span class="nc" id="L465">            byte[] o = concat(hashO, ownerValidationSalt, ownerKeySalt);</span>
+<span class="fc" id="L465">            byte[] o = concat(hashO, ownerValidationSalt, ownerKeySalt);</span>
 
             // Algorithm 9b: Compute OE
-<span class="nc" id="L468">            byte[] hashOE = computeHash2B(concat(ownerPasswordBytes, ownerKeySalt, u),</span>
+<span class="fc" id="L468">            byte[] hashOE = computeHash2B(concat(ownerPasswordBytes, ownerKeySalt, u),</span>
                     ownerPasswordBytes, u);
-<span class="nc" id="L470">            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(hashOE, &quot;AES&quot;),</span>
+<span class="fc" id="L470">            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(hashOE, &quot;AES&quot;),</span>
                     // &quot;an initialization vector of zero&quot;
                     new IvParameterSpec(new byte[16]));
-<span class="nc" id="L473">            byte[] oe = cipher.doFinal(getEncryptionKey());</span>
+<span class="fc" id="L473">            byte[] oe = cipher.doFinal(getEncryptionKey());</span>
 
             // Set keys and other required constants in encryption dictionary
-<span class="nc" id="L476">            encryptionDictionary.setUserKey(u);</span>
-<span class="nc" id="L477">            encryptionDictionary.setUserEncryptionKey(ue);</span>
-<span class="nc" id="L478">            encryptionDictionary.setOwnerKey(o);</span>
-<span class="nc" id="L479">            encryptionDictionary.setOwnerEncryptionKey(oe);</span>
+<span class="fc" id="L476">            encryptionDictionary.setUserKey(u);</span>
+<span class="fc" id="L477">            encryptionDictionary.setUserEncryptionKey(ue);</span>
+<span class="fc" id="L478">            encryptionDictionary.setOwnerKey(o);</span>
+<span class="fc" id="L479">            encryptionDictionary.setOwnerEncryptionKey(oe);</span>
 
-<span class="nc" id="L481">            prepareEncryptionDictAES(encryptionDictionary, COSName.AESV3);</span>
+<span class="fc" id="L481">            prepareEncryptionDictAES(encryptionDictionary, COSName.AESV3);</span>
 
             // Algorithm 10: compute &quot;Perms&quot; value
-<span class="nc" id="L484">            byte[] perms = new byte[16];</span>
-<span class="nc" id="L485">            perms[0] = (byte) permissionInt;</span>
-<span class="nc" id="L486">            perms[1] = (byte) (permissionInt &gt;&gt;&gt; 8);</span>
-<span class="nc" id="L487">            perms[2] = (byte) (permissionInt &gt;&gt;&gt; 16);</span>
-<span class="nc" id="L488">            perms[3] = (byte) (permissionInt &gt;&gt;&gt; 24);</span>
-<span class="nc" id="L489">            perms[4] = (byte) 0xFF;</span>
-<span class="nc" id="L490">            perms[5] = (byte) 0xFF;</span>
-<span class="nc" id="L491">            perms[6] = (byte) 0xFF;</span>
-<span class="nc" id="L492">            perms[7] = (byte) 0xFF;</span>
-<span class="nc" id="L493">            perms[8] = 'T';    // we always encrypt Metadata</span>
-<span class="nc" id="L494">            perms[9] = 'a';</span>
-<span class="nc" id="L495">            perms[10] = 'd';</span>
-<span class="nc" id="L496">            perms[11] = 'b';</span>
-<span class="nc bnc" id="L497" title="All 2 branches missed.">            for (int i = 12; i &lt;= 15; i++)</span>
+<span class="fc" id="L484">            byte[] perms = new byte[16];</span>
+<span class="fc" id="L485">            perms[0] = (byte) permissionInt;</span>
+<span class="fc" id="L486">            perms[1] = (byte) (permissionInt &gt;&gt;&gt; 8);</span>
+<span class="fc" id="L487">            perms[2] = (byte) (permissionInt &gt;&gt;&gt; 16);</span>
+<span class="fc" id="L488">            perms[3] = (byte) (permissionInt &gt;&gt;&gt; 24);</span>
+<span class="fc" id="L489">            perms[4] = (byte) 0xFF;</span>
+<span class="fc" id="L490">            perms[5] = (byte) 0xFF;</span>
+<span class="fc" id="L491">            perms[6] = (byte) 0xFF;</span>
+<span class="fc" id="L492">            perms[7] = (byte) 0xFF;</span>
+<span class="fc" id="L493">            perms[8] = 'T';    // we always encrypt Metadata</span>
+<span class="fc" id="L494">            perms[9] = 'a';</span>
+<span class="fc" id="L495">            perms[10] = 'd';</span>
+<span class="fc" id="L496">            perms[11] = 'b';</span>
+<span class="fc bfc" id="L497" title="All 2 branches covered.">            for (int i = 12; i &lt;= 15; i++)</span>
             {
-<span class="nc" id="L499">                perms[i] = (byte) rnd.nextInt();</span>
+<span class="fc" id="L499">                perms[i] = (byte) rnd.nextInt();</span>
             }
 
-<span class="nc" id="L502">            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getEncryptionKey(), &quot;AES&quot;),</span>
+<span class="fc" id="L502">            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getEncryptionKey(), &quot;AES&quot;),</span>
                     // &quot;an initialization vector of zero&quot;
                     new IvParameterSpec(new byte[16]));
 
-<span class="nc" id="L506">            byte[] permsEnc = cipher.doFinal(perms);</span>
+<span class="fc" id="L506">            byte[] permsEnc = cipher.doFinal(perms);</span>
 
-<span class="nc" id="L508">            encryptionDictionary.setPerms(permsEnc);</span>
+<span class="fc" id="L508">            encryptionDictionary.setPerms(permsEnc);</span>
         }
 <span class="nc" id="L510">        catch (GeneralSecurityException e)</span>
         {
 <span class="nc" id="L512">            logIfStrongEncryptionMissing();</span>
 <span class="nc" id="L513">            throw new IOException(e);</span>
-<span class="nc" id="L514">        }</span>
-<span class="nc" id="L515">    }</span>
+<span class="fc" id="L514">        }</span>
+<span class="fc" id="L515">    }</span>
 
     private void prepareEncryptionDictRev234(String ownerPassword, String userPassword,
             PDEncryption encryptionDictionary, int permissionInt, PDDocument document, 
             int revision, int length)
             throws IOException
     {
-<span class="nc" id="L522">        COSArray idArray = document.getDocument().getDocumentID();</span>
+<span class="fc" id="L522">        COSArray idArray = document.getDocument().getDocumentID();</span>
 
         //check if the document has an id yet.  If it does not then generate one
-<span class="nc bnc" id="L525" title="All 4 branches missed.">        if (idArray == null || idArray.size() &lt; 2)</span>
+<span class="pc bpc" id="L525" title="1 of 4 branches missed.">        if (idArray == null || idArray.size() &lt; 2)</span>
         {
-<span class="nc" id="L527">            MessageDigest md = MessageDigests.getMD5();</span>
-<span class="nc" id="L528">            BigInteger time = BigInteger.valueOf(System.currentTimeMillis());</span>
-<span class="nc" id="L529">            md.update(time.toByteArray());</span>
-<span class="nc" id="L530">            md.update(ownerPassword.getBytes(StandardCharsets.ISO_8859_1));</span>
-<span class="nc" id="L531">            md.update(userPassword.getBytes(StandardCharsets.ISO_8859_1));</span>
-<span class="nc" id="L532">            md.update(document.getDocument().toString().getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L527">            MessageDigest md = MessageDigests.getMD5();</span>
+<span class="fc" id="L528">            BigInteger time = BigInteger.valueOf(System.currentTimeMillis());</span>
+<span class="fc" id="L529">            md.update(time.toByteArray());</span>
+<span class="fc" id="L530">            md.update(ownerPassword.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L531">            md.update(userPassword.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L532">            md.update(document.getDocument().toString().getBytes(StandardCharsets.ISO_8859_1));</span>
 
-<span class="nc" id="L534">            byte[] id = md.digest(this.toString().getBytes(StandardCharsets.ISO_8859_1));</span>
-<span class="nc" id="L535">            COSString idString = new COSString(id);</span>
+<span class="fc" id="L534">            byte[] id = md.digest(this.toString().getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L535">            COSString idString = new COSString(id);</span>
 
-<span class="nc" id="L537">            idArray = new COSArray(Arrays.asList(idString, idString));</span>
-<span class="nc" id="L538">            document.getDocument().setDocumentID(idArray);</span>
+<span class="fc" id="L537">            idArray = new COSArray(Arrays.asList(idString, idString));</span>
+<span class="fc" id="L538">            document.getDocument().setDocumentID(idArray);</span>
         }
 
-<span class="nc" id="L541">        COSString id = (COSString) idArray.getObject(0);</span>
+<span class="fc" id="L541">        COSString id = (COSString) idArray.getObject(0);</span>
 
-<span class="nc" id="L543">        byte[] ownerBytes = computeOwnerPassword(</span>
-<span class="nc" id="L544">                ownerPassword.getBytes(StandardCharsets.ISO_8859_1),</span>
-<span class="nc" id="L545">                userPassword.getBytes(StandardCharsets.ISO_8859_1), revision, length);</span>
+<span class="fc" id="L543">        byte[] ownerBytes = computeOwnerPassword(</span>
+<span class="fc" id="L544">                ownerPassword.getBytes(StandardCharsets.ISO_8859_1),</span>
+<span class="fc" id="L545">                userPassword.getBytes(StandardCharsets.ISO_8859_1), revision, length);</span>
 
-<span class="nc" id="L547">        byte[] userBytes = computeUserPassword(</span>
-<span class="nc" id="L548">                userPassword.getBytes(StandardCharsets.ISO_8859_1),</span>
-<span class="nc" id="L549">                ownerBytes, permissionInt, id.getBytes(), revision, length, true);</span>
+<span class="fc" id="L547">        byte[] userBytes = computeUserPassword(</span>
+<span class="fc" id="L548">                userPassword.getBytes(StandardCharsets.ISO_8859_1),</span>
+<span class="fc" id="L549">                ownerBytes, permissionInt, id.getBytes(), revision, length, true);</span>
 
-<span class="nc" id="L551">        setEncryptionKey(computeEncryptedKeyRev234(userPassword.getBytes(StandardCharsets.ISO_8859_1), ownerBytes, permissionInt, id.getBytes(), true, length, revision));</span>
+<span class="fc" id="L551">        setEncryptionKey(computeEncryptedKeyRev234(userPassword.getBytes(StandardCharsets.ISO_8859_1), ownerBytes, permissionInt, id.getBytes(), true, length, revision));</span>
 
-<span class="nc" id="L553">        encryptionDictionary.setOwnerKey(ownerBytes);</span>
-<span class="nc" id="L554">        encryptionDictionary.setUserKey(userBytes);</span>
+<span class="fc" id="L553">        encryptionDictionary.setOwnerKey(ownerBytes);</span>
+<span class="fc" id="L554">        encryptionDictionary.setUserKey(userBytes);</span>
         
-<span class="nc bnc" id="L556" title="All 2 branches missed.">        if (revision == REVISION_4)</span>
+<span class="fc bfc" id="L556" title="All 2 branches covered.">        if (revision == REVISION_4)</span>
         {
-<span class="nc" id="L558">            prepareEncryptionDictAES(encryptionDictionary, COSName.AESV2);</span>
+<span class="fc" id="L558">            prepareEncryptionDictAES(encryptionDictionary, COSName.AESV2);</span>
         }
-<span class="nc" id="L560">    }</span>
+<span class="fc" id="L560">    }</span>
 
     private void prepareEncryptionDictAES(PDEncryption encryptionDictionary, COSName aesVName)
     {
-<span class="nc" id="L564">        PDCryptFilterDictionary cryptFilterDictionary = new PDCryptFilterDictionary();</span>
-<span class="nc" id="L565">        cryptFilterDictionary.setCryptFilterMethod(aesVName);</span>
-<span class="nc" id="L566">        cryptFilterDictionary.setLength(getKeyLength());</span>
-<span class="nc" id="L567">        encryptionDictionary.setStdCryptFilterDictionary(cryptFilterDictionary);</span>
-<span class="nc" id="L568">        encryptionDictionary.setStreamFilterName(COSName.STD_CF);</span>
-<span class="nc" id="L569">        encryptionDictionary.setStringFilterName(COSName.STD_CF);</span>
-<span class="nc" id="L570">        setAES(true);</span>
-<span class="nc" id="L571">    }</span>
+<span class="fc" id="L564">        PDCryptFilterDictionary cryptFilterDictionary = new PDCryptFilterDictionary();</span>
+<span class="fc" id="L565">        cryptFilterDictionary.setCryptFilterMethod(aesVName);</span>
+<span class="fc" id="L566">        cryptFilterDictionary.setLength(getKeyLength());</span>
+<span class="fc" id="L567">        encryptionDictionary.setStdCryptFilterDictionary(cryptFilterDictionary);</span>
+<span class="fc" id="L568">        encryptionDictionary.setStreamFilterName(COSName.STD_CF);</span>
+<span class="fc" id="L569">        encryptionDictionary.setStringFilterName(COSName.STD_CF);</span>
+<span class="fc" id="L570">        setAES(true);</span>
+<span class="fc" id="L571">    }</span>
 
     /**
      * Check for owner password.
@@ -590,16 +590,16 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
                                    int permissions, byte[] id, int encRevision, int keyLengthInBytes,
                                    boolean encryptMetadata) throws IOException
     {
-<span class="nc bnc" id="L593" title="All 3 branches missed.">        switch (encRevision)</span>
+<span class="pc bpc" id="L593" title="1 of 3 branches missed.">        switch (encRevision)</span>
         {
         case REVISION_2:
         case REVISION_3:
         case REVISION_4:
-<span class="nc" id="L598">            return isOwnerPassword234(ownerPassword, user, owner, permissions, id, encRevision,</span>
+<span class="fc" id="L598">            return isOwnerPassword234(ownerPassword, user, owner, permissions, id, encRevision,</span>
                     keyLengthInBytes, encryptMetadata);
         case REVISION_5:
         case REVISION_6:
-<span class="nc" id="L602">            return isOwnerPassword56(ownerPassword, user, owner, encRevision);</span>
+<span class="fc" id="L602">            return isOwnerPassword56(ownerPassword, user, owner, encRevision);</span>
         default:
 <span class="nc" id="L604">            throw new IOException(&quot;Unknown Encryption Revision &quot; + encRevision);</span>
         }
@@ -610,34 +610,34 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
             byte[] id, int encRevision, int keyLengthInBytes, boolean encryptMetadata)
             throws IOException
     {
-<span class="nc" id="L613">        byte[] userPassword = getUserPassword234(ownerPassword, owner, encRevision,</span>
+<span class="fc" id="L613">        byte[] userPassword = getUserPassword234(ownerPassword, owner, encRevision,</span>
                 keyLengthInBytes);
-<span class="nc" id="L615">        return isUserPassword234(userPassword, user, owner, permissions, id, encRevision,</span>
+<span class="fc" id="L615">        return isUserPassword234(userPassword, user, owner, permissions, id, encRevision,</span>
                 keyLengthInBytes, encryptMetadata);
     }
 
     private boolean isOwnerPassword56(byte[] ownerPassword, byte[] user, byte[] owner,
             int encRevision) throws IOException
     {
-<span class="nc bnc" id="L622" title="All 2 branches missed.">        if (owner.length &lt; 40)</span>
+<span class="pc bpc" id="L622" title="1 of 2 branches missed.">        if (owner.length &lt; 40)</span>
         {
             // PDFBOX-5104
 <span class="nc" id="L625">            throw new IOException(&quot;Owner password is too short&quot;);</span>
         }
-<span class="nc" id="L627">        byte[] truncatedOwnerPassword = truncate127(ownerPassword);</span>
-<span class="nc" id="L628">        byte[] oHash = new byte[32];</span>
-<span class="nc" id="L629">        byte[] oValidationSalt = new byte[8];</span>
-<span class="nc" id="L630">        System.arraycopy(owner, 0, oHash, 0, 32);</span>
-<span class="nc" id="L631">        System.arraycopy(owner, 32, oValidationSalt, 0, 8);</span>
+<span class="fc" id="L627">        byte[] truncatedOwnerPassword = truncate127(ownerPassword);</span>
+<span class="fc" id="L628">        byte[] oHash = new byte[32];</span>
+<span class="fc" id="L629">        byte[] oValidationSalt = new byte[8];</span>
+<span class="fc" id="L630">        System.arraycopy(owner, 0, oHash, 0, 32);</span>
+<span class="fc" id="L631">        System.arraycopy(owner, 32, oValidationSalt, 0, 8);</span>
 
-<span class="nc bnc" id="L633" title="All 2 branches missed.">        if (encRevision == REVISION_5)</span>
+<span class="fc bfc" id="L633" title="All 2 branches covered.">        if (encRevision == REVISION_5)</span>
         {
-<span class="nc" id="L635">            return MessageDigest.isEqual(computeSHA256(truncatedOwnerPassword, oValidationSalt, user),</span>
+<span class="fc" id="L635">            return MessageDigest.isEqual(computeSHA256(truncatedOwnerPassword, oValidationSalt, user),</span>
                     oHash);
         }
         else
         {
-<span class="nc" id="L640">            return MessageDigest.isEqual(computeHash2A(truncatedOwnerPassword, oValidationSalt, user),</span>
+<span class="fc" id="L640">            return MessageDigest.isEqual(computeHash2A(truncatedOwnerPassword, oValidationSalt, user),</span>
                     oHash);
         }
     }
@@ -658,13 +658,13 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
                                    int length ) throws IOException
     {
         // TODO ?!?!
-<span class="nc bnc" id="L661" title="All 4 branches missed.">        if (encRevision == REVISION_5 || encRevision == REVISION_6)</span>
+<span class="pc bpc" id="L661" title="2 of 4 branches missed.">        if (encRevision == REVISION_5 || encRevision == REVISION_6)</span>
         {
 <span class="nc" id="L663">            return new byte[0];</span>
         }
         else
         {
-<span class="nc" id="L667">            return getUserPassword234(ownerPassword, owner, encRevision, length);</span>
+<span class="fc" id="L667">            return getUserPassword234(ownerPassword, owner, encRevision, length);</span>
         }
     }
 
@@ -672,32 +672,32 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
             int length)
             throws IOException
     {
-<span class="nc" id="L675">        ByteArrayOutputStream result = new ByteArrayOutputStream();</span>
-<span class="nc" id="L676">        byte[] rc4Key = computeRC4key(ownerPassword, encRevision, length);</span>
+<span class="fc" id="L675">        ByteArrayOutputStream result = new ByteArrayOutputStream();</span>
+<span class="fc" id="L676">        byte[] rc4Key = computeRC4key(ownerPassword, encRevision, length);</span>
 
-<span class="nc bnc" id="L678" title="All 2 branches missed.">        if (encRevision == REVISION_2)</span>
+<span class="fc bfc" id="L678" title="All 2 branches covered.">        if (encRevision == REVISION_2)</span>
         {
-<span class="nc" id="L680">            encryptDataRC4(rc4Key, owner, result);</span>
+<span class="fc" id="L680">            encryptDataRC4(rc4Key, owner, result);</span>
         }
-<span class="nc bnc" id="L682" title="All 4 branches missed.">        else if (encRevision == REVISION_3 || encRevision == REVISION_4)</span>
+<span class="pc bpc" id="L682" title="1 of 4 branches missed.">        else if (encRevision == REVISION_3 || encRevision == REVISION_4)</span>
         {
-<span class="nc" id="L684">            byte[] iterationKey = new byte[rc4Key.length];</span>
-<span class="nc" id="L685">            byte[] otemp = new byte[owner.length];</span>
-<span class="nc" id="L686">            System.arraycopy(owner, 0, otemp, 0, owner.length);</span>
+<span class="fc" id="L684">            byte[] iterationKey = new byte[rc4Key.length];</span>
+<span class="fc" id="L685">            byte[] otemp = new byte[owner.length];</span>
+<span class="fc" id="L686">            System.arraycopy(owner, 0, otemp, 0, owner.length);</span>
 
-<span class="nc bnc" id="L688" title="All 2 branches missed.">            for (int i = 19; i &gt;= 0; i--)</span>
+<span class="fc bfc" id="L688" title="All 2 branches covered.">            for (int i = 19; i &gt;= 0; i--)</span>
             {
-<span class="nc" id="L690">                System.arraycopy(rc4Key, 0, iterationKey, 0, rc4Key.length);</span>
-<span class="nc bnc" id="L691" title="All 2 branches missed.">                for (int j = 0; j &lt; iterationKey.length; j++)</span>
+<span class="fc" id="L690">                System.arraycopy(rc4Key, 0, iterationKey, 0, rc4Key.length);</span>
+<span class="fc bfc" id="L691" title="All 2 branches covered.">                for (int j = 0; j &lt; iterationKey.length; j++)</span>
                 {
-<span class="nc" id="L693">                    iterationKey[j] = (byte) (iterationKey[j] ^ (byte) i);</span>
+<span class="fc" id="L693">                    iterationKey[j] = (byte) (iterationKey[j] ^ (byte) i);</span>
                 }
-<span class="nc" id="L695">                result.reset();</span>
-<span class="nc" id="L696">                encryptDataRC4(iterationKey, otemp, result);</span>
-<span class="nc" id="L697">                otemp = result.toByteArray();</span>
+<span class="fc" id="L695">                result.reset();</span>
+<span class="fc" id="L696">                encryptDataRC4(iterationKey, otemp, result);</span>
+<span class="fc" id="L697">                otemp = result.toByteArray();</span>
             }
         }
-<span class="nc" id="L700">        return result.toByteArray();</span>
+<span class="fc" id="L700">        return result.toByteArray();</span>
     }
 
     /**
@@ -724,13 +724,13 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
                                       boolean encryptMetadata, boolean isOwnerPassword)
                                       throws IOException
     {
-<span class="nc bnc" id="L727" title="All 4 branches missed.">        if (encRevision == REVISION_5 || encRevision == REVISION_6)</span>
+<span class="fc bfc" id="L727" title="All 4 branches covered.">        if (encRevision == REVISION_5 || encRevision == REVISION_6)</span>
         {
-<span class="nc" id="L729">            return computeEncryptedKeyRev56(password, isOwnerPassword, o, u, oe, ue, encRevision);</span>
+<span class="fc" id="L729">            return computeEncryptedKeyRev56(password, isOwnerPassword, o, u, oe, ue, encRevision);</span>
         }
         else
         {
-<span class="nc" id="L733">            return computeEncryptedKeyRev234(password, o, permissions, id, encryptMetadata, keyLengthInBytes, encRevision);</span>
+<span class="fc" id="L733">            return computeEncryptedKeyRev234(password, o, permissions, id, encryptMetadata, keyLengthInBytes, encRevision);</span>
         }
     }
 
@@ -740,41 +740,41 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
         //Algorithm 2, based on MD5
 
         //PDFReference 1.4 pg 78
-<span class="nc" id="L743">        byte[] padded = truncateOrPad(password);</span>
+<span class="fc" id="L743">        byte[] padded = truncateOrPad(password);</span>
 
-<span class="nc" id="L745">        MessageDigest md = MessageDigests.getMD5();</span>
-<span class="nc" id="L746">        md.update(padded);</span>
+<span class="fc" id="L745">        MessageDigest md = MessageDigests.getMD5();</span>
+<span class="fc" id="L746">        md.update(padded);</span>
 
-<span class="nc" id="L748">        md.update(o);</span>
+<span class="fc" id="L748">        md.update(o);</span>
 
-<span class="nc" id="L750">        md.update((byte) permissions);</span>
-<span class="nc" id="L751">        md.update((byte) (permissions &gt;&gt;&gt; 8));</span>
-<span class="nc" id="L752">        md.update((byte) (permissions &gt;&gt;&gt; 16));</span>
-<span class="nc" id="L753">        md.update((byte) (permissions &gt;&gt;&gt; 24));</span>
+<span class="fc" id="L750">        md.update((byte) permissions);</span>
+<span class="fc" id="L751">        md.update((byte) (permissions &gt;&gt;&gt; 8));</span>
+<span class="fc" id="L752">        md.update((byte) (permissions &gt;&gt;&gt; 16));</span>
+<span class="fc" id="L753">        md.update((byte) (permissions &gt;&gt;&gt; 24));</span>
 
-<span class="nc" id="L755">        md.update(id);</span>
+<span class="fc" id="L755">        md.update(id);</span>
 
         //(Security handlers of revision 4 or greater) If document metadata is not being
         // encrypted, pass 4 bytes with the value 0xFFFFFFFF to the MD5 hash function.
         //see 7.6.3.3 Algorithm 2 Step f of PDF 32000-1:2008
-<span class="nc bnc" id="L760" title="All 4 branches missed.">        if (encRevision == REVISION_4 &amp;&amp; !encryptMetadata)</span>
+<span class="fc bfc" id="L760" title="All 4 branches covered.">        if (encRevision == REVISION_4 &amp;&amp; !encryptMetadata)</span>
         {
-<span class="nc" id="L762">            md.update(new byte[] { (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff });</span>
+<span class="fc" id="L762">            md.update(new byte[] { (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff });</span>
         }
-<span class="nc" id="L764">        byte[] digest = md.digest();</span>
+<span class="fc" id="L764">        byte[] digest = md.digest();</span>
 
-<span class="nc bnc" id="L766" title="All 4 branches missed.">        if (encRevision == REVISION_3 || encRevision == REVISION_4)</span>
+<span class="fc bfc" id="L766" title="All 4 branches covered.">        if (encRevision == REVISION_3 || encRevision == REVISION_4)</span>
         {
-<span class="nc bnc" id="L768" title="All 2 branches missed.">            for (int i = 0; i &lt; 50; i++)</span>
+<span class="fc bfc" id="L768" title="All 2 branches covered.">            for (int i = 0; i &lt; 50; i++)</span>
             {
-<span class="nc" id="L770">                md.update(digest, 0, length);</span>
-<span class="nc" id="L771">                digest = md.digest();</span>
+<span class="fc" id="L770">                md.update(digest, 0, length);</span>
+<span class="fc" id="L771">                digest = md.digest();</span>
             }
         }
 
-<span class="nc" id="L775">        byte[] result = new byte[length];</span>
-<span class="nc" id="L776">        System.arraycopy(digest, 0, result, 0, length);</span>
-<span class="nc" id="L777">        return result;</span>
+<span class="fc" id="L775">        byte[] result = new byte[length];</span>
+<span class="fc" id="L776">        System.arraycopy(digest, 0, result, 0, length);</span>
+<span class="fc" id="L777">        return result;</span>
     }
 
     private byte[] computeEncryptedKeyRev56(byte[] password, boolean isOwnerPassword, 
@@ -783,51 +783,51 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
     {
         byte[] hash, fileKeyEnc;
 
-<span class="nc bnc" id="L786" title="All 2 branches missed.">        if (isOwnerPassword)</span>
+<span class="fc bfc" id="L786" title="All 2 branches covered.">        if (isOwnerPassword)</span>
         {
-<span class="nc bnc" id="L788" title="All 2 branches missed.">            if (oe == null)</span>
+<span class="pc bpc" id="L788" title="1 of 2 branches missed.">            if (oe == null)</span>
             {
 <span class="nc" id="L790">                throw new IOException(&quot;/Encrypt/OE entry is missing&quot;);</span>
             }
-<span class="nc" id="L792">            byte[] oKeySalt = new byte[8];</span>
-<span class="nc" id="L793">            System.arraycopy(o, 40, oKeySalt, 0, 8);</span>
+<span class="fc" id="L792">            byte[] oKeySalt = new byte[8];</span>
+<span class="fc" id="L793">            System.arraycopy(o, 40, oKeySalt, 0, 8);</span>
 
-<span class="nc bnc" id="L795" title="All 2 branches missed.">            if (encRevision == REVISION_5)</span>
+<span class="fc bfc" id="L795" title="All 2 branches covered.">            if (encRevision == REVISION_5)</span>
             {
-<span class="nc" id="L797">                hash = computeSHA256(password, oKeySalt, u);</span>
+<span class="fc" id="L797">                hash = computeSHA256(password, oKeySalt, u);</span>
             }
             else
             {
-<span class="nc" id="L801">                hash = computeHash2A(password, oKeySalt, u);</span>
+<span class="fc" id="L801">                hash = computeHash2A(password, oKeySalt, u);</span>
             }
 
-<span class="nc" id="L804">            fileKeyEnc = oe;</span>
-<span class="nc" id="L805">        }</span>
+<span class="fc" id="L804">            fileKeyEnc = oe;</span>
+<span class="fc" id="L805">        }</span>
         else
         {
-<span class="nc bnc" id="L808" title="All 2 branches missed.">            if (ue == null)</span>
+<span class="pc bpc" id="L808" title="1 of 2 branches missed.">            if (ue == null)</span>
             {
 <span class="nc" id="L810">                throw new IOException(&quot;/Encrypt/UE entry is missing&quot;);</span>
             }
-<span class="nc" id="L812">            byte[] uKeySalt = new byte[8];</span>
-<span class="nc" id="L813">            System.arraycopy(u, 40, uKeySalt, 0, 8);</span>
+<span class="fc" id="L812">            byte[] uKeySalt = new byte[8];</span>
+<span class="fc" id="L813">            System.arraycopy(u, 40, uKeySalt, 0, 8);</span>
 
-<span class="nc bnc" id="L815" title="All 2 branches missed.">            if (encRevision == REVISION_5)</span>
+<span class="pc bpc" id="L815" title="1 of 2 branches missed.">            if (encRevision == REVISION_5)</span>
             {
 <span class="nc" id="L817">                hash = computeSHA256(password, uKeySalt, null);</span>
             }
             else
             {
-<span class="nc" id="L821">                hash = computeHash2A(password, uKeySalt, null);</span>
+<span class="fc" id="L821">                hash = computeHash2A(password, uKeySalt, null);</span>
             }
 
-<span class="nc" id="L824">            fileKeyEnc = ue;</span>
+<span class="fc" id="L824">            fileKeyEnc = ue;</span>
         }
         try
         {
-<span class="nc" id="L828">            Cipher cipher = Cipher.getInstance(&quot;AES/CBC/NoPadding&quot;);</span>
-<span class="nc" id="L829">            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(hash, &quot;AES&quot;), new IvParameterSpec(new byte[16]));</span>
-<span class="nc" id="L830">            return cipher.doFinal(fileKeyEnc);</span>
+<span class="fc" id="L828">            Cipher cipher = Cipher.getInstance(&quot;AES/CBC/NoPadding&quot;);</span>
+<span class="fc" id="L829">            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(hash, &quot;AES&quot;), new IvParameterSpec(new byte[16]));</span>
+<span class="fc" id="L830">            return cipher.doFinal(fileKeyEnc);</span>
         }
 <span class="nc" id="L832">        catch (GeneralSecurityException e)</span>
         {
@@ -856,47 +856,47 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
                                       boolean encryptMetadata) throws IOException
     {
         // TODO!?!?
-<span class="nc bnc" id="L859" title="All 4 branches missed.">        if (encRevision == REVISION_5 || encRevision == REVISION_6)</span>
+<span class="pc bpc" id="L859" title="2 of 4 branches missed.">        if (encRevision == REVISION_5 || encRevision == REVISION_6)</span>
         {
 <span class="nc" id="L861">            return new byte[0];</span>
         }
 
-<span class="nc" id="L864">        ByteArrayOutputStream result = new ByteArrayOutputStream();</span>
-<span class="nc" id="L865">        byte[] encKey = computeEncryptedKeyRev234(password, owner, permissions,</span>
+<span class="fc" id="L864">        ByteArrayOutputStream result = new ByteArrayOutputStream();</span>
+<span class="fc" id="L865">        byte[] encKey = computeEncryptedKeyRev234(password, owner, permissions,</span>
                 id, encryptMetadata, keyLengthInBytes, encRevision);
         
-<span class="nc bnc" id="L868" title="All 2 branches missed.">        if (encRevision == REVISION_2)</span>
+<span class="fc bfc" id="L868" title="All 2 branches covered.">        if (encRevision == REVISION_2)</span>
         {
-<span class="nc" id="L870">            encryptDataRC4(encKey, ENCRYPT_PADDING, result );</span>
+<span class="fc" id="L870">            encryptDataRC4(encKey, ENCRYPT_PADDING, result );</span>
         }
-<span class="nc bnc" id="L872" title="All 4 branches missed.">        else if (encRevision == REVISION_3 || encRevision == REVISION_4)</span>
+<span class="pc bpc" id="L872" title="1 of 4 branches missed.">        else if (encRevision == REVISION_3 || encRevision == REVISION_4)</span>
         {
-<span class="nc" id="L874">            MessageDigest md = MessageDigests.getMD5();</span>
-<span class="nc" id="L875">            md.update( ENCRYPT_PADDING );</span>
+<span class="fc" id="L874">            MessageDigest md = MessageDigests.getMD5();</span>
+<span class="fc" id="L875">            md.update( ENCRYPT_PADDING );</span>
 
-<span class="nc" id="L877">            md.update( id );</span>
-<span class="nc" id="L878">            result.write( md.digest() );</span>
+<span class="fc" id="L877">            md.update( id );</span>
+<span class="fc" id="L878">            result.write( md.digest() );</span>
 
-<span class="nc" id="L880">            byte[] iterationKey = new byte[ encKey.length ];</span>
-<span class="nc bnc" id="L881" title="All 2 branches missed.">            for( int i=0; i&lt;20; i++ )</span>
+<span class="fc" id="L880">            byte[] iterationKey = new byte[ encKey.length ];</span>
+<span class="fc bfc" id="L881" title="All 2 branches covered.">            for( int i=0; i&lt;20; i++ )</span>
             {
-<span class="nc" id="L883">                System.arraycopy( encKey, 0, iterationKey, 0, iterationKey.length );</span>
-<span class="nc bnc" id="L884" title="All 2 branches missed.">                for( int j=0; j&lt; iterationKey.length; j++ )</span>
+<span class="fc" id="L883">                System.arraycopy( encKey, 0, iterationKey, 0, iterationKey.length );</span>
+<span class="fc bfc" id="L884" title="All 2 branches covered.">                for( int j=0; j&lt; iterationKey.length; j++ )</span>
                 {
-<span class="nc" id="L886">                    iterationKey[j] = (byte)(iterationKey[j] ^ i);</span>
+<span class="fc" id="L886">                    iterationKey[j] = (byte)(iterationKey[j] ^ i);</span>
                 }
-<span class="nc" id="L888">                ByteArrayInputStream input = new ByteArrayInputStream(result.toByteArray());</span>
-<span class="nc" id="L889">                result.reset();</span>
-<span class="nc" id="L890">                encryptDataRC4(iterationKey, input, result);</span>
+<span class="fc" id="L888">                ByteArrayInputStream input = new ByteArrayInputStream(result.toByteArray());</span>
+<span class="fc" id="L889">                result.reset();</span>
+<span class="fc" id="L890">                encryptDataRC4(iterationKey, input, result);</span>
             }
 
-<span class="nc" id="L893">            byte[] finalResult = new byte[32];</span>
-<span class="nc" id="L894">            System.arraycopy( result.toByteArray(), 0, finalResult, 0, 16 );</span>
-<span class="nc" id="L895">            System.arraycopy( ENCRYPT_PADDING, 0, finalResult, 16, 16 );</span>
-<span class="nc" id="L896">            result.reset();</span>
-<span class="nc" id="L897">            result.write( finalResult );</span>
+<span class="fc" id="L893">            byte[] finalResult = new byte[32];</span>
+<span class="fc" id="L894">            System.arraycopy( result.toByteArray(), 0, finalResult, 0, 16 );</span>
+<span class="fc" id="L895">            System.arraycopy( ENCRYPT_PADDING, 0, finalResult, 16, 16 );</span>
+<span class="fc" id="L896">            result.reset();</span>
+<span class="fc" id="L897">            result.write( finalResult );</span>
         }
-<span class="nc" id="L899">        return result.toByteArray();</span>
+<span class="fc" id="L899">        return result.toByteArray();</span>
     }
 
     /**
@@ -914,34 +914,34 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
     public byte[] computeOwnerPassword(byte[] ownerPassword, byte[] userPassword,
                                        int encRevision,  int length ) throws IOException
     {
-<span class="nc bnc" id="L917" title="All 4 branches missed.">        if (REVISION_2 == encRevision &amp;&amp; length != 5)</span>
+<span class="pc bpc" id="L917" title="1 of 4 branches missed.">        if (REVISION_2 == encRevision &amp;&amp; length != 5)</span>
         {
 <span class="nc" id="L919">            throw new IOException(&quot;Expected length=5 actual=&quot; + length );</span>
         }
         
-<span class="nc" id="L922">        byte[] rc4Key = computeRC4key(ownerPassword, encRevision, length);</span>
-<span class="nc" id="L923">        byte[] paddedUser = truncateOrPad( userPassword );</span>
+<span class="fc" id="L922">        byte[] rc4Key = computeRC4key(ownerPassword, encRevision, length);</span>
+<span class="fc" id="L923">        byte[] paddedUser = truncateOrPad( userPassword );</span>
 
-<span class="nc" id="L925">        ByteArrayOutputStream encrypted = new ByteArrayOutputStream();</span>
-<span class="nc" id="L926">        encryptDataRC4(rc4Key, new ByteArrayInputStream(paddedUser), encrypted);</span>
+<span class="fc" id="L925">        ByteArrayOutputStream encrypted = new ByteArrayOutputStream();</span>
+<span class="fc" id="L926">        encryptDataRC4(rc4Key, new ByteArrayInputStream(paddedUser), encrypted);</span>
 
-<span class="nc bnc" id="L928" title="All 4 branches missed.">        if (encRevision == REVISION_3 || encRevision == REVISION_4)</span>
+<span class="fc bfc" id="L928" title="All 4 branches covered.">        if (encRevision == REVISION_3 || encRevision == REVISION_4)</span>
         {
-<span class="nc" id="L930">            byte[] iterationKey = new byte[ rc4Key.length ];</span>
-<span class="nc bnc" id="L931" title="All 2 branches missed.">            for( int i=1; i&lt;20; i++ )</span>
+<span class="fc" id="L930">            byte[] iterationKey = new byte[ rc4Key.length ];</span>
+<span class="fc bfc" id="L931" title="All 2 branches covered.">            for( int i=1; i&lt;20; i++ )</span>
             {
-<span class="nc" id="L933">                System.arraycopy( rc4Key, 0, iterationKey, 0, rc4Key.length );</span>
-<span class="nc bnc" id="L934" title="All 2 branches missed.">                for( int j=0; j&lt; iterationKey.length; j++ )</span>
+<span class="fc" id="L933">                System.arraycopy( rc4Key, 0, iterationKey, 0, rc4Key.length );</span>
+<span class="fc bfc" id="L934" title="All 2 branches covered.">                for( int j=0; j&lt; iterationKey.length; j++ )</span>
                 {
-<span class="nc" id="L936">                    iterationKey[j] = (byte)(iterationKey[j] ^ (byte)i);</span>
+<span class="fc" id="L936">                    iterationKey[j] = (byte)(iterationKey[j] ^ (byte)i);</span>
                 }
-<span class="nc" id="L938">                ByteArrayInputStream input = new ByteArrayInputStream( encrypted.toByteArray() );</span>
-<span class="nc" id="L939">                encrypted.reset();</span>
-<span class="nc" id="L940">                encryptDataRC4(iterationKey, input, encrypted );</span>
+<span class="fc" id="L938">                ByteArrayInputStream input = new ByteArrayInputStream( encrypted.toByteArray() );</span>
+<span class="fc" id="L939">                encrypted.reset();</span>
+<span class="fc" id="L940">                encryptDataRC4(iterationKey, input, encrypted );</span>
             }
         }
 
-<span class="nc" id="L944">        return encrypted.toByteArray();</span>
+<span class="fc" id="L944">        return encrypted.toByteArray();</span>
     }
 
     // steps (a) to (d) of &quot;Algorithm 3: Computing the encryption dictionary’s O (owner password) value&quot;.
@@ -949,22 +949,22 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
     {
         try
         {
-<span class="nc" id="L952">            MessageDigest md = MessageDigests.getMD5();</span>
-<span class="nc" id="L953">            byte[] digest = md.digest(truncateOrPad(ownerPassword));</span>
-<span class="nc bnc" id="L954" title="All 4 branches missed.">            if (encRevision == REVISION_3 || encRevision == REVISION_4)</span>
+<span class="fc" id="L952">            MessageDigest md = MessageDigests.getMD5();</span>
+<span class="fc" id="L953">            byte[] digest = md.digest(truncateOrPad(ownerPassword));</span>
+<span class="fc bfc" id="L954" title="All 4 branches covered.">            if (encRevision == REVISION_3 || encRevision == REVISION_4)</span>
             {
-<span class="nc bnc" id="L956" title="All 2 branches missed.">                for (int i = 0; i &lt; 50; i++)</span>
+<span class="fc bfc" id="L956" title="All 2 branches covered.">                for (int i = 0; i &lt; 50; i++)</span>
                 {
                     // this deviates from the spec - however, omitting the length
                     // parameter prevents the file to be opened in Adobe Reader
                     // with the owner password when the key length is 40 bit (= 5 bytes)
-<span class="nc" id="L961">                    md.update(digest, 0, length);</span>
-<span class="nc" id="L962">                    digest = md.digest();</span>
+<span class="fc" id="L961">                    md.update(digest, 0, length);</span>
+<span class="fc" id="L962">                    digest = md.digest();</span>
                 }
             }
-<span class="nc" id="L965">            byte[] rc4Key = new byte[length];</span>
-<span class="nc" id="L966">            System.arraycopy(digest, 0, rc4Key, 0, length);</span>
-<span class="nc" id="L967">            return rc4Key;</span>
+<span class="fc" id="L965">            byte[] rc4Key = new byte[length];</span>
+<span class="fc" id="L966">            System.arraycopy(digest, 0, rc4Key, 0, length);</span>
+<span class="fc" id="L967">            return rc4Key;</span>
         }
 <span class="nc" id="L969">        catch (IllegalArgumentException ex)</span>
         {
@@ -983,12 +983,12 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
      */
     private byte[] truncateOrPad( byte[] password )
     {
-<span class="nc" id="L986">        byte[] padded = new byte[ ENCRYPT_PADDING.length ];</span>
-<span class="nc" id="L987">        int bytesBeforePad = Math.min( password.length, padded.length );</span>
-<span class="nc" id="L988">        System.arraycopy( password, 0, padded, 0, bytesBeforePad );</span>
-<span class="nc" id="L989">        System.arraycopy( ENCRYPT_PADDING, 0, padded, bytesBeforePad,</span>
+<span class="fc" id="L986">        byte[] padded = new byte[ ENCRYPT_PADDING.length ];</span>
+<span class="fc" id="L987">        int bytesBeforePad = Math.min( password.length, padded.length );</span>
+<span class="fc" id="L988">        System.arraycopy( password, 0, padded, 0, bytesBeforePad );</span>
+<span class="fc" id="L989">        System.arraycopy( ENCRYPT_PADDING, 0, padded, bytesBeforePad,</span>
                           ENCRYPT_PADDING.length-bytesBeforePad );
-<span class="nc" id="L991">        return padded;</span>
+<span class="fc" id="L991">        return padded;</span>
     }
 
     /**
@@ -1011,16 +1011,16 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
                                   byte[] id, int encRevision, int keyLengthInBytes, boolean encryptMetadata)
                                   throws IOException
     {
-<span class="nc bnc" id="L1014" title="All 3 branches missed.">        switch (encRevision)</span>
+<span class="pc bpc" id="L1014" title="1 of 3 branches missed.">        switch (encRevision)</span>
         {
         case REVISION_2:
         case REVISION_3:
         case REVISION_4:
-<span class="nc" id="L1019">                return isUserPassword234(password, user, owner, permissions, id, encRevision,</span>
+<span class="fc" id="L1019">                return isUserPassword234(password, user, owner, permissions, id, encRevision,</span>
                                          keyLengthInBytes, encryptMetadata);
         case REVISION_5:
         case REVISION_6:
-<span class="nc" id="L1023">                return isUserPassword56(password, user, encRevision);</span>
+<span class="fc" id="L1023">                return isUserPassword56(password, user, encRevision);</span>
             default:
 <span class="nc" id="L1025">                throw new IOException(&quot;Unknown Encryption Revision &quot; + encRevision);</span>
         }
@@ -1030,38 +1030,38 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
             byte[] id, int encRevision, int length, boolean encryptMetadata)
             throws IOException
     {
-<span class="nc" id="L1033">        byte[] passwordBytes = computeUserPassword(password, owner, permissions, id, encRevision,</span>
+<span class="fc" id="L1033">        byte[] passwordBytes = computeUserPassword(password, owner, permissions, id, encRevision,</span>
                                                    length, encryptMetadata);
-<span class="nc bnc" id="L1035" title="All 2 branches missed.">        if (encRevision == REVISION_2)</span>
+<span class="fc bfc" id="L1035" title="All 2 branches covered.">        if (encRevision == REVISION_2)</span>
         {
-<span class="nc" id="L1037">            return MessageDigest.isEqual(user, passwordBytes);</span>
+<span class="fc" id="L1037">            return MessageDigest.isEqual(user, passwordBytes);</span>
         }
         else
         {
             // compare first 16 bytes only
-<span class="nc" id="L1042">            return MessageDigest.isEqual(Arrays.copyOf(user, 16), Arrays.copyOf(passwordBytes, 16));</span>
+<span class="fc" id="L1042">            return MessageDigest.isEqual(Arrays.copyOf(user, 16), Arrays.copyOf(passwordBytes, 16));</span>
         }
     }
 
     private boolean isUserPassword56(byte[] password, byte[] user, int encRevision) throws IOException
     {
-<span class="nc" id="L1048">        byte[] truncatedPassword = truncate127(password);</span>
-<span class="nc" id="L1049">        byte[] uHash = new byte[32];</span>
-<span class="nc" id="L1050">        byte[] uValidationSalt = new byte[8];</span>
-<span class="nc" id="L1051">        System.arraycopy(user, 0, uHash, 0, 32);</span>
-<span class="nc" id="L1052">        System.arraycopy(user, 32, uValidationSalt, 0, 8);</span>
+<span class="fc" id="L1048">        byte[] truncatedPassword = truncate127(password);</span>
+<span class="fc" id="L1049">        byte[] uHash = new byte[32];</span>
+<span class="fc" id="L1050">        byte[] uValidationSalt = new byte[8];</span>
+<span class="fc" id="L1051">        System.arraycopy(user, 0, uHash, 0, 32);</span>
+<span class="fc" id="L1052">        System.arraycopy(user, 32, uValidationSalt, 0, 8);</span>
 
         byte[] hash;
-<span class="nc bnc" id="L1055" title="All 2 branches missed.">        if (encRevision == REVISION_5)</span>
+<span class="pc bpc" id="L1055" title="1 of 2 branches missed.">        if (encRevision == REVISION_5)</span>
         {
 <span class="nc" id="L1057">            hash = computeSHA256(truncatedPassword, uValidationSalt, null);</span>
         }
         else
         {
-<span class="nc" id="L1061">            hash = computeHash2A(truncatedPassword, uValidationSalt, null);</span>
+<span class="fc" id="L1061">            hash = computeHash2A(truncatedPassword, uValidationSalt, null);</span>
         }
 
-<span class="nc" id="L1064">        return MessageDigest.isEqual(hash, uHash);</span>
+<span class="fc" id="L1064">        return MessageDigest.isEqual(hash, uHash);</span>
     }
 
     /**
@@ -1123,10 +1123,10 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
     // Algorithm 2.A from ISO 32000-1
     private byte[] computeHash2A(byte[] password, byte[] salt, byte[] u) throws IOException
     {
-<span class="nc" id="L1126">        byte[] userKey = adjustUserKey(u);</span>
-<span class="nc" id="L1127">        byte[] truncatedPassword = truncate127(password);</span>
-<span class="nc" id="L1128">        byte[] input = concat(truncatedPassword, salt, userKey);</span>
-<span class="nc" id="L1129">        return computeHash2B(input, truncatedPassword, userKey);</span>
+<span class="fc" id="L1126">        byte[] userKey = adjustUserKey(u);</span>
+<span class="fc" id="L1127">        byte[] truncatedPassword = truncate127(password);</span>
+<span class="fc" id="L1128">        byte[] input = concat(truncatedPassword, salt, userKey);</span>
+<span class="fc" id="L1129">        return computeHash2B(input, truncatedPassword, userKey);</span>
     }
     
     // Algorithm 2.B from ISO 32000-2
@@ -1135,66 +1135,66 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
     {
         try
         {
-<span class="nc" id="L1138">            MessageDigest md = MessageDigests.getSHA256();</span>
-<span class="nc" id="L1139">            byte[] k = md.digest(input);</span>
+<span class="fc" id="L1138">            MessageDigest md = MessageDigests.getSHA256();</span>
+<span class="fc" id="L1139">            byte[] k = md.digest(input);</span>
             
-<span class="nc" id="L1141">            byte[] e = null;</span>
-<span class="nc bnc" id="L1142" title="All 4 branches missed.">            for (int round = 0; round &lt; 64 || (e[e.length-1] &amp; 0xFF) &gt; round - 32; round++)</span>
+<span class="fc" id="L1141">            byte[] e = null;</span>
+<span class="fc bfc" id="L1142" title="All 4 branches covered.">            for (int round = 0; round &lt; 64 || (e[e.length-1] &amp; 0xFF) &gt; round - 32; round++)</span>
             {                
                 byte[] k1;
-<span class="nc bnc" id="L1145" title="All 4 branches missed.">                if (userKey != null &amp;&amp; userKey.length &gt;= 48)</span>
+<span class="fc bfc" id="L1145" title="All 4 branches covered.">                if (userKey != null &amp;&amp; userKey.length &gt;= 48)</span>
                 {
-<span class="nc" id="L1147">                    k1 = new byte[64*(password.length + k.length + 48)];</span>
+<span class="fc" id="L1147">                    k1 = new byte[64*(password.length + k.length + 48)];</span>
                 }
                 else
                 {
-<span class="nc" id="L1151">                    k1 = new byte[64*(password.length + k.length)];</span>
+<span class="fc" id="L1151">                    k1 = new byte[64*(password.length + k.length)];</span>
                 }
                 
-<span class="nc" id="L1154">                int pos = 0;</span>
-<span class="nc bnc" id="L1155" title="All 2 branches missed.">                for (int i = 0; i &lt; 64; i++)</span>
+<span class="fc" id="L1154">                int pos = 0;</span>
+<span class="fc bfc" id="L1155" title="All 2 branches covered.">                for (int i = 0; i &lt; 64; i++)</span>
                 {
-<span class="nc" id="L1157">                    System.arraycopy(password, 0, k1, pos, password.length);</span>
-<span class="nc" id="L1158">                    pos += password.length;</span>
-<span class="nc" id="L1159">                    System.arraycopy(k, 0, k1, pos, k.length);</span>
-<span class="nc" id="L1160">                    pos += k.length;</span>
-<span class="nc bnc" id="L1161" title="All 4 branches missed.">                    if (userKey != null &amp;&amp; userKey.length &gt;= 48)</span>
+<span class="fc" id="L1157">                    System.arraycopy(password, 0, k1, pos, password.length);</span>
+<span class="fc" id="L1158">                    pos += password.length;</span>
+<span class="fc" id="L1159">                    System.arraycopy(k, 0, k1, pos, k.length);</span>
+<span class="fc" id="L1160">                    pos += k.length;</span>
+<span class="fc bfc" id="L1161" title="All 4 branches covered.">                    if (userKey != null &amp;&amp; userKey.length &gt;= 48)</span>
                     {
-<span class="nc" id="L1163">                        System.arraycopy(userKey, 0, k1, pos, 48);</span>
-<span class="nc" id="L1164">                        pos += 48;</span>
+<span class="fc" id="L1163">                        System.arraycopy(userKey, 0, k1, pos, 48);</span>
+<span class="fc" id="L1164">                        pos += 48;</span>
                     }
                 }
                 
-<span class="nc" id="L1168">                byte[] kFirst = new byte[16];</span>
-<span class="nc" id="L1169">                byte[] kSecond = new byte[16];</span>
-<span class="nc" id="L1170">                System.arraycopy(k, 0, kFirst, 0, 16);</span>
-<span class="nc" id="L1171">                System.arraycopy(k, 16, kSecond, 0, 16);</span>
+<span class="fc" id="L1168">                byte[] kFirst = new byte[16];</span>
+<span class="fc" id="L1169">                byte[] kSecond = new byte[16];</span>
+<span class="fc" id="L1170">                System.arraycopy(k, 0, kFirst, 0, 16);</span>
+<span class="fc" id="L1171">                System.arraycopy(k, 16, kSecond, 0, 16);</span>
                 
-<span class="nc" id="L1173">                Cipher cipher = Cipher.getInstance(&quot;AES/CBC/NoPadding&quot;);</span>
-<span class="nc" id="L1174">                SecretKeySpec keySpec = new SecretKeySpec(kFirst, &quot;AES&quot;);</span>
-<span class="nc" id="L1175">                IvParameterSpec ivSpec = new IvParameterSpec(kSecond);</span>
-<span class="nc" id="L1176">                cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);</span>
-<span class="nc" id="L1177">                e = cipher.doFinal(k1);</span>
+<span class="fc" id="L1173">                Cipher cipher = Cipher.getInstance(&quot;AES/CBC/NoPadding&quot;);</span>
+<span class="fc" id="L1174">                SecretKeySpec keySpec = new SecretKeySpec(kFirst, &quot;AES&quot;);</span>
+<span class="fc" id="L1175">                IvParameterSpec ivSpec = new IvParameterSpec(kSecond);</span>
+<span class="fc" id="L1176">                cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);</span>
+<span class="fc" id="L1177">                e = cipher.doFinal(k1);</span>
                 
-<span class="nc" id="L1179">                byte[] eFirst = new byte[16];</span>
-<span class="nc" id="L1180">                System.arraycopy(e, 0, eFirst, 0, 16);</span>
-<span class="nc" id="L1181">                BigInteger bi = new BigInteger(1, eFirst);</span>
-<span class="nc" id="L1182">                BigInteger remainder = bi.mod(new BigInteger(&quot;3&quot;));</span>
-<span class="nc" id="L1183">                String nextHash = HASHES_2B[remainder.intValue()];</span>
+<span class="fc" id="L1179">                byte[] eFirst = new byte[16];</span>
+<span class="fc" id="L1180">                System.arraycopy(e, 0, eFirst, 0, 16);</span>
+<span class="fc" id="L1181">                BigInteger bi = new BigInteger(1, eFirst);</span>
+<span class="fc" id="L1182">                BigInteger remainder = bi.mod(new BigInteger(&quot;3&quot;));</span>
+<span class="fc" id="L1183">                String nextHash = HASHES_2B[remainder.intValue()];</span>
                 
-<span class="nc" id="L1185">                md = MessageDigest.getInstance(nextHash);</span>
-<span class="nc" id="L1186">                k = md.digest(e);</span>
+<span class="fc" id="L1185">                md = MessageDigest.getInstance(nextHash);</span>
+<span class="fc" id="L1186">                k = md.digest(e);</span>
             }
             
-<span class="nc bnc" id="L1189" title="All 2 branches missed.">            if (k.length &gt; 32)</span>
+<span class="fc bfc" id="L1189" title="All 2 branches covered.">            if (k.length &gt; 32)</span>
             {
-<span class="nc" id="L1191">                byte[] kTrunc = new byte[32];</span>
-<span class="nc" id="L1192">                System.arraycopy(k, 0, kTrunc, 0, 32);</span>
-<span class="nc" id="L1193">                return kTrunc;</span>
+<span class="fc" id="L1191">                byte[] kTrunc = new byte[32];</span>
+<span class="fc" id="L1192">                System.arraycopy(k, 0, kTrunc, 0, 32);</span>
+<span class="fc" id="L1193">                return kTrunc;</span>
             }
             else
             {
-<span class="nc" id="L1197">                return k;</span>
+<span class="fc" id="L1197">                return k;</span>
             }            
         }
 <span class="nc" id="L1200">        catch (GeneralSecurityException e)</span>
@@ -1206,54 +1206,54 @@ public final class StandardSecurityHandler extends SecurityHandler&lt;StandardPr
 
     private static byte[] computeSHA256(byte[] input, byte[] password, byte[] userKey) throws IOException
     {
-<span class="nc" id="L1209">        MessageDigest md = MessageDigests.getSHA256();</span>
-<span class="nc" id="L1210">        md.update(input);</span>
-<span class="nc" id="L1211">        md.update(password);</span>
-<span class="nc" id="L1212">        return md.digest(adjustUserKey(userKey));</span>
+<span class="fc" id="L1209">        MessageDigest md = MessageDigests.getSHA256();</span>
+<span class="fc" id="L1210">        md.update(input);</span>
+<span class="fc" id="L1211">        md.update(password);</span>
+<span class="fc" id="L1212">        return md.digest(adjustUserKey(userKey));</span>
     }
 
     private static byte[] adjustUserKey(byte[] u) throws IOException
     {
-<span class="nc bnc" id="L1217" title="All 2 branches missed.">        if (u == null)</span>
+<span class="fc bfc" id="L1217" title="All 2 branches covered.">        if (u == null)</span>
         {
-<span class="nc" id="L1219">            return new byte[0];</span>
+<span class="fc" id="L1219">            return new byte[0];</span>
         }
-<span class="nc bnc" id="L1221" title="All 2 branches missed.">        if (u.length &lt; 48)</span>
+<span class="pc bpc" id="L1221" title="1 of 2 branches missed.">        if (u.length &lt; 48)</span>
         {
 <span class="nc" id="L1223">            throw new IOException(&quot;Bad U length&quot;);</span>
         }
-<span class="nc bnc" id="L1225" title="All 2 branches missed.">        if (u.length &gt; 48)</span>
+<span class="pc bpc" id="L1225" title="1 of 2 branches missed.">        if (u.length &gt; 48)</span>
         {
             // must truncate
 <span class="nc" id="L1228">            byte[] userKey = new byte[48];</span>
 <span class="nc" id="L1229">            System.arraycopy(u, 0, userKey, 0, 48);</span>
 <span class="nc" id="L1230">            return userKey;</span>
         }
-<span class="nc" id="L1232">        return u;</span>
+<span class="fc" id="L1232">        return u;</span>
     }
 
     private static byte[] concat(byte[] a, byte[] b)
     {
-<span class="nc" id="L1237">        byte[] o = new byte[a.length + b.length];</span>
-<span class="nc" id="L1238">        System.arraycopy(a, 0, o, 0, a.length);</span>
-<span class="nc" id="L1239">        System.arraycopy(b, 0, o, a.length, b.length);</span>
-<span class="nc" id="L1240">        return o;</span>
+<span class="fc" id="L1237">        byte[] o = new byte[a.length + b.length];</span>
+<span class="fc" id="L1238">        System.arraycopy(a, 0, o, 0, a.length);</span>
+<span class="fc" id="L1239">        System.arraycopy(b, 0, o, a.length, b.length);</span>
+<span class="fc" id="L1240">        return o;</span>
     }
     
     private static byte[] concat(byte[] a, byte[] b, byte[] c)
     {
-<span class="nc" id="L1245">        byte[] o = new byte[a.length + b.length + c.length];</span>
-<span class="nc" id="L1246">        System.arraycopy(a, 0, o, 0, a.length);</span>
-<span class="nc" id="L1247">        System.arraycopy(b, 0, o, a.length, b.length);</span>
-<span class="nc" id="L1248">        System.arraycopy(c, 0, o, a.length + b.length, c.length);</span>
-<span class="nc" id="L1249">        return o;</span>
+<span class="fc" id="L1245">        byte[] o = new byte[a.length + b.length + c.length];</span>
+<span class="fc" id="L1246">        System.arraycopy(a, 0, o, 0, a.length);</span>
+<span class="fc" id="L1247">        System.arraycopy(b, 0, o, a.length, b.length);</span>
+<span class="fc" id="L1248">        System.arraycopy(c, 0, o, a.length + b.length, c.length);</span>
+<span class="fc" id="L1249">        return o;</span>
     }
     
     private static byte[] truncate127(byte[] in)
     {
-<span class="nc bnc" id="L1254" title="All 2 branches missed.">        if (in.length &lt;= 127)</span>
+<span class="pc bpc" id="L1254" title="1 of 2 branches missed.">        if (in.length &lt;= 127)</span>
         {
-<span class="nc" id="L1256">            return in;</span>
+<span class="fc" id="L1256">            return in;</span>
         }
 <span class="nc" id="L1258">        byte[] trunc = new byte[127];</span>
 <span class="nc" id="L1259">        System.arraycopy(in, 0, trunc, 0, 127);</span>

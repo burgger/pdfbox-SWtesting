@@ -86,8 +86,8 @@ public final class COSString extends COSBase
      */
     public COSString(String text)
     {
-<span class="nc" id="L89">        this(text, false);</span>
-<span class="nc" id="L90">    }</span>
+<span class="fc" id="L89">        this(text, false);</span>
+<span class="fc" id="L90">    }</span>
 
     /**
      * Creates a new &lt;i&gt;text string&lt;/i&gt; from a Java String.
@@ -97,34 +97,34 @@ public final class COSString extends COSBase
      * 
      */
     public COSString(String text, boolean forceHex)
-<span class="nc" id="L100">    {</span>
-<span class="nc" id="L101">        forceHexForm = forceHex;</span>
+<span class="fc" id="L100">    {</span>
+<span class="fc" id="L101">        forceHexForm = forceHex;</span>
         // check whether the string uses only characters available in PDFDocEncoding
-<span class="nc" id="L103">        boolean isOnlyPDFDocEncoding = true;</span>
-<span class="nc bnc" id="L104" title="All 2 branches missed.">        for (char c : text.toCharArray())</span>
+<span class="fc" id="L103">        boolean isOnlyPDFDocEncoding = true;</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        for (char c : text.toCharArray())</span>
         {
-<span class="nc bnc" id="L106" title="All 2 branches missed.">            if (!PDFDocEncoding.containsChar(c))</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            if (!PDFDocEncoding.containsChar(c))</span>
             {
-<span class="nc" id="L108">                isOnlyPDFDocEncoding = false;</span>
-<span class="nc" id="L109">                break;</span>
+<span class="fc" id="L108">                isOnlyPDFDocEncoding = false;</span>
+<span class="fc" id="L109">                break;</span>
             }
         }
 
-<span class="nc bnc" id="L113" title="All 2 branches missed.">        if (isOnlyPDFDocEncoding)</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        if (isOnlyPDFDocEncoding)</span>
         {
             // PDFDocEncoded string
-<span class="nc" id="L116">            bytes = PDFDocEncoding.getBytes(text);</span>
+<span class="fc" id="L116">            bytes = PDFDocEncoding.getBytes(text);</span>
         }
         else
         {
             // UTF-16BE encoded string with a leading byte order marker
-<span class="nc" id="L121">            byte[] data = text.getBytes(StandardCharsets.UTF_16BE);</span>
-<span class="nc" id="L122">            bytes = new byte[data.length + 2];</span>
-<span class="nc" id="L123">            bytes[0] = (byte) 0xFE;</span>
-<span class="nc" id="L124">            bytes[1] = (byte) 0xFF;</span>
-<span class="nc" id="L125">            System.arraycopy(data, 0, bytes, 2, data.length);</span>
+<span class="fc" id="L121">            byte[] data = text.getBytes(StandardCharsets.UTF_16BE);</span>
+<span class="fc" id="L122">            bytes = new byte[data.length + 2];</span>
+<span class="fc" id="L123">            bytes[0] = (byte) 0xFE;</span>
+<span class="fc" id="L124">            bytes[1] = (byte) 0xFF;</span>
+<span class="fc" id="L125">            System.arraycopy(data, 0, bytes, 2, data.length);</span>
         }
-<span class="nc" id="L127">    }</span>
+<span class="fc" id="L127">    }</span>
 
     /**
      * This will create a COS string from a string of hex characters.
@@ -158,18 +158,18 @@ public final class COSString extends COSBase
 <span class="fc bfc" id="L158" title="All 2 branches covered.">        for (int i = 0; i &lt; length; i += 2)</span>
         {
 <span class="fc" id="L160">            int value = 16 * Hex.getHexValue(hex.charAt(i)) + Hex.getHexValue(hex.charAt(i + 1));</span>
-<span class="pc bpc" id="L161" title="1 of 2 branches missed.">            if (value &gt;= 0)</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">            if (value &gt;= 0)</span>
             {
 <span class="fc" id="L163">                bytes.write(value);</span>
             }
-<span class="nc bnc" id="L165" title="All 2 branches missed.">            else if (FORCE_PARSING)</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">            else if (FORCE_PARSING)</span>
             {
 <span class="nc" id="L167">                LOG.warn(&quot;Encountered a malformed hex string&quot;);</span>
 <span class="nc" id="L168">                bytes.write('?'); // todo: what does Acrobat do? Any example PDFs?</span>
             }
             else
             {
-<span class="nc" id="L172">                throw new IOException(&quot;Invalid hex string: &quot; + hex);</span>
+<span class="fc" id="L172">                throw new IOException(&quot;Invalid hex string: &quot; + hex);</span>
             }
         }
 <span class="pc bpc" id="L175" title="1 of 2 branches missed.">        if (isLengthUneven)</span>
@@ -210,22 +210,22 @@ public final class COSString extends COSBase
     public String getString()
     {
         // text string - BOM indicates Unicode
-<span class="nc bnc" id="L213" title="All 2 branches missed.">        if (bytes.length &gt;= 2)</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">        if (bytes.length &gt;= 2)</span>
         {
-<span class="nc bnc" id="L215" title="All 4 branches missed.">            if ((bytes[0] &amp; 0xff) == 0xFE &amp;&amp; (bytes[1] &amp; 0xff) == 0xFF)</span>
+<span class="pc bpc" id="L215" title="1 of 4 branches missed.">            if ((bytes[0] &amp; 0xff) == 0xFE &amp;&amp; (bytes[1] &amp; 0xff) == 0xFF)</span>
             {
                 // UTF-16BE
-<span class="nc" id="L218">                return new String(bytes, 2, bytes.length - 2, StandardCharsets.UTF_16BE);</span>
+<span class="fc" id="L218">                return new String(bytes, 2, bytes.length - 2, StandardCharsets.UTF_16BE);</span>
             }
-<span class="nc bnc" id="L220" title="All 4 branches missed.">            else if ((bytes[0] &amp; 0xff) == 0xFF &amp;&amp; (bytes[1] &amp; 0xff) == 0xFE)</span>
+<span class="pc bpc" id="L220" title="1 of 4 branches missed.">            else if ((bytes[0] &amp; 0xff) == 0xFF &amp;&amp; (bytes[1] &amp; 0xff) == 0xFE)</span>
             {
                 // UTF-16LE - not in the PDF spec!
-<span class="nc" id="L223">                return new String(bytes, 2, bytes.length - 2, StandardCharsets.UTF_16LE);</span>
+<span class="fc" id="L223">                return new String(bytes, 2, bytes.length - 2, StandardCharsets.UTF_16LE);</span>
             }
         }
 
         // otherwise use PDFDocEncoding
-<span class="nc" id="L228">        return PDFDocEncoding.toString(bytes);</span>
+<span class="fc" id="L228">        return PDFDocEncoding.toString(bytes);</span>
     }
 
     /**
@@ -256,7 +256,7 @@ public final class COSString extends COSBase
      */
     public String toHexString()
     {
-<span class="nc" id="L259">        return Hex.getString(bytes);</span>
+<span class="fc" id="L259">        return Hex.getString(bytes);</span>
     }
 
     /**
@@ -274,26 +274,26 @@ public final class COSString extends COSBase
     @Override
     public boolean equals(Object obj)
     {
-<span class="nc bnc" id="L277" title="All 2 branches missed.">        if (obj instanceof COSString)</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">        if (obj instanceof COSString)</span>
         {
-<span class="nc" id="L279">            COSString strObj = (COSString) obj;</span>
-<span class="nc bnc" id="L280" title="All 4 branches missed.">            return getString().equals(strObj.getString()) &amp;&amp;</span>
+<span class="fc" id="L279">            COSString strObj = (COSString) obj;</span>
+<span class="fc bfc" id="L280" title="All 4 branches covered.">            return getString().equals(strObj.getString()) &amp;&amp;</span>
                    forceHexForm == strObj.forceHexForm;
         }
-<span class="nc" id="L283">        return false;</span>
+<span class="fc" id="L283">        return false;</span>
     }
 
     @Override
     public int hashCode()
     {
-<span class="nc" id="L289">        int result = Arrays.hashCode(bytes);</span>
-<span class="nc bnc" id="L290" title="All 2 branches missed.">        return result + (forceHexForm ? 17 : 0);</span>
+<span class="fc" id="L289">        int result = Arrays.hashCode(bytes);</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">        return result + (forceHexForm ? 17 : 0);</span>
     }
 
     @Override
     public String toString()
     {
-<span class="nc" id="L296">        return &quot;COSString{&quot; + getString() + &quot;}&quot;;</span>
+<span class="fc" id="L296">        return &quot;COSString{&quot; + getString() + &quot;}&quot;;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -102,9 +102,9 @@ public class PDPage implements COSObjectable, PDContentStream
      * @param pageDictionary A page dictionary in a PDF document.
      */
     public PDPage(COSDictionary pageDictionary)
-<span class="nc" id="L105">    {</span>
-<span class="nc" id="L106">        page = pageDictionary;</span>
-<span class="nc" id="L107">    }</span>
+<span class="fc" id="L105">    {</span>
+<span class="fc" id="L106">        page = pageDictionary;</span>
+<span class="fc" id="L107">    }</span>
 
     /**
      * Creates a new instance of PDPage for reading.
@@ -112,10 +112,10 @@ public class PDPage implements COSObjectable, PDContentStream
      * @param pageDictionary A page dictionary in a PDF document.
      */
     PDPage(COSDictionary pageDictionary, ResourceCache resourceCache)
-<span class="nc" id="L115">    {</span>
-<span class="nc" id="L116">        page = pageDictionary;</span>
-<span class="nc" id="L117">        this.resourceCache = resourceCache;</span>
-<span class="nc" id="L118">    }</span>
+<span class="fc" id="L115">    {</span>
+<span class="fc" id="L116">        page = pageDictionary;</span>
+<span class="fc" id="L117">        this.resourceCache = resourceCache;</span>
+<span class="fc" id="L118">    }</span>
 
     /**
      * Remove all page resources from the cache to avoid relying on the implementation of the Cache. Does make sense
@@ -123,56 +123,56 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public void removePageResourceFromCache()
     {
-<span class="nc bnc" id="L126" title="All 2 branches missed.">        if (resourceCache == null)</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (resourceCache == null)</span>
         {
 <span class="nc" id="L128">            return;</span>
         }
         // limit purge operation to page resources, don't remove inherited resources
-<span class="nc" id="L131">        removeResources(page.getCOSDictionary(COSName.RESOURCES));</span>
-<span class="nc" id="L132">    }</span>
+<span class="fc" id="L131">        removeResources(page.getCOSDictionary(COSName.RESOURCES));</span>
+<span class="fc" id="L132">    }</span>
 
     private void removeResources(COSDictionary resources)
     {
-<span class="nc bnc" id="L136" title="All 2 branches missed.">        if (resources == null)</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        if (resources == null)</span>
         {
-<span class="nc" id="L138">            return;</span>
+<span class="fc" id="L138">            return;</span>
         }
-<span class="nc" id="L140">        getIndirectResourceObjects(resources, COSName.COLORSPACE)</span>
-<span class="nc" id="L141">                .forEach(resourceCache::removeColorSpace);</span>
-<span class="nc" id="L142">        getIndirectResourceObjects(resources, COSName.EXT_G_STATE)</span>
-<span class="nc" id="L143">                .forEach(resourceCache::removeExtState);</span>
-<span class="nc" id="L144">        getIndirectResourceObjects(resources, COSName.FONT)</span>
-<span class="nc" id="L145">                .forEach(resourceCache::removeFont);</span>
-<span class="nc" id="L146">        getIndirectResourceObjects(resources, COSName.PATTERN)</span>
-<span class="nc" id="L147">                .forEach(resourceCache::removePattern);</span>
-<span class="nc" id="L148">        getIndirectResourceObjects(resources, COSName.PROPERTIES)</span>
-<span class="nc" id="L149">                .forEach(resourceCache::removeProperties);</span>
-<span class="nc" id="L150">        getIndirectResourceObjects(resources, COSName.SHADING)</span>
-<span class="nc" id="L151">                .forEach(resourceCache::removeShading);</span>
-<span class="nc bnc" id="L152" title="All 2 branches missed.">        for (COSObject cosObject : getIndirectResourceObjects(resources, COSName.XOBJECT))</span>
+<span class="fc" id="L140">        getIndirectResourceObjects(resources, COSName.COLORSPACE)</span>
+<span class="fc" id="L141">                .forEach(resourceCache::removeColorSpace);</span>
+<span class="fc" id="L142">        getIndirectResourceObjects(resources, COSName.EXT_G_STATE)</span>
+<span class="fc" id="L143">                .forEach(resourceCache::removeExtState);</span>
+<span class="fc" id="L144">        getIndirectResourceObjects(resources, COSName.FONT)</span>
+<span class="fc" id="L145">                .forEach(resourceCache::removeFont);</span>
+<span class="fc" id="L146">        getIndirectResourceObjects(resources, COSName.PATTERN)</span>
+<span class="fc" id="L147">                .forEach(resourceCache::removePattern);</span>
+<span class="fc" id="L148">        getIndirectResourceObjects(resources, COSName.PROPERTIES)</span>
+<span class="fc" id="L149">                .forEach(resourceCache::removeProperties);</span>
+<span class="fc" id="L150">        getIndirectResourceObjects(resources, COSName.SHADING)</span>
+<span class="fc" id="L151">                .forEach(resourceCache::removeShading);</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">        for (COSObject cosObject : getIndirectResourceObjects(resources, COSName.XOBJECT))</span>
         {
-<span class="nc" id="L154">            PDXObject removedXObject = resourceCache.removeXObject(cosObject);</span>
+<span class="fc" id="L154">            PDXObject removedXObject = resourceCache.removeXObject(cosObject);</span>
             // clean up the resources of the XFormObject
-<span class="nc bnc" id="L156" title="All 2 branches missed.">            if (removedXObject instanceof PDFormXObject)</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">            if (removedXObject instanceof PDFormXObject)</span>
             {
-<span class="nc" id="L158">                COSStream cosStream = removedXObject.getCOSObject();</span>
-<span class="nc" id="L159">                removeResources(cosStream.getCOSDictionary(COSName.RESOURCES));</span>
+<span class="fc" id="L158">                COSStream cosStream = removedXObject.getCOSObject();</span>
+<span class="fc" id="L159">                removeResources(cosStream.getCOSDictionary(COSName.RESOURCES));</span>
             }
-<span class="nc" id="L161">        }</span>
-<span class="nc" id="L162">    }</span>
+<span class="fc" id="L161">        }</span>
+<span class="fc" id="L162">    }</span>
 
     private List&lt;COSObject&gt; getIndirectResourceObjects(COSDictionary pageResources, COSName kind)
     {
-<span class="nc" id="L166">        COSDictionary resourcesDictionary = pageResources.getCOSDictionary(kind);</span>
-<span class="nc bnc" id="L167" title="All 2 branches missed.">        if (resourcesDictionary == null)</span>
+<span class="fc" id="L166">        COSDictionary resourcesDictionary = pageResources.getCOSDictionary(kind);</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        if (resourcesDictionary == null)</span>
         {
-<span class="nc" id="L169">            return Collections.emptyList();</span>
+<span class="fc" id="L169">            return Collections.emptyList();</span>
         }
-<span class="nc" id="L171">        return resourcesDictionary.getValues().stream() //</span>
-<span class="nc" id="L172">                .filter(COSObject.class::isInstance) //</span>
-<span class="nc" id="L173">                .map(COSObject.class::cast) //</span>
-<span class="nc" id="L174">                .filter(COSObject::isDereferenced) //</span>
-<span class="nc" id="L175">                .collect(Collectors.toList());</span>
+<span class="fc" id="L171">        return resourcesDictionary.getValues().stream() //</span>
+<span class="fc" id="L172">                .filter(COSObject.class::isInstance) //</span>
+<span class="fc" id="L173">                .map(COSObject.class::cast) //</span>
+<span class="fc" id="L174">                .filter(COSObject::isDereferenced) //</span>
+<span class="fc" id="L175">                .collect(Collectors.toList());</span>
     }
 
     /**
@@ -193,21 +193,21 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public Iterator&lt;PDStream&gt; getContentStreams()
     {
-<span class="nc" id="L196">        COSBase base = page.getDictionaryObject(COSName.CONTENTS);</span>
-<span class="nc bnc" id="L197" title="All 2 branches missed.">        if (base instanceof COSStream)</span>
+<span class="fc" id="L196">        COSBase base = page.getDictionaryObject(COSName.CONTENTS);</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        if (base instanceof COSStream)</span>
         {
-<span class="nc" id="L199">            return Collections.singletonList(new PDStream((COSStream) base)).iterator();</span>
+<span class="fc" id="L199">            return Collections.singletonList(new PDStream((COSStream) base)).iterator();</span>
         }
-<span class="nc bnc" id="L201" title="All 2 branches missed.">        else if (base instanceof COSArray)</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">        else if (base instanceof COSArray)</span>
         {
-<span class="nc" id="L203">            COSArray array = (COSArray)base;</span>
-<span class="nc" id="L204">            List&lt;PDStream&gt; streams = new ArrayList&lt;&gt;(array.size());</span>
-<span class="nc bnc" id="L205" title="All 2 branches missed.">            for (int i = 0; i &lt; array.size(); i++)</span>
+<span class="fc" id="L203">            COSArray array = (COSArray)base;</span>
+<span class="fc" id="L204">            List&lt;PDStream&gt; streams = new ArrayList&lt;&gt;(array.size());</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">            for (int i = 0; i &lt; array.size(); i++)</span>
             {
-<span class="nc" id="L207">                COSStream stream = (COSStream) array.getObject(i);</span>
-<span class="nc" id="L208">                streams.add(new PDStream(stream));</span>
+<span class="fc" id="L207">                COSStream stream = (COSStream) array.getObject(i);</span>
+<span class="fc" id="L208">                streams.add(new PDStream(stream));</span>
             }
-<span class="nc" id="L210">            return streams.iterator();</span>
+<span class="fc" id="L210">            return streams.iterator();</span>
         }
 <span class="nc" id="L212">        return Collections.emptyIterator();</span>
     }
@@ -222,10 +222,10 @@ public class PDPage implements COSObjectable, PDContentStream
     @Override
     public InputStream getContents() throws IOException
     {
-<span class="nc" id="L225">        RandomAccessRead contentsForRandomAccess = getContentsForRandomAccess();</span>
-<span class="nc bnc" id="L226" title="All 2 branches missed.">        if (contentsForRandomAccess != null)</span>
+<span class="fc" id="L225">        RandomAccessRead contentsForRandomAccess = getContentsForRandomAccess();</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">        if (contentsForRandomAccess != null)</span>
         {
-<span class="nc" id="L228">            return new RandomAccessInputStream(contentsForRandomAccess);</span>
+<span class="fc" id="L228">            return new RandomAccessInputStream(contentsForRandomAccess);</span>
         }
 <span class="nc" id="L230">        return new ByteArrayInputStream(new byte[0]);</span>
     }
@@ -234,15 +234,15 @@ public class PDPage implements COSObjectable, PDContentStream
     public RandomAccessRead getContentsForStreamParsing() throws IOException
     {
         // return a stream based reader if there is just one stream
-<span class="nc" id="L237">        COSStream contentStream = page.getCOSStream(COSName.CONTENTS);</span>
-<span class="nc bnc" id="L238" title="All 4 branches missed.">        if (contentStream != null &amp;&amp; COSName.FLATE_DECODE.equals(contentStream.getFilters()))</span>
+<span class="fc" id="L237">        COSStream contentStream = page.getCOSStream(COSName.CONTENTS);</span>
+<span class="fc bfc" id="L238" title="All 4 branches covered.">        if (contentStream != null &amp;&amp; COSName.FLATE_DECODE.equals(contentStream.getFilters()))</span>
         {
             // for now only streams using a flate filter are supported
             try
             {
-<span class="nc" id="L243">                FlateFilterDecoderStream decoderStream = new FlateFilterDecoderStream(</span>
-<span class="nc" id="L244">                        contentStream.createRawInputStream());</span>
-<span class="nc" id="L245">                return new NonSeekableRandomAccessReadInputStream(decoderStream);</span>
+<span class="fc" id="L243">                FlateFilterDecoderStream decoderStream = new FlateFilterDecoderStream(</span>
+<span class="fc" id="L244">                        contentStream.createRawInputStream());</span>
+<span class="fc" id="L245">                return new NonSeekableRandomAccessReadInputStream(decoderStream);</span>
             }
 <span class="nc" id="L247">            catch (IOException exception)</span>
             {
@@ -250,18 +250,18 @@ public class PDPage implements COSObjectable, PDContentStream
 <span class="nc" id="L250">                return new RandomAccessReadBuffer(DELIMITER);</span>
             }
         }
-<span class="nc" id="L253">        return getContentsForRandomAccess();</span>
+<span class="fc" id="L253">        return getContentsForRandomAccess();</span>
     }
 
     @Override
     public RandomAccessRead getContentsForRandomAccess() throws IOException
     {
-<span class="nc" id="L259">        COSStream contentStream = page.getCOSStream(COSName.CONTENTS);</span>
-<span class="nc bnc" id="L260" title="All 2 branches missed.">        if (contentStream != null)</span>
+<span class="fc" id="L259">        COSStream contentStream = page.getCOSStream(COSName.CONTENTS);</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">        if (contentStream != null)</span>
         {
             try
             {
-<span class="nc" id="L264">                return contentStream.createView();</span>
+<span class="fc" id="L264">                return contentStream.createView();</span>
             }
 <span class="nc" id="L266">            catch (IOException exception)</span>
             {
@@ -269,33 +269,33 @@ public class PDPage implements COSObjectable, PDContentStream
 <span class="nc" id="L269">                return new RandomAccessReadBuffer(DELIMITER);</span>
             }
         }
-<span class="nc" id="L272">        COSArray array = page.getCOSArray(COSName.CONTENTS);</span>
-<span class="nc bnc" id="L273" title="All 2 branches missed.">        if (array != null)</span>
+<span class="fc" id="L272">        COSArray array = page.getCOSArray(COSName.CONTENTS);</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">        if (array != null)</span>
         {
-<span class="nc" id="L275">            List&lt;COSStream&gt; streams = array.toList().stream() //</span>
-<span class="nc bnc" id="L276" title="All 2 branches missed.">                    .map(o -&gt; o instanceof COSObject ? ((COSObject) o).getObject() : o) //</span>
-<span class="nc" id="L277">                    .filter(COSStream.class::isInstance) //</span>
-<span class="nc" id="L278">                    .map(b -&gt; (COSStream) b) //</span>
-<span class="nc" id="L279">                    .collect(Collectors.toList());</span>
-<span class="nc" id="L280">            List&lt;RandomAccessRead&gt; inputStreams = new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L281">            streams.forEach(stream -&gt;</span>
+<span class="fc" id="L275">            List&lt;COSStream&gt; streams = array.toList().stream() //</span>
+<span class="fc bfc" id="L276" title="All 2 branches covered.">                    .map(o -&gt; o instanceof COSObject ? ((COSObject) o).getObject() : o) //</span>
+<span class="fc" id="L277">                    .filter(COSStream.class::isInstance) //</span>
+<span class="fc" id="L278">                    .map(b -&gt; (COSStream) b) //</span>
+<span class="fc" id="L279">                    .collect(Collectors.toList());</span>
+<span class="fc" id="L280">            List&lt;RandomAccessRead&gt; inputStreams = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L281">            streams.forEach(stream -&gt;</span>
             {
                 try
                 {
-<span class="nc" id="L285">                    inputStreams.add(stream.createView());</span>
-<span class="nc" id="L286">                    inputStreams.add(new RandomAccessReadBuffer(DELIMITER));</span>
+<span class="fc" id="L285">                    inputStreams.add(stream.createView());</span>
+<span class="fc" id="L286">                    inputStreams.add(new RandomAccessReadBuffer(DELIMITER));</span>
                 }
 <span class="nc" id="L288">                catch (IOException exception)</span>
                 {
 <span class="nc" id="L290">                    LOG.warn(&quot;malformed substream of content stream skipped&quot;);</span>
-<span class="nc" id="L291">                }</span>
-<span class="nc" id="L292">            });</span>
-<span class="nc bnc" id="L293" title="All 2 branches missed.">            if (!inputStreams.isEmpty())</span>
+<span class="fc" id="L291">                }</span>
+<span class="fc" id="L292">            });</span>
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">            if (!inputStreams.isEmpty())</span>
             {
-<span class="nc" id="L295">                return new SequenceRandomAccessRead(inputStreams);</span>
+<span class="fc" id="L295">                return new SequenceRandomAccessRead(inputStreams);</span>
             }
         }
-<span class="nc" id="L298">        return new RandomAccessReadBuffer(new byte[0]);</span>
+<span class="fc" id="L298">        return new RandomAccessReadBuffer(new byte[0]);</span>
     }
 
     /**
@@ -305,16 +305,16 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public boolean hasContents()
     {
-<span class="nc" id="L308">        COSBase contents = page.getDictionaryObject(COSName.CONTENTS);</span>
-<span class="nc bnc" id="L309" title="All 2 branches missed.">        if (contents instanceof COSStream)</span>
+<span class="fc" id="L308">        COSBase contents = page.getDictionaryObject(COSName.CONTENTS);</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">        if (contents instanceof COSStream)</span>
         {
-<span class="nc bnc" id="L311" title="All 2 branches missed.">            return ((COSStream) contents).size() &gt; 0;</span>
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">            return ((COSStream) contents).size() &gt; 0;</span>
         }
-<span class="nc bnc" id="L313" title="All 2 branches missed.">        else if (contents instanceof COSArray)</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">        else if (contents instanceof COSArray)</span>
         {
-<span class="nc bnc" id="L315" title="All 2 branches missed.">            return !((COSArray) contents).isEmpty();</span>
+<span class="pc bpc" id="L315" title="1 of 2 branches missed.">            return !((COSArray) contents).isEmpty();</span>
         }
-<span class="nc" id="L317">        return false;</span>
+<span class="fc" id="L317">        return false;</span>
     }
 
     /**
@@ -323,17 +323,17 @@ public class PDPage implements COSObjectable, PDContentStream
     @Override
     public PDResources getResources()
     {
-<span class="nc bnc" id="L326" title="All 2 branches missed.">        if (pageResources == null)</span>
+<span class="fc bfc" id="L326" title="All 2 branches covered.">        if (pageResources == null)</span>
         {
-<span class="nc" id="L328">            COSBase base = PDPageTree.getInheritableAttribute(page, COSName.RESOURCES);</span>
+<span class="fc" id="L328">            COSBase base = PDPageTree.getInheritableAttribute(page, COSName.RESOURCES);</span>
 
             // note: it's an error for resources to not be present
-<span class="nc bnc" id="L331" title="All 2 branches missed.">            if (base instanceof COSDictionary)</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">            if (base instanceof COSDictionary)</span>
             {
-<span class="nc" id="L333">                pageResources = new PDResources((COSDictionary) base, resourceCache);</span>
+<span class="fc" id="L333">                pageResources = new PDResources((COSDictionary) base, resourceCache);</span>
             }
         }
-<span class="nc" id="L336">        return pageResources;</span>
+<span class="fc" id="L336">        return pageResources;</span>
     }
 
     /**
@@ -343,16 +343,16 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public void setResources(PDResources resources)
     {
-<span class="nc" id="L346">        pageResources = resources;</span>
-<span class="nc bnc" id="L347" title="All 2 branches missed.">        if (resources != null)</span>
+<span class="fc" id="L346">        pageResources = resources;</span>
+<span class="pc bpc" id="L347" title="1 of 2 branches missed.">        if (resources != null)</span>
         {
-<span class="nc" id="L349">            page.setItem(COSName.RESOURCES, resources);</span>
+<span class="fc" id="L349">            page.setItem(COSName.RESOURCES, resources);</span>
         }
         else
         {
 <span class="nc" id="L353">            page.removeItem(COSName.RESOURCES);</span>
         }
-<span class="nc" id="L355">    }</span>
+<span class="fc" id="L355">    }</span>
 
     /**
      * This will get the key of this Page in the structural parent tree.
@@ -362,7 +362,7 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public int getStructParents()
     {
-<span class="nc" id="L365">        return page.getInt(COSName.STRUCT_PARENTS);</span>
+<span class="fc" id="L365">        return page.getInt(COSName.STRUCT_PARENTS);</span>
     }
 
     /**
@@ -372,20 +372,20 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public void setStructParents(int structParents)
     {
-<span class="nc" id="L375">        page.setInt(COSName.STRUCT_PARENTS, structParents);</span>
-<span class="nc" id="L376">    }</span>
+<span class="fc" id="L375">        page.setInt(COSName.STRUCT_PARENTS, structParents);</span>
+<span class="fc" id="L376">    }</span>
 
     @Override
     public PDRectangle getBBox()
     {
-<span class="nc" id="L381">        return getCropBox();</span>
+<span class="fc" id="L381">        return getCropBox();</span>
     }
 
     @Override
     public Matrix getMatrix()
     {
         // todo: take into account user-space unit redefinition as scale?
-<span class="nc" id="L388">        return new Matrix();</span>
+<span class="fc" id="L388">        return new Matrix();</span>
     }
 
     /**
@@ -396,20 +396,20 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public PDRectangle getMediaBox()
     {
-<span class="nc bnc" id="L399" title="All 2 branches missed.">        if (mediaBox == null)</span>
+<span class="fc bfc" id="L399" title="All 2 branches covered.">        if (mediaBox == null)</span>
         {
-<span class="nc" id="L401">            COSBase base = PDPageTree.getInheritableAttribute(page, COSName.MEDIA_BOX);</span>
-<span class="nc bnc" id="L402" title="All 2 branches missed.">            if (base instanceof COSArray)</span>
+<span class="fc" id="L401">            COSBase base = PDPageTree.getInheritableAttribute(page, COSName.MEDIA_BOX);</span>
+<span class="fc bfc" id="L402" title="All 2 branches covered.">            if (base instanceof COSArray)</span>
             {
-<span class="nc" id="L404">                mediaBox = new PDRectangle((COSArray) base);</span>
+<span class="fc" id="L404">                mediaBox = new PDRectangle((COSArray) base);</span>
             }
             else
             {
-<span class="nc" id="L408">                LOG.debug(&quot;Can't find MediaBox, will use U.S. Letter&quot;);</span>
-<span class="nc" id="L409">                mediaBox = PDRectangle.LETTER;</span>
+<span class="fc" id="L408">                LOG.debug(&quot;Can't find MediaBox, will use U.S. Letter&quot;);</span>
+<span class="fc" id="L409">                mediaBox = PDRectangle.LETTER;</span>
             }
         }
-<span class="nc" id="L412">        return mediaBox;</span>
+<span class="fc" id="L412">        return mediaBox;</span>
     }
 
     /**
@@ -419,16 +419,16 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public void setMediaBox(PDRectangle mediaBox)
     {
-<span class="nc" id="L422">        this.mediaBox = mediaBox;</span>
-<span class="nc bnc" id="L423" title="All 2 branches missed.">        if (mediaBox == null)</span>
+<span class="fc" id="L422">        this.mediaBox = mediaBox;</span>
+<span class="pc bpc" id="L423" title="1 of 2 branches missed.">        if (mediaBox == null)</span>
         {
 <span class="nc" id="L425">            page.removeItem(COSName.MEDIA_BOX);</span>
         }
         else
         {
-<span class="nc" id="L429">            page.setItem(COSName.MEDIA_BOX, mediaBox);</span>
+<span class="fc" id="L429">            page.setItem(COSName.MEDIA_BOX, mediaBox);</span>
         }
-<span class="nc" id="L431">    }</span>
+<span class="fc" id="L431">    }</span>
 
     /**
      * A rectangle, expressed in default user space units, defining the visible region of default user space. When the
@@ -438,14 +438,14 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public PDRectangle getCropBox()
     {
-<span class="nc" id="L441">        COSBase base = PDPageTree.getInheritableAttribute(page, COSName.CROP_BOX);</span>
-<span class="nc bnc" id="L442" title="All 2 branches missed.">        if (base instanceof COSArray)</span>
+<span class="fc" id="L441">        COSBase base = PDPageTree.getInheritableAttribute(page, COSName.CROP_BOX);</span>
+<span class="fc bfc" id="L442" title="All 2 branches covered.">        if (base instanceof COSArray)</span>
         {
-<span class="nc" id="L444">            return clipToMediaBox(new PDRectangle((COSArray) base));</span>
+<span class="fc" id="L444">            return clipToMediaBox(new PDRectangle((COSArray) base));</span>
         }
         else
         {
-<span class="nc" id="L448">            return getMediaBox();</span>
+<span class="fc" id="L448">            return getMediaBox();</span>
         }
     }
 
@@ -456,15 +456,15 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public void setCropBox(PDRectangle cropBox)
     {
-<span class="nc bnc" id="L459" title="All 2 branches missed.">        if (cropBox == null)</span>
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">        if (cropBox == null)</span>
         {
 <span class="nc" id="L461">            page.removeItem(COSName.CROP_BOX);</span>
         }
         else
         {
-<span class="nc" id="L465">            page.setItem(COSName.CROP_BOX, cropBox.getCOSArray());</span>
+<span class="fc" id="L465">            page.setItem(COSName.CROP_BOX, cropBox.getCOSArray());</span>
         }
-<span class="nc" id="L467">    }</span>
+<span class="fc" id="L467">    }</span>
 
     /**
      * A rectangle, expressed in default user space units, defining the region to which the contents
@@ -560,13 +560,13 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     private PDRectangle clipToMediaBox(PDRectangle box)
     {
-<span class="nc" id="L563">        PDRectangle mediaBox = getMediaBox();</span>
-<span class="nc" id="L564">        PDRectangle result = new PDRectangle();</span>
-<span class="nc" id="L565">        result.setLowerLeftX(Math.max(mediaBox.getLowerLeftX(), box.getLowerLeftX()));</span>
-<span class="nc" id="L566">        result.setLowerLeftY(Math.max(mediaBox.getLowerLeftY(), box.getLowerLeftY()));</span>
-<span class="nc" id="L567">        result.setUpperRightX(Math.min(mediaBox.getUpperRightX(), box.getUpperRightX()));</span>
-<span class="nc" id="L568">        result.setUpperRightY(Math.min(mediaBox.getUpperRightY(), box.getUpperRightY()));</span>
-<span class="nc" id="L569">        return result;</span>
+<span class="fc" id="L563">        PDRectangle mediaBox = getMediaBox();</span>
+<span class="fc" id="L564">        PDRectangle result = new PDRectangle();</span>
+<span class="fc" id="L565">        result.setLowerLeftX(Math.max(mediaBox.getLowerLeftX(), box.getLowerLeftX()));</span>
+<span class="fc" id="L566">        result.setLowerLeftY(Math.max(mediaBox.getLowerLeftY(), box.getLowerLeftY()));</span>
+<span class="fc" id="L567">        result.setUpperRightX(Math.min(mediaBox.getUpperRightX(), box.getUpperRightX()));</span>
+<span class="fc" id="L568">        result.setUpperRightY(Math.min(mediaBox.getUpperRightY(), box.getUpperRightY()));</span>
+<span class="fc" id="L569">        return result;</span>
     }
 
     /**
@@ -579,16 +579,16 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public int getRotation()
     {
-<span class="nc" id="L582">        COSBase obj = PDPageTree.getInheritableAttribute(page, COSName.ROTATE);</span>
-<span class="nc bnc" id="L583" title="All 2 branches missed.">        if (obj instanceof COSNumber)</span>
+<span class="fc" id="L582">        COSBase obj = PDPageTree.getInheritableAttribute(page, COSName.ROTATE);</span>
+<span class="fc bfc" id="L583" title="All 2 branches covered.">        if (obj instanceof COSNumber)</span>
         {
-<span class="nc" id="L585">            int rotationAngle = ((COSNumber) obj).intValue();</span>
-<span class="nc bnc" id="L586" title="All 2 branches missed.">            if (rotationAngle % 90 == 0)</span>
+<span class="fc" id="L585">            int rotationAngle = ((COSNumber) obj).intValue();</span>
+<span class="pc bpc" id="L586" title="1 of 2 branches missed.">            if (rotationAngle % 90 == 0)</span>
             {
-<span class="nc" id="L588">                return (rotationAngle % 360 + 360) % 360;</span>
+<span class="fc" id="L588">                return (rotationAngle % 360 + 360) % 360;</span>
             }
         }
-<span class="nc" id="L591">        return 0;</span>
+<span class="fc" id="L591">        return 0;</span>
     }
 
     /**
@@ -598,8 +598,8 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public void setRotation(int rotation)
     {
-<span class="nc" id="L601">        page.setInt(COSName.ROTATE, rotation);</span>
-<span class="nc" id="L602">    }</span>
+<span class="fc" id="L601">        page.setInt(COSName.ROTATE, rotation);</span>
+<span class="fc" id="L602">    }</span>
 
     /**
      * This will set the contents of this page.
@@ -608,8 +608,8 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public void setContents(PDStream contents)
     {
-<span class="nc" id="L611">        page.setItem(COSName.CONTENTS, contents);</span>
-<span class="nc" id="L612">    }</span>
+<span class="fc" id="L611">        page.setItem(COSName.CONTENTS, contents);</span>
+<span class="fc" id="L612">    }</span>
 
     /**
      * This will set the contents of this page.
@@ -630,24 +630,24 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public List&lt;PDThreadBead&gt; getThreadBeads()
     {
-<span class="nc" id="L633">        COSArray beads = page.getCOSArray(COSName.B);</span>
-<span class="nc bnc" id="L634" title="All 2 branches missed.">        if (beads == null)</span>
+<span class="fc" id="L633">        COSArray beads = page.getCOSArray(COSName.B);</span>
+<span class="fc bfc" id="L634" title="All 2 branches covered.">        if (beads == null)</span>
         {
-<span class="nc" id="L636">            beads = new COSArray();</span>
+<span class="fc" id="L636">            beads = new COSArray();</span>
         }
-<span class="nc" id="L638">        List&lt;PDThreadBead&gt; pdObjects = new ArrayList&lt;&gt;(beads.size());</span>
-<span class="nc bnc" id="L639" title="All 2 branches missed.">        for (int i = 0; i &lt; beads.size(); i++)</span>
+<span class="fc" id="L638">        List&lt;PDThreadBead&gt; pdObjects = new ArrayList&lt;&gt;(beads.size());</span>
+<span class="fc bfc" id="L639" title="All 2 branches covered.">        for (int i = 0; i &lt; beads.size(); i++)</span>
         {
-<span class="nc" id="L641">            COSBase base = beads.getObject(i);</span>
-<span class="nc" id="L642">            PDThreadBead bead = null;</span>
+<span class="fc" id="L641">            COSBase base = beads.getObject(i);</span>
+<span class="fc" id="L642">            PDThreadBead bead = null;</span>
             // in some cases the bead is null
-<span class="nc bnc" id="L644" title="All 2 branches missed.">            if (base instanceof COSDictionary)</span>
+<span class="pc bpc" id="L644" title="1 of 2 branches missed.">            if (base instanceof COSDictionary)</span>
             {
-<span class="nc" id="L646">                bead = new PDThreadBead((COSDictionary) base);</span>
+<span class="fc" id="L646">                bead = new PDThreadBead((COSDictionary) base);</span>
             }
-<span class="nc" id="L648">            pdObjects.add(bead);</span>
+<span class="fc" id="L648">            pdObjects.add(bead);</span>
         }
-<span class="nc" id="L650">        return new COSArrayList&lt;&gt;(pdObjects, beads);</span>
+<span class="fc" id="L650">        return new COSArrayList&lt;&gt;(pdObjects, beads);</span>
     }
 
     /**
@@ -713,8 +713,8 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public PDTransition getTransition()
     {
-<span class="nc" id="L716">        COSDictionary transition = page.getCOSDictionary(COSName.TRANS);</span>
-<span class="nc bnc" id="L717" title="All 2 branches missed.">        return transition != null ? new PDTransition(transition) : null;</span>
+<span class="fc" id="L716">        COSDictionary transition = page.getCOSDictionary(COSName.TRANS);</span>
+<span class="pc bpc" id="L717" title="1 of 2 branches missed.">        return transition != null ? new PDTransition(transition) : null;</span>
     }
 
     /**
@@ -734,9 +734,9 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public void setTransition(PDTransition transition, float duration)
     {
-<span class="nc" id="L737">        page.setItem(COSName.TRANS, transition);</span>
-<span class="nc" id="L738">        page.setItem(COSName.DUR, new COSFloat(duration));</span>
-<span class="nc" id="L739">    }</span>
+<span class="fc" id="L737">        page.setItem(COSName.TRANS, transition);</span>
+<span class="fc" id="L738">        page.setItem(COSName.DUR, new COSFloat(duration));</span>
+<span class="fc" id="L739">    }</span>
 
     /**
      * This will return a list of the annotations for this page.
@@ -748,7 +748,7 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public List&lt;PDAnnotation&gt; getAnnotations() throws IOException
     {
-<span class="nc" id="L751">        return getAnnotations(annotation -&gt; true);</span>
+<span class="fc" id="L751">        return getAnnotations(annotation -&gt; true);</span>
     }
 
     /**
@@ -762,27 +762,27 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public List&lt;PDAnnotation&gt; getAnnotations(AnnotationFilter annotationFilter) throws IOException
     {
-<span class="nc" id="L765">        COSArray annots = page.getCOSArray(COSName.ANNOTS);</span>
-<span class="nc bnc" id="L766" title="All 2 branches missed.">        if (annots == null)</span>
+<span class="fc" id="L765">        COSArray annots = page.getCOSArray(COSName.ANNOTS);</span>
+<span class="fc bfc" id="L766" title="All 2 branches covered.">        if (annots == null)</span>
         {
-<span class="nc" id="L768">            return new COSArrayList&lt;&gt;(page, COSName.ANNOTS);</span>
+<span class="fc" id="L768">            return new COSArrayList&lt;&gt;(page, COSName.ANNOTS);</span>
         }
 
-<span class="nc" id="L771">        List&lt;PDAnnotation&gt; actuals = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L772" title="All 2 branches missed.">        for (int i = 0; i &lt; annots.size(); i++)</span>
+<span class="fc" id="L771">        List&lt;PDAnnotation&gt; actuals = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L772" title="All 2 branches covered.">        for (int i = 0; i &lt; annots.size(); i++)</span>
         {
-<span class="nc" id="L774">            COSBase item = annots.getObject(i);</span>
-<span class="nc bnc" id="L775" title="All 2 branches missed.">            if (item == null)</span>
+<span class="fc" id="L774">            COSBase item = annots.getObject(i);</span>
+<span class="pc bpc" id="L775" title="1 of 2 branches missed.">            if (item == null)</span>
             {
 <span class="nc" id="L777">                continue;</span>
             }
-<span class="nc" id="L779">            PDAnnotation createdAnnotation = PDAnnotation.createAnnotation(item);</span>
-<span class="nc bnc" id="L780" title="All 2 branches missed.">            if (annotationFilter.accept(createdAnnotation))</span>
+<span class="fc" id="L779">            PDAnnotation createdAnnotation = PDAnnotation.createAnnotation(item);</span>
+<span class="fc bfc" id="L780" title="All 2 branches covered.">            if (annotationFilter.accept(createdAnnotation))</span>
             {
-<span class="nc" id="L782">                actuals.add(createdAnnotation);</span>
+<span class="fc" id="L782">                actuals.add(createdAnnotation);</span>
             }
         }
-<span class="nc" id="L785">        return new COSArrayList&lt;&gt;(actuals, annots);</span>
+<span class="fc" id="L785">        return new COSArrayList&lt;&gt;(actuals, annots);</span>
     }
 
     /**
@@ -796,19 +796,19 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public void setAnnotations(List&lt;PDAnnotation&gt; annotations)
     {
-<span class="nc" id="L799">        page.setItem(COSName.ANNOTS, new COSArray(annotations));</span>
-<span class="nc" id="L800">    }</span>
+<span class="fc" id="L799">        page.setItem(COSName.ANNOTS, new COSArray(annotations));</span>
+<span class="fc" id="L800">    }</span>
 
     @Override
     public boolean equals(Object other)
     {
-<span class="nc bnc" id="L805" title="All 4 branches missed.">        return other instanceof PDPage &amp;&amp; ((PDPage) other).getCOSObject() == this.getCOSObject();</span>
+<span class="pc bpc" id="L805" title="2 of 4 branches missed.">        return other instanceof PDPage &amp;&amp; ((PDPage) other).getCOSObject() == this.getCOSObject();</span>
     }
 
     @Override
     public int hashCode()
     {
-<span class="nc" id="L811">        return page.hashCode();</span>
+<span class="fc" id="L811">        return page.hashCode();</span>
     }
 
     /**

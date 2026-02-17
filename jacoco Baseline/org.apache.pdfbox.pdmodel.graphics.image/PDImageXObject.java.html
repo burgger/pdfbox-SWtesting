@@ -71,18 +71,18 @@ public final class PDImageXObject extends PDXObject implements PDImage
     /**
      * Log instance.
      */
-<span class="nc" id="L74">    private static final Logger LOG = LogManager.getLogger(PDImageXObject.class);</span>
+<span class="fc" id="L74">    private static final Logger LOG = LogManager.getLogger(PDImageXObject.class);</span>
 
     private SoftReference&lt;BufferedImage&gt; cachedImage;
     private PDColorSpace colorSpace;
 
     // initialize to MAX_VALUE as we prefer lower subsampling when keeping/replacing cache.
-<span class="nc" id="L80">    private int cachedImageSubsampling = Integer.MAX_VALUE;</span>
+<span class="fc" id="L80">    private int cachedImageSubsampling = Integer.MAX_VALUE;</span>
     // indicates whether this image has an JPX-based filter applied
-<span class="nc" id="L82">    private boolean hasJPXFilter = false;</span>
+<span class="fc" id="L82">    private boolean hasJPXFilter = false;</span>
     // is set to true after reading some values from a JPX-based image
-<span class="nc" id="L84">    private boolean jpxValuesInitialized = false;</span>
-<span class="nc" id="L85">    private BufferedImage jpxSMask = null;</span>
+<span class="fc" id="L84">    private boolean jpxValuesInitialized = false;</span>
+<span class="fc" id="L85">    private BufferedImage jpxSMask = null;</span>
 
     /**
      * current resource dictionary (has color spaces)
@@ -98,8 +98,8 @@ public final class PDImageXObject extends PDXObject implements PDImage
      */
     public PDImageXObject(PDDocument document)
     {
-<span class="nc" id="L101">        this(new PDStream(document), null);</span>
-<span class="nc" id="L102">    }</span>
+<span class="fc" id="L101">        this(new PDStream(document), null);</span>
+<span class="fc" id="L102">    }</span>
 
     /**
      * Creates an Image XObject in the given document using the given filtered stream. This
@@ -119,15 +119,15 @@ public final class PDImageXObject extends PDXObject implements PDImage
             COSBase cosFilter, int width, int height, int bitsPerComponent, 
             PDColorSpace initColorSpace) throws IOException
     {
-<span class="nc" id="L122">        super(createRawStream(document, encodedStream), COSName.IMAGE);</span>
-<span class="nc" id="L123">        getCOSObject().setItem(COSName.FILTER, cosFilter);</span>
-<span class="nc" id="L124">        resources = null;</span>
-<span class="nc" id="L125">        colorSpace = null;</span>
-<span class="nc" id="L126">        setBitsPerComponent(bitsPerComponent);</span>
-<span class="nc" id="L127">        setWidth(width);</span>
-<span class="nc" id="L128">        setHeight(height);</span>
-<span class="nc" id="L129">        setColorSpace(initColorSpace);</span>
-<span class="nc" id="L130">    }</span>
+<span class="fc" id="L122">        super(createRawStream(document, encodedStream), COSName.IMAGE);</span>
+<span class="fc" id="L123">        getCOSObject().setItem(COSName.FILTER, cosFilter);</span>
+<span class="fc" id="L124">        resources = null;</span>
+<span class="fc" id="L125">        colorSpace = null;</span>
+<span class="fc" id="L126">        setBitsPerComponent(bitsPerComponent);</span>
+<span class="fc" id="L127">        setWidth(width);</span>
+<span class="fc" id="L128">        setHeight(height);</span>
+<span class="fc" id="L129">        setColorSpace(initColorSpace);</span>
+<span class="fc" id="L130">    }</span>
 
     /**
      * Creates an Image XObject with the given stream as its contents and current color spaces. This
@@ -139,14 +139,14 @@ public final class PDImageXObject extends PDXObject implements PDImage
      */
     public PDImageXObject(PDStream stream, PDResources resources)
     {
-<span class="nc" id="L142">        super(stream, COSName.IMAGE);</span>
-<span class="nc" id="L143">        this.resources = resources;</span>
-<span class="nc" id="L144">        List&lt;COSName&gt; filters = stream.getFilters();</span>
-<span class="nc bnc" id="L145" title="All 4 branches missed.">        if (!filters.isEmpty() &amp;&amp; COSName.JPX_DECODE.equals(filters.get(filters.size() - 1)))</span>
+<span class="fc" id="L142">        super(stream, COSName.IMAGE);</span>
+<span class="fc" id="L143">        this.resources = resources;</span>
+<span class="fc" id="L144">        List&lt;COSName&gt; filters = stream.getFilters();</span>
+<span class="pc bpc" id="L145" title="1 of 4 branches missed.">        if (!filters.isEmpty() &amp;&amp; COSName.JPX_DECODE.equals(filters.get(filters.size() - 1)))</span>
         {
 <span class="nc" id="L147">            hasJPXFilter = true;</span>
         }
-<span class="nc" id="L149">    }</span>
+<span class="fc" id="L149">    }</span>
 
     /**
      * Creates a thumbnail Image XObject from the given COSBase and name.
@@ -166,12 +166,12 @@ public final class PDImageXObject extends PDXObject implements PDImage
     private static COSStream createRawStream(PDDocument document, InputStream rawInput)
             throws IOException
     {
-<span class="nc" id="L169">        COSStream stream = document.getDocument().createCOSStream();</span>
-<span class="nc" id="L170">        try (OutputStream output = stream.createRawOutputStream())</span>
+<span class="fc" id="L169">        COSStream stream = document.getDocument().createCOSStream();</span>
+<span class="fc" id="L170">        try (OutputStream output = stream.createRawOutputStream())</span>
         {
-<span class="nc" id="L172">            rawInput.transferTo(output);</span>
+<span class="fc" id="L172">            rawInput.transferTo(output);</span>
         }
-<span class="nc" id="L174">        return stream;</span>
+<span class="fc" id="L174">        return stream;</span>
     }
 
     /**
@@ -186,7 +186,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
      */
     public static PDImageXObject createFromFile(String imagePath, PDDocument doc) throws IOException
     {
-<span class="nc" id="L189">        return createFromFileByExtension(new File(imagePath), doc);</span>
+<span class="fc" id="L189">        return createFromFileByExtension(new File(imagePath), doc);</span>
     }
 
     /**
@@ -212,39 +212,39 @@ public final class PDImageXObject extends PDXObject implements PDImage
      */
     public static PDImageXObject createFromFileByExtension(File file, PDDocument doc) throws IOException
     {
-<span class="nc" id="L215">        String name = file.getName();</span>
-<span class="nc" id="L216">        int dot = name.lastIndexOf('.');</span>
-<span class="nc bnc" id="L217" title="All 2 branches missed.">        if (dot == -1)</span>
+<span class="fc" id="L215">        String name = file.getName();</span>
+<span class="fc" id="L216">        int dot = name.lastIndexOf('.');</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">        if (dot == -1)</span>
         {
 <span class="nc" id="L219">            throw new IllegalArgumentException(&quot;Image type not supported: &quot; + name);</span>
         }
-<span class="nc" id="L221">        String ext = name.substring(dot + 1).toLowerCase();</span>
-<span class="nc bnc" id="L222" title="All 4 branches missed.">        if (&quot;jpg&quot;.equals(ext) || &quot;jpeg&quot;.equals(ext))</span>
+<span class="fc" id="L221">        String ext = name.substring(dot + 1).toLowerCase();</span>
+<span class="pc bpc" id="L222" title="1 of 4 branches missed.">        if (&quot;jpg&quot;.equals(ext) || &quot;jpeg&quot;.equals(ext))</span>
         {
-<span class="nc" id="L224">            try (FileInputStream fis = new FileInputStream(file))</span>
+<span class="fc" id="L224">            try (FileInputStream fis = new FileInputStream(file))</span>
             {
-<span class="nc" id="L226">                return JPEGFactory.createFromStream(doc, fis);</span>
+<span class="fc" id="L226">                return JPEGFactory.createFromStream(doc, fis);</span>
             }
         }
-<span class="nc bnc" id="L229" title="All 4 branches missed.">        if (&quot;tif&quot;.equals(ext) || &quot;tiff&quot;.equals(ext))</span>
+<span class="pc bpc" id="L229" title="1 of 4 branches missed.">        if (&quot;tif&quot;.equals(ext) || &quot;tiff&quot;.equals(ext))</span>
         {
             try
             {
-<span class="nc" id="L233">                return CCITTFactory.createFromFile(doc, file);</span>
+<span class="fc" id="L233">                return CCITTFactory.createFromFile(doc, file);</span>
             }
-<span class="nc" id="L235">            catch (IOException ex)</span>
+<span class="fc" id="L235">            catch (IOException ex)</span>
             {
-<span class="nc" id="L237">                LOG.debug(&quot;Reading as TIFF failed, setting fileType to PNG&quot;, ex);</span>
+<span class="fc" id="L237">                LOG.debug(&quot;Reading as TIFF failed, setting fileType to PNG&quot;, ex);</span>
                 // Plan B: try reading with ImageIO
                 // common exception:
                 // First image in tiff is not CCITT T4 or T6 compressed
-<span class="nc" id="L241">                ext = &quot;png&quot;;</span>
+<span class="fc" id="L241">                ext = &quot;png&quot;;</span>
             }
         }
-<span class="nc bnc" id="L244" title="All 6 branches missed.">        if (&quot;gif&quot;.equals(ext) || &quot;bmp&quot;.equals(ext) || &quot;png&quot;.equals(ext))</span>
+<span class="pc bpc" id="L244" title="2 of 6 branches missed.">        if (&quot;gif&quot;.equals(ext) || &quot;bmp&quot;.equals(ext) || &quot;png&quot;.equals(ext))</span>
         {
-<span class="nc" id="L246">            BufferedImage bim = ImageIO.read(file);</span>
-<span class="nc" id="L247">            return LosslessFactory.createFromImage(doc, bim);</span>
+<span class="fc" id="L246">            BufferedImage bim = ImageIO.read(file);</span>
+<span class="fc" id="L247">            return LosslessFactory.createFromImage(doc, bim);</span>
         }
 <span class="nc" id="L249">        throw new IllegalArgumentException(&quot;Image type not supported: &quot; + name);</span>
     }
@@ -272,46 +272,46 @@ public final class PDImageXObject extends PDXObject implements PDImage
      */
     public static PDImageXObject createFromFileByContent(File file, PDDocument doc) throws IOException
     {
-<span class="nc" id="L275">        FileType fileType = null;</span>
-<span class="nc" id="L276">        try (BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(file)))</span>
+<span class="fc" id="L275">        FileType fileType = null;</span>
+<span class="fc" id="L276">        try (BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(file)))</span>
         {
-<span class="nc" id="L278">            fileType = FileTypeDetector.detectFileType(bufferedInputStream);</span>
+<span class="fc" id="L278">            fileType = FileTypeDetector.detectFileType(bufferedInputStream);</span>
         }
 <span class="nc" id="L280">        catch (IOException e)</span>
         {
 <span class="nc" id="L282">            throw new IOException(&quot;Could not determine file type: &quot; + file.getName(), e);</span>
-<span class="nc" id="L283">        }</span>
-<span class="nc bnc" id="L284" title="All 2 branches missed.">        if (fileType == null)</span>
+<span class="fc" id="L283">        }</span>
+<span class="pc bpc" id="L284" title="1 of 2 branches missed.">        if (fileType == null)</span>
         {
 <span class="nc" id="L286">            throw new IllegalArgumentException(&quot;Image type not supported: &quot; + file.getName());</span>
         }
 
-<span class="nc bnc" id="L289" title="All 2 branches missed.">        if (fileType == FileType.JPEG)</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">        if (fileType == FileType.JPEG)</span>
         {
-<span class="nc" id="L291">            try (FileInputStream fis = new FileInputStream(file))</span>
+<span class="fc" id="L291">            try (FileInputStream fis = new FileInputStream(file))</span>
             {
-<span class="nc" id="L293">                return JPEGFactory.createFromStream(doc, fis);</span>
+<span class="fc" id="L293">                return JPEGFactory.createFromStream(doc, fis);</span>
             }
         }
-<span class="nc bnc" id="L296" title="All 2 branches missed.">        if (fileType == FileType.TIFF)</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">        if (fileType == FileType.TIFF)</span>
         {
             try
             {
-<span class="nc" id="L300">                return CCITTFactory.createFromFile(doc, file);</span>
+<span class="fc" id="L300">                return CCITTFactory.createFromFile(doc, file);</span>
             }
-<span class="nc" id="L302">            catch (IOException ex)</span>
+<span class="fc" id="L302">            catch (IOException ex)</span>
             {
-<span class="nc" id="L304">                LOG.debug(&quot;Reading as TIFF failed, setting fileType to PNG&quot;, ex);</span>
+<span class="fc" id="L304">                LOG.debug(&quot;Reading as TIFF failed, setting fileType to PNG&quot;, ex);</span>
                 // Plan B: try reading with ImageIO
                 // common exception:
                 // First image in tiff is not CCITT T4 or T6 compressed
-<span class="nc" id="L308">                fileType = FileType.PNG;</span>
+<span class="fc" id="L308">                fileType = FileType.PNG;</span>
             }
         }
-<span class="nc bnc" id="L311" title="All 6 branches missed.">        if (fileType == FileType.BMP || fileType == FileType.GIF || fileType == FileType.PNG)</span>
+<span class="pc bpc" id="L311" title="2 of 6 branches missed.">        if (fileType == FileType.BMP || fileType == FileType.GIF || fileType == FileType.PNG)</span>
         {
-<span class="nc" id="L313">            BufferedImage bim = ImageIO.read(file);</span>
-<span class="nc" id="L314">            return LosslessFactory.createFromImage(doc, bim);</span>
+<span class="fc" id="L313">            BufferedImage bim = ImageIO.read(file);</span>
+<span class="fc" id="L314">            return LosslessFactory.createFromImage(doc, bim);</span>
         }
 <span class="nc" id="L316">        throw new IllegalArgumentException(&quot;Image type &quot; + fileType + &quot; not supported: &quot; + file.getName());</span>
     }
@@ -340,7 +340,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
      */
     public static PDImageXObject createFromByteArray(PDDocument document, byte[] byteArray, String name) throws IOException
     {
-<span class="nc" id="L343">        return createFromByteArray(document, byteArray, name, null);</span>
+<span class="fc" id="L343">        return createFromByteArray(document, byteArray, name, null);</span>
     }
 
     /**
@@ -361,50 +361,50 @@ public final class PDImageXObject extends PDXObject implements PDImage
      */
     public static PDImageXObject createFromByteArray(PDDocument document, byte[] byteArray, String name, CustomFactory customFactory) throws IOException
     {
-<span class="nc" id="L364">        FileType fileType = FileTypeDetector.detectFileType(byteArray);</span>
-<span class="nc bnc" id="L365" title="All 2 branches missed.">        if (fileType == null)</span>
+<span class="fc" id="L364">        FileType fileType = FileTypeDetector.detectFileType(byteArray);</span>
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">        if (fileType == null)</span>
         {
 <span class="nc" id="L367">            throw new IllegalArgumentException(&quot;Image type not supported: &quot; + name);</span>
         }
 
-<span class="nc bnc" id="L370" title="All 2 branches missed.">        if (fileType == FileType.JPEG)</span>
+<span class="fc bfc" id="L370" title="All 2 branches covered.">        if (fileType == FileType.JPEG)</span>
         {
-<span class="nc" id="L372">            return JPEGFactory.createFromByteArray(document, byteArray);</span>
+<span class="fc" id="L372">            return JPEGFactory.createFromByteArray(document, byteArray);</span>
         }
-<span class="nc bnc" id="L374" title="All 2 branches missed.">        if (fileType == FileType.PNG)</span>
+<span class="fc bfc" id="L374" title="All 2 branches covered.">        if (fileType == FileType.PNG)</span>
         {
             // Try to directly convert the image without recoding it.
-<span class="nc" id="L377">            PDImageXObject image = PNGConverter.convertPNGImage(document, byteArray);</span>
-<span class="nc bnc" id="L378" title="All 2 branches missed.">            if (image != null)</span>
+<span class="fc" id="L377">            PDImageXObject image = PNGConverter.convertPNGImage(document, byteArray);</span>
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">            if (image != null)</span>
             {
-<span class="nc" id="L380">                return image;</span>
+<span class="fc" id="L380">                return image;</span>
             }
         }
-<span class="nc bnc" id="L383" title="All 2 branches missed.">        if (fileType == FileType.TIFF)</span>
+<span class="fc bfc" id="L383" title="All 2 branches covered.">        if (fileType == FileType.TIFF)</span>
         {
             try
             {
-<span class="nc" id="L387">                return CCITTFactory.createFromByteArray(document, byteArray);</span>
+<span class="fc" id="L387">                return CCITTFactory.createFromByteArray(document, byteArray);</span>
             }
-<span class="nc" id="L389">            catch (IOException ex)</span>
+<span class="fc" id="L389">            catch (IOException ex)</span>
             {
-<span class="nc" id="L391">                LOG.debug(&quot;Reading as TIFF failed, setting fileType to PNG&quot;, ex);</span>
+<span class="fc" id="L391">                LOG.debug(&quot;Reading as TIFF failed, setting fileType to PNG&quot;, ex);</span>
                 // Plan B: try reading with ImageIO
                 // common exception:
                 // First image in tiff is not CCITT T4 or T6 compressed
-<span class="nc" id="L395">                fileType = FileType.PNG;</span>
+<span class="fc" id="L395">                fileType = FileType.PNG;</span>
             }
         }
-<span class="nc bnc" id="L398" title="All 6 branches missed.">        if (fileType == FileType.BMP || fileType == FileType.GIF || fileType == FileType.PNG)</span>
+<span class="pc bpc" id="L398" title="2 of 6 branches missed.">        if (fileType == FileType.BMP || fileType == FileType.GIF || fileType == FileType.PNG)</span>
         {
-<span class="nc bnc" id="L400" title="All 2 branches missed.">            if (customFactory != null)</span>
+<span class="fc bfc" id="L400" title="All 2 branches covered.">            if (customFactory != null)</span>
             {
-<span class="nc" id="L402">                return customFactory.createFromByteArray(document, byteArray);</span>
+<span class="fc" id="L402">                return customFactory.createFromByteArray(document, byteArray);</span>
             }
             
-<span class="nc" id="L405">            ByteArrayInputStream bais = new ByteArrayInputStream(byteArray);</span>
-<span class="nc" id="L406">            BufferedImage bim = ImageIO.read(bais);</span>
-<span class="nc" id="L407">            return LosslessFactory.createFromImage(document, bim);</span>
+<span class="fc" id="L405">            ByteArrayInputStream bais = new ByteArrayInputStream(byteArray);</span>
+<span class="fc" id="L406">            BufferedImage bim = ImageIO.read(bais);</span>
+<span class="fc" id="L407">            return LosslessFactory.createFromImage(document, bim);</span>
         }
 <span class="nc" id="L409">        throw new IllegalArgumentException(&quot;Image type &quot; + fileType + &quot; not supported: &quot; + name);</span>
     }
@@ -458,7 +458,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
     @Override
     public BufferedImage getImage() throws IOException
     {
-<span class="nc" id="L461">        return getImage(null, 1);</span>
+<span class="fc" id="L461">        return getImage(null, 1);</span>
     }
     
     /**
@@ -467,20 +467,20 @@ public final class PDImageXObject extends PDXObject implements PDImage
     @Override
     public BufferedImage getImage(Rectangle region, int subsampling) throws IOException
     {
-<span class="nc bnc" id="L470" title="All 6 branches missed.">        if (region == null &amp;&amp; subsampling == cachedImageSubsampling &amp;&amp; cachedImage != null)</span>
+<span class="pc bpc" id="L470" title="2 of 6 branches missed.">        if (region == null &amp;&amp; subsampling == cachedImageSubsampling &amp;&amp; cachedImage != null)</span>
         {
-<span class="nc" id="L472">            BufferedImage cached = cachedImage.get();</span>
-<span class="nc bnc" id="L473" title="All 2 branches missed.">            if (cached != null)</span>
+<span class="fc" id="L472">            BufferedImage cached = cachedImage.get();</span>
+<span class="pc bpc" id="L473" title="1 of 2 branches missed.">            if (cached != null)</span>
             {
-<span class="nc" id="L475">                return cached;</span>
+<span class="fc" id="L475">                return cached;</span>
             }
         }
-<span class="nc" id="L478">        initJPXValues();</span>
+<span class="fc" id="L478">        initJPXValues();</span>
         // get RGB image w/o reference because applyMask might modify it, take long time and a lot of memory. 
         final BufferedImage image;
-<span class="nc" id="L481">        final PDImageXObject softMask = getSoftMask();</span>
-<span class="nc" id="L482">        final PDImageXObject mask = getMask();</span>
-<span class="nc bnc" id="L483" title="All 2 branches missed.">        if (jpxSMask != null)</span>
+<span class="fc" id="L481">        final PDImageXObject softMask = getSoftMask();</span>
+<span class="fc" id="L482">        final PDImageXObject mask = getMask();</span>
+<span class="pc bpc" id="L483" title="1 of 2 branches missed.">        if (jpxSMask != null)</span>
         {
             // PDFBOX-5657: handle JPEG2000 SMaskInData
 <span class="nc" id="L486">            image = applyMask(SampledImageReader.getRGBImage(this, region, subsampling, getColorKeyMask()),</span>
@@ -488,44 +488,44 @@ public final class PDImageXObject extends PDXObject implements PDImage
                     null);
         }
         // soft mask (overrides explicit mask)
-<span class="nc bnc" id="L491" title="All 2 branches missed.">        else if (softMask != null)</span>
+<span class="fc bfc" id="L491" title="All 2 branches covered.">        else if (softMask != null)</span>
         {
-<span class="nc" id="L493">            image = applyMask(SampledImageReader.getRGBImage(this, region, subsampling, getColorKeyMask()),</span>
-<span class="nc" id="L494">                    softMask.getOpaqueImage(region, subsampling), softMask.getInterpolate(), true,</span>
-<span class="nc" id="L495">                    extractMatte(softMask));</span>
+<span class="fc" id="L493">            image = applyMask(SampledImageReader.getRGBImage(this, region, subsampling, getColorKeyMask()),</span>
+<span class="fc" id="L494">                    softMask.getOpaqueImage(region, subsampling), softMask.getInterpolate(), true,</span>
+<span class="fc" id="L495">                    extractMatte(softMask));</span>
         }
         // explicit mask - to be applied only if /ImageMask true
-<span class="nc bnc" id="L498" title="All 4 branches missed.">        else if (mask != null &amp;&amp; mask.isStencil())</span>
+<span class="pc bpc" id="L498" title="3 of 4 branches missed.">        else if (mask != null &amp;&amp; mask.isStencil())</span>
         {
 <span class="nc" id="L500">            image = applyMask(SampledImageReader.getRGBImage(this, region, subsampling, getColorKeyMask()),</span>
 <span class="nc" id="L501">                    mask.getOpaqueImage(region, subsampling), mask.getInterpolate(), false, null);</span>
         }
         else
         {
-<span class="nc" id="L505">            image = SampledImageReader.getRGBImage(this, region, subsampling, getColorKeyMask());</span>
+<span class="fc" id="L505">            image = SampledImageReader.getRGBImage(this, region, subsampling, getColorKeyMask());</span>
         }
 
-<span class="nc bnc" id="L508" title="All 4 branches missed.">        if (region == null &amp;&amp; subsampling &lt;= cachedImageSubsampling)</span>
+<span class="pc bpc" id="L508" title="2 of 4 branches missed.">        if (region == null &amp;&amp; subsampling &lt;= cachedImageSubsampling)</span>
         {
             // only cache full-image renders, and prefer lower subsampling frequency, as lower
             // subsampling means higher quality and longer render times.
-<span class="nc" id="L512">            cachedImageSubsampling = subsampling;</span>
-<span class="nc" id="L513">            cachedImage = new SoftReference&lt;&gt;(image);</span>
+<span class="fc" id="L512">            cachedImageSubsampling = subsampling;</span>
+<span class="fc" id="L513">            cachedImage = new SoftReference&lt;&gt;(image);</span>
         }
 
-<span class="nc" id="L516">        return image;</span>
+<span class="fc" id="L516">        return image;</span>
     }
 
     @Override
     public BufferedImage getRawImage() throws IOException
     {
-<span class="nc" id="L522">        return getColorSpace().toRawImage(getRawRaster());</span>
+<span class="fc" id="L522">        return getColorSpace().toRawImage(getRawRaster());</span>
     }
 
     @Override
     public WritableRaster getRawRaster() throws IOException
     {
-<span class="nc" id="L528">        return SampledImageReader.getRawRaster(this);</span>
+<span class="fc" id="L528">        return SampledImageReader.getRawRaster(this);</span>
     }
 
     /**
@@ -537,9 +537,9 @@ public final class PDImageXObject extends PDXObject implements PDImage
      */
     private float[] extractMatte(PDImageXObject softMask) throws IOException
     {
-<span class="nc" id="L540">        COSBase base = softMask.getCOSObject().getItem(COSName.MATTE);</span>
-<span class="nc" id="L541">        float[] matte = null;</span>
-<span class="nc bnc" id="L542" title="All 2 branches missed.">        if (base instanceof COSArray)</span>
+<span class="fc" id="L540">        COSBase base = softMask.getCOSObject().getItem(COSName.MATTE);</span>
+<span class="fc" id="L541">        float[] matte = null;</span>
+<span class="pc bpc" id="L542" title="1 of 2 branches missed.">        if (base instanceof COSArray)</span>
         {
             // PDFBOX-4267: process /Matte
             // see PDF specification 1.7, 11.6.5.3 Soft-Mask Images
@@ -552,7 +552,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
             }
 <span class="nc" id="L553">            matte = getColorSpace().toRGB(matte);</span>
         }
-<span class="nc" id="L555">        return matte;</span>
+<span class="fc" id="L555">        return matte;</span>
     }
 
     /**
@@ -562,11 +562,11 @@ public final class PDImageXObject extends PDXObject implements PDImage
     @Override
     public BufferedImage getStencilImage(Paint paint) throws IOException
     {
-<span class="nc bnc" id="L565" title="All 2 branches missed.">        if (!isStencil())</span>
+<span class="pc bpc" id="L565" title="1 of 2 branches missed.">        if (!isStencil())</span>
         {
 <span class="nc" id="L567">            throw new IllegalStateException(&quot;Image is not a stencil&quot;);</span>
         }
-<span class="nc" id="L569">        return SampledImageReader.getStencilImage(this, paint);</span>
+<span class="fc" id="L569">        return SampledImageReader.getStencilImage(this, paint);</span>
     }
 
     /**
@@ -596,7 +596,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
      */
     public BufferedImage getOpaqueImage(Rectangle region, int subsampling) throws IOException
     {
-<span class="nc" id="L599">        return SampledImageReader.getRGBImage(this, region, subsampling, null);</span>
+<span class="fc" id="L599">        return SampledImageReader.getRGBImage(this, region, subsampling, null);</span>
     }
 
     /**
@@ -613,42 +613,42 @@ public final class PDImageXObject extends PDXObject implements PDImage
     private BufferedImage applyMask(BufferedImage image, BufferedImage mask, boolean interpolateMask,
             boolean isSoft, float[] matte)
     {
-<span class="nc bnc" id="L616" title="All 2 branches missed.">        if (mask == null)</span>
+<span class="pc bpc" id="L616" title="1 of 2 branches missed.">        if (mask == null)</span>
         {
 <span class="nc" id="L618">            return image;</span>
         }
 
-<span class="nc" id="L621">        final int width = Math.max(image.getWidth(), mask.getWidth());</span>
-<span class="nc" id="L622">        final int height = Math.max(image.getHeight(), mask.getHeight());</span>
+<span class="fc" id="L621">        final int width = Math.max(image.getWidth(), mask.getWidth());</span>
+<span class="fc" id="L622">        final int height = Math.max(image.getHeight(), mask.getHeight());</span>
 
         // scale mask to fit image, or image to fit mask, whichever is larger.
         // also make sure that mask is 8 bit gray and image is ARGB as this
         // is what needs to be returned.
-<span class="nc bnc" id="L627" title="All 4 branches missed.">        if (mask.getWidth() &lt; width || mask.getHeight() &lt; height)</span>
+<span class="pc bpc" id="L627" title="2 of 4 branches missed.">        if (mask.getWidth() &lt; width || mask.getHeight() &lt; height)</span>
         {
 <span class="nc" id="L629">            mask = scaleImage(mask, width, height, BufferedImage.TYPE_BYTE_GRAY, interpolateMask);</span>
         }
-<span class="nc bnc" id="L631" title="All 2 branches missed.">        else if (mask.getType() != BufferedImage.TYPE_BYTE_GRAY)</span>
+<span class="fc bfc" id="L631" title="All 2 branches covered.">        else if (mask.getType() != BufferedImage.TYPE_BYTE_GRAY)</span>
         {
-<span class="nc" id="L633">            mask = scaleImage(mask, width, height, BufferedImage.TYPE_BYTE_GRAY, false);</span>
+<span class="fc" id="L633">            mask = scaleImage(mask, width, height, BufferedImage.TYPE_BYTE_GRAY, false);</span>
         }
 
-<span class="nc bnc" id="L636" title="All 4 branches missed.">        if (image.getWidth() &lt; width || image.getHeight() &lt; height)</span>
+<span class="pc bpc" id="L636" title="2 of 4 branches missed.">        if (image.getWidth() &lt; width || image.getHeight() &lt; height)</span>
         {
 <span class="nc" id="L638">            image = scaleImage(image, width, height, BufferedImage.TYPE_INT_ARGB, getInterpolate());</span>
         }
-<span class="nc bnc" id="L640" title="All 2 branches missed.">        else if (image.getType() != BufferedImage.TYPE_INT_ARGB)</span>
+<span class="pc bpc" id="L640" title="1 of 2 branches missed.">        else if (image.getType() != BufferedImage.TYPE_INT_ARGB)</span>
         {
-<span class="nc" id="L642">            image = scaleImage(image, width, height, BufferedImage.TYPE_INT_ARGB, false);</span>
+<span class="fc" id="L642">            image = scaleImage(image, width, height, BufferedImage.TYPE_INT_ARGB, false);</span>
         }
 
         // compose alpha into ARGB image, either:
         // - very fast by direct bit combination if not a soft mask and a 8 bit alpha source. 
         // - fast by letting the sample model do a bulk band operation if no matte is set.
         // - slow and complex by matte calculations on individual pixel components.
-<span class="nc" id="L649">        final WritableRaster raster = image.getRaster();</span>
-<span class="nc" id="L650">        final WritableRaster alpha = mask.getRaster();</span>
-<span class="nc bnc" id="L651" title="All 4 branches missed.">        if (!isSoft &amp;&amp; raster.getDataBuffer().getSize() == alpha.getDataBuffer().getSize())</span>
+<span class="fc" id="L649">        final WritableRaster raster = image.getRaster();</span>
+<span class="fc" id="L650">        final WritableRaster alpha = mask.getRaster();</span>
+<span class="pc bpc" id="L651" title="3 of 4 branches missed.">        if (!isSoft &amp;&amp; raster.getDataBuffer().getSize() == alpha.getDataBuffer().getSize())</span>
         {
 <span class="nc" id="L653">            final DataBuffer dst = raster.getDataBuffer();</span>
 <span class="nc" id="L654">            final DataBuffer src = alpha.getDataBuffer();</span>
@@ -657,22 +657,22 @@ public final class PDImageXObject extends PDXObject implements PDImage
 <span class="nc" id="L657">                dst.setElem(i, dst.getElem(i) &amp; 0xffffff | ~src.getElem(i) &lt;&lt; 24);</span>
             }
 <span class="nc" id="L659">        }</span>
-<span class="nc bnc" id="L660" title="All 2 branches missed.">        else if (matte == null)</span>
+<span class="pc bpc" id="L660" title="1 of 2 branches missed.">        else if (matte == null)</span>
         {
-<span class="nc" id="L662">            final int[] samples = new int[width];</span>
-<span class="nc bnc" id="L663" title="All 2 branches missed.">            for (int y = 0; y &lt; height; y++)</span>
+<span class="fc" id="L662">            final int[] samples = new int[width];</span>
+<span class="fc bfc" id="L663" title="All 2 branches covered.">            for (int y = 0; y &lt; height; y++)</span>
             {
-<span class="nc" id="L665">                alpha.getSamples(0, y, width, 1, 0, samples);</span>
-<span class="nc bnc" id="L666" title="All 2 branches missed.">                if (!isSoft)</span>
+<span class="fc" id="L665">                alpha.getSamples(0, y, width, 1, 0, samples);</span>
+<span class="pc bpc" id="L666" title="1 of 2 branches missed.">                if (!isSoft)</span>
                 {
 <span class="nc bnc" id="L668" title="All 2 branches missed.">                    for (int x = 0; x &lt; width; x++)</span>
                     {
 <span class="nc" id="L670">                        samples[x] ^= -1;</span>
                     }
                 }
-<span class="nc" id="L673">                raster.setSamples(0, y, width, 1, 3, samples);</span>
+<span class="fc" id="L673">                raster.setSamples(0, y, width, 1, 3, samples);</span>
             }
-<span class="nc" id="L675">        }</span>
+<span class="fc" id="L675">        }</span>
         else
         {
 <span class="nc" id="L678">            final int[] alphas = new int[width];</span>
@@ -719,7 +719,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
             }
         }
 
-<span class="nc" id="L722">        return image;</span>
+<span class="fc" id="L722">        return image;</span>
     }
 
     private static int clampColor(int color)
@@ -729,9 +729,9 @@ public final class PDImageXObject extends PDXObject implements PDImage
 
     private void initJPXValues()
     {
-<span class="nc bnc" id="L732" title="All 4 branches missed.">        if (!hasJPXFilter || jpxValuesInitialized)</span>
+<span class="pc bpc" id="L732" title="3 of 4 branches missed.">        if (!hasJPXFilter || jpxValuesInitialized)</span>
         {
-<span class="nc" id="L734">            return;</span>
+<span class="fc" id="L734">            return;</span>
         }
         // some of the dictionary values of the COSStream may be overwritten by values which are extracted from the
         // image itself, such as
@@ -761,14 +761,14 @@ public final class PDImageXObject extends PDXObject implements PDImage
      */
     private static BufferedImage scaleImage(BufferedImage image, int width, int height, int type, boolean interpolate)
     {
-<span class="nc" id="L764">        final int imgWidth = image.getWidth();</span>
-<span class="nc" id="L765">        final int imgHeight = image.getHeight();</span>
+<span class="fc" id="L764">        final int imgWidth = image.getWidth();</span>
+<span class="fc" id="L765">        final int imgHeight = image.getHeight();</span>
         // largeScale switch is arbitrarily chosen as to where bicubic becomes very slow
-<span class="nc bnc" id="L767" title="All 4 branches missed.">        boolean largeScale = width * height &gt; 3000 * 3000 * (type == BufferedImage.TYPE_BYTE_GRAY ? 3 : 1);</span>
-<span class="nc bnc" id="L768" title="All 4 branches missed.">        interpolate &amp;= imgWidth != width || imgHeight != height;</span>
+<span class="pc bpc" id="L767" title="1 of 4 branches missed.">        boolean largeScale = width * height &gt; 3000 * 3000 * (type == BufferedImage.TYPE_BYTE_GRAY ? 3 : 1);</span>
+<span class="pc bpc" id="L768" title="2 of 4 branches missed.">        interpolate &amp;= imgWidth != width || imgHeight != height;</span>
 
-<span class="nc" id="L770">        BufferedImage image2 = new BufferedImage(width, height, type);</span>
-<span class="nc bnc" id="L771" title="All 2 branches missed.">        if (interpolate)</span>
+<span class="fc" id="L770">        BufferedImage image2 = new BufferedImage(width, height, type);</span>
+<span class="pc bpc" id="L771" title="1 of 2 branches missed.">        if (interpolate)</span>
         {
 <span class="nc" id="L773">            AffineTransform af = AffineTransform.getScaleInstance((double) width / imgWidth, (double) height / imgHeight);</span>
 <span class="nc bnc" id="L774" title="All 2 branches missed.">            AffineTransformOp afo = new AffineTransformOp(af, largeScale ? AffineTransformOp.TYPE_BILINEAR : AffineTransformOp.TYPE_BICUBIC);</span>
@@ -782,17 +782,17 @@ public final class PDImageXObject extends PDXObject implements PDImage
 <span class="nc" id="L782">                LOG.warn(e.getMessage(), e);</span>
             }
         }
-<span class="nc" id="L785">        Graphics2D g = image2.createGraphics();</span>
-<span class="nc bnc" id="L786" title="All 2 branches missed.">        if (interpolate)</span>
+<span class="fc" id="L785">        Graphics2D g = image2.createGraphics();</span>
+<span class="pc bpc" id="L786" title="1 of 2 branches missed.">        if (interpolate)</span>
         {
 <span class="nc" id="L788">            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,</span>
 <span class="nc bnc" id="L789" title="All 2 branches missed.">                    largeScale ? RenderingHints.VALUE_INTERPOLATION_BILINEAR : RenderingHints.VALUE_INTERPOLATION_BICUBIC);</span>
 <span class="nc" id="L790">            g.setRenderingHint(RenderingHints.KEY_RENDERING,</span>
 <span class="nc bnc" id="L791" title="All 2 branches missed.">                    largeScale ? RenderingHints.VALUE_RENDER_DEFAULT : RenderingHints.VALUE_RENDER_QUALITY);</span>
         }
-<span class="nc" id="L793">        g.drawImage(image, 0, 0, width, height, 0, 0, imgWidth, imgHeight, null);</span>
-<span class="nc" id="L794">        g.dispose();</span>
-<span class="nc" id="L795">        return image2;</span>
+<span class="fc" id="L793">        g.drawImage(image, 0, 0, width, height, 0, 0, imgWidth, imgHeight, null);</span>
+<span class="fc" id="L794">        g.dispose();</span>
+<span class="fc" id="L795">        return image2;</span>
     }
 
     /**
@@ -802,21 +802,21 @@ public final class PDImageXObject extends PDXObject implements PDImage
      */
     public PDImageXObject getMask()
     {
-<span class="nc" id="L805">        COSArray mask = getCOSObject().getCOSArray(COSName.MASK);</span>
-<span class="nc bnc" id="L806" title="All 2 branches missed.">        if (mask != null)</span>
+<span class="fc" id="L805">        COSArray mask = getCOSObject().getCOSArray(COSName.MASK);</span>
+<span class="pc bpc" id="L806" title="1 of 2 branches missed.">        if (mask != null)</span>
         {
             // color key mask, no explicit mask to return
 <span class="nc" id="L809">            return null;</span>
         }
         else
         {
-<span class="nc" id="L813">            COSStream cosStream = getCOSObject().getCOSStream(COSName.MASK);</span>
-<span class="nc bnc" id="L814" title="All 2 branches missed.">            if (cosStream != null)</span>
+<span class="fc" id="L813">            COSStream cosStream = getCOSObject().getCOSStream(COSName.MASK);</span>
+<span class="pc bpc" id="L814" title="1 of 2 branches missed.">            if (cosStream != null)</span>
             {
                 // always DeviceGray
 <span class="nc" id="L817">                return new PDImageXObject(new PDStream(cosStream), null);</span>
             }
-<span class="nc" id="L819">            return null;</span>
+<span class="fc" id="L819">            return null;</span>
         }
     }
 
@@ -826,7 +826,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
      */
     public COSArray getColorKeyMask()
     {
-<span class="nc" id="L829">        return getCOSObject().getCOSArray(COSName.MASK);</span>
+<span class="fc" id="L829">        return getCOSObject().getCOSArray(COSName.MASK);</span>
     }
 
     /**
@@ -836,142 +836,142 @@ public final class PDImageXObject extends PDXObject implements PDImage
      */
     public PDImageXObject getSoftMask()
     {
-<span class="nc" id="L839">        COSStream cosStream = getCOSObject().getCOSStream(COSName.SMASK);</span>
-<span class="nc bnc" id="L840" title="All 2 branches missed.">        if (cosStream != null)</span>
+<span class="fc" id="L839">        COSStream cosStream = getCOSObject().getCOSStream(COSName.SMASK);</span>
+<span class="fc bfc" id="L840" title="All 2 branches covered.">        if (cosStream != null)</span>
         {
             // always DeviceGray
-<span class="nc" id="L843">            return new PDImageXObject(new PDStream(cosStream), null);</span>
+<span class="fc" id="L843">            return new PDImageXObject(new PDStream(cosStream), null);</span>
         }
-<span class="nc" id="L845">        return null;</span>
+<span class="fc" id="L845">        return null;</span>
     }
 
     @Override
     public int getBitsPerComponent()
     {
-<span class="nc bnc" id="L851" title="All 2 branches missed.">        if (isStencil())</span>
+<span class="fc bfc" id="L851" title="All 2 branches covered.">        if (isStencil())</span>
         {
-<span class="nc" id="L853">            return 1;</span>
+<span class="fc" id="L853">            return 1;</span>
         }
         else
         {
-<span class="nc" id="L857">            initJPXValues();</span>
-<span class="nc" id="L858">            return getCOSObject().getInt(COSName.BITS_PER_COMPONENT, COSName.BPC);</span>
+<span class="fc" id="L857">            initJPXValues();</span>
+<span class="fc" id="L858">            return getCOSObject().getInt(COSName.BITS_PER_COMPONENT, COSName.BPC);</span>
         }
     }
 
     @Override
     public void setBitsPerComponent(int bpc)
     {
-<span class="nc" id="L865">        getCOSObject().setInt(COSName.BITS_PER_COMPONENT, bpc);</span>
-<span class="nc" id="L866">    }</span>
+<span class="fc" id="L865">        getCOSObject().setInt(COSName.BITS_PER_COMPONENT, bpc);</span>
+<span class="fc" id="L866">    }</span>
 
     @Override
     public PDColorSpace getColorSpace() throws IOException
     {
-<span class="nc bnc" id="L871" title="All 2 branches missed.">        if (colorSpace == null)</span>
+<span class="fc bfc" id="L871" title="All 2 branches covered.">        if (colorSpace == null)</span>
         {
-<span class="nc" id="L873">            COSBase cosBase = getCOSObject().getItem(COSName.COLORSPACE, COSName.CS);</span>
-<span class="nc bnc" id="L874" title="All 2 branches missed.">            if (cosBase != null)</span>
+<span class="fc" id="L873">            COSBase cosBase = getCOSObject().getItem(COSName.COLORSPACE, COSName.CS);</span>
+<span class="fc bfc" id="L874" title="All 2 branches covered.">            if (cosBase != null)</span>
             {
-<span class="nc" id="L876">                COSObject indirect = null;</span>
-<span class="nc bnc" id="L877" title="All 4 branches missed.">                if (cosBase instanceof COSObject &amp;&amp;</span>
-<span class="nc bnc" id="L878" title="All 2 branches missed.">                        resources != null &amp;&amp; resources.getResourceCache() != null)</span>
+<span class="fc" id="L876">                COSObject indirect = null;</span>
+<span class="pc bpc" id="L877" title="1 of 4 branches missed.">                if (cosBase instanceof COSObject &amp;&amp;</span>
+<span class="pc bpc" id="L878" title="1 of 2 branches missed.">                        resources != null &amp;&amp; resources.getResourceCache() != null)</span>
                 {
                     // PDFBOX-4022: use the resource cache because several images
                     // might have the same colorspace indirect object.
-<span class="nc" id="L882">                    indirect = (COSObject) cosBase;</span>
-<span class="nc" id="L883">                    colorSpace = resources.getResourceCache().getColorSpace(indirect);</span>
-<span class="nc bnc" id="L884" title="All 2 branches missed.">                    if (colorSpace != null)</span>
+<span class="fc" id="L882">                    indirect = (COSObject) cosBase;</span>
+<span class="fc" id="L883">                    colorSpace = resources.getResourceCache().getColorSpace(indirect);</span>
+<span class="fc bfc" id="L884" title="All 2 branches covered.">                    if (colorSpace != null)</span>
                     {
-<span class="nc" id="L886">                        return colorSpace;</span>
+<span class="fc" id="L886">                        return colorSpace;</span>
                     }
                 }
-<span class="nc" id="L889">                colorSpace = PDColorSpace.create(cosBase, resources);</span>
-<span class="nc bnc" id="L890" title="All 2 branches missed.">                if (indirect != null)</span>
+<span class="fc" id="L889">                colorSpace = PDColorSpace.create(cosBase, resources);</span>
+<span class="fc bfc" id="L890" title="All 2 branches covered.">                if (indirect != null)</span>
                 {
-<span class="nc" id="L892">                    resources.getResourceCache().put(indirect, colorSpace);</span>
+<span class="fc" id="L892">                    resources.getResourceCache().put(indirect, colorSpace);</span>
                 }
-<span class="nc" id="L894">            }</span>
-<span class="nc bnc" id="L895" title="All 2 branches missed.">            else if (isStencil())</span>
+<span class="fc" id="L894">            }</span>
+<span class="pc bpc" id="L895" title="1 of 2 branches missed.">            else if (isStencil())</span>
             {
                 // stencil mask color space must be gray, it is often missing
-<span class="nc" id="L898">                colorSpace = PDDeviceGray.INSTANCE;</span>
+<span class="fc" id="L898">                colorSpace = PDDeviceGray.INSTANCE;</span>
             }
             else
             {
 <span class="nc" id="L902">                initJPXValues();</span>
             }
-<span class="nc bnc" id="L904" title="All 2 branches missed.">            if (colorSpace == null)</span>
+<span class="pc bpc" id="L904" title="1 of 2 branches missed.">            if (colorSpace == null)</span>
             {
                 // an image without a color space is always broken
 <span class="nc" id="L907">                throw new IOException(&quot;could not determine color space&quot;);</span>
             }
         }
-<span class="nc" id="L910">        return colorSpace;</span>
+<span class="fc" id="L910">        return colorSpace;</span>
     }
 
     @Override
     public InputStream createInputStream() throws IOException
     {
-<span class="nc" id="L916">        return getStream().createInputStream();</span>
+<span class="fc" id="L916">        return getStream().createInputStream();</span>
     }
     
     @Override
     public InputStream createInputStream(DecodeOptions options) throws IOException
     {
-<span class="nc" id="L922">        return getStream().createInputStream(options);</span>
+<span class="fc" id="L922">        return getStream().createInputStream(options);</span>
     }
 
     @Override
     public InputStream createInputStream(List&lt;String&gt; stopFilters) throws IOException
     {
-<span class="nc" id="L928">        return getStream().createInputStream(stopFilters);</span>
+<span class="fc" id="L928">        return getStream().createInputStream(stopFilters);</span>
     }
 
     @Override
     public boolean isEmpty()
     {
-<span class="nc bnc" id="L934" title="All 2 branches missed.">        return getStream().getCOSObject().getLength() == 0;</span>
+<span class="pc bpc" id="L934" title="1 of 2 branches missed.">        return getStream().getCOSObject().getLength() == 0;</span>
     }
 
     @Override
     public void setColorSpace(PDColorSpace cs)
     {
-<span class="nc bnc" id="L940" title="All 2 branches missed.">        getCOSObject().setItem(COSName.COLORSPACE, cs != null ? cs.getCOSObject() : null);</span>
-<span class="nc" id="L941">        colorSpace = null;</span>
-<span class="nc" id="L942">        cachedImage = null;</span>
-<span class="nc" id="L943">    }</span>
+<span class="pc bpc" id="L940" title="1 of 2 branches missed.">        getCOSObject().setItem(COSName.COLORSPACE, cs != null ? cs.getCOSObject() : null);</span>
+<span class="fc" id="L941">        colorSpace = null;</span>
+<span class="fc" id="L942">        cachedImage = null;</span>
+<span class="fc" id="L943">    }</span>
 
     @Override
     public int getHeight()
     {
-<span class="nc" id="L948">        initJPXValues();</span>
-<span class="nc" id="L949">        return getCOSObject().getInt(COSName.HEIGHT);</span>
+<span class="fc" id="L948">        initJPXValues();</span>
+<span class="fc" id="L949">        return getCOSObject().getInt(COSName.HEIGHT);</span>
     }
 
     @Override
     public void setHeight(int h)
     {
-<span class="nc" id="L955">        getCOSObject().setInt(COSName.HEIGHT, h);</span>
-<span class="nc" id="L956">    }</span>
+<span class="fc" id="L955">        getCOSObject().setInt(COSName.HEIGHT, h);</span>
+<span class="fc" id="L956">    }</span>
 
     @Override
     public int getWidth()
     {
-<span class="nc" id="L961">        initJPXValues();</span>
-<span class="nc" id="L962">        return getCOSObject().getInt(COSName.WIDTH);</span>
+<span class="fc" id="L961">        initJPXValues();</span>
+<span class="fc" id="L962">        return getCOSObject().getInt(COSName.WIDTH);</span>
     }
 
     @Override
     public void setWidth(int w)
     {
-<span class="nc" id="L968">        getCOSObject().setInt(COSName.WIDTH, w);</span>
-<span class="nc" id="L969">    }</span>
+<span class="fc" id="L968">        getCOSObject().setInt(COSName.WIDTH, w);</span>
+<span class="fc" id="L969">    }</span>
 
     @Override
     public boolean getInterpolate()
     {
-<span class="nc" id="L974">        return getCOSObject().getBoolean(COSName.INTERPOLATE, false);</span>
+<span class="fc" id="L974">        return getCOSObject().getBoolean(COSName.INTERPOLATE, false);</span>
     }
 
     @Override
@@ -983,19 +983,19 @@ public final class PDImageXObject extends PDXObject implements PDImage
     @Override
     public void setDecode(COSArray decode)
     {
-<span class="nc" id="L986">        getCOSObject().setItem(COSName.DECODE, decode);</span>
-<span class="nc" id="L987">    }</span>
+<span class="fc" id="L986">        getCOSObject().setItem(COSName.DECODE, decode);</span>
+<span class="fc" id="L987">    }</span>
 
     @Override
     public COSArray getDecode()
     {
-<span class="nc" id="L992">        return getCOSObject().getCOSArray(COSName.DECODE);</span>
+<span class="fc" id="L992">        return getCOSObject().getCOSArray(COSName.DECODE);</span>
     }
 
     @Override
     public boolean isStencil()
     {
-<span class="nc" id="L998">        return getCOSObject().getBoolean(COSName.IMAGE_MASK, false);</span>
+<span class="fc" id="L998">        return getCOSObject().getBoolean(COSName.IMAGE_MASK, false);</span>
     }
 
     @Override
@@ -1011,29 +1011,29 @@ public final class PDImageXObject extends PDXObject implements PDImage
     @Override
     public String getSuffix()
     {
-<span class="nc" id="L1014">        List&lt;COSName&gt; filters = getStream().getFilters();</span>
+<span class="fc" id="L1014">        List&lt;COSName&gt; filters = getStream().getFilters();</span>
 
-<span class="nc bnc" id="L1016" title="All 2 branches missed.">        if (filters.isEmpty())</span>
+<span class="pc bpc" id="L1016" title="1 of 2 branches missed.">        if (filters.isEmpty())</span>
         {
 <span class="nc" id="L1018">            return &quot;png&quot;;</span>
         }
-<span class="nc bnc" id="L1020" title="All 2 branches missed.">        else if (filters.contains(COSName.DCT_DECODE))</span>
+<span class="fc bfc" id="L1020" title="All 2 branches covered.">        else if (filters.contains(COSName.DCT_DECODE))</span>
         {
-<span class="nc" id="L1022">            return &quot;jpg&quot;;</span>
+<span class="fc" id="L1022">            return &quot;jpg&quot;;</span>
         }
-<span class="nc bnc" id="L1024" title="All 2 branches missed.">        else if (filters.contains(COSName.JPX_DECODE))</span>
+<span class="pc bpc" id="L1024" title="1 of 2 branches missed.">        else if (filters.contains(COSName.JPX_DECODE))</span>
         {
 <span class="nc" id="L1026">            return &quot;jpx&quot;;</span>
         }
-<span class="nc bnc" id="L1028" title="All 2 branches missed.">        else if (filters.contains(COSName.CCITTFAX_DECODE))</span>
+<span class="fc bfc" id="L1028" title="All 2 branches covered.">        else if (filters.contains(COSName.CCITTFAX_DECODE))</span>
         {
-<span class="nc" id="L1030">            return &quot;tiff&quot;;</span>
+<span class="fc" id="L1030">            return &quot;tiff&quot;;</span>
         }
-<span class="nc bnc" id="L1032" title="All 2 branches missed.">        else if (filters.contains(COSName.FLATE_DECODE)</span>
+<span class="pc bpc" id="L1032" title="1 of 2 branches missed.">        else if (filters.contains(COSName.FLATE_DECODE)</span>
 <span class="nc bnc" id="L1033" title="All 2 branches missed.">                || filters.contains(COSName.LZW_DECODE)</span>
 <span class="nc bnc" id="L1034" title="All 2 branches missed.">                || filters.contains(COSName.RUN_LENGTH_DECODE))</span>
         {
-<span class="nc" id="L1036">            return &quot;png&quot;;</span>
+<span class="fc" id="L1036">            return &quot;png&quot;;</span>
         }
 <span class="nc bnc" id="L1038" title="All 2 branches missed.">        else if (filters.contains(COSName.JBIG2_DECODE))</span>
         {
@@ -1054,8 +1054,8 @@ public final class PDImageXObject extends PDXObject implements PDImage
      */
     public PDPropertyList getOptionalContent()
     {
-<span class="nc" id="L1057">        COSDictionary optionalContent = getCOSObject().getCOSDictionary(COSName.OC);</span>
-<span class="nc bnc" id="L1058" title="All 2 branches missed.">        return optionalContent != null ? PDPropertyList.create(optionalContent) : null;</span>
+<span class="fc" id="L1057">        COSDictionary optionalContent = getCOSObject().getCOSDictionary(COSName.OC);</span>
+<span class="pc bpc" id="L1058" title="1 of 2 branches missed.">        return optionalContent != null ? PDPropertyList.create(optionalContent) : null;</span>
     }
 
     /**

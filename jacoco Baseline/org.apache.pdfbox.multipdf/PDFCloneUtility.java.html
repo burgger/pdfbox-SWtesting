@@ -40,11 +40,11 @@ import org.apache.pdfbox.pdmodel.common.COSObjectable;
  */
 public class PDFCloneUtility
 {
-<span class="nc" id="L43">    private static final Logger LOG = LogManager.getLogger(PDFCloneUtility.class);</span>
+<span class="fc" id="L43">    private static final Logger LOG = LogManager.getLogger(PDFCloneUtility.class);</span>
 
     private final PDDocument destination;
-<span class="nc" id="L46">    private final Map&lt;COSBase, COSBase&gt; clonedVersion = new HashMap&lt;&gt;();</span>
-<span class="nc" id="L47">    private final Set&lt;COSBase&gt; clonedValues = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L46">    private final Map&lt;COSBase, COSBase&gt; clonedVersion = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L47">    private final Set&lt;COSBase&gt; clonedValues = new HashSet&lt;&gt;();</span>
     // It might be useful to use IdentityHashMap like in PDFBOX-4477 for speed,
     // but we need a really huge file to test this. A test with the file from PDFBOX-4477
     // did not show a noticeable speed difference.
@@ -55,9 +55,9 @@ public class PDFCloneUtility
      * @param dest the destination PDF document that will receive the clones
      */
     protected PDFCloneUtility(PDDocument dest)
-<span class="nc" id="L58">    {</span>
-<span class="nc" id="L59">        this.destination = dest;</span>
-<span class="nc" id="L60">    }</span>
+<span class="fc" id="L58">    {</span>
+<span class="fc" id="L59">        this.destination = dest;</span>
+<span class="fc" id="L60">    }</span>
 
     /**
      * Returns the destination PDF document this cloner instance is set up for.
@@ -66,7 +66,7 @@ public class PDFCloneUtility
      */
     PDDocument getDestination()
     {
-<span class="nc" id="L69">        return this.destination;</span>
+<span class="fc" id="L69">        return this.destination;</span>
     }
 
     /**
@@ -82,107 +82,107 @@ public class PDFCloneUtility
     @SuppressWarnings(&quot;unchecked&quot;)
     public &lt;TCOSBase extends COSBase&gt; TCOSBase cloneForNewDocument(TCOSBase base) throws IOException
     {
-<span class="nc bnc" id="L85" title="All 2 branches missed.">        if (base == null)</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (base == null)</span>
         {
-<span class="nc" id="L87">            return null;</span>
+<span class="fc" id="L87">            return null;</span>
         }
-<span class="nc" id="L89">        COSBase retval = clonedVersion.get(base);</span>
-<span class="nc bnc" id="L90" title="All 2 branches missed.">        if (retval != null)</span>
+<span class="fc" id="L89">        COSBase retval = clonedVersion.get(base);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (retval != null)</span>
         {
             // we are done, it has already been converted.
-<span class="nc" id="L93">            return (TCOSBase) retval;</span>
+<span class="fc" id="L93">            return (TCOSBase) retval;</span>
         }
-<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (clonedValues.contains(base))</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        if (clonedValues.contains(base))</span>
         {
             // Don't clone a clone
-<span class="nc" id="L98">            return base;</span>
+<span class="fc" id="L98">            return base;</span>
         }
-<span class="nc" id="L100">        retval = cloneCOSBaseForNewDocument(base);</span>
-<span class="nc" id="L101">        clonedVersion.put(base, retval);</span>
-<span class="nc" id="L102">        clonedValues.add(retval);</span>
-<span class="nc" id="L103">        return (TCOSBase) retval;</span>
+<span class="fc" id="L100">        retval = cloneCOSBaseForNewDocument(base);</span>
+<span class="fc" id="L101">        clonedVersion.put(base, retval);</span>
+<span class="fc" id="L102">        clonedValues.add(retval);</span>
+<span class="fc" id="L103">        return (TCOSBase) retval;</span>
     }
 
     private COSBase cloneCOSBaseForNewDocument(COSBase base) throws IOException
     {
-<span class="nc bnc" id="L108" title="All 2 branches missed.">        if (base instanceof COSObject)</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        if (base instanceof COSObject)</span>
         {
-<span class="nc" id="L110">            return cloneForNewDocument(((COSObject) base).getObject());</span>
+<span class="fc" id="L110">            return cloneForNewDocument(((COSObject) base).getObject());</span>
         }
-<span class="nc bnc" id="L112" title="All 2 branches missed.">        if (base instanceof COSArray)</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        if (base instanceof COSArray)</span>
         {
-<span class="nc" id="L114">            return cloneCOSArray((COSArray) base);</span>
+<span class="fc" id="L114">            return cloneCOSArray((COSArray) base);</span>
         }
-<span class="nc bnc" id="L116" title="All 2 branches missed.">        if (base instanceof COSStream)</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        if (base instanceof COSStream)</span>
         {
-<span class="nc" id="L118">            return cloneCOSStream((COSStream) base);</span>
+<span class="fc" id="L118">            return cloneCOSStream((COSStream) base);</span>
         }
-<span class="nc bnc" id="L120" title="All 2 branches missed.">        if (base instanceof COSDictionary)</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        if (base instanceof COSDictionary)</span>
         {
-<span class="nc" id="L122">            return cloneCOSDictionary((COSDictionary) base);</span>
+<span class="fc" id="L122">            return cloneCOSDictionary((COSDictionary) base);</span>
         }
-<span class="nc" id="L124">        return base;</span>
+<span class="fc" id="L124">        return base;</span>
     }
 
     private COSArray cloneCOSArray(COSArray array) throws IOException
     {
-<span class="nc" id="L129">        COSArray newArray = new COSArray();</span>
-<span class="nc bnc" id="L130" title="All 2 branches missed.">        for (int i = 0; i &lt; array.size(); i++)</span>
+<span class="fc" id="L129">        COSArray newArray = new COSArray();</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        for (int i = 0; i &lt; array.size(); i++)</span>
         {
-<span class="nc" id="L132">            COSBase value = array.get(i);</span>
-<span class="nc bnc" id="L133" title="All 2 branches missed.">            if (hasSelfReference(array, value))</span>
+<span class="fc" id="L132">            COSBase value = array.get(i);</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">            if (hasSelfReference(array, value))</span>
             {
 <span class="nc" id="L135">                newArray.add(newArray);</span>
             }
             else
             {
-<span class="nc" id="L139">                newArray.add(cloneForNewDocument(value));</span>
+<span class="fc" id="L139">                newArray.add(cloneForNewDocument(value));</span>
             }
         }
-<span class="nc" id="L142">        return newArray;</span>
+<span class="fc" id="L142">        return newArray;</span>
     }
 
     private COSStream cloneCOSStream(COSStream stream) throws IOException
     {
-<span class="nc" id="L147">        COSStream newStream = destination.getDocument().createCOSStream();</span>
-<span class="nc" id="L148">        try (OutputStream output = newStream.createRawOutputStream();</span>
-<span class="nc" id="L149">                InputStream input = stream.createRawInputStream())</span>
+<span class="fc" id="L147">        COSStream newStream = destination.getDocument().createCOSStream();</span>
+<span class="fc" id="L148">        try (OutputStream output = newStream.createRawOutputStream();</span>
+<span class="fc" id="L149">                InputStream input = stream.createRawInputStream())</span>
         {
-<span class="nc" id="L151">            input.transferTo(output);</span>
+<span class="fc" id="L151">            input.transferTo(output);</span>
         }
-<span class="nc" id="L153">        clonedVersion.put(stream, newStream);</span>
-<span class="nc bnc" id="L154" title="All 2 branches missed.">        for (Map.Entry&lt;COSName, COSBase&gt; entry : stream.entrySet())</span>
+<span class="fc" id="L153">        clonedVersion.put(stream, newStream);</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">        for (Map.Entry&lt;COSName, COSBase&gt; entry : stream.entrySet())</span>
         {
-<span class="nc" id="L156">            COSBase value = entry.getValue();</span>
-<span class="nc bnc" id="L157" title="All 2 branches missed.">            if (hasSelfReference(stream, value))</span>
+<span class="fc" id="L156">            COSBase value = entry.getValue();</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">            if (hasSelfReference(stream, value))</span>
             {
 <span class="nc" id="L159">                newStream.setItem(entry.getKey(), newStream);</span>
             }
             else
             {
-<span class="nc" id="L163">                newStream.setItem(entry.getKey(), cloneForNewDocument(value));</span>
+<span class="fc" id="L163">                newStream.setItem(entry.getKey(), cloneForNewDocument(value));</span>
             }
-<span class="nc" id="L165">        }</span>
-<span class="nc" id="L166">        return newStream;</span>
+<span class="fc" id="L165">        }</span>
+<span class="fc" id="L166">        return newStream;</span>
     }
 
     private COSDictionary cloneCOSDictionary(COSDictionary dictionary) throws IOException
     {
-<span class="nc" id="L171">        COSDictionary newDictionary = new COSDictionary();</span>
-<span class="nc" id="L172">        clonedVersion.put(dictionary, newDictionary);</span>
-<span class="nc bnc" id="L173" title="All 2 branches missed.">        for (Map.Entry&lt;COSName, COSBase&gt; entry : dictionary.entrySet())</span>
+<span class="fc" id="L171">        COSDictionary newDictionary = new COSDictionary();</span>
+<span class="fc" id="L172">        clonedVersion.put(dictionary, newDictionary);</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        for (Map.Entry&lt;COSName, COSBase&gt; entry : dictionary.entrySet())</span>
         {
-<span class="nc" id="L175">            COSBase value = entry.getValue();</span>
-<span class="nc bnc" id="L176" title="All 2 branches missed.">            if (hasSelfReference(dictionary, value))</span>
+<span class="fc" id="L175">            COSBase value = entry.getValue();</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">            if (hasSelfReference(dictionary, value))</span>
             {
-<span class="nc" id="L178">                newDictionary.setItem(entry.getKey(), newDictionary);</span>
+<span class="fc" id="L178">                newDictionary.setItem(entry.getKey(), newDictionary);</span>
             }
             else
             {
-<span class="nc" id="L182">                newDictionary.setItem(entry.getKey(), cloneForNewDocument(value));</span>
+<span class="fc" id="L182">                newDictionary.setItem(entry.getKey(), cloneForNewDocument(value));</span>
             }
-<span class="nc" id="L184">        }</span>
-<span class="nc" id="L185">        return newDictionary;</span>
+<span class="fc" id="L184">        }</span>
+<span class="fc" id="L185">        return newDictionary;</span>
     }
 
     /**
@@ -195,47 +195,47 @@ public class PDFCloneUtility
      */
     void cloneMerge(final COSObjectable base, COSObjectable target) throws IOException
     {
-<span class="nc bnc" id="L198" title="All 4 branches missed.">        if (base == null || base == target)</span>
+<span class="pc bpc" id="L198" title="1 of 4 branches missed.">        if (base == null || base == target)</span>
         {
-<span class="nc" id="L200">            return;</span>
+<span class="fc" id="L200">            return;</span>
         }
-<span class="nc" id="L202">        cloneMergeCOSBase(base.getCOSObject(), target.getCOSObject());</span>
-<span class="nc" id="L203">    }</span>
+<span class="fc" id="L202">        cloneMergeCOSBase(base.getCOSObject(), target.getCOSObject());</span>
+<span class="fc" id="L203">    }</span>
 
     private void cloneMergeCOSBase(final COSBase source, final COSBase target) throws IOException
     {
-<span class="nc bnc" id="L207" title="All 2 branches missed.">        COSBase sourceBase = source instanceof COSObject ? ((COSObject) source).getObject()</span>
-<span class="nc" id="L208">                : source;</span>
-<span class="nc bnc" id="L209" title="All 2 branches missed.">        COSBase targetBase = target instanceof COSObject ? ((COSObject) target).getObject()</span>
-<span class="nc" id="L210">                : target;</span>
-<span class="nc bnc" id="L211" title="All 4 branches missed.">        if (sourceBase instanceof COSArray &amp;&amp; targetBase instanceof COSArray)</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">        COSBase sourceBase = source instanceof COSObject ? ((COSObject) source).getObject()</span>
+<span class="fc" id="L208">                : source;</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">        COSBase targetBase = target instanceof COSObject ? ((COSObject) target).getObject()</span>
+<span class="fc" id="L210">                : target;</span>
+<span class="pc bpc" id="L211" title="1 of 4 branches missed.">        if (sourceBase instanceof COSArray &amp;&amp; targetBase instanceof COSArray)</span>
         {
-<span class="nc" id="L213">            COSArray array = (COSArray) sourceBase;</span>
-<span class="nc" id="L214">            COSArray targetBaseArray = (COSArray) targetBase;</span>
-<span class="nc bnc" id="L215" title="All 2 branches missed.">            for (int i = 0; i &lt; array.size(); i++)</span>
+<span class="fc" id="L213">            COSArray array = (COSArray) sourceBase;</span>
+<span class="fc" id="L214">            COSArray targetBaseArray = (COSArray) targetBase;</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">            for (int i = 0; i &lt; array.size(); i++)</span>
             {
-<span class="nc" id="L217">                targetBaseArray.add(cloneForNewDocument(array.get(i)));</span>
+<span class="fc" id="L217">                targetBaseArray.add(cloneForNewDocument(array.get(i)));</span>
             }
-<span class="nc" id="L219">        }</span>
-<span class="nc bnc" id="L220" title="All 4 branches missed.">        else if (sourceBase instanceof COSDictionary &amp;&amp; targetBase instanceof COSDictionary)</span>
+<span class="fc" id="L219">        }</span>
+<span class="pc bpc" id="L220" title="1 of 4 branches missed.">        else if (sourceBase instanceof COSDictionary &amp;&amp; targetBase instanceof COSDictionary)</span>
         {
-<span class="nc" id="L222">            COSDictionary sourceDict = (COSDictionary) sourceBase;</span>
-<span class="nc" id="L223">            COSDictionary targetDict = (COSDictionary) targetBase;</span>
-<span class="nc bnc" id="L224" title="All 2 branches missed.">            for (Map.Entry&lt;COSName, COSBase&gt; entry : sourceDict.entrySet())</span>
+<span class="fc" id="L222">            COSDictionary sourceDict = (COSDictionary) sourceBase;</span>
+<span class="fc" id="L223">            COSDictionary targetDict = (COSDictionary) targetBase;</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">            for (Map.Entry&lt;COSName, COSBase&gt; entry : sourceDict.entrySet())</span>
             {
-<span class="nc" id="L226">                COSName key = entry.getKey();</span>
-<span class="nc" id="L227">                COSBase value = entry.getValue();</span>
-<span class="nc bnc" id="L228" title="All 2 branches missed.">                if (targetDict.getItem(key) != null)</span>
+<span class="fc" id="L226">                COSName key = entry.getKey();</span>
+<span class="fc" id="L227">                COSBase value = entry.getValue();</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">                if (targetDict.getItem(key) != null)</span>
                 {
-<span class="nc" id="L230">                    cloneMerge(value, targetDict.getItem(key));</span>
+<span class="fc" id="L230">                    cloneMerge(value, targetDict.getItem(key));</span>
                 }
                 else
                 {
-<span class="nc" id="L234">                    targetDict.setItem(key, cloneForNewDocument(value));</span>
+<span class="fc" id="L234">                    targetDict.setItem(key, cloneForNewDocument(value));</span>
                 }
-<span class="nc" id="L236">            }</span>
+<span class="fc" id="L236">            }</span>
         }
-<span class="nc" id="L238">    }</span>
+<span class="fc" id="L238">    }</span>
 
     /**
      * Check whether an element (of an array or a dictionary) points to its parent.
@@ -245,18 +245,18 @@ public class PDFCloneUtility
      */
     private boolean hasSelfReference(COSBase parent, COSBase value)
     {
-<span class="nc bnc" id="L248" title="All 2 branches missed.">        if (value instanceof COSObject)</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">        if (value instanceof COSObject)</span>
         {
-<span class="nc" id="L250">            COSBase actual = ((COSObject) value).getObject();</span>
-<span class="nc bnc" id="L251" title="All 2 branches missed.">            if (actual == parent)</span>
+<span class="fc" id="L250">            COSBase actual = ((COSObject) value).getObject();</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">            if (actual == parent)</span>
             {
-<span class="nc" id="L253">                COSObject cosObj = ((COSObject) value);</span>
-<span class="nc" id="L254">                LOG.warn(&quot;{} object has a reference to itself: {}&quot;,</span>
-<span class="nc" id="L255">                        parent.getClass().getSimpleName(), cosObj.getKey());</span>
-<span class="nc" id="L256">                return true;</span>
+<span class="fc" id="L253">                COSObject cosObj = ((COSObject) value);</span>
+<span class="fc" id="L254">                LOG.warn(&quot;{} object has a reference to itself: {}&quot;,</span>
+<span class="fc" id="L255">                        parent.getClass().getSimpleName(), cosObj.getKey());</span>
+<span class="fc" id="L256">                return true;</span>
             }
         }
-<span class="nc" id="L259">        return false;</span>
+<span class="fc" id="L259">        return false;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

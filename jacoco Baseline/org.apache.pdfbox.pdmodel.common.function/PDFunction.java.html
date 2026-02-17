@@ -37,12 +37,12 @@ import org.apache.pdfbox.pdmodel.common.PDStream;
 public abstract class PDFunction implements COSObjectable
 {
 
-<span class="nc" id="L40">    private PDStream functionStream = null;</span>
-<span class="nc" id="L41">    private COSDictionary functionDictionary = null;</span>
-<span class="nc" id="L42">    private COSArray domain = null;</span>
-<span class="nc" id="L43">    private COSArray range = null;</span>
-<span class="nc" id="L44">    private int numberOfInputValues = -1;</span>
-<span class="nc" id="L45">    private int numberOfOutputValues = -1;</span>
+<span class="fc" id="L40">    private PDStream functionStream = null;</span>
+<span class="fc" id="L41">    private COSDictionary functionDictionary = null;</span>
+<span class="fc" id="L42">    private COSArray domain = null;</span>
+<span class="fc" id="L43">    private COSArray range = null;</span>
+<span class="fc" id="L44">    private int numberOfInputValues = -1;</span>
+<span class="fc" id="L45">    private int numberOfOutputValues = -1;</span>
 
     /**
      * Constructor.
@@ -51,17 +51,17 @@ public abstract class PDFunction implements COSObjectable
      * 
      */
     protected PDFunction( COSBase function )
-<span class="nc" id="L54">    {</span>
-<span class="nc bnc" id="L55" title="All 2 branches missed.">        if (function instanceof COSStream)</span>
+<span class="fc" id="L54">    {</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (function instanceof COSStream)</span>
         {
-<span class="nc" id="L57">            functionStream = new PDStream( (COSStream)function );</span>
-<span class="nc" id="L58">            functionStream.getCOSObject().setItem( COSName.TYPE, COSName.FUNCTION );</span>
+<span class="fc" id="L57">            functionStream = new PDStream( (COSStream)function );</span>
+<span class="fc" id="L58">            functionStream.getCOSObject().setItem( COSName.TYPE, COSName.FUNCTION );</span>
         }
-<span class="nc bnc" id="L60" title="All 2 branches missed.">        else if (function instanceof COSDictionary)</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">        else if (function instanceof COSDictionary)</span>
         {
-<span class="nc" id="L62">            functionDictionary = (COSDictionary)function;</span>
+<span class="fc" id="L62">            functionDictionary = (COSDictionary)function;</span>
         }
-<span class="nc" id="L64">    }</span>
+<span class="fc" id="L64">    }</span>
 
     /**
      * Returns the function type.
@@ -84,13 +84,13 @@ public abstract class PDFunction implements COSObjectable
     @Override
     public final COSDictionary getCOSObject()
     {
-<span class="nc bnc" id="L87" title="All 2 branches missed.">        if (functionStream != null)</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (functionStream != null)</span>
         {
-<span class="nc" id="L89">            return functionStream.getCOSObject();</span>
+<span class="fc" id="L89">            return functionStream.getCOSObject();</span>
         }
         else 
         {
-<span class="nc" id="L93">            return functionDictionary;</span>
+<span class="fc" id="L93">            return functionDictionary;</span>
         }
     }
 
@@ -100,7 +100,7 @@ public abstract class PDFunction implements COSObjectable
      */
     protected PDStream getPDStream()
     {
-<span class="nc" id="L103">        return functionStream;</span>
+<span class="fc" id="L103">        return functionStream;</span>
     }
 
     /**
@@ -114,29 +114,29 @@ public abstract class PDFunction implements COSObjectable
      */
     public static PDFunction create( COSBase function ) throws IOException
     {
-<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (function == COSName.IDENTITY)</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if (function == COSName.IDENTITY)</span>
         {
 <span class="nc" id="L119">            return new PDFunctionTypeIdentity(null);</span>
         }
         
-<span class="nc" id="L122">        COSBase base = function;</span>
-<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (function instanceof COSObject)</span>
+<span class="fc" id="L122">        COSBase base = function;</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (function instanceof COSObject)</span>
         {
 <span class="nc" id="L125">            base = ((COSObject) function).getObject();</span>
         }
-<span class="nc bnc" id="L127" title="All 2 branches missed.">        if (!(base instanceof COSDictionary))</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        if (!(base instanceof COSDictionary))</span>
         {
 <span class="nc" id="L129">            throw new IOException(&quot;Error: Function must be a Dictionary, but is &quot; +</span>
 <span class="nc bnc" id="L130" title="All 2 branches missed.">                    (base == null ? &quot;(null)&quot; : base.getClass().getSimpleName()));</span>
         }
-<span class="nc" id="L132">        COSDictionary functionDictionary = (COSDictionary) base;</span>
-<span class="nc" id="L133">        int functionType = functionDictionary.getInt(COSName.FUNCTION_TYPE);</span>
-<span class="nc bnc" id="L134" title="All 5 branches missed.">        switch (functionType)</span>
+<span class="fc" id="L132">        COSDictionary functionDictionary = (COSDictionary) base;</span>
+<span class="fc" id="L133">        int functionType = functionDictionary.getInt(COSName.FUNCTION_TYPE);</span>
+<span class="pc bpc" id="L134" title="4 of 5 branches missed.">        switch (functionType)</span>
         {
             case 0:
 <span class="nc" id="L137">                return new PDFunctionType0(functionDictionary);</span>
             case 2:
-<span class="nc" id="L139">                return new PDFunctionType2(functionDictionary);</span>
+<span class="fc" id="L139">                return new PDFunctionType2(functionDictionary);</span>
             case 3:
 <span class="nc" id="L141">                return new PDFunctionType3(functionDictionary);</span>
             case 4:
@@ -158,19 +158,19 @@ public abstract class PDFunction implements COSObjectable
      */
     public int getNumberOfOutputParameters()
     {
-<span class="nc bnc" id="L161" title="All 2 branches missed.">        if (numberOfOutputValues == -1)</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        if (numberOfOutputValues == -1)</span>
         {
-<span class="nc" id="L163">            COSArray rangeValues = getRangeValues();</span>
-<span class="nc bnc" id="L164" title="All 2 branches missed.">            if (rangeValues == null)</span>
+<span class="fc" id="L163">            COSArray rangeValues = getRangeValues();</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">            if (rangeValues == null)</span>
             {
 <span class="nc" id="L166">                numberOfOutputValues = 0;</span>
             }
             else
             {
-<span class="nc" id="L170">                numberOfOutputValues = rangeValues.size() / 2;</span>
+<span class="fc" id="L170">                numberOfOutputValues = rangeValues.size() / 2;</span>
             }
         }
-<span class="nc" id="L173">        return numberOfOutputValues;</span>
+<span class="fc" id="L173">        return numberOfOutputValues;</span>
     }
 
     /**
@@ -184,8 +184,8 @@ public abstract class PDFunction implements COSObjectable
      */
     public PDRange getRangeForOutput(int n)
     {
-<span class="nc" id="L187">        COSArray rangeValues = getRangeValues();</span>
-<span class="nc" id="L188">        return new PDRange( rangeValues, n );</span>
+<span class="fc" id="L187">        COSArray rangeValues = getRangeValues();</span>
+<span class="fc" id="L188">        return new PDRange( rangeValues, n );</span>
     }
 
     /**
@@ -227,8 +227,8 @@ public abstract class PDFunction implements COSObjectable
      */
     public PDRange getDomainForInput(int n) 
     {
-<span class="nc" id="L230">        COSArray domainValues = getDomainValues();</span>
-<span class="nc" id="L231">        return new PDRange( domainValues, n );</span>
+<span class="fc" id="L230">        COSArray domainValues = getDomainValues();</span>
+<span class="fc" id="L231">        return new PDRange( domainValues, n );</span>
     }
 
     /**
@@ -263,11 +263,11 @@ public abstract class PDFunction implements COSObjectable
      */
     protected COSArray getRangeValues() 
     {
-<span class="nc bnc" id="L266" title="All 2 branches missed.">        if (range == null) </span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">        if (range == null) </span>
         {
-<span class="nc" id="L268">            range = getCOSObject().getCOSArray(COSName.RANGE);</span>
+<span class="fc" id="L268">            range = getCOSObject().getCOSArray(COSName.RANGE);</span>
         }
-<span class="nc" id="L270">        return range;</span>
+<span class="fc" id="L270">        return range;</span>
     }
 
     /**
@@ -277,11 +277,11 @@ public abstract class PDFunction implements COSObjectable
      */
     private COSArray getDomainValues()
     {
-<span class="nc bnc" id="L280" title="All 2 branches missed.">        if (domain == null)</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">        if (domain == null)</span>
         {
-<span class="nc" id="L282">            domain = getCOSObject().getCOSArray(COSName.DOMAIN);</span>
+<span class="fc" id="L282">            domain = getCOSObject().getCOSArray(COSName.DOMAIN);</span>
         }
-<span class="nc" id="L284">        return domain;</span>
+<span class="fc" id="L284">        return domain;</span>
     }
 
     /**
@@ -292,24 +292,24 @@ public abstract class PDFunction implements COSObjectable
      */
     protected float[] clipToRange(float[] inputValues) 
     {
-<span class="nc" id="L295">        COSArray rangesArray = getRangeValues();</span>
+<span class="fc" id="L295">        COSArray rangesArray = getRangeValues();</span>
         float[] result;
-<span class="nc bnc" id="L297" title="All 4 branches missed.">        if (rangesArray != null &amp;&amp; !rangesArray.isEmpty())</span>
+<span class="pc bpc" id="L297" title="2 of 4 branches missed.">        if (rangesArray != null &amp;&amp; !rangesArray.isEmpty())</span>
         {
-<span class="nc" id="L299">            float[] rangeValues = rangesArray.toFloatArray();</span>
-<span class="nc" id="L300">            int numberOfRanges = rangeValues.length/2;</span>
-<span class="nc" id="L301">            result = new float[numberOfRanges];</span>
-<span class="nc bnc" id="L302" title="All 2 branches missed.">            for (int i=0; i&lt;numberOfRanges; i++)</span>
+<span class="fc" id="L299">            float[] rangeValues = rangesArray.toFloatArray();</span>
+<span class="fc" id="L300">            int numberOfRanges = rangeValues.length/2;</span>
+<span class="fc" id="L301">            result = new float[numberOfRanges];</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">            for (int i=0; i&lt;numberOfRanges; i++)</span>
             {
-<span class="nc" id="L304">                int index = i &lt;&lt; 1;</span>
-<span class="nc" id="L305">                result[i] = clipToRange(inputValues[i], rangeValues[index], rangeValues[index + 1]);</span>
+<span class="fc" id="L304">                int index = i &lt;&lt; 1;</span>
+<span class="fc" id="L305">                result[i] = clipToRange(inputValues[i], rangeValues[index], rangeValues[index + 1]);</span>
             }
-<span class="nc" id="L307">        }</span>
+<span class="fc" id="L307">        }</span>
         else
         {
 <span class="nc" id="L310">            result = inputValues;</span>
         }
-<span class="nc" id="L312">        return result;</span>
+<span class="fc" id="L312">        return result;</span>
     }
 
     /**
@@ -323,15 +323,15 @@ public abstract class PDFunction implements COSObjectable
      */
     protected float clipToRange(float x, float rangeMin, float rangeMax) 
     {
-<span class="nc bnc" id="L326" title="All 2 branches missed.">        if (x &lt; rangeMin)</span>
+<span class="pc bpc" id="L326" title="1 of 2 branches missed.">        if (x &lt; rangeMin)</span>
         {
 <span class="nc" id="L328">            return rangeMin;</span>
         }
-<span class="nc bnc" id="L330" title="All 2 branches missed.">        else if (x &gt; rangeMax)</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">        else if (x &gt; rangeMax)</span>
         {
-<span class="nc" id="L332">            return rangeMax;</span>
+<span class="fc" id="L332">            return rangeMax;</span>
         }
-<span class="nc" id="L334">        return x;</span>
+<span class="fc" id="L334">        return x;</span>
     }
 
     /**

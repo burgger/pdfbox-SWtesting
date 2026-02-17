@@ -33,9 +33,9 @@ import org.apache.pdfbox.util.Matrix;
  */
 public final class TextPosition
 {
-<span class="nc" id="L36">    private static final Logger LOG = LogManager.getLogger(TextPosition.class);</span>
+<span class="fc" id="L36">    private static final Logger LOG = LogManager.getLogger(TextPosition.class);</span>
 
-<span class="nc" id="L38">    private static final Map&lt;Integer, String&gt; DIACRITICS = createDiacritics();</span>
+<span class="fc" id="L38">    private static final Map&lt;Integer, String&gt; DIACRITICS = createDiacritics();</span>
 
     // text matrix for the start of the text object, coordinates are in display units
     // and have not been adjusted
@@ -62,7 +62,7 @@ public final class TextPosition
     // mutable
     private float[] widths;
     private String unicode;
-<span class="nc" id="L65">    private float direction = -1;</span>
+<span class="fc" id="L65">    private float direction = -1;</span>
 
     /**
      * Constructor.
@@ -86,36 +86,36 @@ public final class TextPosition
                         float endX, float endY, float maxHeight, float individualWidth,
                         float spaceWidth, String unicode, int[] charCodes, PDFont font,
                         float fontSize, int fontSizeInPt)
-<span class="nc" id="L89">    {</span>
-<span class="nc" id="L90">        this.textMatrix = textMatrix;</span>
+<span class="fc" id="L89">    {</span>
+<span class="fc" id="L90">        this.textMatrix = textMatrix;</span>
 
-<span class="nc" id="L92">        this.endX = endX;</span>
-<span class="nc" id="L93">        this.endY = endY;</span>
+<span class="fc" id="L92">        this.endX = endX;</span>
+<span class="fc" id="L93">        this.endY = endY;</span>
 
-<span class="nc" id="L95">        this.rotation = pageRotation;</span>
+<span class="fc" id="L95">        this.rotation = pageRotation;</span>
 
-<span class="nc" id="L97">        this.maxHeight = maxHeight;</span>
-<span class="nc" id="L98">        this.pageHeight = pageHeight;</span>
-<span class="nc" id="L99">        this.pageWidth = pageWidth;</span>
+<span class="fc" id="L97">        this.maxHeight = maxHeight;</span>
+<span class="fc" id="L98">        this.pageHeight = pageHeight;</span>
+<span class="fc" id="L99">        this.pageWidth = pageWidth;</span>
 
-<span class="nc" id="L101">        this.widths = new float[] { individualWidth };</span>
-<span class="nc" id="L102">        this.widthOfSpace = spaceWidth;</span>
-<span class="nc" id="L103">        this.unicode = unicode;</span>
-<span class="nc" id="L104">        this.charCodes = charCodes;</span>
-<span class="nc" id="L105">        this.font = font;</span>
-<span class="nc" id="L106">        this.fontSize = fontSize;</span>
-<span class="nc" id="L107">        this.fontSizePt = fontSizeInPt;</span>
+<span class="fc" id="L101">        this.widths = new float[] { individualWidth };</span>
+<span class="fc" id="L102">        this.widthOfSpace = spaceWidth;</span>
+<span class="fc" id="L103">        this.unicode = unicode;</span>
+<span class="fc" id="L104">        this.charCodes = charCodes;</span>
+<span class="fc" id="L105">        this.font = font;</span>
+<span class="fc" id="L106">        this.fontSize = fontSize;</span>
+<span class="fc" id="L107">        this.fontSizePt = fontSizeInPt;</span>
 
-<span class="nc" id="L109">        x = getXRot(rotation);</span>
-<span class="nc bnc" id="L110" title="All 4 branches missed.">        if (rotation == 0 || rotation == 180)</span>
+<span class="fc" id="L109">        x = getXRot(rotation);</span>
+<span class="fc bfc" id="L110" title="All 4 branches covered.">        if (rotation == 0 || rotation == 180)</span>
         {
-<span class="nc" id="L112">            y = this.pageHeight - getYLowerLeftRot(rotation);</span>
+<span class="fc" id="L112">            y = this.pageHeight - getYLowerLeftRot(rotation);</span>
         }
         else
         {
-<span class="nc" id="L116">            y = this.pageWidth - getYLowerLeftRot(rotation);</span>
+<span class="fc" id="L116">            y = this.pageWidth - getYLowerLeftRot(rotation);</span>
         }
-<span class="nc" id="L118">    }</span>
+<span class="fc" id="L118">    }</span>
 
     // Adds non-decomposing diacritics to the hash with their related combining character.
     // These are values that the unicode spec claims are equivalent but are not mapped in the form
@@ -124,39 +124,39 @@ public final class TextPosition
     // normalization.
     private static Map&lt;Integer, String&gt; createDiacritics()
     {
-<span class="nc" id="L127">        Map&lt;Integer, String&gt; map = new HashMap&lt;&gt;(31);</span>
-<span class="nc" id="L128">        map.put(0x0060, &quot;\u0300&quot;);</span>
-<span class="nc" id="L129">        map.put(0x02CB, &quot;\u0300&quot;);</span>
-<span class="nc" id="L130">        map.put(0x0027, &quot;\u0301&quot;);</span>
-<span class="nc" id="L131">        map.put(0x02B9, &quot;\u0301&quot;);</span>
-<span class="nc" id="L132">        map.put(0x02CA, &quot;\u0301&quot;);</span>
-<span class="nc" id="L133">        map.put(0x005e, &quot;\u0302&quot;);</span>
-<span class="nc" id="L134">        map.put(0x02C6, &quot;\u0302&quot;);</span>
-<span class="nc" id="L135">        map.put(0x007E, &quot;\u0303&quot;);</span>
-<span class="nc" id="L136">        map.put(0x02C9, &quot;\u0304&quot;);</span>
-<span class="nc" id="L137">        map.put(0x00B0, &quot;\u030A&quot;);</span>
-<span class="nc" id="L138">        map.put(0x02BA, &quot;\u030B&quot;);</span>
-<span class="nc" id="L139">        map.put(0x02C7, &quot;\u030C&quot;);</span>
-<span class="nc" id="L140">        map.put(0x02C8, &quot;\u030D&quot;);</span>
-<span class="nc" id="L141">        map.put(0x0022, &quot;\u030E&quot;);</span>
-<span class="nc" id="L142">        map.put(0x02BB, &quot;\u0312&quot;);</span>
-<span class="nc" id="L143">        map.put(0x02BC, &quot;\u0313&quot;);</span>
-<span class="nc" id="L144">        map.put(0x0486, &quot;\u0313&quot;);</span>
-<span class="nc" id="L145">        map.put(0x055A, &quot;\u0313&quot;);</span>
-<span class="nc" id="L146">        map.put(0x02BD, &quot;\u0314&quot;);</span>
-<span class="nc" id="L147">        map.put(0x0485, &quot;\u0314&quot;);</span>
-<span class="nc" id="L148">        map.put(0x0559, &quot;\u0314&quot;);</span>
-<span class="nc" id="L149">        map.put(0x02D4, &quot;\u031D&quot;);</span>
-<span class="nc" id="L150">        map.put(0x02D5, &quot;\u031E&quot;);</span>
-<span class="nc" id="L151">        map.put(0x02D6, &quot;\u031F&quot;);</span>
-<span class="nc" id="L152">        map.put(0x02D7, &quot;\u0320&quot;);</span>
-<span class="nc" id="L153">        map.put(0x02B2, &quot;\u0321&quot;);</span>
-<span class="nc" id="L154">        map.put(0x02CC, &quot;\u0329&quot;);</span>
-<span class="nc" id="L155">        map.put(0x02B7, &quot;\u032B&quot;);</span>
-<span class="nc" id="L156">        map.put(0x02CD, &quot;\u0331&quot;);</span>
-<span class="nc" id="L157">        map.put(0x005F, &quot;\u0332&quot;);</span>
-<span class="nc" id="L158">        map.put(0x204E, &quot;\u0359&quot;);</span>
-<span class="nc" id="L159">        return map;</span>
+<span class="fc" id="L127">        Map&lt;Integer, String&gt; map = new HashMap&lt;&gt;(31);</span>
+<span class="fc" id="L128">        map.put(0x0060, &quot;\u0300&quot;);</span>
+<span class="fc" id="L129">        map.put(0x02CB, &quot;\u0300&quot;);</span>
+<span class="fc" id="L130">        map.put(0x0027, &quot;\u0301&quot;);</span>
+<span class="fc" id="L131">        map.put(0x02B9, &quot;\u0301&quot;);</span>
+<span class="fc" id="L132">        map.put(0x02CA, &quot;\u0301&quot;);</span>
+<span class="fc" id="L133">        map.put(0x005e, &quot;\u0302&quot;);</span>
+<span class="fc" id="L134">        map.put(0x02C6, &quot;\u0302&quot;);</span>
+<span class="fc" id="L135">        map.put(0x007E, &quot;\u0303&quot;);</span>
+<span class="fc" id="L136">        map.put(0x02C9, &quot;\u0304&quot;);</span>
+<span class="fc" id="L137">        map.put(0x00B0, &quot;\u030A&quot;);</span>
+<span class="fc" id="L138">        map.put(0x02BA, &quot;\u030B&quot;);</span>
+<span class="fc" id="L139">        map.put(0x02C7, &quot;\u030C&quot;);</span>
+<span class="fc" id="L140">        map.put(0x02C8, &quot;\u030D&quot;);</span>
+<span class="fc" id="L141">        map.put(0x0022, &quot;\u030E&quot;);</span>
+<span class="fc" id="L142">        map.put(0x02BB, &quot;\u0312&quot;);</span>
+<span class="fc" id="L143">        map.put(0x02BC, &quot;\u0313&quot;);</span>
+<span class="fc" id="L144">        map.put(0x0486, &quot;\u0313&quot;);</span>
+<span class="fc" id="L145">        map.put(0x055A, &quot;\u0313&quot;);</span>
+<span class="fc" id="L146">        map.put(0x02BD, &quot;\u0314&quot;);</span>
+<span class="fc" id="L147">        map.put(0x0485, &quot;\u0314&quot;);</span>
+<span class="fc" id="L148">        map.put(0x0559, &quot;\u0314&quot;);</span>
+<span class="fc" id="L149">        map.put(0x02D4, &quot;\u031D&quot;);</span>
+<span class="fc" id="L150">        map.put(0x02D5, &quot;\u031E&quot;);</span>
+<span class="fc" id="L151">        map.put(0x02D6, &quot;\u031F&quot;);</span>
+<span class="fc" id="L152">        map.put(0x02D7, &quot;\u0320&quot;);</span>
+<span class="fc" id="L153">        map.put(0x02B2, &quot;\u0321&quot;);</span>
+<span class="fc" id="L154">        map.put(0x02CC, &quot;\u0329&quot;);</span>
+<span class="fc" id="L155">        map.put(0x02B7, &quot;\u032B&quot;);</span>
+<span class="fc" id="L156">        map.put(0x02CD, &quot;\u0331&quot;);</span>
+<span class="fc" id="L157">        map.put(0x005F, &quot;\u0332&quot;);</span>
+<span class="fc" id="L158">        map.put(0x204E, &quot;\u0359&quot;);</span>
+<span class="fc" id="L159">        return map;</span>
     }
 
     /**
@@ -168,13 +168,13 @@ public final class TextPosition
      */
     public String getUnicode()
     {
-<span class="nc" id="L171">        return unicode;</span>
+<span class="fc" id="L171">        return unicode;</span>
     }
 
     void setUnicode(String unicode)
     {
-<span class="nc" id="L176">        this.unicode = unicode;</span>
-<span class="nc" id="L177">    }</span>
+<span class="fc" id="L176">        this.unicode = unicode;</span>
+<span class="fc" id="L177">    }</span>
 
     /**
      * Same as {@link #getUnicode()} except that returned text is ensured to be
@@ -187,24 +187,24 @@ public final class TextPosition
      */
     public String getVisuallyOrderedUnicode()
     {
-<span class="nc" id="L190">        final String text = getUnicode();</span>
-<span class="nc" id="L191">        final int length = text.length();</span>
+<span class="fc" id="L190">        final String text = getUnicode();</span>
+<span class="fc" id="L191">        final int length = text.length();</span>
         int nextIndex;
-<span class="nc bnc" id="L193" title="All 2 branches missed.">        for (int index = 0; index &lt; length; index = nextIndex)</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        for (int index = 0; index &lt; length; index = nextIndex)</span>
         {
-<span class="nc" id="L195">            int codePoint = text.codePointAt(index);</span>
-<span class="nc" id="L196">            nextIndex = index + Character.charCount(codePoint);</span>
-<span class="nc" id="L197">            byte directionality = Character.getDirectionality(codePoint);</span>
-<span class="nc bnc" id="L198" title="All 8 branches missed.">            if ((directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC ||</span>
+<span class="fc" id="L195">            int codePoint = text.codePointAt(index);</span>
+<span class="fc" id="L196">            nextIndex = index + Character.charCount(codePoint);</span>
+<span class="fc" id="L197">            byte directionality = Character.getDirectionality(codePoint);</span>
+<span class="pc bpc" id="L198" title="1 of 8 branches missed.">            if ((directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC ||</span>
                     directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT)
                     // Even if the directionality is right to left, still there is no need to
                     // reverse a single code-point
                     &amp;&amp; (index != 0 || nextIndex &lt; length))
             {
-<span class="nc" id="L204">                return new StringBuilder(text).reverse().toString();</span>
+<span class="fc" id="L204">                return new StringBuilder(text).reverse().toString();</span>
             }
         }
-<span class="nc" id="L207">        return text;</span>
+<span class="fc" id="L207">        return text;</span>
     }
 
     /**
@@ -244,43 +244,43 @@ public final class TextPosition
      */
     public float getDir()
     {
-<span class="nc bnc" id="L247" title="All 2 branches missed.">        if (direction &lt; 0)</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">        if (direction &lt; 0)</span>
         {
-<span class="nc" id="L249">            float a = textMatrix.getScaleY();</span>
-<span class="nc" id="L250">            float b = textMatrix.getShearY();</span>
-<span class="nc" id="L251">            float c = textMatrix.getShearX();</span>
-<span class="nc" id="L252">            float d = textMatrix.getScaleX();</span>
+<span class="fc" id="L249">            float a = textMatrix.getScaleY();</span>
+<span class="fc" id="L250">            float b = textMatrix.getShearY();</span>
+<span class="fc" id="L251">            float c = textMatrix.getShearX();</span>
+<span class="fc" id="L252">            float d = textMatrix.getScaleX();</span>
     
             // 12 0   left to right
             // 0 12
-<span class="nc bnc" id="L256" title="All 8 branches missed.">            if (a &gt; 0 &amp;&amp; Math.abs(b) &lt; d &amp;&amp; Math.abs(c) &lt; a &amp;&amp; d &gt; 0)</span>
+<span class="pc bpc" id="L256" title="3 of 8 branches missed.">            if (a &gt; 0 &amp;&amp; Math.abs(b) &lt; d &amp;&amp; Math.abs(c) &lt; a &amp;&amp; d &gt; 0)</span>
             {
-<span class="nc" id="L258">                direction = 0;</span>
+<span class="fc" id="L258">                direction = 0;</span>
             }
             // -12 0   right to left (upside down)
             // 0 -12
-<span class="nc bnc" id="L262" title="All 8 branches missed.">            else if (a &lt; 0 &amp;&amp; Math.abs(b) &lt; Math.abs(d) &amp;&amp; Math.abs(c) &lt; Math.abs(a) &amp;&amp; d &lt; 0)</span>
+<span class="pc bpc" id="L262" title="3 of 8 branches missed.">            else if (a &lt; 0 &amp;&amp; Math.abs(b) &lt; Math.abs(d) &amp;&amp; Math.abs(c) &lt; Math.abs(a) &amp;&amp; d &lt; 0)</span>
             {
-<span class="nc" id="L264">                direction = 180;</span>
+<span class="fc" id="L264">                direction = 180;</span>
             }
             // 0  12    up
             // -12 0
-<span class="nc bnc" id="L268" title="All 8 branches missed.">            else if (Math.abs(a) &lt; Math.abs(c) &amp;&amp; b &gt; 0 &amp;&amp; c &lt; 0 &amp;&amp; Math.abs(d) &lt; b)</span>
+<span class="pc bpc" id="L268" title="3 of 8 branches missed.">            else if (Math.abs(a) &lt; Math.abs(c) &amp;&amp; b &gt; 0 &amp;&amp; c &lt; 0 &amp;&amp; Math.abs(d) &lt; b)</span>
             {
-<span class="nc" id="L270">                direction = 90;</span>
+<span class="fc" id="L270">                direction = 90;</span>
             }
             // 0  -12   down
             // 12 0
-<span class="nc bnc" id="L274" title="All 8 branches missed.">            else if (Math.abs(a) &lt; c &amp;&amp; b &lt; 0 &amp;&amp; c &gt; 0 &amp;&amp; Math.abs(d) &lt; Math.abs(b))</span>
+<span class="pc bpc" id="L274" title="4 of 8 branches missed.">            else if (Math.abs(a) &lt; c &amp;&amp; b &lt; 0 &amp;&amp; c &gt; 0 &amp;&amp; Math.abs(d) &lt; Math.abs(b))</span>
             {
-<span class="nc" id="L276">                direction = 270;</span>
+<span class="fc" id="L276">                direction = 270;</span>
             }
             else
             {
 <span class="nc" id="L280">                direction = 0;</span>
             }
         }
-<span class="nc" id="L283">        return direction;</span>
+<span class="fc" id="L283">        return direction;</span>
     }
 
     /**
@@ -292,21 +292,21 @@ public final class TextPosition
      */
     private float getXRot(float rotation)
     {
-<span class="nc bnc" id="L295" title="All 2 branches missed.">        if (Float.compare(rotation, 0) == 0)</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">        if (Float.compare(rotation, 0) == 0)</span>
         {
-<span class="nc" id="L297">            return textMatrix.getTranslateX();</span>
+<span class="fc" id="L297">            return textMatrix.getTranslateX();</span>
         }
-<span class="nc bnc" id="L299" title="All 2 branches missed.">        else if (Float.compare(rotation, 90) == 0)</span>
+<span class="fc bfc" id="L299" title="All 2 branches covered.">        else if (Float.compare(rotation, 90) == 0)</span>
         {
-<span class="nc" id="L301">            return textMatrix.getTranslateY();</span>
+<span class="fc" id="L301">            return textMatrix.getTranslateY();</span>
         }
-<span class="nc bnc" id="L303" title="All 2 branches missed.">        else if (Float.compare(rotation, 180) == 0)</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">        else if (Float.compare(rotation, 180) == 0)</span>
         {
-<span class="nc" id="L305">            return pageWidth - textMatrix.getTranslateX();</span>
+<span class="fc" id="L305">            return pageWidth - textMatrix.getTranslateX();</span>
         }
-<span class="nc bnc" id="L307" title="All 2 branches missed.">        else if (Float.compare(rotation, 270) == 0)</span>
+<span class="pc bpc" id="L307" title="1 of 2 branches missed.">        else if (Float.compare(rotation, 270) == 0)</span>
         {
-<span class="nc" id="L309">            return pageHeight - textMatrix.getTranslateY();</span>
+<span class="fc" id="L309">            return pageHeight - textMatrix.getTranslateY();</span>
         }
 <span class="nc" id="L311">        return 0;</span>
     }
@@ -324,7 +324,7 @@ public final class TextPosition
      */
     public float getX()
     {
-<span class="nc" id="L327">        return x;</span>
+<span class="fc" id="L327">        return x;</span>
     }
 
     /**
@@ -343,7 +343,7 @@ public final class TextPosition
      */
     public float getXDirAdj()
     {
-<span class="nc" id="L346">        return getXRot(getDir());</span>
+<span class="fc" id="L346">        return getXRot(getDir());</span>
     }
 
     /**
@@ -355,21 +355,21 @@ public final class TextPosition
      */
     private float getYLowerLeftRot(float rotation)
     {
-<span class="nc bnc" id="L358" title="All 2 branches missed.">        if (Float.compare(rotation, 0) == 0)</span>
+<span class="fc bfc" id="L358" title="All 2 branches covered.">        if (Float.compare(rotation, 0) == 0)</span>
         {
-<span class="nc" id="L360">            return textMatrix.getTranslateY();</span>
+<span class="fc" id="L360">            return textMatrix.getTranslateY();</span>
         }
-<span class="nc bnc" id="L362" title="All 2 branches missed.">        else if (Float.compare(rotation, 90) == 0)</span>
+<span class="fc bfc" id="L362" title="All 2 branches covered.">        else if (Float.compare(rotation, 90) == 0)</span>
         {
-<span class="nc" id="L364">            return pageWidth - textMatrix.getTranslateX();</span>
+<span class="fc" id="L364">            return pageWidth - textMatrix.getTranslateX();</span>
         }
-<span class="nc bnc" id="L366" title="All 2 branches missed.">        else if (Float.compare(rotation, 180) == 0)</span>
+<span class="fc bfc" id="L366" title="All 2 branches covered.">        else if (Float.compare(rotation, 180) == 0)</span>
         {
-<span class="nc" id="L368">            return pageHeight - textMatrix.getTranslateY();</span>
+<span class="fc" id="L368">            return pageHeight - textMatrix.getTranslateY();</span>
         }
-<span class="nc bnc" id="L370" title="All 2 branches missed.">        else if (Float.compare(rotation, 270) == 0)</span>
+<span class="pc bpc" id="L370" title="1 of 2 branches missed.">        else if (Float.compare(rotation, 270) == 0)</span>
         {
-<span class="nc" id="L372">            return textMatrix.getTranslateX();</span>
+<span class="fc" id="L372">            return textMatrix.getTranslateX();</span>
         }
 <span class="nc" id="L374">        return 0;</span>
     }
@@ -387,7 +387,7 @@ public final class TextPosition
      */
     public float getY()
     {
-<span class="nc" id="L390">        return y;</span>
+<span class="fc" id="L390">        return y;</span>
     }
 
     /**
@@ -405,15 +405,15 @@ public final class TextPosition
      */
     public float getYDirAdj()
     {
-<span class="nc" id="L408">        float dir = getDir();</span>
+<span class="fc" id="L408">        float dir = getDir();</span>
         // some PDFBox code assumes that the 0,0 point is in upper left, not lower left
-<span class="nc bnc" id="L410" title="All 4 branches missed.">        if (Float.compare(dir, 0) == 0 || Float.compare(dir, 180) == 0)</span>
+<span class="fc bfc" id="L410" title="All 4 branches covered.">        if (Float.compare(dir, 0) == 0 || Float.compare(dir, 180) == 0)</span>
         {
-<span class="nc" id="L412">            return pageHeight - getYLowerLeftRot(dir);</span>
+<span class="fc" id="L412">            return pageHeight - getYLowerLeftRot(dir);</span>
         }
         else
         {
-<span class="nc" id="L416">            return pageWidth - getYLowerLeftRot(dir);</span>
+<span class="fc" id="L416">            return pageWidth - getYLowerLeftRot(dir);</span>
         }
     }
 
@@ -425,13 +425,13 @@ public final class TextPosition
      */
     private float getWidthRot(float rotation)
     {
-<span class="nc bnc" id="L428" title="All 4 branches missed.">        if (Float.compare(rotation, 90) == 0 || Float.compare(rotation, 270) == 0)</span>
+<span class="fc bfc" id="L428" title="All 4 branches covered.">        if (Float.compare(rotation, 90) == 0 || Float.compare(rotation, 270) == 0)</span>
         {
-<span class="nc" id="L430">            return Math.abs(endY - textMatrix.getTranslateY());</span>
+<span class="fc" id="L430">            return Math.abs(endY - textMatrix.getTranslateY());</span>
         }
         else
         {
-<span class="nc" id="L434">            return Math.abs(endX - textMatrix.getTranslateX());</span>
+<span class="fc" id="L434">            return Math.abs(endX - textMatrix.getTranslateX());</span>
         }
     }
 
@@ -442,7 +442,7 @@ public final class TextPosition
      */
     public float getWidth()
     {
-<span class="nc" id="L445">        return getWidthRot(rotation);</span>
+<span class="fc" id="L445">        return getWidthRot(rotation);</span>
     }
 
     /**
@@ -452,7 +452,7 @@ public final class TextPosition
      */
     public float getWidthDirAdj()
     {
-<span class="nc" id="L455">        return getWidthRot(getDir());</span>
+<span class="fc" id="L455">        return getWidthRot(getDir());</span>
     }
 
     /**
@@ -462,7 +462,7 @@ public final class TextPosition
      */
     public float getHeight()
     {
-<span class="nc" id="L465">        return maxHeight;</span>
+<span class="fc" id="L465">        return maxHeight;</span>
     }
 
     /**
@@ -473,7 +473,7 @@ public final class TextPosition
     public float getHeightDir()
     {
         // this is not really a rotation-dependent calculation, but this is defined for symmetry
-<span class="nc" id="L476">        return maxHeight;</span>
+<span class="fc" id="L476">        return maxHeight;</span>
     }
 
     /**
@@ -486,7 +486,7 @@ public final class TextPosition
      */
     public float getFontSize()
     {
-<span class="nc" id="L489">        return fontSize;</span>
+<span class="fc" id="L489">        return fontSize;</span>
     }
 
     /**
@@ -510,7 +510,7 @@ public final class TextPosition
      */
     public PDFont getFont()
     {
-<span class="nc" id="L513">        return font;</span>
+<span class="fc" id="L513">        return font;</span>
     }
 
     /**
@@ -521,7 +521,7 @@ public final class TextPosition
      */
     public float getWidthOfSpace()
     {
-<span class="nc" id="L524">        return widthOfSpace;</span>
+<span class="fc" id="L524">        return widthOfSpace;</span>
     }
 
     /**
@@ -555,7 +555,7 @@ public final class TextPosition
      */
     public float[] getIndividualWidths()
     {
-<span class="nc" id="L558">        return widths;</span>
+<span class="fc" id="L558">        return widths;</span>
     }
 
     /**
@@ -567,44 +567,44 @@ public final class TextPosition
      */
     public boolean contains(TextPosition tp2)
     {
-<span class="nc" id="L570">        double thisXstart = getXDirAdj();</span>
-<span class="nc" id="L571">        double thisWidth = getWidthDirAdj();</span>
-<span class="nc" id="L572">        double thisXend = thisXstart + thisWidth;</span>
+<span class="fc" id="L570">        double thisXstart = getXDirAdj();</span>
+<span class="fc" id="L571">        double thisWidth = getWidthDirAdj();</span>
+<span class="fc" id="L572">        double thisXend = thisXstart + thisWidth;</span>
 
-<span class="nc" id="L574">        double tp2Xstart = tp2.getXDirAdj();</span>
-<span class="nc" id="L575">        double tp2Xend = tp2Xstart + tp2.getWidthDirAdj();</span>
+<span class="fc" id="L574">        double tp2Xstart = tp2.getXDirAdj();</span>
+<span class="fc" id="L575">        double tp2Xend = tp2Xstart + tp2.getWidthDirAdj();</span>
 
         // no X overlap at all so return as soon as possible
-<span class="nc bnc" id="L578" title="All 4 branches missed.">        if (tp2Xend &lt;= thisXstart || tp2Xstart &gt;= thisXend)</span>
+<span class="fc bfc" id="L578" title="All 4 branches covered.">        if (tp2Xend &lt;= thisXstart || tp2Xstart &gt;= thisXend)</span>
         {
-<span class="nc" id="L580">            return false;</span>
+<span class="fc" id="L580">            return false;</span>
         }
 
         // no Y overlap at all so return as soon as possible. Note: 0.0 is in the upper left and
         // y-coordinate is top of TextPosition
-<span class="nc" id="L585">        double thisYstart = getYDirAdj();</span>
-<span class="nc" id="L586">        double tp2Ystart = tp2.getYDirAdj();</span>
-<span class="nc bnc" id="L587" title="All 2 branches missed.">        if (tp2Ystart + tp2.getHeightDir() &lt; thisYstart ||</span>
-<span class="nc bnc" id="L588" title="All 2 branches missed.">                tp2Ystart &gt; thisYstart + getHeightDir())</span>
+<span class="fc" id="L585">        double thisYstart = getYDirAdj();</span>
+<span class="fc" id="L586">        double tp2Ystart = tp2.getYDirAdj();</span>
+<span class="pc bpc" id="L587" title="1 of 2 branches missed.">        if (tp2Ystart + tp2.getHeightDir() &lt; thisYstart ||</span>
+<span class="pc bpc" id="L588" title="1 of 2 branches missed.">                tp2Ystart &gt; thisYstart + getHeightDir())</span>
         {
 <span class="nc" id="L590">            return false;</span>
         }
         // we're going to calculate the percentage of overlap, if its less than a 15% x-coordinate
         // overlap then we'll return false because its negligible, .15 was determined by trial and
         // error in the regression test files
-<span class="nc bnc" id="L595" title="All 4 branches missed.">        else if (tp2Xstart &gt; thisXstart &amp;&amp; tp2Xend &gt; thisXend)</span>
+<span class="fc bfc" id="L595" title="All 4 branches covered.">        else if (tp2Xstart &gt; thisXstart &amp;&amp; tp2Xend &gt; thisXend)</span>
         {
-<span class="nc" id="L597">            double overlap = thisXend - tp2Xstart;</span>
-<span class="nc" id="L598">            double overlapPercent = overlap/thisWidth;</span>
-<span class="nc bnc" id="L599" title="All 2 branches missed.">            return overlapPercent &gt; .15;</span>
+<span class="fc" id="L597">            double overlap = thisXend - tp2Xstart;</span>
+<span class="fc" id="L598">            double overlapPercent = overlap/thisWidth;</span>
+<span class="fc bfc" id="L599" title="All 2 branches covered.">            return overlapPercent &gt; .15;</span>
         }
-<span class="nc bnc" id="L601" title="All 4 branches missed.">        else if (tp2Xstart &lt; thisXstart &amp;&amp; tp2Xend &lt; thisXend)</span>
+<span class="pc bpc" id="L601" title="1 of 4 branches missed.">        else if (tp2Xstart &lt; thisXstart &amp;&amp; tp2Xend &lt; thisXend)</span>
         {
 <span class="nc" id="L603">            double overlap = tp2Xend - thisXstart;</span>
 <span class="nc" id="L604">            double overlapPercent = overlap/thisWidth;</span>
 <span class="nc bnc" id="L605" title="All 2 branches missed.">            return overlapPercent &gt; .15;</span>
         }
-<span class="nc" id="L607">        return true;</span>
+<span class="fc" id="L607">        return true;</span>
     }
 
     /**
@@ -627,33 +627,33 @@ public final class TextPosition
         //      |    +-tp2Bottom-+     |
         //      +---------thisBottom---+
 
-<span class="nc" id="L630">        float thisLeft = getXDirAdj();</span>
-<span class="nc" id="L631">        float thisWidth = getWidthDirAdj();</span>
-<span class="nc" id="L632">        float thisRight = thisLeft + thisWidth;</span>
+<span class="fc" id="L630">        float thisLeft = getXDirAdj();</span>
+<span class="fc" id="L631">        float thisWidth = getWidthDirAdj();</span>
+<span class="fc" id="L632">        float thisRight = thisLeft + thisWidth;</span>
 
-<span class="nc" id="L634">        float tp2Left = tp2.getXDirAdj();</span>
-<span class="nc" id="L635">        float tp2Width = tp2.getWidthDirAdj();</span>
-<span class="nc" id="L636">        float tp2Right = tp2Left + tp2Width;</span>
+<span class="fc" id="L634">        float tp2Left = tp2.getXDirAdj();</span>
+<span class="fc" id="L635">        float tp2Width = tp2.getWidthDirAdj();</span>
+<span class="fc" id="L636">        float tp2Right = tp2Left + tp2Width;</span>
 
-<span class="nc bnc" id="L638" title="All 4 branches missed.">        if (thisLeft &gt; tp2Left || tp2Right &gt; thisRight)</span>
+<span class="fc bfc" id="L638" title="All 4 branches covered.">        if (thisLeft &gt; tp2Left || tp2Right &gt; thisRight)</span>
         {
-<span class="nc" id="L640">            return false;</span>
+<span class="fc" id="L640">            return false;</span>
         }
 
-<span class="nc" id="L643">        float thisTop = getYDirAdj();</span>
-<span class="nc" id="L644">        float thisHeight = getHeightDir();</span>
-<span class="nc" id="L645">        float thisBottom = thisTop + thisHeight;</span>
+<span class="fc" id="L643">        float thisTop = getYDirAdj();</span>
+<span class="fc" id="L644">        float thisHeight = getHeightDir();</span>
+<span class="fc" id="L645">        float thisBottom = thisTop + thisHeight;</span>
 
-<span class="nc" id="L647">        float tp2Top = tp2.getYDirAdj();</span>
-<span class="nc" id="L648">        float tp2Height = tp2.getHeightDir();</span>
-<span class="nc" id="L649">        float tp2Bottom = tp2Top + tp2Height;</span>
+<span class="fc" id="L647">        float tp2Top = tp2.getYDirAdj();</span>
+<span class="fc" id="L648">        float tp2Height = tp2.getHeightDir();</span>
+<span class="fc" id="L649">        float tp2Bottom = tp2Top + tp2Height;</span>
 
-<span class="nc bnc" id="L651" title="All 4 branches missed.">        if (thisTop &gt; tp2Top || tp2Bottom &gt; thisBottom)</span>
+<span class="pc bpc" id="L651" title="1 of 4 branches missed.">        if (thisTop &gt; tp2Top || tp2Bottom &gt; thisBottom)</span>
         {
-<span class="nc" id="L653">            return false;</span>
+<span class="fc" id="L653">            return false;</span>
         }
 
-<span class="nc" id="L656">        return true;</span>
+<span class="fc" id="L656">        return true;</span>
     }
 
     /**
@@ -666,34 +666,34 @@ public final class TextPosition
      */
     public void mergeDiacritic(TextPosition diacritic)
     {
-<span class="nc bnc" id="L669" title="All 2 branches missed.">        if (diacritic.getUnicode().length() &gt; 1)</span>
+<span class="pc bpc" id="L669" title="1 of 2 branches missed.">        if (diacritic.getUnicode().length() &gt; 1)</span>
         {
 <span class="nc" id="L671">            return;</span>
         }
 
-<span class="nc" id="L674">        float diacXStart = diacritic.getXDirAdj();</span>
-<span class="nc" id="L675">        float diacXEnd = diacXStart + diacritic.widths[0];</span>
+<span class="fc" id="L674">        float diacXStart = diacritic.getXDirAdj();</span>
+<span class="fc" id="L675">        float diacXEnd = diacXStart + diacritic.widths[0];</span>
 
-<span class="nc" id="L677">        float currCharXStart = getXDirAdj();</span>
+<span class="fc" id="L677">        float currCharXStart = getXDirAdj();</span>
 
-<span class="nc" id="L679">        int strLen = unicode.length();</span>
-<span class="nc" id="L680">        boolean wasAdded = false;</span>
+<span class="fc" id="L679">        int strLen = unicode.length();</span>
+<span class="fc" id="L680">        boolean wasAdded = false;</span>
 
-<span class="nc bnc" id="L682" title="All 4 branches missed.">        for (int i = 0; i &lt; strLen &amp;&amp; !wasAdded; i++)</span>
+<span class="fc bfc" id="L682" title="All 4 branches covered.">        for (int i = 0; i &lt; strLen &amp;&amp; !wasAdded; i++)</span>
         {
-<span class="nc bnc" id="L684" title="All 2 branches missed.">            if (i &gt;= widths.length)</span>
+<span class="pc bpc" id="L684" title="1 of 2 branches missed.">            if (i &gt;= widths.length)</span>
             {
 <span class="nc" id="L686">                LOG.info(</span>
                         &quot;diacritic {} on ligature {} is not supported yet and is ignored (PDFBOX-2831)&quot;,
 <span class="nc" id="L688">                        diacritic.getUnicode(), unicode);</span>
 <span class="nc" id="L689">                break;</span>
             }
-<span class="nc" id="L691">            float currCharXEnd = currCharXStart + widths[i];</span>
+<span class="fc" id="L691">            float currCharXEnd = currCharXStart + widths[i];</span>
 
              // this is the case where there is an overlap of the diacritic character with the
              // current character and the previous character. If no previous character, just append
              // the diacritic after the current one
-<span class="nc bnc" id="L696" title="All 4 branches missed.">            if (diacXStart &lt; currCharXStart &amp;&amp; diacXEnd &lt;= currCharXEnd)</span>
+<span class="pc bpc" id="L696" title="1 of 4 branches missed.">            if (diacXStart &lt; currCharXStart &amp;&amp; diacXEnd &lt;= currCharXEnd)</span>
             {
 <span class="nc bnc" id="L698" title="All 2 branches missed.">                if (i == 0)</span>
                 {
@@ -720,29 +720,29 @@ public final class TextPosition
             }
             // diacritic completely covers this character and therefore we assume that this is the
             // character the diacritic belongs to
-<span class="nc bnc" id="L723" title="All 2 branches missed.">            else if (diacXStart &lt; currCharXStart)</span>
+<span class="fc bfc" id="L723" title="All 2 branches covered.">            else if (diacXStart &lt; currCharXStart)</span>
             {
-<span class="nc" id="L725">                insertDiacritic(i, diacritic);</span>
-<span class="nc" id="L726">                wasAdded = true;</span>
+<span class="fc" id="L725">                insertDiacritic(i, diacritic);</span>
+<span class="fc" id="L726">                wasAdded = true;</span>
             }
             // otherwise, The diacritic modifies this character because its completely
             // contained by the character width
-<span class="nc bnc" id="L730" title="All 2 branches missed.">            else if (diacXEnd &lt;= currCharXEnd)</span>
+<span class="fc bfc" id="L730" title="All 2 branches covered.">            else if (diacXEnd &lt;= currCharXEnd)</span>
             {
-<span class="nc" id="L732">                insertDiacritic(i, diacritic);</span>
-<span class="nc" id="L733">                wasAdded = true;</span>
+<span class="fc" id="L732">                insertDiacritic(i, diacritic);</span>
+<span class="fc" id="L733">                wasAdded = true;</span>
             }
             // last character in the TextPosition so we add diacritic to the end
-<span class="nc bnc" id="L736" title="All 2 branches missed.">            else if (i == strLen - 1)</span>
+<span class="pc bpc" id="L736" title="1 of 2 branches missed.">            else if (i == strLen - 1)</span>
             {
 <span class="nc" id="L738">                insertDiacritic(i, diacritic);</span>
 <span class="nc" id="L739">                wasAdded = true;</span>
             }
 
             // couldn't find anything useful so we go to the next character in the TextPosition
-<span class="nc" id="L743">            currCharXStart += widths[i];</span>
+<span class="fc" id="L743">            currCharXStart += widths[i];</span>
         }
-<span class="nc" id="L745">    }</span>
+<span class="fc" id="L745">    }</span>
 
     /**
      * Inserts the diacritic TextPosition to the str of this TextPosition and updates the widths
@@ -753,36 +753,36 @@ public final class TextPosition
      */
     private void insertDiacritic(int i, TextPosition diacritic)
     {
-<span class="nc" id="L756">        StringBuilder sb = new StringBuilder();</span>
-<span class="nc" id="L757">        sb.append(unicode, 0, i);</span>
+<span class="fc" id="L756">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L757">        sb.append(unicode, 0, i);</span>
 
-<span class="nc" id="L759">        float[] widths2 = new float[widths.length + 1];</span>
-<span class="nc" id="L760">        System.arraycopy(widths, 0, widths2, 0, i);</span>
+<span class="fc" id="L759">        float[] widths2 = new float[widths.length + 1];</span>
+<span class="fc" id="L760">        System.arraycopy(widths, 0, widths2, 0, i);</span>
 
         // First we add a zero-width entry for the diacritic in the widths array
-<span class="nc" id="L763">        widths2[i] = widths[i];</span>
-<span class="nc" id="L764">        widths2[i + 1] = 0;</span>
-<span class="nc" id="L765">        System.arraycopy(widths, i + 1, widths2, i + 2, widths.length - i - 1);</span>
+<span class="fc" id="L763">        widths2[i] = widths[i];</span>
+<span class="fc" id="L764">        widths2[i + 1] = 0;</span>
+<span class="fc" id="L765">        System.arraycopy(widths, i + 1, widths2, i + 2, widths.length - i - 1);</span>
 
         // Unicode combining diacritics always go after the base character, regardless of whether
         // the string is in presentation order or logical order
-<span class="nc" id="L769">        sb.append(unicode.charAt(i));</span>
+<span class="fc" id="L769">        sb.append(unicode.charAt(i));</span>
 
         // If a surrogate starts at the current position, make sure we preserve it
-<span class="nc bnc" id="L772" title="All 4 branches missed.">        if (i &lt; unicode.length() - 1 &amp;&amp; Character.isSurrogatePair(unicode.charAt(i), unicode.charAt(i + 1)))</span>
+<span class="pc bpc" id="L772" title="1 of 4 branches missed.">        if (i &lt; unicode.length() - 1 &amp;&amp; Character.isSurrogatePair(unicode.charAt(i), unicode.charAt(i + 1)))</span>
         {
-<span class="nc" id="L774">            sb.append(unicode.charAt(i + 1));</span>
-<span class="nc" id="L775">            i++;</span>
+<span class="fc" id="L774">            sb.append(unicode.charAt(i + 1));</span>
+<span class="fc" id="L775">            i++;</span>
         }
 
-<span class="nc" id="L778">        sb.append(combineDiacritic(diacritic.getUnicode()));</span>
+<span class="fc" id="L778">        sb.append(combineDiacritic(diacritic.getUnicode()));</span>
 
         // get the rest of the string
-<span class="nc" id="L781">        sb.append(unicode.substring(i + 1));</span>
+<span class="fc" id="L781">        sb.append(unicode.substring(i + 1));</span>
 
-<span class="nc" id="L783">        unicode = sb.toString();</span>
-<span class="nc" id="L784">        widths = widths2;</span>
-<span class="nc" id="L785">    }</span>
+<span class="fc" id="L783">        unicode = sb.toString();</span>
+<span class="fc" id="L784">        widths = widths2;</span>
+<span class="fc" id="L785">    }</span>
 
     /**
      * Combine the diacritic, for example, convert non-combining diacritic characters to their
@@ -794,16 +794,16 @@ public final class TextPosition
     private String combineDiacritic(String str)
     {
         // Unicode contains special combining forms of the diacritic characters which we want to use
-<span class="nc" id="L797">        int codePoint = str.codePointAt(0);</span>
+<span class="fc" id="L797">        int codePoint = str.codePointAt(0);</span>
 
         // convert the characters not defined in the Unicode spec
-<span class="nc bnc" id="L800" title="All 2 branches missed.">        if (DIACRITICS.containsKey(codePoint))</span>
+<span class="fc bfc" id="L800" title="All 2 branches covered.">        if (DIACRITICS.containsKey(codePoint))</span>
         {
-<span class="nc" id="L802">            return DIACRITICS.get(codePoint);</span>
+<span class="fc" id="L802">            return DIACRITICS.get(codePoint);</span>
         }
         else
         {
-<span class="nc" id="L806">            return Normalizer.normalize(str, Normalizer.Form.NFKC).trim();</span>
+<span class="fc" id="L806">            return Normalizer.normalize(str, Normalizer.Form.NFKC).trim();</span>
         }
     }
 
@@ -812,21 +812,21 @@ public final class TextPosition
      */
     public boolean isDiacritic()
     {
-<span class="nc" id="L815">        String text = this.getUnicode();</span>
-<span class="nc bnc" id="L816" title="All 2 branches missed.">        if (text.length() != 1)</span>
+<span class="fc" id="L815">        String text = this.getUnicode();</span>
+<span class="fc bfc" id="L816" title="All 2 branches covered.">        if (text.length() != 1)</span>
         {
-<span class="nc" id="L818">            return false;</span>
+<span class="fc" id="L818">            return false;</span>
         }
-<span class="nc bnc" id="L820" title="All 2 branches missed.">        if (&quot;ー&quot;.equals(text))</span>
+<span class="fc bfc" id="L820" title="All 2 branches covered.">        if (&quot;ー&quot;.equals(text))</span>
         {
             // PDFBOX-3833: ー is not a real diacritic like ¨ or ˆ, it just changes the 
             // pronunciation of the previous sound, and is printed after the previous glyph
             // http://www.japanesewithanime.com/2017/04/prolonged-sound-mark.html
             // Ignoring it as diacritic avoids trouble if it slightly overlaps with the next glyph.
-<span class="nc" id="L826">            return false;</span>
+<span class="fc" id="L826">            return false;</span>
         }
-<span class="nc" id="L828">        int type = Character.getType(text.charAt(0));</span>
-<span class="nc bnc" id="L829" title="All 6 branches missed.">        return type == Character.NON_SPACING_MARK ||</span>
+<span class="fc" id="L828">        int type = Character.getType(text.charAt(0));</span>
+<span class="fc bfc" id="L829" title="All 6 branches covered.">        return type == Character.NON_SPACING_MARK ||</span>
                type == Character.MODIFIER_SYMBOL ||
                type == Character.MODIFIER_LETTER;
 

@@ -34,7 +34,7 @@ import org.apache.pdfbox.cos.COSDictionary;
  */
 public class PDFieldTree implements Iterable&lt;PDField&gt;
 {
-<span class="nc" id="L37">    private static final Logger LOG = LogManager.getLogger(PDFieldTree.class);</span>
+<span class="fc" id="L37">    private static final Logger LOG = LogManager.getLogger(PDFieldTree.class);</span>
 
     private final PDAcroForm acroForm;
 
@@ -44,13 +44,13 @@ public class PDFieldTree implements Iterable&lt;PDField&gt;
      * @param acroForm the AcroForm containing the fields.
      */
     public PDFieldTree(PDAcroForm acroForm)
-<span class="nc" id="L47">    {</span>
-<span class="nc bnc" id="L48" title="All 2 branches missed.">        if (acroForm == null)</span>
+<span class="fc" id="L47">    {</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        if (acroForm == null)</span>
         {
 <span class="nc" id="L50">            throw new IllegalArgumentException(&quot;root cannot be null&quot;);</span>
         }
-<span class="nc" id="L52">        this.acroForm = acroForm;</span>
-<span class="nc" id="L53">    }</span>
+<span class="fc" id="L52">        this.acroForm = acroForm;</span>
+<span class="fc" id="L53">    }</span>
 
     /**
      * Returns an iterator which walks all fields in the tree, in order.
@@ -58,7 +58,7 @@ public class PDFieldTree implements Iterable&lt;PDField&gt;
     @Override
     public Iterator&lt;PDField&gt; iterator()
     {
-<span class="nc" id="L61">        return new FieldIterator(acroForm);</span>
+<span class="fc" id="L61">        return new FieldIterator(acroForm);</span>
     }
 
     /**
@@ -66,37 +66,37 @@ public class PDFieldTree implements Iterable&lt;PDField&gt;
      */
     private static final class FieldIterator implements Iterator&lt;PDField&gt;
     {
-<span class="nc" id="L69">        private final Queue&lt;PDField&gt; queue = new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L69">        private final Queue&lt;PDField&gt; queue = new ArrayDeque&lt;&gt;();</span>
         
         // PDFBOX-5044: to prevent recursion
         // must be COSDictionary and not PDField, because PDField is newly created each time
-<span class="nc" id="L73">        private final Set&lt;COSDictionary&gt; set =</span>
-<span class="nc" id="L74">                Collections.newSetFromMap(new IdentityHashMap&lt;&gt;());</span>
+<span class="fc" id="L73">        private final Set&lt;COSDictionary&gt; set =</span>
+<span class="fc" id="L74">                Collections.newSetFromMap(new IdentityHashMap&lt;&gt;());</span>
 
         private FieldIterator(PDAcroForm form)
-<span class="nc" id="L77">        {</span>
-<span class="nc" id="L78">            List&lt;PDField&gt; fields = form.getFields();</span>
-<span class="nc bnc" id="L79" title="All 2 branches missed.">            for (PDField field : fields)</span>
+<span class="fc" id="L77">        {</span>
+<span class="fc" id="L78">            List&lt;PDField&gt; fields = form.getFields();</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">            for (PDField field : fields)</span>
             {
-<span class="nc" id="L81">                enqueueKids(field);</span>
-<span class="nc" id="L82">            }</span>
-<span class="nc" id="L83">        }</span>
+<span class="fc" id="L81">                enqueueKids(field);</span>
+<span class="fc" id="L82">            }</span>
+<span class="fc" id="L83">        }</span>
 
         @Override
         public boolean hasNext()
         {
-<span class="nc bnc" id="L88" title="All 2 branches missed.">            return !queue.isEmpty();</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">            return !queue.isEmpty();</span>
         }
 
         @Override
         public PDField next()
         {
-<span class="nc bnc" id="L94" title="All 2 branches missed.">            if(!hasNext())</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">            if(!hasNext())</span>
             {
 <span class="nc" id="L96">                throw new NoSuchElementException();</span>
             }
             
-<span class="nc" id="L99">            return queue.poll();</span>
+<span class="fc" id="L99">            return queue.poll();</span>
         }
 
         @Override
@@ -107,26 +107,26 @@ public class PDFieldTree implements Iterable&lt;PDField&gt;
         
         private void enqueueKids(PDField node)
         {
-<span class="nc" id="L110">            queue.add(node);</span>
-<span class="nc" id="L111">            set.add(node.getCOSObject());</span>
-<span class="nc bnc" id="L112" title="All 2 branches missed.">            if (node instanceof PDNonTerminalField)</span>
+<span class="fc" id="L110">            queue.add(node);</span>
+<span class="fc" id="L111">            set.add(node.getCOSObject());</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">            if (node instanceof PDNonTerminalField)</span>
             {
-<span class="nc" id="L114">                List&lt;PDField&gt; kids = ((PDNonTerminalField) node).getChildren();</span>
-<span class="nc bnc" id="L115" title="All 2 branches missed.">                for (PDField kid : kids)</span>
+<span class="fc" id="L114">                List&lt;PDField&gt; kids = ((PDNonTerminalField) node).getChildren();</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">                for (PDField kid : kids)</span>
                 {
-<span class="nc bnc" id="L117" title="All 2 branches missed.">                    if (set.contains(kid.getCOSObject()))</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">                    if (set.contains(kid.getCOSObject()))</span>
                     {
-<span class="nc" id="L119">                        LOG.error(</span>
+<span class="fc" id="L119">                        LOG.error(</span>
                                 &quot;Child of field '{}' already exists elsewhere, ignored to avoid recursion&quot;,
-<span class="nc" id="L121">                                node.getFullyQualifiedName());</span>
+<span class="fc" id="L121">                                node.getFullyQualifiedName());</span>
                     }
                     else
                     {
-<span class="nc" id="L125">                        enqueueKids(kid);</span>
+<span class="fc" id="L125">                        enqueueKids(kid);</span>
                     }
-<span class="nc" id="L127">                }</span>
+<span class="fc" id="L127">                }</span>
             }
-<span class="nc" id="L129">        }</span>
+<span class="fc" id="L129">        }</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

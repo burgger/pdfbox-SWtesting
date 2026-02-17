@@ -50,11 +50,11 @@ public class COSWriterCompressionPool
     private final COSObjectPool objectPool;
 
     // A list containing all objects, that shall be directly appended to the document's top level container.
-<span class="nc" id="L53">    private final List&lt;COSObjectKey&gt; topLevelObjects = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L53">    private final List&lt;COSObjectKey&gt; topLevelObjects = new ArrayList&lt;&gt;();</span>
     // A list containing all objects, that may be appended to an object stream.
-<span class="nc" id="L55">    private final List&lt;COSObjectKey&gt; objectStreamObjects = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L55">    private final List&lt;COSObjectKey&gt; objectStreamObjects = new ArrayList&lt;&gt;();</span>
     // A list of all direct objects
-<span class="nc" id="L57">    private final Set&lt;COSBase&gt; allDirectObjects = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L57">    private final Set&lt;COSBase&gt; allDirectObjects = new HashSet&lt;&gt;();</span>
 
     /**
      * &lt;p&gt;
@@ -72,33 +72,33 @@ public class COSWriterCompressionPool
      */
     public COSWriterCompressionPool(PDDocument document, CompressParameters parameters)
             throws IOException
-<span class="nc" id="L75">    {</span>
-<span class="nc" id="L76">        this.document = document;</span>
-<span class="nc bnc" id="L77" title="All 2 branches missed.">        this.parameters = parameters != null ? parameters : new CompressParameters();</span>
-<span class="nc" id="L78">        objectPool = new COSObjectPool(document.getDocument().getHighestXRefObjectNumber());</span>
+<span class="fc" id="L75">    {</span>
+<span class="fc" id="L76">        this.document = document;</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        this.parameters = parameters != null ? parameters : new CompressParameters();</span>
+<span class="fc" id="L78">        objectPool = new COSObjectPool(document.getDocument().getHighestXRefObjectNumber());</span>
 
         // Initialize object pool.
-<span class="nc" id="L81">        COSDictionary trailer = document.getDocument().getTrailer();</span>
-<span class="nc" id="L82">        List&lt;COSBase&gt; cosBaseList = new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L83">        COSDictionary root = trailer.getCOSDictionary(COSName.ROOT);</span>
-<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (root != null)</span>
+<span class="fc" id="L81">        COSDictionary trailer = document.getDocument().getTrailer();</span>
+<span class="fc" id="L82">        List&lt;COSBase&gt; cosBaseList = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L83">        COSDictionary root = trailer.getCOSDictionary(COSName.ROOT);</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if (root != null)</span>
         {
-<span class="nc" id="L86">            cosBaseList.add(root);</span>
+<span class="fc" id="L86">            cosBaseList.add(root);</span>
         }
-<span class="nc" id="L88">        COSDictionary info = trailer.getCOSDictionary(COSName.INFO);</span>
-<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (info != null)</span>
+<span class="fc" id="L88">        COSDictionary info = trailer.getCOSDictionary(COSName.INFO);</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        if (info != null)</span>
         {
-<span class="nc" id="L91">            cosBaseList.add(info);</span>
+<span class="fc" id="L91">            cosBaseList.add(info);</span>
         }
-<span class="nc bnc" id="L93" title="All 2 branches missed.">        while (!cosBaseList.isEmpty())</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        while (!cosBaseList.isEmpty())</span>
         {
-<span class="nc" id="L95">            cosBaseList = addStructure(cosBaseList);</span>
+<span class="fc" id="L95">            cosBaseList = addStructure(cosBaseList);</span>
         }
-<span class="nc" id="L97">        allDirectObjects.clear();</span>
+<span class="fc" id="L97">        allDirectObjects.clear();</span>
 
-<span class="nc" id="L99">        Collections.sort(objectStreamObjects);</span>
-<span class="nc" id="L100">        Collections.sort(topLevelObjects);</span>
-<span class="nc" id="L101">    }</span>
+<span class="fc" id="L99">        Collections.sort(objectStreamObjects);</span>
+<span class="fc" id="L100">        Collections.sort(topLevelObjects);</span>
+<span class="fc" id="L101">    }</span>
 
     /**
      * Adds the given {@link COSBase} to this pool, using the given {@link COSObjectKey} as it's referencable ID. This
@@ -111,16 +111,16 @@ public class COSWriterCompressionPool
     private COSBase addObjectToPool(COSObjectKey key, COSBase base)
     {
         // Drop hollow objects.
-<span class="nc bnc" id="L114" title="All 2 branches missed.">        COSBase current = base instanceof COSObject ? ((COSObject) base).getObject() : base;</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        COSBase current = base instanceof COSObject ? ((COSObject) base).getObject() : base;</span>
         // to avoid to mixup indirect COSInteger objects holding the same value we have to check
         // if the given key is the same than the key which is stored for the &quot;same&quot; base object wihtin the object pool
         // the same is always true for COSFloat, COSBoolean and COSName and under certain circumstances for the remainig
         // types as well
-<span class="nc bnc" id="L119" title="All 4 branches missed.">        if (current == null //</span>
-<span class="nc bnc" id="L120" title="All 4 branches missed.">                || (key != null &amp;&amp; objectPool.contains(key)) //</span>
-<span class="nc bnc" id="L121" title="All 2 branches missed.">                || (key == null &amp;&amp; objectPool.contains(current)))</span>
+<span class="pc bpc" id="L119" title="1 of 4 branches missed.">        if (current == null //</span>
+<span class="fc bfc" id="L120" title="All 4 branches covered.">                || (key != null &amp;&amp; objectPool.contains(key)) //</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">                || (key == null &amp;&amp; objectPool.contains(current)))</span>
         {
-<span class="nc" id="L123">            return current;</span>
+<span class="fc" id="L123">            return current;</span>
         }
 
         // Check whether the object can not be appended to an object stream.
@@ -128,43 +128,43 @@ public class COSWriterCompressionPool
         // It shall never contain the encryption dictionary.
         // It shall never contain the document's root dictionary. (relevant for document encryption)
         // It shall never contain other streams.
-<span class="nc bnc" id="L131" title="All 6 branches missed.">        if ((key != null &amp;&amp; key.getGeneration() != 0)</span>
+<span class="pc bpc" id="L131" title="1 of 6 branches missed.">        if ((key != null &amp;&amp; key.getGeneration() != 0)</span>
                 || current instanceof COSStream
-<span class="nc bnc" id="L133" title="All 2 branches missed.">                || (document.getEncryption() != null</span>
-<span class="nc bnc" id="L134" title="All 2 branches missed.">                        &amp;&amp; current == document.getEncryption().getCOSObject())</span>
-<span class="nc" id="L135">                || current == this.document.getDocument().getTrailer()</span>
-<span class="nc bnc" id="L136" title="All 2 branches missed.">                        .getCOSDictionary(COSName.ROOT))</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">                || (document.getEncryption() != null</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">                        &amp;&amp; current == document.getEncryption().getCOSObject())</span>
+<span class="fc" id="L135">                || current == this.document.getDocument().getTrailer()</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">                        .getCOSDictionary(COSName.ROOT))</span>
         {
-<span class="nc" id="L138">            COSObjectKey actualKey = objectPool.put(key, current);</span>
-<span class="nc bnc" id="L139" title="All 2 branches missed.">            if (actualKey == null)</span>
+<span class="fc" id="L138">            COSObjectKey actualKey = objectPool.put(key, current);</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">            if (actualKey == null)</span>
             {
 <span class="nc" id="L141">                return current;</span>
             }
             // check if the key of the indirect object matches the key of the referenced object
             // otherwise update the key
-<span class="nc bnc" id="L145" title="All 4 branches missed.">            if (!actualKey.equals(key) &amp;&amp; base instanceof COSObject)</span>
+<span class="fc bfc" id="L145" title="All 4 branches covered.">            if (!actualKey.equals(key) &amp;&amp; base instanceof COSObject)</span>
             {
-<span class="nc" id="L147">                base.setKey(actualKey);</span>
+<span class="fc" id="L147">                base.setKey(actualKey);</span>
             }
-<span class="nc" id="L149">            topLevelObjects.add(actualKey);</span>
-<span class="nc" id="L150">            return current;</span>
+<span class="fc" id="L149">            topLevelObjects.add(actualKey);</span>
+<span class="fc" id="L150">            return current;</span>
         }
 
         // Determine the object key.
-<span class="nc" id="L154">        COSObjectKey actualKey = objectPool.put(key, current);</span>
-<span class="nc bnc" id="L155" title="All 2 branches missed.">        if (actualKey == null)</span>
+<span class="fc" id="L154">        COSObjectKey actualKey = objectPool.put(key, current);</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">        if (actualKey == null)</span>
         {
 <span class="nc" id="L157">            return current;</span>
         }
         // check if the key of the indirect object matches the key of the referenced object
         // otherwise update the key
-<span class="nc bnc" id="L161" title="All 4 branches missed.">        if (!actualKey.equals(key) &amp;&amp; base instanceof COSObject)</span>
+<span class="fc bfc" id="L161" title="All 4 branches covered.">        if (!actualKey.equals(key) &amp;&amp; base instanceof COSObject)</span>
         {
-<span class="nc" id="L163">            base.setKey(actualKey);</span>
+<span class="fc" id="L163">            base.setKey(actualKey);</span>
         }
         // Append it to an object stream.
-<span class="nc" id="L166">        this.objectStreamObjects.add(actualKey);</span>
-<span class="nc" id="L167">        return current;</span>
+<span class="fc" id="L166">        this.objectStreamObjects.add(actualKey);</span>
+<span class="fc" id="L167">        return current;</span>
     }
 
     /**
@@ -175,13 +175,13 @@ public class COSWriterCompressionPool
      */
     private List&lt;COSBase&gt; addStructure(List&lt;COSBase&gt; cosBaseList) throws IOException
     {
-<span class="nc" id="L178">        List&lt;COSBase&gt; cosBaseListNext = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L179" title="All 2 branches missed.">        for (COSBase cosBase : cosBaseList)</span>
+<span class="fc" id="L178">        List&lt;COSBase&gt; cosBaseListNext = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        for (COSBase cosBase : cosBaseList)</span>
         {
-<span class="nc" id="L181">            cosBaseListNext.addAll(addStructure(cosBase));</span>
-<span class="nc" id="L182">        }</span>
-<span class="nc" id="L183">        cosBaseList.clear();</span>
-<span class="nc" id="L184">        return cosBaseListNext;</span>
+<span class="fc" id="L181">            cosBaseListNext.addAll(addStructure(cosBase));</span>
+<span class="fc" id="L182">        }</span>
+<span class="fc" id="L183">        cosBaseList.clear();</span>
+<span class="fc" id="L184">        return cosBaseListNext;</span>
     }
 
     /**
@@ -192,31 +192,31 @@ public class COSWriterCompressionPool
      */
     private List&lt;COSBase&gt; addStructure(COSBase current) throws IOException
     {
-<span class="nc" id="L195">        COSBase base = current;</span>
-<span class="nc bnc" id="L196" title="All 4 branches missed.">        if (current instanceof COSStream</span>
-<span class="nc bnc" id="L197" title="All 4 branches missed.">                || (current instanceof COSDictionary &amp;&amp; !current.isDirect()) //</span>
-<span class="nc bnc" id="L198" title="All 2 branches missed.">                || (current instanceof COSArray &amp;&amp; !current.isDirect()) //</span>
+<span class="fc" id="L195">        COSBase base = current;</span>
+<span class="fc bfc" id="L196" title="All 4 branches covered.">        if (current instanceof COSStream</span>
+<span class="fc bfc" id="L197" title="All 4 branches covered.">                || (current instanceof COSDictionary &amp;&amp; !current.isDirect()) //</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">                || (current instanceof COSArray &amp;&amp; !current.isDirect()) //</span>
         )
         {
-<span class="nc" id="L201">            base = addObjectToPool(base.getKey(), current);</span>
+<span class="fc" id="L201">            base = addObjectToPool(base.getKey(), current);</span>
         }
-<span class="nc bnc" id="L203" title="All 2 branches missed.">        else if (current instanceof COSObject)</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">        else if (current instanceof COSObject)</span>
         {
-<span class="nc" id="L205">            base = ((COSObject) current).getObject();</span>
-<span class="nc bnc" id="L206" title="All 2 branches missed.">            if (base != null)</span>
+<span class="fc" id="L205">            base = ((COSObject) current).getObject();</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">            if (base != null)</span>
             {
-<span class="nc" id="L208">                base = addObjectToPool(current.getKey(), current);</span>
+<span class="fc" id="L208">                base = addObjectToPool(current.getKey(), current);</span>
             }
         }
-<span class="nc bnc" id="L211" title="All 2 branches missed.">        if (base instanceof COSArray)</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">        if (base instanceof COSArray)</span>
         {
-<span class="nc" id="L213">            return getElements(((COSArray) base).toList());</span>
+<span class="fc" id="L213">            return getElements(((COSArray) base).toList());</span>
         }
-<span class="nc bnc" id="L215" title="All 2 branches missed.">        else if (base instanceof COSDictionary)</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        else if (base instanceof COSDictionary)</span>
         {
-<span class="nc" id="L217">            return getElements(((COSDictionary) base).getValues());</span>
+<span class="fc" id="L217">            return getElements(((COSDictionary) base).getValues());</span>
         }
-<span class="nc" id="L219">        return Collections.emptyList();</span>
+<span class="fc" id="L219">        return Collections.emptyList();</span>
     }
 
     /**
@@ -229,44 +229,44 @@ public class COSWriterCompressionPool
      */
     private List&lt;COSBase&gt; getElements(Collection&lt;? extends COSBase&gt; elements) throws IOException
     {
-<span class="nc" id="L232">        List&lt;COSBase&gt; relevantElements = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L233" title="All 2 branches missed.">        for (COSBase element : elements)</span>
+<span class="fc" id="L232">        List&lt;COSBase&gt; relevantElements = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">        for (COSBase element : elements)</span>
         {
-<span class="nc bnc" id="L235" title="All 2 branches missed.">            if (filterElement(element))</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">            if (filterElement(element))</span>
             {
-<span class="nc" id="L237">                relevantElements.add(element);</span>
+<span class="fc" id="L237">                relevantElements.add(element);</span>
             }
-<span class="nc" id="L239">        }</span>
-<span class="nc" id="L240">        return relevantElements;</span>
+<span class="fc" id="L239">        }</span>
+<span class="fc" id="L240">        return relevantElements;</span>
     }
 
     private boolean filterElement(COSBase element) throws IOException
     {
-<span class="nc bnc" id="L245" title="All 2 branches missed.">        if (element instanceof COSObject)</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">        if (element instanceof COSObject)</span>
         {
-<span class="nc" id="L247">            COSObject cosObject = (COSObject) element;</span>
-<span class="nc bnc" id="L248" title="All 4 branches missed.">            if (cosObject.getKey() != null &amp;&amp; objectPool.contains(cosObject.getKey()))</span>
+<span class="fc" id="L247">            COSObject cosObject = (COSObject) element;</span>
+<span class="fc bfc" id="L248" title="All 4 branches covered.">            if (cosObject.getKey() != null &amp;&amp; objectPool.contains(cosObject.getKey()))</span>
             {
                 // check if the stored object matches the referenced object otherwise replace the key with a new one
                 // there may differences if some imported content uses the same object numbers than the target pdf
-<span class="nc bnc" id="L252" title="All 2 branches missed.">                if (objectPool.getObject(cosObject.getKey()).equals(cosObject.getObject()))</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">                if (objectPool.getObject(cosObject.getKey()).equals(cosObject.getObject()))</span>
                 {
-<span class="nc" id="L254">                    return false;</span>
+<span class="fc" id="L254">                    return false;</span>
                 }
 <span class="nc" id="L256">                cosObject.setKey(null);</span>
             }
-<span class="nc bnc" id="L258" title="All 2 branches missed.">            if (cosObject.getObject() != null)</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">            if (cosObject.getObject() != null)</span>
             {
-<span class="nc" id="L260">                return true;</span>
+<span class="fc" id="L260">                return true;</span>
             }
-<span class="nc" id="L262">        }</span>
-<span class="nc bnc" id="L263" title="All 4 branches missed.">        else if (element instanceof COSArray</span>
-<span class="nc bnc" id="L264" title="All 2 branches missed.">                || (element instanceof COSDictionary &amp;&amp; !allDirectObjects.contains(element)))</span>
+<span class="fc" id="L262">        }</span>
+<span class="fc bfc" id="L263" title="All 4 branches covered.">        else if (element instanceof COSArray</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">                || (element instanceof COSDictionary &amp;&amp; !allDirectObjects.contains(element)))</span>
         {
-<span class="nc" id="L266">            allDirectObjects.add(element);</span>
-<span class="nc" id="L267">            return true;</span>
+<span class="fc" id="L266">            allDirectObjects.add(element);</span>
+<span class="fc" id="L267">            return true;</span>
         }
-<span class="nc" id="L269">        return false;</span>
+<span class="fc" id="L269">        return false;</span>
     }
 
     /**
@@ -277,7 +277,7 @@ public class COSWriterCompressionPool
      */
     public List&lt;COSObjectKey&gt; getTopLevelObjects()
     {
-<span class="nc" id="L280">        return topLevelObjects;</span>
+<span class="fc" id="L280">        return topLevelObjects;</span>
     }
 
     /**
@@ -289,7 +289,7 @@ public class COSWriterCompressionPool
      */
     public List&lt;COSObjectKey&gt; getObjectStreamObjects()
     {
-<span class="nc" id="L292">        return objectStreamObjects;</span>
+<span class="fc" id="L292">        return objectStreamObjects;</span>
     }
 
     /**
@@ -300,7 +300,7 @@ public class COSWriterCompressionPool
      */
     public boolean contains(COSBase object)
     {
-<span class="nc" id="L303">        return objectPool.contains(object);</span>
+<span class="fc" id="L303">        return objectPool.contains(object);</span>
     }
 
     /**
@@ -312,7 +312,7 @@ public class COSWriterCompressionPool
      */
     public COSObjectKey getKey(COSBase object)
     {
-<span class="nc" id="L315">        return objectPool.getKey(object);</span>
+<span class="fc" id="L315">        return objectPool.getKey(object);</span>
     }
 
     /**
@@ -324,7 +324,7 @@ public class COSWriterCompressionPool
      */
     public COSBase getObject(COSObjectKey key)
     {
-<span class="nc" id="L327">        return objectPool.getObject(key);</span>
+<span class="fc" id="L327">        return objectPool.getObject(key);</span>
     }
 
     /**
@@ -334,7 +334,7 @@ public class COSWriterCompressionPool
      */
     public long getHighestXRefObjectNumber()
     {
-<span class="nc" id="L337">        return objectPool.getHighestXRefObjectNumber();</span>
+<span class="fc" id="L337">        return objectPool.getHighestXRefObjectNumber();</span>
     }
 
     /**
@@ -347,19 +347,19 @@ public class COSWriterCompressionPool
      */
     public List&lt;COSWriterObjectStream&gt; createObjectStreams()
     {
-<span class="nc" id="L350">        List&lt;COSWriterObjectStream&gt; objectStreams = new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L351">        COSWriterObjectStream objectStream = null;</span>
-<span class="nc bnc" id="L352" title="All 2 branches missed.">        for (int i = 0; i &lt; objectStreamObjects.size(); i++)</span>
+<span class="fc" id="L350">        List&lt;COSWriterObjectStream&gt; objectStreams = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L351">        COSWriterObjectStream objectStream = null;</span>
+<span class="fc bfc" id="L352" title="All 2 branches covered.">        for (int i = 0; i &lt; objectStreamObjects.size(); i++)</span>
         {
-<span class="nc" id="L354">            COSObjectKey key = objectStreamObjects.get(i);</span>
-<span class="nc bnc" id="L355" title="All 4 branches missed.">            if (objectStream == null || (i % parameters.getObjectStreamSize()) == 0)</span>
+<span class="fc" id="L354">            COSObjectKey key = objectStreamObjects.get(i);</span>
+<span class="fc bfc" id="L355" title="All 4 branches covered.">            if (objectStream == null || (i % parameters.getObjectStreamSize()) == 0)</span>
             {
-<span class="nc" id="L357">                objectStream = new COSWriterObjectStream(this);</span>
-<span class="nc" id="L358">                objectStreams.add(objectStream);</span>
+<span class="fc" id="L357">                objectStream = new COSWriterObjectStream(this);</span>
+<span class="fc" id="L358">                objectStreams.add(objectStream);</span>
             }
-<span class="nc" id="L360">            objectStream.prepareStreamObject(key, objectPool.getObject(key));</span>
+<span class="fc" id="L360">            objectStream.prepareStreamObject(key, objectPool.getObject(key));</span>
         }
-<span class="nc" id="L362">        return objectStreams;</span>
+<span class="fc" id="L362">        return objectStreams;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

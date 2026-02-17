@@ -50,17 +50,17 @@ public class PDFRenderer
     /**
     * Default annotations filter, returns all annotations
     */
-<span class="nc" id="L53">    private AnnotationFilter annotationFilter = annotation -&gt; true;</span>
+<span class="fc" id="L53">    private AnnotationFilter annotationFilter = annotation -&gt; true;</span>
 
-<span class="nc" id="L55">    private boolean subsamplingAllowed = false;</span>
+<span class="fc" id="L55">    private boolean subsamplingAllowed = false;</span>
 
     private RenderDestination defaultDestination;
 
-<span class="nc" id="L59">    private RenderingHints renderingHints = null;</span>
+<span class="fc" id="L59">    private RenderingHints renderingHints = null;</span>
 
     private BufferedImage pageImage;
 
-<span class="nc" id="L63">    private float imageDownscalingOptimizationThreshold = 0.5f;</span>
+<span class="fc" id="L63">    private float imageDownscalingOptimizationThreshold = 0.5f;</span>
 
     private final PDPageTree pageTree;
 
@@ -69,10 +69,10 @@ public class PDFRenderer
      * @param document the document to render
      */
     public PDFRenderer(PDDocument document)
-<span class="nc" id="L72">    {</span>
-<span class="nc" id="L73">        this.document = document;</span>
-<span class="nc" id="L74">        this.pageTree = document.getPages();</span>
-<span class="nc" id="L75">    }</span>
+<span class="fc" id="L72">    {</span>
+<span class="fc" id="L73">        this.document = document;</span>
+<span class="fc" id="L74">        this.pageTree = document.getPages();</span>
+<span class="fc" id="L75">    }</span>
 
     /**
      * Return the AnnotationFilter.
@@ -194,7 +194,7 @@ public class PDFRenderer
      */
     public BufferedImage renderImage(int pageIndex) throws IOException
     {
-<span class="nc" id="L197">        return renderImage(pageIndex, 1);</span>
+<span class="fc" id="L197">        return renderImage(pageIndex, 1);</span>
     }
 
     /**
@@ -210,7 +210,7 @@ public class PDFRenderer
      */
     public BufferedImage renderImage(int pageIndex, float scale) throws IOException
     {
-<span class="nc" id="L213">        return renderImage(pageIndex, scale, ImageType.RGB);</span>
+<span class="fc" id="L213">        return renderImage(pageIndex, scale, ImageType.RGB);</span>
     }
 
     /**
@@ -225,7 +225,7 @@ public class PDFRenderer
      */
     public BufferedImage renderImageWithDPI(int pageIndex, float dpi) throws IOException
     {
-<span class="nc" id="L228">        return renderImage(pageIndex, dpi / 72f, ImageType.RGB);</span>
+<span class="fc" id="L228">        return renderImage(pageIndex, dpi / 72f, ImageType.RGB);</span>
     }
 
     /**
@@ -259,8 +259,8 @@ public class PDFRenderer
     public BufferedImage renderImage(int pageIndex, float scale, ImageType imageType)
             throws IOException
     {
-<span class="nc" id="L262">        return renderImage(pageIndex, scale, imageType, </span>
-<span class="nc bnc" id="L263" title="All 2 branches missed.">                           defaultDestination == null ? RenderDestination.EXPORT : defaultDestination);</span>
+<span class="fc" id="L262">        return renderImage(pageIndex, scale, imageType, </span>
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">                           defaultDestination == null ? RenderDestination.EXPORT : defaultDestination);</span>
     }
 
     /**
@@ -278,27 +278,27 @@ public class PDFRenderer
     public BufferedImage renderImage(int pageIndex, float scale, ImageType imageType, RenderDestination destination)
             throws IOException
     {
-<span class="nc" id="L281">        PDPage page = pageTree.get(pageIndex);</span>
+<span class="fc" id="L281">        PDPage page = pageTree.get(pageIndex);</span>
 
-<span class="nc" id="L283">        PDRectangle cropBox = page.getCropBox();</span>
-<span class="nc" id="L284">        float widthPt = cropBox.getWidth();</span>
-<span class="nc" id="L285">        float heightPt = cropBox.getHeight();</span>
+<span class="fc" id="L283">        PDRectangle cropBox = page.getCropBox();</span>
+<span class="fc" id="L284">        float widthPt = cropBox.getWidth();</span>
+<span class="fc" id="L285">        float heightPt = cropBox.getHeight();</span>
 
         // PDFBOX-4306 avoid single blank pixel line on the right or on the bottom
-<span class="nc" id="L288">        int widthPx = (int) Math.max(Math.floor(widthPt * scale), 1);</span>
-<span class="nc" id="L289">        int heightPx = (int) Math.max(Math.floor(heightPt * scale), 1);</span>
+<span class="fc" id="L288">        int widthPx = (int) Math.max(Math.floor(widthPt * scale), 1);</span>
+<span class="fc" id="L289">        int heightPx = (int) Math.max(Math.floor(heightPt * scale), 1);</span>
 
         // PDFBOX-4518 the maximum size (w*h) of a buffered image is limited to Integer.MAX_VALUE
-<span class="nc bnc" id="L292" title="All 2 branches missed.">        if ((long) widthPx * (long) heightPx &gt; Integer.MAX_VALUE)</span>
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">        if ((long) widthPx * (long) heightPx &gt; Integer.MAX_VALUE)</span>
         {
 <span class="nc" id="L294">            throw new IOException(&quot;Maximum size of image exceeded (w * h * scale ^ 2) = &quot;//</span>
                     + widthPt + &quot; * &quot; + heightPt + &quot; * &quot; + scale + &quot; ^ 2 &gt; &quot; + Integer.MAX_VALUE);
         }
 
-<span class="nc" id="L298">        int rotationAngle = page.getRotation();</span>
+<span class="fc" id="L298">        int rotationAngle = page.getRotation();</span>
 
         int bimType;
-<span class="nc bnc" id="L301" title="All 4 branches missed.">        if (imageType != ImageType.ARGB &amp;&amp; hasBlendMode(page))</span>
+<span class="pc bpc" id="L301" title="2 of 4 branches missed.">        if (imageType != ImageType.ARGB &amp;&amp; hasBlendMode(page))</span>
         {
             // PDFBOX-4095: if the PDF has blending on the top level, draw on transparent background
             // Inspired from PDF.js: if a PDF page uses any blend modes other than Normal, 
@@ -308,48 +308,48 @@ public class PDFRenderer
         }
         else
         {
-<span class="nc" id="L311">            bimType = imageType.toBufferedImageType();</span>
+<span class="fc" id="L311">            bimType = imageType.toBufferedImageType();</span>
         }
 
         // swap width and height
         BufferedImage image;
-<span class="nc bnc" id="L316" title="All 4 branches missed.">        if (rotationAngle == 90 || rotationAngle == 270)</span>
+<span class="fc bfc" id="L316" title="All 4 branches covered.">        if (rotationAngle == 90 || rotationAngle == 270)</span>
         {
-<span class="nc" id="L318">            image = new BufferedImage(heightPx, widthPx, bimType);</span>
+<span class="fc" id="L318">            image = new BufferedImage(heightPx, widthPx, bimType);</span>
         }
         else
         {
-<span class="nc" id="L322">            image = new BufferedImage(widthPx, heightPx, bimType);</span>
+<span class="fc" id="L322">            image = new BufferedImage(widthPx, heightPx, bimType);</span>
         }
 
-<span class="nc" id="L325">        pageImage = image;</span>
+<span class="fc" id="L325">        pageImage = image;</span>
 
         // use a transparent background if the image type supports alpha
-<span class="nc" id="L328">        Graphics2D g = image.createGraphics();</span>
-<span class="nc bnc" id="L329" title="All 2 branches missed.">        if (image.getType() == BufferedImage.TYPE_INT_ARGB)</span>
+<span class="fc" id="L328">        Graphics2D g = image.createGraphics();</span>
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">        if (image.getType() == BufferedImage.TYPE_INT_ARGB)</span>
         {
 <span class="nc" id="L331">            g.setBackground(new Color(0, 0, 0, 0));</span>
         }
         else
         {
-<span class="nc" id="L335">            g.setBackground(Color.WHITE);</span>
+<span class="fc" id="L335">            g.setBackground(Color.WHITE);</span>
         }
-<span class="nc" id="L337">        g.clearRect(0, 0, image.getWidth(), image.getHeight());</span>
+<span class="fc" id="L337">        g.clearRect(0, 0, image.getWidth(), image.getHeight());</span>
         
-<span class="nc" id="L339">        transform(g, page.getRotation(), cropBox, scale, scale);</span>
+<span class="fc" id="L339">        transform(g, page.getRotation(), cropBox, scale, scale);</span>
 
         // the end-user may provide a custom PageDrawer
         RenderingHints actualRenderingHints =
-<span class="nc bnc" id="L343" title="All 2 branches missed.">                renderingHints == null ? createDefaultRenderingHints(g) : renderingHints;</span>
-<span class="nc" id="L344">        PageDrawerParameters parameters =</span>
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">                renderingHints == null ? createDefaultRenderingHints(g) : renderingHints;</span>
+<span class="fc" id="L344">        PageDrawerParameters parameters =</span>
                 new PageDrawerParameters(this, page, subsamplingAllowed, destination,
                         actualRenderingHints, imageDownscalingOptimizationThreshold);
-<span class="nc" id="L347">        PageDrawer drawer = createPageDrawer(parameters);</span>
-<span class="nc" id="L348">        drawer.drawPage(g, cropBox);</span>
+<span class="fc" id="L347">        PageDrawer drawer = createPageDrawer(parameters);</span>
+<span class="fc" id="L348">        drawer.drawPage(g, cropBox);</span>
         
-<span class="nc" id="L350">        g.dispose();</span>
+<span class="fc" id="L350">        g.dispose();</span>
 
-<span class="nc bnc" id="L352" title="All 2 branches missed.">        if (image.getType() != imageType.toBufferedImageType())</span>
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">        if (image.getType() != imageType.toBufferedImageType())</span>
         {
             // PDFBOX-4095: draw temporary transparent image on white background
 <span class="nc" id="L355">            BufferedImage newImage = </span>
@@ -362,7 +362,7 @@ public class PDFRenderer
 <span class="nc" id="L362">            image = newImage;</span>
         }
 
-<span class="nc" id="L365">        return image;</span>
+<span class="fc" id="L365">        return image;</span>
     }
 
     /**
@@ -468,72 +468,72 @@ public class PDFRenderer
      */
     public boolean isGroupEnabled(PDOptionalContentGroup group)
     {
-<span class="nc" id="L471">        PDOptionalContentProperties ocProperties = document.getDocumentCatalog().getOCProperties();</span>
-<span class="nc bnc" id="L472" title="All 4 branches missed.">        return ocProperties == null || ocProperties.isGroupEnabled(group);</span>
+<span class="fc" id="L471">        PDOptionalContentProperties ocProperties = document.getDocumentCatalog().getOCProperties();</span>
+<span class="pc bpc" id="L472" title="1 of 4 branches missed.">        return ocProperties == null || ocProperties.isGroupEnabled(group);</span>
     }
 
     // scale rotate translate
     private void transform(Graphics2D graphics, int rotationAngle, PDRectangle cropBox, float scaleX, float scaleY)
     {
-<span class="nc" id="L478">        graphics.scale(scaleX, scaleY);</span>
+<span class="fc" id="L478">        graphics.scale(scaleX, scaleY);</span>
 
         // TODO should we be passing the scale to PageDrawer rather than messing with Graphics?
-<span class="nc bnc" id="L481" title="All 2 branches missed.">        if (rotationAngle != 0)</span>
+<span class="fc bfc" id="L481" title="All 2 branches covered.">        if (rotationAngle != 0)</span>
         {
-<span class="nc" id="L483">            float translateX = 0;</span>
-<span class="nc" id="L484">            float translateY = 0;</span>
-<span class="nc bnc" id="L485" title="All 4 branches missed.">            switch (rotationAngle)</span>
+<span class="fc" id="L483">            float translateX = 0;</span>
+<span class="fc" id="L484">            float translateY = 0;</span>
+<span class="pc bpc" id="L485" title="1 of 4 branches missed.">            switch (rotationAngle)</span>
             {
                 case 90:
-<span class="nc" id="L488">                    translateX = cropBox.getHeight();</span>
-<span class="nc" id="L489">                    break;</span>
+<span class="fc" id="L488">                    translateX = cropBox.getHeight();</span>
+<span class="fc" id="L489">                    break;</span>
                 case 270:
-<span class="nc" id="L491">                    translateY = cropBox.getWidth();</span>
-<span class="nc" id="L492">                    break;</span>
+<span class="fc" id="L491">                    translateY = cropBox.getWidth();</span>
+<span class="fc" id="L492">                    break;</span>
                 case 180:
-<span class="nc" id="L494">                    translateX = cropBox.getWidth();</span>
-<span class="nc" id="L495">                    translateY = cropBox.getHeight();</span>
-<span class="nc" id="L496">                    break;</span>
+<span class="fc" id="L494">                    translateX = cropBox.getWidth();</span>
+<span class="fc" id="L495">                    translateY = cropBox.getHeight();</span>
+<span class="fc" id="L496">                    break;</span>
                 default:
                     break;
             }
-<span class="nc" id="L500">            graphics.translate(translateX, translateY);</span>
-<span class="nc" id="L501">            graphics.rotate(Math.toRadians(rotationAngle));</span>
+<span class="fc" id="L500">            graphics.translate(translateX, translateY);</span>
+<span class="fc" id="L501">            graphics.rotate(Math.toRadians(rotationAngle));</span>
         }
-<span class="nc" id="L503">    }</span>
+<span class="fc" id="L503">    }</span>
 
     private boolean isBitonal(Graphics2D graphics)
     {
-<span class="nc" id="L507">        GraphicsConfiguration deviceConfiguration = graphics.getDeviceConfiguration();</span>
-<span class="nc bnc" id="L508" title="All 2 branches missed.">        if (deviceConfiguration == null)</span>
+<span class="fc" id="L507">        GraphicsConfiguration deviceConfiguration = graphics.getDeviceConfiguration();</span>
+<span class="pc bpc" id="L508" title="1 of 2 branches missed.">        if (deviceConfiguration == null)</span>
         {
 <span class="nc" id="L510">            return false;</span>
         }
-<span class="nc" id="L512">        GraphicsDevice device = deviceConfiguration.getDevice();</span>
-<span class="nc bnc" id="L513" title="All 2 branches missed.">        if (device == null)</span>
+<span class="fc" id="L512">        GraphicsDevice device = deviceConfiguration.getDevice();</span>
+<span class="pc bpc" id="L513" title="1 of 2 branches missed.">        if (device == null)</span>
         {
 <span class="nc" id="L515">            return false;</span>
         }
-<span class="nc" id="L517">        DisplayMode displayMode = device.getDisplayMode();</span>
-<span class="nc bnc" id="L518" title="All 2 branches missed.">        if (displayMode == null)</span>
+<span class="fc" id="L517">        DisplayMode displayMode = device.getDisplayMode();</span>
+<span class="pc bpc" id="L518" title="1 of 2 branches missed.">        if (displayMode == null)</span>
         {
 <span class="nc" id="L520">            return false;</span>
         }
-<span class="nc bnc" id="L522" title="All 2 branches missed.">        return displayMode.getBitDepth() == 1;</span>
+<span class="pc bpc" id="L522" title="1 of 2 branches missed.">        return displayMode.getBitDepth() == 1;</span>
     }
 
     private RenderingHints createDefaultRenderingHints(Graphics2D graphics)
     {
-<span class="nc" id="L527">        boolean isBitonal = isBitonal(graphics);</span>
-<span class="nc" id="L528">        RenderingHints r = new RenderingHints(null);</span>
-<span class="nc bnc" id="L529" title="All 2 branches missed.">        r.put(RenderingHints.KEY_INTERPOLATION, isBitonal ?</span>
+<span class="fc" id="L527">        boolean isBitonal = isBitonal(graphics);</span>
+<span class="fc" id="L528">        RenderingHints r = new RenderingHints(null);</span>
+<span class="pc bpc" id="L529" title="1 of 2 branches missed.">        r.put(RenderingHints.KEY_INTERPOLATION, isBitonal ?</span>
 <span class="nc" id="L530">                RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR :</span>
-<span class="nc" id="L531">                RenderingHints.VALUE_INTERPOLATION_BICUBIC);</span>
-<span class="nc" id="L532">        r.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);</span>
-<span class="nc bnc" id="L533" title="All 2 branches missed.">        r.put(RenderingHints.KEY_ANTIALIASING, isBitonal ?</span>
+<span class="fc" id="L531">                RenderingHints.VALUE_INTERPOLATION_BICUBIC);</span>
+<span class="fc" id="L532">        r.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);</span>
+<span class="pc bpc" id="L533" title="1 of 2 branches missed.">        r.put(RenderingHints.KEY_ANTIALIASING, isBitonal ?</span>
 <span class="nc" id="L534">                                        RenderingHints.VALUE_ANTIALIAS_OFF :</span>
-<span class="nc" id="L535">                                        RenderingHints.VALUE_ANTIALIAS_ON);</span>
-<span class="nc" id="L536">        return r;</span>
+<span class="fc" id="L535">                                        RenderingHints.VALUE_ANTIALIAS_ON);</span>
+<span class="fc" id="L536">        return r;</span>
     }
 
     /**
@@ -546,34 +546,34 @@ public class PDFRenderer
      */
     protected PageDrawer createPageDrawer(PageDrawerParameters parameters) throws IOException
     {
-<span class="nc" id="L549">        PageDrawer pageDrawer = new PageDrawer(parameters);</span>
-<span class="nc" id="L550">        pageDrawer.setAnnotationFilter(annotationFilter);</span>
-<span class="nc" id="L551">        return pageDrawer;</span>
+<span class="fc" id="L549">        PageDrawer pageDrawer = new PageDrawer(parameters);</span>
+<span class="fc" id="L550">        pageDrawer.setAnnotationFilter(annotationFilter);</span>
+<span class="fc" id="L551">        return pageDrawer;</span>
     }
 
     private boolean hasBlendMode(PDPage page)
     {
         // check the current resources for blend modes
-<span class="nc" id="L557">        PDResources resources = page.getResources();</span>
-<span class="nc bnc" id="L558" title="All 2 branches missed.">        if (resources == null)</span>
+<span class="fc" id="L557">        PDResources resources = page.getResources();</span>
+<span class="fc bfc" id="L558" title="All 2 branches covered.">        if (resources == null)</span>
         {
-<span class="nc" id="L560">            return false;</span>
+<span class="fc" id="L560">            return false;</span>
         }
-<span class="nc bnc" id="L562" title="All 2 branches missed.">        for (COSName name : resources.getExtGStateNames())</span>
+<span class="fc bfc" id="L562" title="All 2 branches covered.">        for (COSName name : resources.getExtGStateNames())</span>
         {
-<span class="nc" id="L564">            PDExtendedGraphicsState extGState = resources.getExtGState(name);</span>
-<span class="nc bnc" id="L565" title="All 2 branches missed.">            if (extGState != null)</span>
+<span class="fc" id="L564">            PDExtendedGraphicsState extGState = resources.getExtGState(name);</span>
+<span class="fc bfc" id="L565" title="All 2 branches covered.">            if (extGState != null)</span>
             {
                 // extGState null can happen if key exists but no value 
                 // see PDFBOX-3950-23EGDHXSBBYQLKYOKGZUOVYVNE675PRD.pdf
-<span class="nc" id="L569">                BlendMode blendMode = extGState.getBlendMode();</span>
-<span class="nc bnc" id="L570" title="All 2 branches missed.">                if (blendMode != BlendMode.NORMAL)</span>
+<span class="fc" id="L569">                BlendMode blendMode = extGState.getBlendMode();</span>
+<span class="pc bpc" id="L570" title="1 of 2 branches missed.">                if (blendMode != BlendMode.NORMAL)</span>
                 {
 <span class="nc" id="L572">                    return true;</span>
                 }
             }
-<span class="nc" id="L575">        }</span>
-<span class="nc" id="L576">        return false;</span>
+<span class="fc" id="L575">        }</span>
+<span class="fc" id="L576">        return false;</span>
     }
 
     /**

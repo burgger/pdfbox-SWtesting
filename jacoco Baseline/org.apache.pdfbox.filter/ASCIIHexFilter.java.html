@@ -30,11 +30,11 @@ import org.apache.pdfbox.util.Hex;
  *
  * @author Ben Litchfield
  */
-<span class="nc" id="L33">final class ASCIIHexFilter extends Filter</span>
+<span class="fc" id="L33">final class ASCIIHexFilter extends Filter</span>
 {
-<span class="nc" id="L35">    private static final Logger LOG = LogManager.getLogger(ASCIIHexFilter.class);</span>
+<span class="fc" id="L35">    private static final Logger LOG = LogManager.getLogger(ASCIIHexFilter.class);</span>
 
-<span class="nc" id="L37">    private static final int[] REVERSE_HEX = {</span>
+<span class="fc" id="L37">    private static final int[] REVERSE_HEX = {</span>
       /*   0 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
       /*  10 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
       /*  20 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -68,40 +68,40 @@ import org.apache.pdfbox.util.Hex;
                                          COSDictionary parameters, int index) throws IOException
     {
         int value, firstByte, secondByte;
-<span class="nc bnc" id="L71" title="All 2 branches missed.">        while ((firstByte = encoded.read()) != -1)</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        while ((firstByte = encoded.read()) != -1)</span>
         {
             // always after first char
-<span class="nc bnc" id="L74" title="All 2 branches missed.">            while (isWhitespace(firstByte))</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">            while (isWhitespace(firstByte))</span>
             {
 <span class="nc" id="L76">                firstByte = encoded.read();</span>
             }
-<span class="nc bnc" id="L78" title="All 4 branches missed.">            if (firstByte == -1 || isEOD(firstByte))</span>
+<span class="pc bpc" id="L78" title="2 of 4 branches missed.">            if (firstByte == -1 || isEOD(firstByte))</span>
             {
 <span class="nc" id="L80">                break;</span>
             }
        
-<span class="nc bnc" id="L83" title="All 2 branches missed.">            if (REVERSE_HEX[firstByte] == -1)</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">            if (REVERSE_HEX[firstByte] == -1)</span>
             {
 <span class="nc" id="L85">                LOG.error(&quot;Invalid hex, int: {} char: {}&quot;, firstByte, (char) firstByte);</span>
             }
-<span class="nc" id="L87">            value = REVERSE_HEX[firstByte] * 16;</span>
-<span class="nc" id="L88">            secondByte = encoded.read();</span>
+<span class="fc" id="L87">            value = REVERSE_HEX[firstByte] * 16;</span>
+<span class="fc" id="L88">            secondByte = encoded.read();</span>
        
-<span class="nc bnc" id="L90" title="All 4 branches missed.">            if (secondByte == -1 || isEOD(secondByte)) </span>
+<span class="pc bpc" id="L90" title="2 of 4 branches missed.">            if (secondByte == -1 || isEOD(secondByte)) </span>
             {
                 // second value behaves like 0 in case of EOD
 <span class="nc" id="L93">                decoded.write(value);</span>
 <span class="nc" id="L94">                break;</span>
             }
-<span class="nc bnc" id="L96" title="All 2 branches missed.">            if (REVERSE_HEX[secondByte] == -1)</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">            if (REVERSE_HEX[secondByte] == -1)</span>
             {
 <span class="nc" id="L98">                LOG.error(&quot;Invalid hex, int: {} char: {}&quot;, secondByte, (char) secondByte);</span>
             }
-<span class="nc" id="L100">            value += REVERSE_HEX[secondByte];</span>
-<span class="nc" id="L101">            decoded.write(value);</span>
+<span class="fc" id="L100">            value += REVERSE_HEX[secondByte];</span>
+<span class="fc" id="L101">            decoded.write(value);</span>
         }
-<span class="nc" id="L103">        decoded.flush();</span>
-<span class="nc" id="L104">        return new DecodeResult(parameters);</span>
+<span class="fc" id="L103">        decoded.flush();</span>
+<span class="fc" id="L104">        return new DecodeResult(parameters);</span>
     }
 
     // whitespace
@@ -113,7 +113,7 @@ import org.apache.pdfbox.util.Hex;
     //  32  0x20  Space (SP)
     private static boolean isWhitespace(int c)
     {
-<span class="nc bnc" id="L116" title="All 2 branches missed.">        switch (c)</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        switch (c)</span>
         {
         case 0:
         case 9:
@@ -123,13 +123,13 @@ import org.apache.pdfbox.util.Hex;
         case 32:
 <span class="nc" id="L124">            return true;</span>
         default:
-<span class="nc" id="L126">            return false;</span>
+<span class="fc" id="L126">            return false;</span>
         }
     }
 
     private static boolean isEOD(int c)
     {
-<span class="nc bnc" id="L132" title="All 2 branches missed.">        return c == '&gt;';</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">        return c == '&gt;';</span>
     }
 
     @Override
@@ -137,11 +137,11 @@ import org.apache.pdfbox.util.Hex;
         throws IOException
     {
         int byteRead;
-<span class="nc bnc" id="L140" title="All 2 branches missed.">        while ((byteRead = input.read()) != -1)</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        while ((byteRead = input.read()) != -1)</span>
         {
-<span class="nc" id="L142">            Hex.writeHexByte((byte)byteRead, encoded);</span>
+<span class="fc" id="L142">            Hex.writeHexByte((byte)byteRead, encoded);</span>
         }
-<span class="nc" id="L144">        encoded.flush();</span>
-<span class="nc" id="L145">    }</span>
+<span class="fc" id="L144">        encoded.flush();</span>
+<span class="fc" id="L145">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

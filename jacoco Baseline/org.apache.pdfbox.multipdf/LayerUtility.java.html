@@ -53,7 +53,7 @@ import org.apache.pdfbox.util.Matrix;
  */
 public class LayerUtility
 {
-<span class="nc" id="L56">    private static final Logger LOG = LogManager.getLogger(LayerUtility.class);</span>
+<span class="fc" id="L56">    private static final Logger LOG = LogManager.getLogger(LayerUtility.class);</span>
 
     private static final boolean DEBUG = true;
 
@@ -65,10 +65,10 @@ public class LayerUtility
      * @param targetDoc the PDF document to modify
      */
     public LayerUtility(PDDocument targetDoc)
-<span class="nc" id="L68">    {</span>
-<span class="nc" id="L69">        this.targetDoc = targetDoc;</span>
-<span class="nc" id="L70">        this.cloner = new PDFCloneUtility(targetDoc);</span>
-<span class="nc" id="L71">    }</span>
+<span class="fc" id="L68">    {</span>
+<span class="fc" id="L69">        this.targetDoc = targetDoc;</span>
+<span class="fc" id="L70">        this.cloner = new PDFCloneUtility(targetDoc);</span>
+<span class="fc" id="L71">    }</span>
 
     /**
      * Returns the PDF document we work on.
@@ -76,7 +76,7 @@ public class LayerUtility
      */
     public PDDocument getDocument()
     {
-<span class="nc" id="L79">        return this.targetDoc;</span>
+<span class="fc" id="L79">        return this.targetDoc;</span>
     }
 
     /**
@@ -88,34 +88,34 @@ public class LayerUtility
      */
     public void wrapInSaveRestore(PDPage page) throws IOException
     {
-<span class="nc" id="L91">        COSStream saveGraphicsStateStream = getDocument().getDocument().createCOSStream();</span>
-<span class="nc" id="L92">        try (OutputStream saveStream = saveGraphicsStateStream.createOutputStream())</span>
+<span class="fc" id="L91">        COSStream saveGraphicsStateStream = getDocument().getDocument().createCOSStream();</span>
+<span class="fc" id="L92">        try (OutputStream saveStream = saveGraphicsStateStream.createOutputStream())</span>
         {
-<span class="nc" id="L94">            saveStream.write(&quot;q\n&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L94">            saveStream.write(&quot;q\n&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
         }
 
-<span class="nc" id="L97">        COSStream restoreGraphicsStateStream = getDocument().getDocument().createCOSStream();</span>
-<span class="nc" id="L98">        try (OutputStream restoreStream = restoreGraphicsStateStream.createOutputStream())</span>
+<span class="fc" id="L97">        COSStream restoreGraphicsStateStream = getDocument().getDocument().createCOSStream();</span>
+<span class="fc" id="L98">        try (OutputStream restoreStream = restoreGraphicsStateStream.createOutputStream())</span>
         {
-<span class="nc" id="L100">            restoreStream.write(&quot;Q\n&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
+<span class="fc" id="L100">            restoreStream.write(&quot;Q\n&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
         }
 
         //Wrap the existing page's content in a save/restore pair (q/Q) to have a controlled
         //environment to add additional content.
-<span class="nc" id="L105">        COSDictionary pageDictionary = page.getCOSObject();</span>
-<span class="nc" id="L106">        COSBase contents = pageDictionary.getDictionaryObject(COSName.CONTENTS);</span>
-<span class="nc bnc" id="L107" title="All 2 branches missed.">        if (contents instanceof COSStream)</span>
+<span class="fc" id="L105">        COSDictionary pageDictionary = page.getCOSObject();</span>
+<span class="fc" id="L106">        COSBase contents = pageDictionary.getDictionaryObject(COSName.CONTENTS);</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">        if (contents instanceof COSStream)</span>
         {
-<span class="nc" id="L109">            COSStream contentsStream = (COSStream)contents;</span>
+<span class="fc" id="L109">            COSStream contentsStream = (COSStream)contents;</span>
 
-<span class="nc" id="L111">            COSArray array = new COSArray(Arrays.asList(</span>
+<span class="fc" id="L111">            COSArray array = new COSArray(Arrays.asList(</span>
                 saveGraphicsStateStream,
                 contentsStream,
                 restoreGraphicsStateStream
             ));
 
-<span class="nc" id="L117">            pageDictionary.setItem(COSName.CONTENTS, array);</span>
-<span class="nc" id="L118">        }</span>
+<span class="fc" id="L117">            pageDictionary.setItem(COSName.CONTENTS, array);</span>
+<span class="fc" id="L118">        }</span>
 <span class="nc bnc" id="L119" title="All 2 branches missed.">        else if( contents instanceof COSArray )</span>
         {
 <span class="nc" id="L121">            COSArray contentsArray = (COSArray)contents;</span>
@@ -127,7 +127,7 @@ public class LayerUtility
         {
 <span class="nc" id="L128">            throw new IOException(&quot;Contents are unknown type: &quot; + contents.getClass().getName());</span>
         }
-<span class="nc" id="L130">    }</span>
+<span class="fc" id="L130">    }</span>
 
     /**
      * Imports a page from some PDF file as a Form XObject so it can be placed on another page
@@ -143,12 +143,12 @@ public class LayerUtility
      */
     public PDFormXObject importPageAsForm(PDDocument sourceDoc, int pageNumber) throws IOException
     {
-<span class="nc" id="L146">        PDPage page = sourceDoc.getPage(pageNumber);</span>
-<span class="nc" id="L147">        return importPageAsForm(sourceDoc, page);</span>
+<span class="fc" id="L146">        PDPage page = sourceDoc.getPage(pageNumber);</span>
+<span class="fc" id="L147">        return importPageAsForm(sourceDoc, page);</span>
     }
 
-<span class="nc" id="L150">    private static final Set&lt;String&gt; PAGE_TO_FORM_FILTER =</span>
-<span class="nc" id="L151">            new HashSet&lt;&gt;(Arrays.asList(&quot;Group&quot;, &quot;LastModified&quot;, &quot;Metadata&quot;));</span>
+<span class="fc" id="L150">    private static final Set&lt;String&gt; PAGE_TO_FORM_FILTER =</span>
+<span class="fc" id="L151">            new HashSet&lt;&gt;(Arrays.asList(&quot;Group&quot;, &quot;LastModified&quot;, &quot;Metadata&quot;));</span>
 
     /**
      * Imports a page from some PDF file as a Form XObject so it can be placed on another page
@@ -164,34 +164,34 @@ public class LayerUtility
      */
     public PDFormXObject importPageAsForm(PDDocument sourceDoc, PDPage page) throws IOException
     {
-<span class="nc" id="L167">        importOcProperties(sourceDoc);</span>
+<span class="fc" id="L167">        importOcProperties(sourceDoc);</span>
 
-<span class="nc" id="L169">        PDStream newStream = new PDStream(targetDoc, page.getContents(), COSName.FLATE_DECODE);</span>
-<span class="nc" id="L170">        PDFormXObject form = new PDFormXObject(newStream);</span>
+<span class="fc" id="L169">        PDStream newStream = new PDStream(targetDoc, page.getContents(), COSName.FLATE_DECODE);</span>
+<span class="fc" id="L170">        PDFormXObject form = new PDFormXObject(newStream);</span>
 
         //Copy resources
-<span class="nc" id="L173">        PDResources pageRes = page.getResources();</span>
-<span class="nc" id="L174">        PDResources formRes = new PDResources();</span>
-<span class="nc" id="L175">        cloner.cloneMerge(pageRes, formRes);</span>
-<span class="nc" id="L176">        form.setResources(formRes);</span>
+<span class="fc" id="L173">        PDResources pageRes = page.getResources();</span>
+<span class="fc" id="L174">        PDResources formRes = new PDResources();</span>
+<span class="fc" id="L175">        cloner.cloneMerge(pageRes, formRes);</span>
+<span class="fc" id="L176">        form.setResources(formRes);</span>
 
         //Transfer some values from page to form
-<span class="nc" id="L179">        transferDict(page.getCOSObject(), form.getCOSObject(), PAGE_TO_FORM_FILTER);</span>
+<span class="fc" id="L179">        transferDict(page.getCOSObject(), form.getCOSObject(), PAGE_TO_FORM_FILTER);</span>
 
-<span class="nc" id="L181">        Matrix matrix = form.getMatrix();</span>
-<span class="nc" id="L182">        AffineTransform at = matrix.createAffineTransform();</span>
-<span class="nc" id="L183">        PDRectangle mediaBox = page.getMediaBox();</span>
-<span class="nc" id="L184">        PDRectangle cropBox = page.getCropBox();</span>
-<span class="nc bnc" id="L185" title="All 2 branches missed.">        PDRectangle viewBox = (cropBox != null ? cropBox : mediaBox);</span>
+<span class="fc" id="L181">        Matrix matrix = form.getMatrix();</span>
+<span class="fc" id="L182">        AffineTransform at = matrix.createAffineTransform();</span>
+<span class="fc" id="L183">        PDRectangle mediaBox = page.getMediaBox();</span>
+<span class="fc" id="L184">        PDRectangle cropBox = page.getCropBox();</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">        PDRectangle viewBox = (cropBox != null ? cropBox : mediaBox);</span>
 
         //Handle the /Rotation entry on the page dict
-<span class="nc" id="L188">        int rotation = page.getRotation();</span>
+<span class="fc" id="L188">        int rotation = page.getRotation();</span>
 
         //Transform to FOP's user space
         //at.scale(1 / viewBox.getWidth(), 1 / viewBox.getHeight());
-<span class="nc" id="L192">        at.translate(mediaBox.getLowerLeftX() - viewBox.getLowerLeftX(),</span>
-<span class="nc" id="L193">                mediaBox.getLowerLeftY() - viewBox.getLowerLeftY());</span>
-<span class="nc bnc" id="L194" title="All 4 branches missed.">        switch (rotation)</span>
+<span class="fc" id="L192">        at.translate(mediaBox.getLowerLeftX() - viewBox.getLowerLeftX(),</span>
+<span class="fc" id="L193">                mediaBox.getLowerLeftY() - viewBox.getLowerLeftY());</span>
+<span class="pc bpc" id="L194" title="3 of 4 branches missed.">        switch (rotation)</span>
         {
         case 90:
 <span class="nc" id="L197">            at.scale(viewBox.getWidth() / viewBox.getHeight(), viewBox.getHeight() / viewBox.getWidth());</span>
@@ -211,20 +211,20 @@ public class LayerUtility
             //no additional transformations necessary
         }
         //Compensate for Crop Boxes not starting at 0,0
-<span class="nc" id="L214">        at.translate(-viewBox.getLowerLeftX(), -viewBox.getLowerLeftY());</span>
-<span class="nc bnc" id="L215" title="All 2 branches missed.">        if (!at.isIdentity())</span>
+<span class="fc" id="L214">        at.translate(-viewBox.getLowerLeftX(), -viewBox.getLowerLeftY());</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">        if (!at.isIdentity())</span>
         {
 <span class="nc" id="L217">            form.setMatrix(at);</span>
         }
 
-<span class="nc" id="L220">        BoundingBox bbox = new BoundingBox();</span>
-<span class="nc" id="L221">        bbox.setLowerLeftX(viewBox.getLowerLeftX());</span>
-<span class="nc" id="L222">        bbox.setLowerLeftY(viewBox.getLowerLeftY());</span>
-<span class="nc" id="L223">        bbox.setUpperRightX(viewBox.getUpperRightX());</span>
-<span class="nc" id="L224">        bbox.setUpperRightY(viewBox.getUpperRightY());</span>
-<span class="nc" id="L225">        form.setBBox(new PDRectangle(bbox));</span>
+<span class="fc" id="L220">        BoundingBox bbox = new BoundingBox();</span>
+<span class="fc" id="L221">        bbox.setLowerLeftX(viewBox.getLowerLeftX());</span>
+<span class="fc" id="L222">        bbox.setLowerLeftY(viewBox.getLowerLeftY());</span>
+<span class="fc" id="L223">        bbox.setUpperRightX(viewBox.getUpperRightX());</span>
+<span class="fc" id="L224">        bbox.setUpperRightY(viewBox.getUpperRightY());</span>
+<span class="fc" id="L225">        form.setBBox(new PDRectangle(bbox));</span>
 
-<span class="nc" id="L227">        return form;</span>
+<span class="fc" id="L227">        return form;</span>
     }
 
     /**
@@ -249,55 +249,55 @@ public class LayerUtility
             PDFormXObject form, AffineTransform transform,
             String layerName) throws IOException
     {
-<span class="nc" id="L252">        PDDocumentCatalog catalog = targetDoc.getDocumentCatalog();</span>
-<span class="nc" id="L253">        PDOptionalContentProperties ocprops = catalog.getOCProperties();</span>
-<span class="nc bnc" id="L254" title="All 2 branches missed.">        if (ocprops == null)</span>
+<span class="fc" id="L252">        PDDocumentCatalog catalog = targetDoc.getDocumentCatalog();</span>
+<span class="fc" id="L253">        PDOptionalContentProperties ocprops = catalog.getOCProperties();</span>
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">        if (ocprops == null)</span>
         {
-<span class="nc" id="L256">            ocprops = new PDOptionalContentProperties();</span>
-<span class="nc" id="L257">            catalog.setOCProperties(ocprops);</span>
+<span class="fc" id="L256">            ocprops = new PDOptionalContentProperties();</span>
+<span class="fc" id="L257">            catalog.setOCProperties(ocprops);</span>
         }
-<span class="nc bnc" id="L259" title="All 2 branches missed.">        if (ocprops.hasGroup(layerName))</span>
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">        if (ocprops.hasGroup(layerName))</span>
         {
 <span class="nc" id="L261">            throw new IllegalArgumentException(&quot;Optional group (layer) already exists: &quot; + layerName);</span>
         }
 
-<span class="nc" id="L264">        PDRectangle cropBox = targetPage.getCropBox();</span>
-<span class="nc bnc" id="L265" title="All 6 branches missed.">        if ((cropBox.getLowerLeftX() &lt; 0 || cropBox.getLowerLeftY() &lt; 0) &amp;&amp; transform.isIdentity())</span>
+<span class="fc" id="L264">        PDRectangle cropBox = targetPage.getCropBox();</span>
+<span class="pc bpc" id="L265" title="4 of 6 branches missed.">        if ((cropBox.getLowerLeftX() &lt; 0 || cropBox.getLowerLeftY() &lt; 0) &amp;&amp; transform.isIdentity())</span>
         {
             // PDFBOX-4044 
 <span class="nc" id="L268">            LOG.warn(&quot;Negative cropBox {} and identity transform may make your form invisible&quot;,</span>
                     cropBox);
         }
 
-<span class="nc" id="L272">        PDOptionalContentGroup layer = new PDOptionalContentGroup(layerName);</span>
-<span class="nc" id="L273">        ocprops.addGroup(layer);</span>
+<span class="fc" id="L272">        PDOptionalContentGroup layer = new PDOptionalContentGroup(layerName);</span>
+<span class="fc" id="L273">        ocprops.addGroup(layer);</span>
 
-<span class="nc" id="L275">        try (PDPageContentStream contentStream = new PDPageContentStream(</span>
+<span class="fc" id="L275">        try (PDPageContentStream contentStream = new PDPageContentStream(</span>
                 targetDoc, targetPage, AppendMode.APPEND, !DEBUG))
         {
-<span class="nc" id="L278">            contentStream.beginMarkedContent(COSName.OC, layer);</span>
-<span class="nc" id="L279">            contentStream.saveGraphicsState();</span>
-<span class="nc" id="L280">            contentStream.transform(new Matrix(transform));</span>
-<span class="nc" id="L281">            contentStream.drawForm(form);</span>
-<span class="nc" id="L282">            contentStream.restoreGraphicsState();</span>
-<span class="nc" id="L283">            contentStream.endMarkedContent();</span>
+<span class="fc" id="L278">            contentStream.beginMarkedContent(COSName.OC, layer);</span>
+<span class="fc" id="L279">            contentStream.saveGraphicsState();</span>
+<span class="fc" id="L280">            contentStream.transform(new Matrix(transform));</span>
+<span class="fc" id="L281">            contentStream.drawForm(form);</span>
+<span class="fc" id="L282">            contentStream.restoreGraphicsState();</span>
+<span class="fc" id="L283">            contentStream.endMarkedContent();</span>
         }
 
-<span class="nc" id="L286">        return layer;</span>
+<span class="fc" id="L286">        return layer;</span>
     }
 
     private void transferDict(COSDictionary orgDict, COSDictionary targetDict, Set&lt;String&gt; filter)
             throws IOException
     {
-<span class="nc bnc" id="L292" title="All 2 branches missed.">        for (Map.Entry&lt;COSName, COSBase&gt; entry : orgDict.entrySet())</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">        for (Map.Entry&lt;COSName, COSBase&gt; entry : orgDict.entrySet())</span>
         {
-<span class="nc" id="L294">            COSName key = entry.getKey();</span>
-<span class="nc bnc" id="L295" title="All 2 branches missed.">            if (filter.contains(key.getName()))</span>
+<span class="fc" id="L294">            COSName key = entry.getKey();</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">            if (filter.contains(key.getName()))</span>
             {
 <span class="nc" id="L297">                targetDict.setItem(key, cloner.cloneForNewDocument(entry.getValue()));</span>
             }
-<span class="nc" id="L299">        }</span>
-<span class="nc" id="L300">    }</span>
+<span class="fc" id="L299">        }</span>
+<span class="fc" id="L300">    }</span>
 
     /**
      * Imports OCProperties from source document to target document so hidden layers can still be
@@ -308,25 +308,25 @@ public class LayerUtility
      */
     private void importOcProperties(PDDocument srcDoc) throws IOException
     {
-<span class="nc" id="L311">        PDDocumentCatalog srcCatalog = srcDoc.getDocumentCatalog();</span>
-<span class="nc" id="L312">        PDOptionalContentProperties srcOCProperties = srcCatalog.getOCProperties();</span>
-<span class="nc bnc" id="L313" title="All 2 branches missed.">        if (srcOCProperties == null)</span>
+<span class="fc" id="L311">        PDDocumentCatalog srcCatalog = srcDoc.getDocumentCatalog();</span>
+<span class="fc" id="L312">        PDOptionalContentProperties srcOCProperties = srcCatalog.getOCProperties();</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">        if (srcOCProperties == null)</span>
         {
-<span class="nc" id="L315">            return;</span>
+<span class="fc" id="L315">            return;</span>
         }
 
-<span class="nc" id="L318">        PDDocumentCatalog dstCatalog = targetDoc.getDocumentCatalog();</span>
-<span class="nc" id="L319">        PDOptionalContentProperties dstOCProperties = dstCatalog.getOCProperties();</span>
+<span class="fc" id="L318">        PDDocumentCatalog dstCatalog = targetDoc.getDocumentCatalog();</span>
+<span class="fc" id="L319">        PDOptionalContentProperties dstOCProperties = dstCatalog.getOCProperties();</span>
 
-<span class="nc bnc" id="L321" title="All 2 branches missed.">        if (dstOCProperties == null)</span>
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">        if (dstOCProperties == null)</span>
         {
 <span class="nc" id="L323">            dstCatalog.setOCProperties(new PDOptionalContentProperties(</span>
 <span class="nc" id="L324">                    cloner.cloneForNewDocument(srcOCProperties.getCOSObject())));</span>
         }
         else
         {
-<span class="nc" id="L328">            cloner.cloneMerge(srcOCProperties, dstOCProperties);</span>
+<span class="fc" id="L328">            cloner.cloneMerge(srcOCProperties, dstOCProperties);</span>
         }
-<span class="nc" id="L330">    }</span>
+<span class="fc" id="L330">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

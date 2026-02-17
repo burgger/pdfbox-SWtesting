@@ -36,17 +36,17 @@ public class COSIncrement implements Iterable&lt;COSBase&gt;
     /**
      * Contains the {@link COSBase}s, that shall be added to the increment at top level.
      */
-<span class="nc" id="L39">    private final Set&lt;COSBase&gt; objects = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L39">    private final Set&lt;COSBase&gt; objects = new LinkedHashSet&lt;&gt;();</span>
     /**
      * Contains the direct {@link COSBase}s, that are either contained written directly by structures contained in
      * {@link #objects} or that must be excluded from being written as indirect {@link COSObject}s for other reasons.
      */
-<span class="nc" id="L44">    private final Set&lt;COSBase&gt; excluded = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L44">    private final Set&lt;COSBase&gt; excluded = new HashSet&lt;&gt;();</span>
     /**
      * Contains all {@link COSObject}s, that have already been processed by this {@link COSIncrement} and shall not be
      * processed again.
      */
-<span class="nc" id="L49">    private final Set&lt;COSObject&gt; processedObjects = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L49">    private final Set&lt;COSObject&gt; processedObjects = new HashSet&lt;&gt;();</span>
     /**
      * Contains the {@link COSUpdateInfo} that this {@link COSIncrement} creates an increment for.
      */
@@ -54,7 +54,7 @@ public class COSIncrement implements Iterable&lt;COSBase&gt;
     /**
      * Whether this {@link COSIncrement} has already been determined, or must still be evaluated.
      */
-<span class="nc" id="L57">    private boolean initialized = false;</span>
+<span class="fc" id="L57">    private boolean initialized = false;</span>
     
     /**
      * Creates a new {@link COSIncrement} for the given {@link COSUpdateInfo}, the increment will use it´s
@@ -65,9 +65,9 @@ public class COSIncrement implements Iterable&lt;COSBase&gt;
      * @param incrementOrigin The {@link COSUpdateInfo} serving as an update source for this {@link COSIncrement}.
      */
     public COSIncrement(COSUpdateInfo incrementOrigin)
-<span class="nc" id="L68">    {</span>
-<span class="nc" id="L69">        this.incrementOrigin = incrementOrigin;</span>
-<span class="nc" id="L70">    }</span>
+<span class="fc" id="L68">    {</span>
+<span class="fc" id="L69">        this.incrementOrigin = incrementOrigin;</span>
+<span class="fc" id="L70">    }</span>
     
     /**
      * Collect all updates made to the given {@link COSBase} and it's contained structures.&lt;br&gt;
@@ -82,22 +82,22 @@ public class COSIncrement implements Iterable&lt;COSBase&gt;
      */
     private boolean collect(COSBase base)
     {
-<span class="nc bnc" id="L85" title="All 2 branches missed.">        if(contains(base))</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">        if(contains(base))</span>
         {
 <span class="nc" id="L87">            return false;</span>
         }
         // handle updatable objects:
-<span class="nc bnc" id="L90" title="All 2 branches missed.">        if(base instanceof COSDictionary)</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if(base instanceof COSDictionary)</span>
         {
-<span class="nc" id="L92">            return collect((COSDictionary) base);</span>
+<span class="fc" id="L92">            return collect((COSDictionary) base);</span>
         }
-<span class="nc bnc" id="L94" title="All 2 branches missed.">        else if(base instanceof COSObject)</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        else if(base instanceof COSObject)</span>
         {
-<span class="nc" id="L96">            return collect((COSObject) base);</span>
+<span class="fc" id="L96">            return collect((COSObject) base);</span>
         }
-<span class="nc bnc" id="L98" title="All 2 branches missed.">        else if(base instanceof COSArray)</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        else if(base instanceof COSArray)</span>
         {
-<span class="nc" id="L100">            return collect((COSArray) base);</span>
+<span class="fc" id="L100">            return collect((COSArray) base);</span>
         }
 <span class="nc" id="L102">        return false;</span>
     }
@@ -111,48 +111,48 @@ public class COSIncrement implements Iterable&lt;COSBase&gt;
      */
     private boolean collect(COSDictionary dictionary)
     {
-<span class="nc" id="L114">        COSUpdateState updateState = dictionary.getUpdateState();</span>
+<span class="fc" id="L114">        COSUpdateState updateState = dictionary.getUpdateState();</span>
         // Is definitely part of the increment?
-<span class="nc bnc" id="L116" title="All 6 branches missed.">        if(!isExcluded(dictionary) &amp;&amp; !contains(dictionary) &amp;&amp; updateState.isUpdated())</span>
+<span class="pc bpc" id="L116" title="2 of 6 branches missed.">        if(!isExcluded(dictionary) &amp;&amp; !contains(dictionary) &amp;&amp; updateState.isUpdated())</span>
         {
-<span class="nc" id="L118">            add(dictionary);</span>
+<span class="fc" id="L118">            add(dictionary);</span>
         }
-<span class="nc" id="L120">        boolean childDemandsParentUpdate = false;</span>
+<span class="fc" id="L120">        boolean childDemandsParentUpdate = false;</span>
         // Collect children:
-<span class="nc bnc" id="L122" title="All 2 branches missed.">        for(COSBase entry : dictionary.getValues())</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        for(COSBase entry : dictionary.getValues())</span>
         {
             // Primitives can not be part of an increment. (on top level)
-<span class="nc bnc" id="L125" title="All 4 branches missed.">            if(!(entry instanceof COSUpdateInfo) || contains(entry))</span>
+<span class="fc bfc" id="L125" title="All 4 branches covered.">            if(!(entry instanceof COSUpdateInfo) || contains(entry))</span>
             {
-<span class="nc" id="L127">                continue;</span>
+<span class="fc" id="L127">                continue;</span>
             }
-<span class="nc" id="L129">            COSUpdateInfo updatableEntry = (COSUpdateInfo) entry;</span>
-<span class="nc" id="L130">            COSUpdateState entryUpdateState = updatableEntry.getUpdateState();</span>
+<span class="fc" id="L129">            COSUpdateInfo updatableEntry = (COSUpdateInfo) entry;</span>
+<span class="fc" id="L130">            COSUpdateState entryUpdateState = updatableEntry.getUpdateState();</span>
             // Entries with different document origin must be part of the increment!
-<span class="nc" id="L132">            updateDifferentOrigin(entryUpdateState);</span>
+<span class="fc" id="L132">            updateDifferentOrigin(entryUpdateState);</span>
             // Always attempt to write COSArrays as direct objects.
-<span class="nc bnc" id="L134" title="All 4 branches missed.">            if(updatableEntry.isNeedToBeUpdated() &amp;&amp;</span>
-<span class="nc bnc" id="L135" title="All 4 branches missed.">                ((!(entry instanceof COSObject) &amp;&amp; entry.isDirect()) || entry instanceof COSArray))</span>
+<span class="fc bfc" id="L134" title="All 4 branches covered.">            if(updatableEntry.isNeedToBeUpdated() &amp;&amp;</span>
+<span class="pc bpc" id="L135" title="1 of 4 branches missed.">                ((!(entry instanceof COSObject) &amp;&amp; entry.isDirect()) || entry instanceof COSArray))</span>
             {
                 // Exclude direct entries from the increment!
-<span class="nc" id="L138">                exclude(entry);</span>
-<span class="nc" id="L139">                childDemandsParentUpdate = true;</span>
+<span class="fc" id="L138">                exclude(entry);</span>
+<span class="fc" id="L139">                childDemandsParentUpdate = true;</span>
             }
             // Collect descendants:
-<span class="nc bnc" id="L142" title="All 4 branches missed.">            childDemandsParentUpdate = collect(entry) || childDemandsParentUpdate;</span>
-<span class="nc" id="L143">        }</span>
+<span class="fc bfc" id="L142" title="All 4 branches covered.">            childDemandsParentUpdate = collect(entry) || childDemandsParentUpdate;</span>
+<span class="fc" id="L143">        }</span>
         
-<span class="nc bnc" id="L145" title="All 2 branches missed.">        if(isExcluded(dictionary))</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        if(isExcluded(dictionary))</span>
         {
-<span class="nc" id="L147">            return childDemandsParentUpdate;</span>
+<span class="fc" id="L147">            return childDemandsParentUpdate;</span>
         }
         else
         {
-<span class="nc bnc" id="L151" title="All 4 branches missed.">            if(childDemandsParentUpdate &amp;&amp; !contains(dictionary))</span>
+<span class="pc bpc" id="L151" title="1 of 4 branches missed.">            if(childDemandsParentUpdate &amp;&amp; !contains(dictionary))</span>
             {
 <span class="nc" id="L153">                add(dictionary);</span>
             }
-<span class="nc" id="L155">            return false;</span>
+<span class="fc" id="L155">            return false;</span>
         }
     }
     
@@ -165,22 +165,22 @@ public class COSIncrement implements Iterable&lt;COSBase&gt;
      */
     private boolean collect(COSArray array)
     {
-<span class="nc" id="L168">        COSUpdateState updateState = array.getUpdateState();</span>
-<span class="nc" id="L169">        boolean childDemandsParentUpdate = updateState.isUpdated();</span>
-<span class="nc bnc" id="L170" title="All 2 branches missed.">        for(COSBase entry : array)</span>
+<span class="fc" id="L168">        COSUpdateState updateState = array.getUpdateState();</span>
+<span class="fc" id="L169">        boolean childDemandsParentUpdate = updateState.isUpdated();</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        for(COSBase entry : array)</span>
         {
             // Primitives can not be part of an increment. (on top level)
-<span class="nc bnc" id="L173" title="All 4 branches missed.">            if(!(entry instanceof COSUpdateInfo) || contains(entry))</span>
+<span class="fc bfc" id="L173" title="All 4 branches covered.">            if(!(entry instanceof COSUpdateInfo) || contains(entry))</span>
             {
-<span class="nc" id="L175">                continue;</span>
+<span class="fc" id="L175">                continue;</span>
             }
-<span class="nc" id="L177">            COSUpdateState entryUpdateState = ((COSUpdateInfo) entry).getUpdateState();</span>
+<span class="fc" id="L177">            COSUpdateState entryUpdateState = ((COSUpdateInfo) entry).getUpdateState();</span>
             // Entries with different document origin must be part of the increment!
-<span class="nc" id="L179">            updateDifferentOrigin(entryUpdateState);</span>
+<span class="fc" id="L179">            updateDifferentOrigin(entryUpdateState);</span>
             // Collect descendants:
-<span class="nc bnc" id="L181" title="All 4 branches missed.">            childDemandsParentUpdate = collect(entry) || childDemandsParentUpdate;</span>
-<span class="nc" id="L182">        }</span>
-<span class="nc" id="L183">        return childDemandsParentUpdate;</span>
+<span class="fc bfc" id="L181" title="All 4 branches covered.">            childDemandsParentUpdate = collect(entry) || childDemandsParentUpdate;</span>
+<span class="fc" id="L182">        }</span>
+<span class="fc" id="L183">        return childDemandsParentUpdate;</span>
     }
     
     /**
@@ -192,42 +192,42 @@ public class COSIncrement implements Iterable&lt;COSBase&gt;
      */
     private boolean collect(COSObject object)
     {
-<span class="nc bnc" id="L195" title="All 2 branches missed.">        if(contains(object))</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">        if(contains(object))</span>
         {
 <span class="nc" id="L197">            return false;</span>
         }
-<span class="nc" id="L199">        addProcessedObject(object);</span>
-<span class="nc" id="L200">        COSUpdateState updateState = object.getUpdateState();</span>
+<span class="fc" id="L199">        addProcessedObject(object);</span>
+<span class="fc" id="L200">        COSUpdateState updateState = object.getUpdateState();</span>
         // Objects with different document origin must be part of the increment!
-<span class="nc" id="L202">        updateDifferentOrigin(updateState);</span>
+<span class="fc" id="L202">        updateDifferentOrigin(updateState);</span>
         // determine actual, if necessary or possible without dereferencing:
-<span class="nc" id="L204">        COSUpdateInfo actual = null;</span>
-<span class="nc bnc" id="L205" title="All 4 branches missed.">        if(updateState.isUpdated() || object.isDereferenced())</span>
+<span class="fc" id="L204">        COSUpdateInfo actual = null;</span>
+<span class="fc bfc" id="L205" title="All 4 branches covered.">        if(updateState.isUpdated() || object.isDereferenced())</span>
         {
-<span class="nc" id="L207">            COSBase base = object.getObject();</span>
-<span class="nc bnc" id="L208" title="All 2 branches missed.">            if(base instanceof COSUpdateInfo)</span>
+<span class="fc" id="L207">            COSBase base = object.getObject();</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">            if(base instanceof COSUpdateInfo)</span>
             {
-<span class="nc" id="L210">                actual = (COSUpdateInfo) base;</span>
+<span class="fc" id="L210">                actual = (COSUpdateInfo) base;</span>
             }
         }
         // Skip?
-<span class="nc bnc" id="L214" title="All 4 branches missed.">        if(actual == null || contains(actual.getCOSObject()))</span>
+<span class="pc bpc" id="L214" title="1 of 4 branches missed.">        if(actual == null || contains(actual.getCOSObject()))</span>
         {
-<span class="nc" id="L216">            return false;</span>
+<span class="fc" id="L216">            return false;</span>
         }
-<span class="nc" id="L218">        boolean childDemandsParentUpdate = false;</span>
-<span class="nc" id="L219">        COSUpdateState actualUpdateState = actual.getUpdateState();</span>
-<span class="nc bnc" id="L220" title="All 2 branches missed.">        if(actualUpdateState.isUpdated())</span>
+<span class="fc" id="L218">        boolean childDemandsParentUpdate = false;</span>
+<span class="fc" id="L219">        COSUpdateState actualUpdateState = actual.getUpdateState();</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        if(actualUpdateState.isUpdated())</span>
         {
-<span class="nc" id="L222">            childDemandsParentUpdate = true;</span>
+<span class="fc" id="L222">            childDemandsParentUpdate = true;</span>
         }
-<span class="nc" id="L224">        exclude(actual.getCOSObject());</span>
-<span class="nc bnc" id="L225" title="All 4 branches missed.">        childDemandsParentUpdate = collect(actual.getCOSObject()) || childDemandsParentUpdate;</span>
-<span class="nc bnc" id="L226" title="All 4 branches missed.">        if(updateState.isUpdated() || childDemandsParentUpdate)</span>
+<span class="fc" id="L224">        exclude(actual.getCOSObject());</span>
+<span class="fc bfc" id="L225" title="All 4 branches covered.">        childDemandsParentUpdate = collect(actual.getCOSObject()) || childDemandsParentUpdate;</span>
+<span class="fc bfc" id="L226" title="All 4 branches covered.">        if(updateState.isUpdated() || childDemandsParentUpdate)</span>
         {
-<span class="nc" id="L228">            add(actual.getCOSObject());</span>
+<span class="fc" id="L228">            add(actual.getCOSObject());</span>
         }
-<span class="nc" id="L230">        return false;</span>
+<span class="fc" id="L230">        return false;</span>
     }
     
     /**
@@ -242,7 +242,7 @@ public class COSIncrement implements Iterable&lt;COSBase&gt;
      */
     public boolean contains(COSBase base)
     {
-<span class="nc bnc" id="L245" title="All 6 branches missed.">        return objects.contains(base) || (base instanceof COSObject &amp;&amp; processedObjects.contains((COSObject) base));</span>
+<span class="fc bfc" id="L245" title="All 6 branches covered.">        return objects.contains(base) || (base instanceof COSObject &amp;&amp; processedObjects.contains((COSObject) base));</span>
     }
     
     /**
@@ -257,12 +257,12 @@ public class COSIncrement implements Iterable&lt;COSBase&gt;
      */
     private void updateDifferentOrigin(COSUpdateState updateState)
     {
-<span class="nc bnc" id="L260" title="All 4 branches missed.">        if(incrementOrigin != null &amp;&amp; updateState != null &amp;&amp;</span>
-<span class="nc bnc" id="L261" title="All 2 branches missed.">            incrementOrigin.getUpdateState().getOriginDocumentState() != updateState.getOriginDocumentState())</span>
+<span class="pc bpc" id="L260" title="2 of 4 branches missed.">        if(incrementOrigin != null &amp;&amp; updateState != null &amp;&amp;</span>
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">            incrementOrigin.getUpdateState().getOriginDocumentState() != updateState.getOriginDocumentState())</span>
         {
 <span class="nc" id="L263">            updateState.update();</span>
         }
-<span class="nc" id="L265">    }</span>
+<span class="fc" id="L265">    }</span>
     
     /**
      * The given object and actual {COSBase}s shall be part of the increment and must be added to {@link #objects},
@@ -274,11 +274,11 @@ public class COSIncrement implements Iterable&lt;COSBase&gt;
      */
     private void add(COSBase object)
     {
-<span class="nc bnc" id="L277" title="All 2 branches missed.">        if(object != null)</span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">        if(object != null)</span>
         {
-<span class="nc" id="L279">            objects.add(object);</span>
+<span class="fc" id="L279">            objects.add(object);</span>
         }
-<span class="nc" id="L281">    }</span>
+<span class="fc" id="L281">    }</span>
     
     /**
      * The given {@link COSObject} has been processed, or is being processed. It shall be added to
@@ -290,11 +290,11 @@ public class COSIncrement implements Iterable&lt;COSBase&gt;
      */
     private void addProcessedObject(COSObject base)
     {
-<span class="nc bnc" id="L293" title="All 2 branches missed.">        if(base != null)</span>
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">        if(base != null)</span>
         {
-<span class="nc" id="L295">            processedObjects.add(base);</span>
+<span class="fc" id="L295">            processedObjects.add(base);</span>
         }
-<span class="nc" id="L297">    }</span>
+<span class="fc" id="L297">    }</span>
     
     /**
      * The given {@link COSBase}s are not fit for inclusion in an increment and shall be added to {@link #excluded}.&lt;br&gt;
@@ -306,11 +306,11 @@ public class COSIncrement implements Iterable&lt;COSBase&gt;
      */
     public COSIncrement exclude(COSBase... base)
     {
-<span class="nc bnc" id="L309" title="All 2 branches missed.">        if(base != null)</span>
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">        if(base != null)</span>
         {
-<span class="nc" id="L311">            excluded.addAll(Arrays.asList(base));</span>
+<span class="fc" id="L311">            excluded.addAll(Arrays.asList(base));</span>
         }
-<span class="nc" id="L313">        return this;</span>
+<span class="fc" id="L313">        return this;</span>
     }
     
     /**
@@ -324,7 +324,7 @@ public class COSIncrement implements Iterable&lt;COSBase&gt;
      */
     private boolean isExcluded(COSBase base)
     {
-<span class="nc" id="L327">        return excluded.contains(base);</span>
+<span class="fc" id="L327">        return excluded.contains(base);</span>
     }
     
     /**
@@ -336,12 +336,12 @@ public class COSIncrement implements Iterable&lt;COSBase&gt;
      */
     public Set&lt;COSBase&gt; getObjects()
     {
-<span class="nc bnc" id="L339" title="All 4 branches missed.">        if(!initialized &amp;&amp; incrementOrigin != null)</span>
+<span class="pc bpc" id="L339" title="2 of 4 branches missed.">        if(!initialized &amp;&amp; incrementOrigin != null)</span>
         {
-<span class="nc" id="L341">            collect(incrementOrigin.getCOSObject());</span>
-<span class="nc" id="L342">            initialized = true;</span>
+<span class="fc" id="L341">            collect(incrementOrigin.getCOSObject());</span>
+<span class="fc" id="L342">            initialized = true;</span>
         }
-<span class="nc" id="L344">        return objects;</span>
+<span class="fc" id="L344">        return objects;</span>
     }
     
     /**
@@ -352,7 +352,7 @@ public class COSIncrement implements Iterable&lt;COSBase&gt;
     @Override
     public Iterator&lt;COSBase&gt; iterator()
     {
-<span class="nc" id="L355">        return getObjects().iterator();</span>
+<span class="fc" id="L355">        return getObjects().iterator();</span>
     }
     
 }

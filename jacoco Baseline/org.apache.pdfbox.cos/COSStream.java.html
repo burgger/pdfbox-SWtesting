@@ -68,8 +68,8 @@ public class COSStream extends COSDictionary implements Closeable
      */
     public COSStream()
     {
-<span class="nc" id="L71">        this(null);</span>
-<span class="nc" id="L72">    }</span>
+<span class="fc" id="L71">        this(null);</span>
+<span class="fc" id="L72">    }</span>
     
     /**
      * Creates a new stream with an empty dictionary. Data is stored in the given scratch file.
@@ -104,7 +104,7 @@ public class COSStream extends COSDictionary implements Closeable
      */
     private void checkClosed() throws IOException
     {
-<span class="pc bpc" id="L107" title="3 of 4 branches missed.">        if (randomAccess != null &amp;&amp; randomAccess.isClosed())</span>
+<span class="pc bpc" id="L107" title="1 of 4 branches missed.">        if (randomAccess != null &amp;&amp; randomAccess.isClosed())</span>
         {
 <span class="nc" id="L109">            throw new IOException(&quot;COSStream has been closed and cannot be read. &quot; +</span>
                                   &quot;Perhaps its enclosing PDDocument has been closed?&quot;);
@@ -115,12 +115,12 @@ public class COSStream extends COSDictionary implements Closeable
 
     private RandomAccessStreamCache getStreamCache() throws IOException
     {
-<span class="nc bnc" id="L118" title="All 2 branches missed.">        if (streamCache == null)</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (streamCache == null)</span>
         {
-<span class="nc" id="L120">            streamCache = IOUtils.createMemoryOnlyStreamCache().create();</span>
-<span class="nc" id="L121">            closeStreamCache = true;</span>
+<span class="fc" id="L120">            streamCache = IOUtils.createMemoryOnlyStreamCache().create();</span>
+<span class="fc" id="L121">            closeStreamCache = true;</span>
         }
-<span class="nc" id="L123">        return streamCache;</span>
+<span class="fc" id="L123">        return streamCache;</span>
     }
 
     /**
@@ -136,22 +136,22 @@ public class COSStream extends COSDictionary implements Closeable
         {
 <span class="nc" id="L137">            throw new IllegalStateException(&quot;Cannot read while there is an open stream writer&quot;);</span>
         }
-<span class="pc bpc" id="L139" title="1 of 2 branches missed.">        if (randomAccess == null)</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        if (randomAccess == null)</span>
         {
-<span class="pc bpc" id="L141" title="1 of 2 branches missed.">            if (randomAccessReadView != null)</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            if (randomAccessReadView != null)</span>
             {
 <span class="fc" id="L143">                randomAccessReadView.seek(0);</span>
 <span class="fc" id="L144">                return new RandomAccessInputStream(randomAccessReadView);</span>
             }
             else
             {
-<span class="nc" id="L148">                throw new IOException(</span>
+<span class="fc" id="L148">                throw new IOException(</span>
                         &quot;Create InputStream called without data being written before to stream.&quot;);
             }
         }
         else
         {
-<span class="nc" id="L154">            return new RandomAccessInputStream(randomAccess);</span>
+<span class="fc" id="L154">            return new RandomAccessInputStream(randomAccess);</span>
         }
     }
 
@@ -163,13 +163,13 @@ public class COSStream extends COSDictionary implements Closeable
      */
     public COSInputStream createInputStream() throws IOException
     {
-<span class="nc" id="L166">        return createInputStream(DecodeOptions.DEFAULT);</span>
+<span class="fc" id="L166">        return createInputStream(DecodeOptions.DEFAULT);</span>
     }
 
     public COSInputStream createInputStream(DecodeOptions options) throws IOException
     {
-<span class="nc" id="L171">        InputStream input = createRawInputStream();</span>
-<span class="nc" id="L172">        return COSInputStream.create(getFilterList(), this, input, options);</span>
+<span class="fc" id="L171">        InputStream input = createRawInputStream();</span>
+<span class="fc" id="L172">        return COSInputStream.create(getFilterList(), this, input, options);</span>
     }
 
     /**
@@ -180,20 +180,20 @@ public class COSStream extends COSDictionary implements Closeable
      */
     public RandomAccessRead createView() throws IOException
     {
-<span class="nc" id="L183">        List&lt;Filter&gt; filterList = getFilterList();</span>
-<span class="nc bnc" id="L184" title="All 2 branches missed.">        if (filterList.isEmpty())</span>
+<span class="fc" id="L183">        List&lt;Filter&gt; filterList = getFilterList();</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">        if (filterList.isEmpty())</span>
         {
-<span class="nc bnc" id="L186" title="All 4 branches missed.">            if (randomAccess == null &amp;&amp; randomAccessReadView != null)</span>
+<span class="pc bpc" id="L186" title="1 of 4 branches missed.">            if (randomAccess == null &amp;&amp; randomAccessReadView != null)</span>
             {
-<span class="nc" id="L188">                return new RandomAccessReadView(randomAccessReadView, 0,</span>
-<span class="nc" id="L189">                        randomAccessReadView.length());</span>
+<span class="fc" id="L188">                return new RandomAccessReadView(randomAccessReadView, 0,</span>
+<span class="fc" id="L189">                        randomAccessReadView.length());</span>
             }
             else
             {
-<span class="nc" id="L193">                return new RandomAccessReadBuffer(createRawInputStream());</span>
+<span class="fc" id="L193">                return new RandomAccessReadBuffer(createRawInputStream());</span>
             }
         }
-<span class="nc" id="L196">        return Filter.decode(createRawInputStream(), filterList, this, DecodeOptions.DEFAULT, null);</span>
+<span class="fc" id="L196">        return Filter.decode(createRawInputStream(), filterList, this, DecodeOptions.DEFAULT, null);</span>
     }
 
     /**
@@ -204,7 +204,7 @@ public class COSStream extends COSDictionary implements Closeable
      */
     public OutputStream createOutputStream() throws IOException
     {
-<span class="nc" id="L207">        return createOutputStream(null);</span>
+<span class="fc" id="L207">        return createOutputStream(null);</span>
     }
     
     /**
@@ -216,39 +216,39 @@ public class COSStream extends COSDictionary implements Closeable
      */
     public OutputStream createOutputStream(COSBase filters) throws IOException
     {
-<span class="nc" id="L219">        checkClosed();</span>
-<span class="nc bnc" id="L220" title="All 2 branches missed.">        if (isWriting)</span>
+<span class="fc" id="L219">        checkClosed();</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">        if (isWriting)</span>
         {
 <span class="nc" id="L222">            throw new IllegalStateException(&quot;Cannot have more than one open stream writer.&quot;);</span>
         }
         // apply filters, if any
-<span class="nc bnc" id="L225" title="All 2 branches missed.">        if (filters != null)</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">        if (filters != null)</span>
         {
-<span class="nc" id="L227">            setItem(COSName.FILTER, filters);</span>
+<span class="fc" id="L227">            setItem(COSName.FILTER, filters);</span>
         }
-<span class="nc bnc" id="L229" title="All 2 branches missed.">        if (randomAccess != null)</span>
-<span class="nc" id="L230">            randomAccess.clear();</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">        if (randomAccess != null)</span>
+<span class="fc" id="L230">            randomAccess.clear();</span>
         else
-<span class="nc" id="L232">            randomAccess = getStreamCache().createBuffer();</span>
-<span class="nc" id="L233">        OutputStream randomOut = new RandomAccessOutputStream(randomAccess);</span>
-<span class="nc" id="L234">        OutputStream cosOut = new COSOutputStream(getFilterList(), this, randomOut,</span>
-<span class="nc" id="L235">                getStreamCache());</span>
-<span class="nc" id="L236">        isWriting = true;</span>
-<span class="nc" id="L237">        return new FilterOutputStream(cosOut)</span>
-<span class="nc" id="L238">        {</span>
+<span class="fc" id="L232">            randomAccess = getStreamCache().createBuffer();</span>
+<span class="fc" id="L233">        OutputStream randomOut = new RandomAccessOutputStream(randomAccess);</span>
+<span class="fc" id="L234">        OutputStream cosOut = new COSOutputStream(getFilterList(), this, randomOut,</span>
+<span class="fc" id="L235">                getStreamCache());</span>
+<span class="fc" id="L236">        isWriting = true;</span>
+<span class="fc" id="L237">        return new FilterOutputStream(cosOut)</span>
+<span class="fc" id="L238">        {</span>
             @Override
             public void write(byte[] b, int off, int len) throws IOException
             {
-<span class="nc" id="L242">                this.out.write(b, off, len);</span>
-<span class="nc" id="L243">            }</span>
+<span class="fc" id="L242">                this.out.write(b, off, len);</span>
+<span class="fc" id="L243">            }</span>
             
             @Override
             public void close() throws IOException
             {
-<span class="nc" id="L248">                super.close();</span>
-<span class="nc" id="L249">                setInt(COSName.LENGTH, (int)randomAccess.length());</span>
-<span class="nc" id="L250">                isWriting = false;</span>
-<span class="nc" id="L251">            }</span>
+<span class="fc" id="L248">                super.close();</span>
+<span class="fc" id="L249">                setInt(COSName.LENGTH, (int)randomAccess.length());</span>
+<span class="fc" id="L250">                isWriting = false;</span>
+<span class="fc" id="L251">            }</span>
         };
     }
     
@@ -260,32 +260,32 @@ public class COSStream extends COSDictionary implements Closeable
      */
     public OutputStream createRawOutputStream() throws IOException
     {
-<span class="nc" id="L263">        checkClosed();</span>
-<span class="nc bnc" id="L264" title="All 2 branches missed.">        if (isWriting)</span>
+<span class="fc" id="L263">        checkClosed();</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">        if (isWriting)</span>
         {
 <span class="nc" id="L266">            throw new IllegalStateException(&quot;Cannot have more than one open stream writer.&quot;);</span>
         }
-<span class="nc bnc" id="L268" title="All 2 branches missed.">        if (randomAccess != null)</span>
-<span class="nc" id="L269">            randomAccess.clear();</span>
+<span class="fc bfc" id="L268" title="All 2 branches covered.">        if (randomAccess != null)</span>
+<span class="fc" id="L269">            randomAccess.clear();</span>
         else
-<span class="nc" id="L271">            randomAccess = getStreamCache().createBuffer();</span>
-<span class="nc" id="L272">        OutputStream out = new RandomAccessOutputStream(randomAccess);</span>
-<span class="nc" id="L273">        isWriting = true;</span>
-<span class="nc" id="L274">        return new FilterOutputStream(out)</span>
-<span class="nc" id="L275">        {</span>
+<span class="fc" id="L271">            randomAccess = getStreamCache().createBuffer();</span>
+<span class="fc" id="L272">        OutputStream out = new RandomAccessOutputStream(randomAccess);</span>
+<span class="fc" id="L273">        isWriting = true;</span>
+<span class="fc" id="L274">        return new FilterOutputStream(out)</span>
+<span class="fc" id="L275">        {</span>
             @Override
             public void write(byte[] b, int off, int len) throws IOException
             {
-<span class="nc" id="L279">                this.out.write(b, off, len);</span>
-<span class="nc" id="L280">            }</span>
+<span class="fc" id="L279">                this.out.write(b, off, len);</span>
+<span class="fc" id="L280">            }</span>
             
             @Override
             public void close() throws IOException
             {
-<span class="nc" id="L285">                super.close();</span>
-<span class="nc" id="L286">                setInt(COSName.LENGTH, (int)randomAccess.length());</span>
-<span class="nc" id="L287">                isWriting = false;</span>
-<span class="nc" id="L288">            }</span>
+<span class="fc" id="L285">                super.close();</span>
+<span class="fc" id="L286">                setInt(COSName.LENGTH, (int)randomAccess.length());</span>
+<span class="fc" id="L287">                isWriting = false;</span>
+<span class="fc" id="L288">            }</span>
         };
     }
     
@@ -295,32 +295,32 @@ public class COSStream extends COSDictionary implements Closeable
     private List&lt;Filter&gt; getFilterList() throws IOException
     {
         List&lt;Filter&gt; filterList;
-<span class="nc" id="L298">        COSBase filters = getFilters();</span>
-<span class="nc bnc" id="L299" title="All 2 branches missed.">        if (filters instanceof COSName)</span>
+<span class="fc" id="L298">        COSBase filters = getFilters();</span>
+<span class="fc bfc" id="L299" title="All 2 branches covered.">        if (filters instanceof COSName)</span>
         {
-<span class="nc" id="L301">            filterList = new ArrayList&lt;&gt;(1);</span>
-<span class="nc" id="L302">            filterList.add(FilterFactory.INSTANCE.getFilter((COSName)filters));</span>
+<span class="fc" id="L301">            filterList = new ArrayList&lt;&gt;(1);</span>
+<span class="fc" id="L302">            filterList.add(FilterFactory.INSTANCE.getFilter((COSName)filters));</span>
         }
-<span class="nc bnc" id="L304" title="All 2 branches missed.">        else if (filters instanceof COSArray)</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">        else if (filters instanceof COSArray)</span>
         {
-<span class="nc" id="L306">            COSArray filterArray = (COSArray)filters;</span>
-<span class="nc" id="L307">            filterList = new ArrayList&lt;&gt;(filterArray.size());</span>
-<span class="nc bnc" id="L308" title="All 2 branches missed.">            for (int i = 0; i &lt; filterArray.size(); i++)</span>
+<span class="fc" id="L306">            COSArray filterArray = (COSArray)filters;</span>
+<span class="fc" id="L307">            filterList = new ArrayList&lt;&gt;(filterArray.size());</span>
+<span class="fc bfc" id="L308" title="All 2 branches covered.">            for (int i = 0; i &lt; filterArray.size(); i++)</span>
             {
-<span class="nc" id="L310">                COSBase base = filterArray.get(i);</span>
-<span class="nc bnc" id="L311" title="All 2 branches missed.">                if (!(base instanceof COSName))</span>
+<span class="fc" id="L310">                COSBase base = filterArray.get(i);</span>
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">                if (!(base instanceof COSName))</span>
                 {
 <span class="nc" id="L313">                    throw new IOException(&quot;Forbidden type in filter array: &quot; + </span>
 <span class="nc bnc" id="L314" title="All 2 branches missed.">                            (base == null ? &quot;null&quot; : base.getClass().getName()));</span>
                 }
-<span class="nc" id="L316">                filterList.add(FilterFactory.INSTANCE.getFilter((COSName) base));</span>
+<span class="fc" id="L316">                filterList.add(FilterFactory.INSTANCE.getFilter((COSName) base));</span>
             }
-<span class="nc" id="L318">        }</span>
+<span class="fc" id="L318">        }</span>
         else
         {
-<span class="nc" id="L321">            filterList = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L321">            filterList = new ArrayList&lt;&gt;();</span>
         }
-<span class="nc" id="L323">        return filterList;</span>
+<span class="fc" id="L323">        return filterList;</span>
     }
     
     /**
@@ -330,13 +330,13 @@ public class COSStream extends COSDictionary implements Closeable
      */
     public long getLength()
     {
-<span class="nc bnc" id="L333" title="All 2 branches missed.">        if (isWriting)</span>
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">        if (isWriting)</span>
         {
 <span class="nc" id="L335">            throw new IllegalStateException(&quot;There is an open OutputStream associated with this &quot; +</span>
                                             &quot;COSStream. It must be closed before querying the &quot; +
                                             &quot;length of this COSStream.&quot;);
         }
-<span class="nc" id="L339">        return getInt(COSName.LENGTH, 0);</span>
+<span class="fc" id="L339">        return getInt(COSName.LENGTH, 0);</span>
     }
 
     /**
@@ -352,7 +352,7 @@ public class COSStream extends COSDictionary implements Closeable
      */
     public COSBase getFilters()
     {
-<span class="nc" id="L355">        return getDictionaryObject(COSName.FILTER);</span>
+<span class="fc" id="L355">        return getDictionaryObject(COSName.FILTER);</span>
     }
     
     /**
@@ -362,11 +362,11 @@ public class COSStream extends COSDictionary implements Closeable
      */
     public String toTextString()
     {
-<span class="nc" id="L365">        try (InputStream input = createInputStream())</span>
+<span class="fc" id="L365">        try (InputStream input = createInputStream())</span>
         {
-<span class="nc" id="L367">            byte[] array = input.readAllBytes();</span>
-<span class="nc" id="L368">            COSString string = new COSString(array);</span>
-<span class="nc" id="L369">            return string.getString();</span>
+<span class="fc" id="L367">            byte[] array = input.readAllBytes();</span>
+<span class="fc" id="L368">            COSString string = new COSString(array);</span>
+<span class="fc" id="L369">            return string.getString();</span>
         }
 <span class="nc" id="L371">        catch (IOException e)</span>
         {
@@ -394,10 +394,10 @@ public class COSStream extends COSDictionary implements Closeable
     {
         try
         {
-<span class="pc bpc" id="L397" title="3 of 4 branches missed.">            if (closeStreamCache &amp;&amp; streamCache != null)</span>
+<span class="pc bpc" id="L397" title="1 of 4 branches missed.">            if (closeStreamCache &amp;&amp; streamCache != null)</span>
             {
-<span class="nc" id="L399">                streamCache.close();</span>
-<span class="nc" id="L400">                streamCache = null;</span>
+<span class="fc" id="L399">                streamCache.close();</span>
+<span class="fc" id="L400">                streamCache = null;</span>
             }
         }
         finally
@@ -405,15 +405,15 @@ public class COSStream extends COSDictionary implements Closeable
             try
             {
                 // marks the scratch file pages as free
-<span class="pc bpc" id="L408" title="1 of 2 branches missed.">                if (randomAccess != null)</span>
+<span class="fc bfc" id="L408" title="All 2 branches covered.">                if (randomAccess != null)</span>
                 {
-<span class="nc" id="L410">                    randomAccess.close();</span>
-<span class="nc" id="L411">                    randomAccess = null;</span>
+<span class="fc" id="L410">                    randomAccess.close();</span>
+<span class="fc" id="L411">                    randomAccess = null;</span>
                 }
             }
             finally
             {
-<span class="pc bpc" id="L416" title="1 of 2 branches missed.">                if (randomAccessReadView != null)</span>
+<span class="fc bfc" id="L416" title="All 2 branches covered.">                if (randomAccessReadView != null)</span>
                 {
 <span class="fc" id="L418">                    randomAccessReadView.close();</span>
 <span class="fc" id="L419">                    randomAccessReadView = null;</span>
@@ -429,7 +429,7 @@ public class COSStream extends COSDictionary implements Closeable
      */
     public boolean hasData()
     {
-<span class="pc bpc" id="L432" title="2 of 4 branches missed.">        return randomAccess != null || randomAccessReadView != null;</span>
+<span class="fc bfc" id="L432" title="All 4 branches covered.">        return randomAccess != null || randomAccessReadView != null;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

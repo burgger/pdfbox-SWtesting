@@ -235,8 +235,8 @@ public class COSParser extends BaseParser implements ICOSParser
      */
     public COSParser(RandomAccessRead source) throws IOException
     {
-<span class="nc" id="L238">        this(source, null, null, null);</span>
-<span class="nc" id="L239">    }</span>
+<span class="fc" id="L238">        this(source, null, null, null);</span>
+<span class="fc" id="L239">    }</span>
 
     /**
      * Constructor for encrypted pdfs.
@@ -251,8 +251,8 @@ public class COSParser extends BaseParser implements ICOSParser
     public COSParser(RandomAccessRead source, String password, InputStream keyStore,
             String keyAlias) throws IOException
     {
-<span class="nc" id="L254">        this(source, password, keyStore, keyAlias, null);</span>
-<span class="nc" id="L255">    }</span>
+<span class="fc" id="L254">        this(source, password, keyStore, keyAlias, null);</span>
+<span class="fc" id="L255">    }</span>
 
     /**
      * Constructor for encrypted pdfs.
@@ -344,11 +344,11 @@ public class COSParser extends BaseParser implements ICOSParser
 <span class="nc" id="L344">                rebuildTrailer = isLenient();</span>
             }
         }
-<span class="nc" id="L347">        catch (IOException exception)</span>
+<span class="fc" id="L347">        catch (IOException exception)</span>
         {
-<span class="nc bnc" id="L349" title="All 2 branches missed.">            if (isLenient())</span>
+<span class="pc bpc" id="L349" title="1 of 2 branches missed.">            if (isLenient())</span>
             {
-<span class="nc" id="L351">                rebuildTrailer = true;</span>
+<span class="fc" id="L351">                rebuildTrailer = true;</span>
             }
             else
             {
@@ -356,25 +356,25 @@ public class COSParser extends BaseParser implements ICOSParser
             }
 <span class="fc" id="L357">        }</span>
         // check if the trailer contains a Root object
-<span class="pc bpc" id="L359" title="2 of 4 branches missed.">        if (trailer != null &amp;&amp; trailer.getItem(COSName.ROOT) == null)</span>
+<span class="pc bpc" id="L359" title="1 of 4 branches missed.">        if (trailer != null &amp;&amp; trailer.getItem(COSName.ROOT) == null)</span>
         {
 <span class="nc" id="L361">            rebuildTrailer = isLenient();</span>
         }
-<span class="pc bpc" id="L363" title="1 of 2 branches missed.">        if (rebuildTrailer)</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">        if (rebuildTrailer)</span>
         {
             // reset cross reference table
-<span class="nc" id="L366">            xrefTable.clear();</span>
-<span class="nc" id="L367">            trailer = getBruteForceParser().rebuildTrailer(xrefTable);</span>
-<span class="nc" id="L368">            trailerWasRebuild = true;</span>
+<span class="fc" id="L366">            xrefTable.clear();</span>
+<span class="fc" id="L367">            trailer = getBruteForceParser().rebuildTrailer(xrefTable);</span>
+<span class="fc" id="L368">            trailerWasRebuild = true;</span>
         }
         else
         {
             // prepare decryption if necessary
 <span class="fc" id="L373">            prepareDecryption();</span>
             // don't use the getter as it creates an instance of BruteForceParser
-<span class="pc bpc" id="L375" title="3 of 4 branches missed.">            if (bruteForceParser != null &amp;&amp; bruteForceParser.bfSearchTriggered())</span>
+<span class="pc bpc" id="L375" title="1 of 4 branches missed.">            if (bruteForceParser != null &amp;&amp; bruteForceParser.bfSearchTriggered())</span>
             {
-<span class="nc" id="L377">                getBruteForceParser().bfSearchForObjStreams(xrefTable);</span>
+<span class="fc" id="L377">                getBruteForceParser().bfSearchForObjStreams(xrefTable);</span>
             }
         }
 <span class="fc" id="L380">        return trailer;</span>
@@ -395,7 +395,7 @@ public class COSParser extends BaseParser implements ICOSParser
         // read trailing bytes into buffer
         try
         {
-<span class="pc bpc" id="L398" title="1 of 2 branches missed.">            final int trailByteCount = (fileLen &lt; readTrailBytes) ? (int) fileLen : readTrailBytes;</span>
+<span class="fc bfc" id="L398" title="All 2 branches covered.">            final int trailByteCount = (fileLen &lt; readTrailBytes) ? (int) fileLen : readTrailBytes;</span>
 <span class="fc" id="L399">            buf = new byte[trailByteCount];</span>
 <span class="fc" id="L400">            skipBytes = fileLen - trailByteCount;</span>
 <span class="fc" id="L401">            source.seek(skipBytes);</span>
@@ -420,13 +420,13 @@ public class COSParser extends BaseParser implements ICOSParser
         }
         // find last '%%EOF'
 <span class="fc" id="L422">        int bufOff = lastIndexOf(EOF_MARKER, buf, buf.length);</span>
-<span class="pc bpc" id="L423" title="1 of 2 branches missed.">        if (bufOff &lt; 0)</span>
+<span class="fc bfc" id="L423" title="All 2 branches covered.">        if (bufOff &lt; 0)</span>
         {
-<span class="nc bnc" id="L425" title="All 2 branches missed.">            if (isLenient) </span>
+<span class="pc bpc" id="L425" title="1 of 2 branches missed.">            if (isLenient) </span>
             {
                 // in lenient mode the '%%EOF' isn't needed
-<span class="nc" id="L428">                bufOff = buf.length;</span>
-<span class="nc" id="L429">                LOG.debug(&quot;Missing end of file marker '{}'&quot;, new String(EOF_MARKER));</span>
+<span class="fc" id="L428">                bufOff = buf.length;</span>
+<span class="fc" id="L429">                LOG.debug(&quot;Missing end of file marker '{}'&quot;, new String(EOF_MARKER));</span>
             } 
             else 
             {
@@ -435,9 +435,9 @@ public class COSParser extends BaseParser implements ICOSParser
         }
         // find last startxref preceding EOF marker
 <span class="fc" id="L437">        bufOff = lastIndexOf(STARTXREF, buf, bufOff);</span>
-<span class="pc bpc" id="L438" title="1 of 2 branches missed.">        if (bufOff &lt; 0)</span>
+<span class="fc bfc" id="L438" title="All 2 branches covered.">        if (bufOff &lt; 0)</span>
         {
-<span class="nc" id="L440">            throw new IOException(&quot;Missing 'startxref' marker.&quot;);</span>
+<span class="fc" id="L440">            throw new IOException(&quot;Missing 'startxref' marker.&quot;);</span>
         }
         else
         {
@@ -462,7 +462,7 @@ public class COSParser extends BaseParser implements ICOSParser
 <span class="fc" id="L462">        int patOff = lastPatternChOff;</span>
 <span class="fc" id="L463">        char lookupCh = pattern[patOff];</span>
 
-<span class="pc bpc" id="L465" title="1 of 2 branches missed.">        while (--bufOff &gt;= 0)</span>
+<span class="fc bfc" id="L465" title="All 2 branches covered.">        while (--bufOff &gt;= 0)</span>
         {
 <span class="fc bfc" id="L467" title="All 2 branches covered.">            if (buf[bufOff] == lookupCh)</span>
             {
@@ -474,14 +474,14 @@ public class COSParser extends BaseParser implements ICOSParser
                 // matched current char, advance to preceding one
 <span class="fc" id="L475">                lookupCh = pattern[patOff];</span>
             }
-<span class="pc bpc" id="L477" title="1 of 2 branches missed.">            else if (patOff &lt; lastPatternChOff)</span>
+<span class="fc bfc" id="L477" title="All 2 branches covered.">            else if (patOff &lt; lastPatternChOff)</span>
             {
                 // no char match but already matched some chars; reset
-<span class="nc" id="L480">                patOff = lastPatternChOff;</span>
-<span class="nc" id="L481">                lookupCh = pattern[patOff];</span>
+<span class="fc" id="L480">                patOff = lastPatternChOff;</span>
+<span class="fc" id="L481">                lookupCh = pattern[patOff];</span>
             }
         }
-<span class="nc" id="L484">        return -1;</span>
+<span class="fc" id="L484">        return -1;</span>
     }
     
     /**
@@ -517,12 +517,12 @@ public class COSParser extends BaseParser implements ICOSParser
 <span class="fc" id="L517">        long currentPos = source.getPosition();</span>
 <span class="fc" id="L518">        COSObjectKey key = obj.getKey();</span>
 <span class="fc" id="L519">        COSBase parsedObj = parseObjectDynamically(key, false);</span>
-<span class="pc bpc" id="L520" title="1 of 2 branches missed.">        if (parsedObj != null)</span>
+<span class="fc bfc" id="L520" title="All 2 branches covered.">        if (parsedObj != null)</span>
         {
 <span class="fc" id="L522">            parsedObj.setDirect(false);</span>
 <span class="fc" id="L523">            parsedObj.setKey(key);</span>
         }
-<span class="pc bpc" id="L525" title="1 of 2 branches missed.">        if (currentPos &gt; 0)</span>
+<span class="fc bfc" id="L525" title="All 2 branches covered.">        if (currentPos &gt; 0)</span>
         {
 <span class="fc" id="L527">            source.seek(currentPos);</span>
         }
@@ -558,9 +558,9 @@ public class COSParser extends BaseParser implements ICOSParser
         }
 <span class="fc" id="L559">        Long offsetOrObjstmObNr = getObjectOffset(objKey, requireExistingNotCompressedObj);</span>
 <span class="fc" id="L560">        COSBase referencedObject = null;</span>
-<span class="pc bpc" id="L561" title="1 of 2 branches missed.">        if (offsetOrObjstmObNr != null)</span>
+<span class="fc bfc" id="L561" title="All 2 branches covered.">        if (offsetOrObjstmObNr != null)</span>
         {
-<span class="pc bpc" id="L563" title="1 of 2 branches missed.">            if (offsetOrObjstmObNr &gt; 0)</span>
+<span class="fc bfc" id="L563" title="All 2 branches covered.">            if (offsetOrObjstmObNr &gt; 0)</span>
             {
 <span class="fc" id="L565">                referencedObject = parseFileObject(offsetOrObjstmObNr, objKey);</span>
             }
@@ -568,15 +568,15 @@ public class COSParser extends BaseParser implements ICOSParser
             {
                 // xref value is object nr of object stream containing object to be parsed
                 // since our object was not found it means object stream was not parsed so far
-<span class="nc" id="L571">                referencedObject = parseObjectStreamObject(-offsetOrObjstmObNr, objKey);</span>
+<span class="fc" id="L571">                referencedObject = parseObjectStreamObject(-offsetOrObjstmObNr, objKey);</span>
             }
         }
-<span class="pc bpc" id="L574" title="2 of 4 branches missed.">        if (referencedObject == null || referencedObject instanceof COSNull)</span>
+<span class="fc bfc" id="L574" title="All 4 branches covered.">        if (referencedObject == null || referencedObject instanceof COSNull)</span>
         {
             // not defined object -&gt; NULL object (Spec. 1.7, chap. 3.2.9)
             // or some other issue with dereferencing
             // remove parser to avoid endless recursion
-<span class="nc" id="L579">            pdfObject.setToNull();</span>
+<span class="fc" id="L579">            pdfObject.setToNull();</span>
         }
 <span class="fc" id="L581">        return referencedObject;</span>
     }
@@ -588,13 +588,13 @@ public class COSParser extends BaseParser implements ICOSParser
 <span class="fc" id="L588">        Long offsetOrObjstmObNr = document.getXrefTable().get(objKey);</span>
 
         // maybe something is wrong with the xref table -&gt; perform brute force search for all objects
-<span class="pc bpc" id="L591" title="3 of 4 branches missed.">        if (offsetOrObjstmObNr == null &amp;&amp; isLenient)</span>
+<span class="pc bpc" id="L591" title="1 of 4 branches missed.">        if (offsetOrObjstmObNr == null &amp;&amp; isLenient)</span>
         {
-<span class="nc" id="L593">            offsetOrObjstmObNr =  getBruteForceParser().getBFCOSObjectOffsets().get(objKey);</span>
-<span class="nc bnc" id="L594" title="All 2 branches missed.">            if (offsetOrObjstmObNr != null)</span>
+<span class="fc" id="L593">            offsetOrObjstmObNr =  getBruteForceParser().getBFCOSObjectOffsets().get(objKey);</span>
+<span class="fc bfc" id="L594" title="All 2 branches covered.">            if (offsetOrObjstmObNr != null)</span>
             {
-<span class="nc" id="L596">                LOG.debug(&quot;Set missing offset {} for object {}&quot;, offsetOrObjstmObNr, objKey);</span>
-<span class="nc" id="L597">                document.getXrefTable().put(objKey, offsetOrObjstmObNr);</span>
+<span class="fc" id="L596">                LOG.debug(&quot;Set missing offset {} for object {}&quot;, offsetOrObjstmObNr, objKey);</span>
+<span class="fc" id="L597">                document.getXrefTable().put(objKey, offsetOrObjstmObNr);</span>
             }
         }
 
@@ -643,9 +643,9 @@ public class COSParser extends BaseParser implements ICOSParser
             {
 <span class="fc" id="L644">                COSStream stream = parseCOSStream((COSDictionary) parsedObject);</span>
 
-<span class="pc bpc" id="L646" title="1 of 2 branches missed.">                if (securityHandler != null)</span>
+<span class="fc bfc" id="L646" title="All 2 branches covered.">                if (securityHandler != null)</span>
                 {
-<span class="nc" id="L648">                    securityHandler.decryptStream(stream, objKey.getNumber(), objKey.getGeneration());</span>
+<span class="fc" id="L648">                    securityHandler.decryptStream(stream, objKey.getNumber(), objKey.getGeneration());</span>
                 }
 <span class="fc" id="L650">                parsedObject = stream;</span>
 <span class="fc" id="L651">            }</span>
@@ -672,19 +672,19 @@ public class COSParser extends BaseParser implements ICOSParser
                 }
             }
         }
-<span class="pc bpc" id="L675" title="1 of 2 branches missed.">        else if (securityHandler != null)</span>
+<span class="fc bfc" id="L675" title="All 2 branches covered.">        else if (securityHandler != null)</span>
         {
-<span class="nc" id="L677">            parsedObject = securityHandler.decrypt(parsedObject, objKey.getNumber(),</span>
-<span class="nc" id="L678">                    objKey.getGeneration());</span>
-<span class="nc" id="L679">            parsedObject.setKey(objKey);</span>
+<span class="fc" id="L677">            parsedObject = securityHandler.decrypt(parsedObject, objKey.getNumber(),</span>
+<span class="fc" id="L678">                    objKey.getGeneration());</span>
+<span class="fc" id="L679">            parsedObject.setKey(objKey);</span>
         }
 
-<span class="pc bpc" id="L682" title="1 of 2 branches missed.">        if (!endObjectKey.startsWith(ENDOBJ_STRING))</span>
+<span class="fc bfc" id="L682" title="All 2 branches covered.">        if (!endObjectKey.startsWith(ENDOBJ_STRING))</span>
         {
-<span class="nc bnc" id="L684" title="All 2 branches missed.">            if (isLenient)</span>
+<span class="pc bpc" id="L684" title="1 of 2 branches missed.">            if (isLenient)</span>
             {
-<span class="nc" id="L686">                LOG.warn(&quot;Object ({}:{}) at offset {} does not end with 'endobj' but with '{}'&quot;,</span>
-<span class="nc" id="L687">                        readObjNr, readObjGen, objOffset, endObjectKey);</span>
+<span class="fc" id="L686">                LOG.warn(&quot;Object ({}:{}) at offset {} does not end with 'endobj' but with '{}'&quot;,</span>
+<span class="fc" id="L687">                        readObjNr, readObjGen, objOffset, endObjectKey);</span>
             }
             else
             {
@@ -706,26 +706,26 @@ public class COSParser extends BaseParser implements ICOSParser
      */
     protected COSBase parseObjectStreamObject(long objstmObjNr, COSObjectKey key) throws IOException
     {
-<span class="nc" id="L709">        Map&lt;COSObjectKey, COSBase&gt; streamObjects = decompressedObjects.computeIfAbsent(objstmObjNr,</span>
-<span class="nc" id="L710">                n -&gt; new HashMap&lt;&gt;());</span>
+<span class="fc" id="L709">        Map&lt;COSObjectKey, COSBase&gt; streamObjects = decompressedObjects.computeIfAbsent(objstmObjNr,</span>
+<span class="fc" id="L710">                n -&gt; new HashMap&lt;&gt;());</span>
         // did we already read the compressed object stream?
-<span class="nc" id="L712">        COSBase objectStreamObject = streamObjects.remove(key);</span>
-<span class="nc bnc" id="L713" title="All 2 branches missed.">        if (objectStreamObject != null)</span>
+<span class="fc" id="L712">        COSBase objectStreamObject = streamObjects.remove(key);</span>
+<span class="fc bfc" id="L713" title="All 2 branches covered.">        if (objectStreamObject != null)</span>
         {
-<span class="nc" id="L715">            return objectStreamObject;</span>
+<span class="fc" id="L715">            return objectStreamObject;</span>
         }
-<span class="nc" id="L717">        final COSObjectKey objKey = getObjectKey(objstmObjNr, 0);</span>
-<span class="nc" id="L718">        final COSBase objstmBaseObj = document.getObjectFromPool(objKey).getObject();</span>
-<span class="nc bnc" id="L719" title="All 2 branches missed.">        if (objstmBaseObj instanceof COSStream)</span>
+<span class="fc" id="L717">        final COSObjectKey objKey = getObjectKey(objstmObjNr, 0);</span>
+<span class="fc" id="L718">        final COSBase objstmBaseObj = document.getObjectFromPool(objKey).getObject();</span>
+<span class="pc bpc" id="L719" title="1 of 2 branches missed.">        if (objstmBaseObj instanceof COSStream)</span>
         {
             try
             {
-<span class="nc" id="L723">                PDFObjectStreamParser parser = new PDFObjectStreamParser((COSStream) objstmBaseObj,</span>
+<span class="fc" id="L723">                PDFObjectStreamParser parser = new PDFObjectStreamParser((COSStream) objstmBaseObj,</span>
                         document);
-<span class="nc" id="L725">                Map&lt;COSObjectKey, COSBase&gt; allStreamObjects = parser.parseAllObjects();</span>
-<span class="nc" id="L726">                objectStreamObject = allStreamObjects.remove(key);</span>
-<span class="nc" id="L727">                allStreamObjects.entrySet().stream()</span>
-<span class="nc" id="L728">                        .forEach(e -&gt; streamObjects.putIfAbsent(e.getKey(), e.getValue()));</span>
+<span class="fc" id="L725">                Map&lt;COSObjectKey, COSBase&gt; allStreamObjects = parser.parseAllObjects();</span>
+<span class="fc" id="L726">                objectStreamObject = allStreamObjects.remove(key);</span>
+<span class="fc" id="L727">                allStreamObjects.entrySet().stream()</span>
+<span class="fc" id="L728">                        .forEach(e -&gt; streamObjects.putIfAbsent(e.getKey(), e.getValue()));</span>
             }
 <span class="nc" id="L730">            catch (IOException ex)</span>
             {
@@ -738,9 +738,9 @@ public class COSParser extends BaseParser implements ICOSParser
                 {
 <span class="nc" id="L739">                    throw ex;</span>
                 }
-<span class="nc" id="L741">            }</span>
+<span class="fc" id="L741">            }</span>
         }
-<span class="nc" id="L743">        return objectStreamObject;</span>
+<span class="fc" id="L743">        return objectStreamObject;</span>
     }
 
     /** 
@@ -748,32 +748,32 @@ public class COSParser extends BaseParser implements ICOSParser
      */
     private COSNumber getLength(final COSBase lengthBaseObj) throws IOException
     {
-<span class="pc bpc" id="L751" title="1 of 2 branches missed.">        if (lengthBaseObj == null)</span>
+<span class="fc bfc" id="L751" title="All 2 branches covered.">        if (lengthBaseObj == null)</span>
         {
-<span class="nc" id="L753">            return null;</span>
+<span class="fc" id="L753">            return null;</span>
         }
         // maybe length was given directly
-<span class="pc bpc" id="L756" title="1 of 2 branches missed.">        if (lengthBaseObj instanceof COSNumber)</span>
+<span class="fc bfc" id="L756" title="All 2 branches covered.">        if (lengthBaseObj instanceof COSNumber)</span>
         {
 <span class="fc" id="L758">            return (COSNumber) lengthBaseObj;</span>
         }
         // length in referenced object
-<span class="nc bnc" id="L761" title="All 2 branches missed.">        if (lengthBaseObj instanceof COSObject)</span>
+<span class="pc bpc" id="L761" title="1 of 2 branches missed.">        if (lengthBaseObj instanceof COSObject)</span>
         {
-<span class="nc" id="L763">            COSObject lengthObj = (COSObject) lengthBaseObj;</span>
-<span class="nc" id="L764">            COSBase length = lengthObj.getObject();</span>
-<span class="nc bnc" id="L765" title="All 2 branches missed.">            if (length == null)</span>
+<span class="fc" id="L763">            COSObject lengthObj = (COSObject) lengthBaseObj;</span>
+<span class="fc" id="L764">            COSBase length = lengthObj.getObject();</span>
+<span class="pc bpc" id="L765" title="1 of 2 branches missed.">            if (length == null)</span>
             {
 <span class="nc" id="L767">                throw new IOException(&quot;Length object content was not read.&quot;);</span>
             }
-<span class="nc bnc" id="L769" title="All 2 branches missed.">            if (COSNull.NULL == length)</span>
+<span class="pc bpc" id="L769" title="1 of 2 branches missed.">            if (COSNull.NULL == length)</span>
             {
 <span class="nc" id="L771">                LOG.warn(&quot;Length object ({}) not found&quot;, lengthObj.getKey());</span>
 <span class="nc" id="L772">                return null;</span>
             }
-<span class="nc bnc" id="L774" title="All 2 branches missed.">            if (length instanceof COSNumber)</span>
+<span class="pc bpc" id="L774" title="1 of 2 branches missed.">            if (length instanceof COSNumber)</span>
             {
-<span class="nc" id="L776">                return (COSNumber) length;</span>
+<span class="fc" id="L776">                return (COSNumber) length;</span>
             }
 <span class="nc" id="L778">            throw new IOException(&quot;Wrong type of referenced length object &quot; + lengthObj + &quot;: &quot;</span>
 <span class="nc" id="L779">                    + length.getClass().getSimpleName());</span>
@@ -812,10 +812,10 @@ public class COSParser extends BaseParser implements ICOSParser
                     // the current empty COSObject is replaced with the correct one
 <span class="fc" id="L813">                    pbo = null;</span>
                     // We have to check if the expected values are there or not PDFBOX-385
-<span class="pc bpc" id="L815" title="2 of 4 branches missed.">                    if (po.size() &gt; 1 &amp;&amp; po.get(po.size() - 1) instanceof COSInteger)</span>
+<span class="pc bpc" id="L815" title="1 of 4 branches missed.">                    if (po.size() &gt; 1 &amp;&amp; po.get(po.size() - 1) instanceof COSInteger)</span>
                     {
 <span class="fc" id="L817">                        COSInteger genNumber = (COSInteger) po.remove(po.size() - 1);</span>
-<span class="pc bpc" id="L818" title="2 of 4 branches missed.">                        if (po.size() &gt; 0 &amp;&amp; po.get(po.size() - 1) instanceof COSInteger)</span>
+<span class="pc bpc" id="L818" title="1 of 4 branches missed.">                        if (po.size() &gt; 0 &amp;&amp; po.get(po.size() - 1) instanceof COSInteger)</span>
                         {
 <span class="fc" id="L820">                            COSInteger number = (COSInteger) po.remove(po.size() - 1);</span>
 <span class="pc bpc" id="L821" title="2 of 4 branches missed.">                            if (number.longValue() &gt;= 0 &amp;&amp; genNumber.intValue() &gt;= 0)</span>
@@ -833,26 +833,26 @@ public class COSParser extends BaseParser implements ICOSParser
                     }
                 }
                 // something went wrong
-<span class="pc bpc" id="L836" title="1 of 2 branches missed.">                if (pbo == null)</span>
+<span class="fc bfc" id="L836" title="All 2 branches covered.">                if (pbo == null)</span>
                 {
                     // it could be a bad object in the array which is just skipped
-<span class="nc" id="L839">                    LOG.warn(&quot;Corrupt array element at offset {}, start offset: {}&quot;,</span>
-<span class="nc" id="L840">                            source.getPosition(), startPosition);</span>
-<span class="nc" id="L841">                    String isThisTheEnd = readString();</span>
+<span class="fc" id="L839">                    LOG.warn(&quot;Corrupt array element at offset {}, start offset: {}&quot;,</span>
+<span class="fc" id="L840">                            source.getPosition(), startPosition);</span>
+<span class="fc" id="L841">                    String isThisTheEnd = readString();</span>
                     // return immediately if a corrupt element is followed by another array
                     // to avoid a possible infinite recursion as most likely the whole array is corrupted
-<span class="nc bnc" id="L844" title="All 4 branches missed.">                    if (isThisTheEnd.isEmpty() &amp;&amp; source.peek() == '[')</span>
+<span class="pc bpc" id="L844" title="1 of 4 branches missed.">                    if (isThisTheEnd.isEmpty() &amp;&amp; source.peek() == '[')</span>
                     {
-<span class="nc" id="L846">                        return po;</span>
+<span class="fc" id="L846">                        return po;</span>
                     }
-<span class="nc" id="L848">                    source.rewind(isThisTheEnd.getBytes(StandardCharsets.ISO_8859_1).length);</span>
+<span class="fc" id="L848">                    source.rewind(isThisTheEnd.getBytes(StandardCharsets.ISO_8859_1).length);</span>
                     // This could also be an &quot;endobj&quot; or &quot;endstream&quot; which means we can assume that
                     // the array has ended.
-<span class="nc bnc" id="L851" title="All 4 branches missed.">                    if (ENDOBJ_STRING.equals(isThisTheEnd) || ENDSTREAM_STRING.equals(isThisTheEnd))</span>
+<span class="pc bpc" id="L851" title="2 of 4 branches missed.">                    if (ENDOBJ_STRING.equals(isThisTheEnd) || ENDSTREAM_STRING.equals(isThisTheEnd))</span>
                     {
 <span class="nc" id="L853">                        return po;</span>
                     }
-<span class="nc" id="L855">                }</span>
+<span class="fc" id="L855">                }</span>
                 else
                 {
 <span class="fc" id="L858">                    po.add(pbo);</span>
@@ -971,7 +971,7 @@ public class COSParser extends BaseParser implements ICOSParser
 <span class="fc" id="L971">        StringBuilder buf = new StringBuilder();</span>
 <span class="fc" id="L972">        int ic = source.read();</span>
 <span class="fc" id="L973">        char c = (char) ic;</span>
-<span class="pc bpc" id="L974" title="4 of 12 branches missed.">        while (Character.isDigit(c) || c == '-' || c == '+' || c == '.' || c == 'E' || c == 'e')</span>
+<span class="pc bpc" id="L974" title="2 of 12 branches missed.">        while (Character.isDigit(c) || c == '-' || c == '+' || c == '.' || c == 'E' || c == 'e')</span>
         {
 <span class="fc" id="L976">            buf.append(c);</span>
 <span class="fc" id="L977">            ic = source.read();</span>
@@ -984,10 +984,10 @@ public class COSParser extends BaseParser implements ICOSParser
 
         // PDFBOX-5025: catch &quot;74191endobj&quot;
 <span class="fc" id="L986">        char lastc = buf.charAt(buf.length() - 1);</span>
-<span class="pc bpc" id="L987" title="2 of 4 branches missed.">        if (lastc == 'e' || lastc == 'E')</span>
+<span class="pc bpc" id="L987" title="1 of 4 branches missed.">        if (lastc == 'e' || lastc == 'E')</span>
         {
-<span class="nc" id="L989">            buf.deleteCharAt(buf.length() - 1);</span>
-<span class="nc" id="L990">            source.rewind(1);</span>
+<span class="fc" id="L989">            buf.deleteCharAt(buf.length() - 1);</span>
+<span class="fc" id="L990">            source.rewind(1);</span>
         }
 
 <span class="fc" id="L993">        return COSNumber.get(buf.toString());</span>
@@ -1053,13 +1053,13 @@ public class COSParser extends BaseParser implements ICOSParser
         try
         {
 <span class="fc" id="L1055">            recursionDepth++;</span>
-<span class="pc bpc" id="L1056" title="1 of 2 branches missed.">            if (recursionDepth &gt; MAX_RECURSION_DEPTH)</span>
+<span class="fc bfc" id="L1056" title="All 2 branches covered.">            if (recursionDepth &gt; MAX_RECURSION_DEPTH)</span>
             {
-<span class="nc" id="L1058">                throw new IOException(MAX_RECUSRION_MSG);</span>
+<span class="fc" id="L1058">                throw new IOException(MAX_RECUSRION_MSG);</span>
             }
 <span class="fc" id="L1060">            skipSpaces();</span>
 <span class="fc" id="L1061">            char c = (char) source.peek();</span>
-<span class="pc bpc" id="L1062" title="4 of 10 branches missed.">            switch (c)</span>
+<span class="pc bpc" id="L1062" title="1 of 10 branches missed.">            switch (c)</span>
             {
             case '&lt;':
                 // pull off first left bracket
@@ -1085,30 +1085,30 @@ public class COSParser extends BaseParser implements ICOSParser
 <span class="fc" id="L1085">                return parseCOSName();</span>
             case 'n':
                 // null
-<span class="nc" id="L1088">                readExpectedString(NULL, false);</span>
-<span class="nc" id="L1089">                return COSNull.NULL;</span>
+<span class="fc" id="L1088">                readExpectedString(NULL, false);</span>
+<span class="fc" id="L1089">                return COSNull.NULL;</span>
             case 't':
-<span class="nc" id="L1091">                readExpectedString(TRUE, false);</span>
-<span class="nc" id="L1092">                return COSBoolean.TRUE;</span>
+<span class="fc" id="L1091">                readExpectedString(TRUE, false);</span>
+<span class="fc" id="L1092">                return COSBoolean.TRUE;</span>
             case 'f':
-<span class="nc" id="L1094">                readExpectedString(FALSE, false);</span>
-<span class="nc" id="L1095">                return COSBoolean.FALSE;</span>
+<span class="fc" id="L1094">                readExpectedString(FALSE, false);</span>
+<span class="fc" id="L1095">                return COSBoolean.FALSE;</span>
             case 'R':
 <span class="fc" id="L1097">                source.read();</span>
 <span class="fc" id="L1098">                return new COSObject(null);</span>
             case (char) -1:
 <span class="nc" id="L1100">                return null;</span>
             default:
-<span class="pc bpc" id="L1102" title="5 of 8 branches missed.">                if (isDigit(c) || c == '-' || c == '+' || c == '.')</span>
+<span class="pc bpc" id="L1102" title="1 of 8 branches missed.">                if (isDigit(c) || c == '-' || c == '+' || c == '.')</span>
                 {
 <span class="fc" id="L1104">                    return parseCOSNumber();</span>
                 }
                 // This is not suppose to happen, but we will allow for it
                 // so we are more compatible with POS writers that don't
                 // follow the spec
-<span class="nc" id="L1109">                long startOffset = source.getPosition();</span>
-<span class="nc" id="L1110">                String badString = readString();</span>
-<span class="nc bnc" id="L1111" title="All 2 branches missed.">                if (badString.isEmpty())</span>
+<span class="fc" id="L1109">                long startOffset = source.getPosition();</span>
+<span class="fc" id="L1110">                String badString = readString();</span>
+<span class="pc bpc" id="L1111" title="1 of 2 branches missed.">                if (badString.isEmpty())</span>
                 {
 <span class="nc" id="L1113">                    int peek = source.peek();</span>
                     // we can end up in an infinite loop otherwise
@@ -1118,15 +1118,15 @@ public class COSParser extends BaseParser implements ICOSParser
                 }
 
                 // if it's an endstream/endobj, we want to put it back so the caller will see it
-<span class="nc bnc" id="L1121" title="All 4 branches missed.">                if (ENDOBJ_STRING.equals(badString) || ENDSTREAM_STRING.equals(badString))</span>
+<span class="pc bpc" id="L1121" title="2 of 4 branches missed.">                if (ENDOBJ_STRING.equals(badString) || ENDSTREAM_STRING.equals(badString))</span>
                 {
 <span class="nc" id="L1123">                    source.rewind(badString.getBytes(StandardCharsets.ISO_8859_1).length);</span>
                 }
                 else
                 {
-<span class="nc" id="L1127">                    LOG.warn(&quot;Skipped unexpected dir object = '{}' at offset {} (start offset: {})&quot;,</span>
-<span class="nc" id="L1128">                            badString, source.getPosition(), startOffset);</span>
-<span class="nc bnc" id="L1129" title="All 2 branches missed.">                    return this instanceof PDFStreamParser ? null : COSNull.NULL;</span>
+<span class="fc" id="L1127">                    LOG.warn(&quot;Skipped unexpected dir object = '{}' at offset {} (start offset: {})&quot;,</span>
+<span class="fc" id="L1128">                            badString, source.getPosition(), startOffset);</span>
+<span class="pc bpc" id="L1129" title="1 of 2 branches missed.">                    return this instanceof PDFStreamParser ? null : COSNull.NULL;</span>
                 }
             }
 <span class="nc" id="L1132">            return null;</span>
@@ -1217,13 +1217,13 @@ public class COSParser extends BaseParser implements ICOSParser
          * This needs to be dic.getItem because when we are parsing, the underlying object might still be null.
          */
 <span class="fc" id="L1219">        COSNumber streamLengthObj = getLength(dic.getItem(COSName.LENGTH));</span>
-<span class="pc bpc" id="L1220" title="1 of 2 branches missed.">        if (streamLengthObj == null)</span>
+<span class="fc bfc" id="L1220" title="All 2 branches covered.">        if (streamLengthObj == null)</span>
         {
-<span class="nc bnc" id="L1222" title="All 2 branches missed.">            if (isLenient)</span>
+<span class="pc bpc" id="L1222" title="1 of 2 branches missed.">            if (isLenient)</span>
             {
-<span class="nc" id="L1224">                LOG.warn(</span>
+<span class="fc" id="L1224">                LOG.warn(</span>
                         &quot;The stream doesn't provide any stream length, using fallback readUntilEnd, at offset {}&quot;,
-<span class="nc" id="L1226">                        source.getPosition());</span>
+<span class="fc" id="L1226">                        source.getPosition());</span>
             }
             else
             {
@@ -1234,7 +1234,7 @@ public class COSParser extends BaseParser implements ICOSParser
 
 <span class="fc" id="L1235">        long streamStartPosition = source.getPosition();</span>
         long streamLength;
-<span class="pc bpc" id="L1237" title="2 of 4 branches missed.">        if (streamLengthObj != null &amp;&amp; validateStreamLength(streamLengthObj.longValue()))</span>
+<span class="fc bfc" id="L1237" title="All 4 branches covered.">        if (streamLengthObj != null &amp;&amp; validateStreamLength(streamLengthObj.longValue()))</span>
         {
 <span class="fc" id="L1239">            streamLength = streamLengthObj.longValue();</span>
             // skip stream
@@ -1242,10 +1242,10 @@ public class COSParser extends BaseParser implements ICOSParser
         }
         else
         {
-<span class="nc" id="L1245">            streamLength = readUntilEndStream(new EndstreamFilterStream());</span>
-<span class="nc bnc" id="L1246" title="All 4 branches missed.">            if (streamLengthObj == null || streamLengthObj.longValue() != streamLength)</span>
+<span class="fc" id="L1245">            streamLength = readUntilEndStream(new EndstreamFilterStream());</span>
+<span class="pc bpc" id="L1246" title="1 of 4 branches missed.">            if (streamLengthObj == null || streamLengthObj.longValue() != streamLength)</span>
             {
-<span class="nc" id="L1248">                dic.setLong(COSName.LENGTH, streamLength);</span>
+<span class="fc" id="L1248">                dic.setLong(COSName.LENGTH, streamLength);</span>
             }
         }
 <span class="fc" id="L1251">        String endStream = readString();</span>
@@ -1289,55 +1289,55 @@ public class COSParser extends BaseParser implements ICOSParser
     private long readUntilEndStream(final EndstreamFilterStream out) throws IOException
     {
         int bufSize;
-<span class="nc" id="L1292">        int charMatchCount = 0;</span>
-<span class="nc" id="L1293">        byte[] keyw = ENDSTREAM;</span>
+<span class="fc" id="L1292">        int charMatchCount = 0;</span>
+<span class="fc" id="L1293">        byte[] keyw = ENDSTREAM;</span>
         
         // last character position of shortest keyword ('endobj')
-<span class="nc" id="L1296">        final int quickTestOffset = 5;</span>
+<span class="fc" id="L1296">        final int quickTestOffset = 5;</span>
         
         // read next chunk into buffer; already matched chars are added to beginning of buffer
-<span class="nc bnc" id="L1299" title="All 2 branches missed.">        while ( ( bufSize = source.read( strmBuf, charMatchCount, STRMBUFLEN - charMatchCount ) ) &gt; 0 ) </span>
+<span class="pc bpc" id="L1299" title="1 of 2 branches missed.">        while ( ( bufSize = source.read( strmBuf, charMatchCount, STRMBUFLEN - charMatchCount ) ) &gt; 0 ) </span>
         {
-<span class="nc" id="L1301">            bufSize += charMatchCount;</span>
+<span class="fc" id="L1301">            bufSize += charMatchCount;</span>
             
-<span class="nc" id="L1303">            int bIdx = charMatchCount;</span>
+<span class="fc" id="L1303">            int bIdx = charMatchCount;</span>
             int quickTestIdx;
         
             // iterate over buffer, trying to find keyword match
-<span class="nc bnc" id="L1307" title="All 2 branches missed.">            for ( int maxQuicktestIdx = bufSize - quickTestOffset; bIdx &lt; bufSize; bIdx++ ) </span>
+<span class="fc bfc" id="L1307" title="All 2 branches covered.">            for ( int maxQuicktestIdx = bufSize - quickTestOffset; bIdx &lt; bufSize; bIdx++ ) </span>
             {
                 // reduce compare operations by first test last character we would have to
                 // match if current one matches; if it is not a character from keywords
                 // we can move behind the test character; this shortcut is inspired by the 
                 // Boyer-Moore string search algorithm and can reduce parsing time by approx. 20%
-<span class="nc" id="L1313">                quickTestIdx = bIdx + quickTestOffset;</span>
-<span class="nc bnc" id="L1314" title="All 4 branches missed.">                if (charMatchCount == 0 &amp;&amp; quickTestIdx &lt; maxQuicktestIdx)</span>
+<span class="fc" id="L1313">                quickTestIdx = bIdx + quickTestOffset;</span>
+<span class="fc bfc" id="L1314" title="All 4 branches covered.">                if (charMatchCount == 0 &amp;&amp; quickTestIdx &lt; maxQuicktestIdx)</span>
                 {                    
-<span class="nc" id="L1316">                    final byte ch = strmBuf[quickTestIdx];</span>
-<span class="nc bnc" id="L1317" title="All 4 branches missed.">                    if ( ( ch &gt; 't' ) || ( ch &lt; 'a' ) ) </span>
+<span class="fc" id="L1316">                    final byte ch = strmBuf[quickTestIdx];</span>
+<span class="fc bfc" id="L1317" title="All 4 branches covered.">                    if ( ( ch &gt; 't' ) || ( ch &lt; 'a' ) ) </span>
                     {
                         // last character we would have to match if current character would match
                         // is not a character from keywords -&gt; jump behind and start over
-<span class="nc" id="L1321">                        bIdx = quickTestIdx;</span>
-<span class="nc" id="L1322">                        continue;</span>
+<span class="fc" id="L1321">                        bIdx = quickTestIdx;</span>
+<span class="fc" id="L1322">                        continue;</span>
                     }
                 }
                 
                 // could be negative - but we only compare to ASCII
-<span class="nc" id="L1327">                final byte ch = strmBuf[bIdx];</span>
+<span class="fc" id="L1327">                final byte ch = strmBuf[bIdx];</span>
             
-<span class="nc bnc" id="L1329" title="All 2 branches missed.">                if ( ch == keyw[ charMatchCount ] ) </span>
+<span class="fc bfc" id="L1329" title="All 2 branches covered.">                if ( ch == keyw[ charMatchCount ] ) </span>
                 {
-<span class="nc bnc" id="L1331" title="All 2 branches missed.">                    if ( ++charMatchCount == keyw.length ) </span>
+<span class="fc bfc" id="L1331" title="All 2 branches covered.">                    if ( ++charMatchCount == keyw.length ) </span>
                     {
                         // match found
-<span class="nc" id="L1334">                        bIdx++;</span>
-<span class="nc" id="L1335">                        break;</span>
+<span class="fc" id="L1334">                        bIdx++;</span>
+<span class="fc" id="L1335">                        break;</span>
                     }
                 } 
                 else 
                 {
-<span class="nc bnc" id="L1340" title="All 4 branches missed.">                    if ( ( charMatchCount == 3 ) &amp;&amp; ( ch == ENDOBJ[ charMatchCount ] ) ) </span>
+<span class="pc bpc" id="L1340" title="1 of 4 branches missed.">                    if ( ( charMatchCount == 3 ) &amp;&amp; ( ch == ENDOBJ[ charMatchCount ] ) ) </span>
                     {
                         // maybe ENDSTREAM is missing but we could have ENDOBJ
 <span class="nc" id="L1343">                        keyw = ENDOBJ;</span>
@@ -1350,34 +1350,34 @@ public class COSParser extends BaseParser implements ICOSParser
                         // of a new match: 'e': first char matched; 'n': if we are at match position 
                         // idx 7 we already read 'e' thus 2 chars matched for each other char we have 
                         // to start matching first keyword char beginning with next read position
-<span class="nc bnc" id="L1353" title="All 6 branches missed.">                        charMatchCount = ( ch == E ) ? 1 : ( ( ch == N ) &amp;&amp; ( charMatchCount == 7 ) ) ? 2 : 0;</span>
+<span class="pc bpc" id="L1353" title="2 of 6 branches missed.">                        charMatchCount = ( ch == E ) ? 1 : ( ( ch == N ) &amp;&amp; ( charMatchCount == 7 ) ) ? 2 : 0;</span>
                         // search again for 'endstream'
-<span class="nc" id="L1355">                        keyw = ENDSTREAM;</span>
+<span class="fc" id="L1355">                        keyw = ENDSTREAM;</span>
                     }
                 } 
             }
             
-<span class="nc" id="L1360">            int contentBytes = Math.max( 0, bIdx - charMatchCount );</span>
+<span class="fc" id="L1360">            int contentBytes = Math.max( 0, bIdx - charMatchCount );</span>
             
             // write buffer content until first matched char to output stream
-<span class="nc bnc" id="L1363" title="All 2 branches missed.">            if ( contentBytes &gt; 0 )</span>
+<span class="pc bpc" id="L1363" title="1 of 2 branches missed.">            if ( contentBytes &gt; 0 )</span>
             {
-<span class="nc" id="L1365">                out.filter(strmBuf, 0, contentBytes);</span>
+<span class="fc" id="L1365">                out.filter(strmBuf, 0, contentBytes);</span>
             }
-<span class="nc bnc" id="L1367" title="All 2 branches missed.">            if ( charMatchCount == keyw.length ) </span>
+<span class="fc bfc" id="L1367" title="All 2 branches covered.">            if ( charMatchCount == keyw.length ) </span>
             {
                 // keyword matched; unread matched keyword (endstream/endobj) and following buffered content
-<span class="nc" id="L1370">                source.rewind( bufSize - contentBytes );</span>
-<span class="nc" id="L1371">                break;</span>
+<span class="fc" id="L1370">                source.rewind( bufSize - contentBytes );</span>
+<span class="fc" id="L1371">                break;</span>
             } 
             else 
             {
                 // copy matched chars at start of buffer
-<span class="nc" id="L1376">                System.arraycopy( keyw, 0, strmBuf, 0, charMatchCount );</span>
+<span class="fc" id="L1376">                System.arraycopy( keyw, 0, strmBuf, 0, charMatchCount );</span>
             }            
-<span class="nc" id="L1378">        }</span>
+<span class="fc" id="L1378">        }</span>
         // this writes a lonely CR or drops trailing CR LF and LF
-<span class="nc" id="L1380">        return out.calculateLength();</span>
+<span class="fc" id="L1380">        return out.calculateLength();</span>
     }
 
     private boolean validateStreamLength(long streamLength) throws IOException
@@ -1406,23 +1406,23 @@ public class COSParser extends BaseParser implements ICOSParser
 <span class="fc" id="L1406">        skipSpaces();</span>
 <span class="fc" id="L1407">        boolean endStreamFound = isString(ENDSTREAM);</span>
 <span class="fc" id="L1408">        source.seek(originOffset);</span>
-<span class="pc bpc" id="L1409" title="1 of 2 branches missed.">        if (!endStreamFound)</span>
+<span class="fc bfc" id="L1409" title="All 2 branches covered.">        if (!endStreamFound)</span>
         {
-<span class="nc" id="L1411">            LOG.warn(</span>
+<span class="fc" id="L1411">            LOG.warn(</span>
                     &quot;The end of the stream doesn't point to the correct offset, using workaround to read the stream, stream start position: {}, length: {}, expected end position: {}&quot;,
-<span class="nc" id="L1413">                    originOffset, streamLength, expectedEndOfStream);</span>
-<span class="nc" id="L1414">            return false;</span>
+<span class="fc" id="L1413">                    originOffset, streamLength, expectedEndOfStream);</span>
+<span class="fc" id="L1414">            return false;</span>
         }
 <span class="fc" id="L1416">        return true;</span>
     }
 
     protected BruteForceParser getBruteForceParser() throws IOException
     {
-<span class="nc bnc" id="L1421" title="All 2 branches missed.">        if (bruteForceParser == null)</span>
+<span class="fc bfc" id="L1421" title="All 2 branches covered.">        if (bruteForceParser == null)</span>
         {
-<span class="nc" id="L1423">            bruteForceParser = new BruteForceParser(document, this);</span>
+<span class="fc" id="L1423">            bruteForceParser = new BruteForceParser(document, this);</span>
         }
-<span class="nc" id="L1425">        return bruteForceParser;</span>
+<span class="fc" id="L1425">        return bruteForceParser;</span>
     }
     
     /**
@@ -1433,13 +1433,13 @@ public class COSParser extends BaseParser implements ICOSParser
      */
     protected void checkPages(COSDictionary root) throws IOException
     {
-<span class="pc bpc" id="L1436" title="1 of 2 branches missed.">        if (trailerWasRebuild)</span>
+<span class="fc bfc" id="L1436" title="All 2 branches covered.">        if (trailerWasRebuild)</span>
         {
             // check if all page objects are dereferenced
-<span class="nc" id="L1439">            COSDictionary pages = root.getCOSDictionary(COSName.PAGES);</span>
-<span class="nc bnc" id="L1440" title="All 2 branches missed.">            if (pages != null)</span>
+<span class="fc" id="L1439">            COSDictionary pages = root.getCOSDictionary(COSName.PAGES);</span>
+<span class="pc bpc" id="L1440" title="1 of 2 branches missed.">            if (pages != null)</span>
             {
-<span class="nc" id="L1442">                checkPagesDictionary(pages, new HashSet&lt;&gt;());</span>
+<span class="fc" id="L1442">                checkPagesDictionary(pages, new HashSet&lt;&gt;());</span>
             }
         }
 <span class="pc bpc" id="L1445" title="1 of 2 branches missed.">        if (root.getCOSDictionary(COSName.PAGES) == null)</span>
@@ -1451,47 +1451,47 @@ public class COSParser extends BaseParser implements ICOSParser
     private int checkPagesDictionary(COSDictionary pagesDict, Set&lt;COSObject&gt; set)
     {
         // check for kids
-<span class="nc" id="L1454">        COSArray kidsArray = pagesDict.getCOSArray(COSName.KIDS);</span>
-<span class="nc" id="L1455">        int numberOfPages = 0;</span>
-<span class="nc bnc" id="L1456" title="All 2 branches missed.">        if (kidsArray != null)</span>
+<span class="fc" id="L1454">        COSArray kidsArray = pagesDict.getCOSArray(COSName.KIDS);</span>
+<span class="fc" id="L1455">        int numberOfPages = 0;</span>
+<span class="pc bpc" id="L1456" title="1 of 2 branches missed.">        if (kidsArray != null)</span>
         {
-<span class="nc" id="L1458">            List&lt;? extends COSBase&gt; kidsList = kidsArray.toList();</span>
-<span class="nc bnc" id="L1459" title="All 2 branches missed.">            for (COSBase kid : kidsList)</span>
+<span class="fc" id="L1458">            List&lt;? extends COSBase&gt; kidsList = kidsArray.toList();</span>
+<span class="fc bfc" id="L1459" title="All 2 branches covered.">            for (COSBase kid : kidsList)</span>
             {
-<span class="nc bnc" id="L1461" title="All 4 branches missed.">                if (!(kid instanceof COSObject) || set.contains((COSObject) kid))</span>
+<span class="pc bpc" id="L1461" title="1 of 4 branches missed.">                if (!(kid instanceof COSObject) || set.contains((COSObject) kid))</span>
                 {
-<span class="nc" id="L1463">                    kidsArray.remove(kid);</span>
-<span class="nc" id="L1464">                    continue;</span>
+<span class="fc" id="L1463">                    kidsArray.remove(kid);</span>
+<span class="fc" id="L1464">                    continue;</span>
                 }
-<span class="nc" id="L1466">                COSObject kidObject = (COSObject) kid;</span>
-<span class="nc" id="L1467">                COSBase kidBaseobject = kidObject.getObject();</span>
+<span class="fc" id="L1466">                COSObject kidObject = (COSObject) kid;</span>
+<span class="fc" id="L1467">                COSBase kidBaseobject = kidObject.getObject();</span>
                 // object wasn't dereferenced -&gt; remove it
-<span class="nc bnc" id="L1469" title="All 4 branches missed.">                if (kidBaseobject == null || kidBaseobject.equals(COSNull.NULL))</span>
+<span class="fc bfc" id="L1469" title="All 4 branches covered.">                if (kidBaseobject == null || kidBaseobject.equals(COSNull.NULL))</span>
                 {
-<span class="nc" id="L1471">                    LOG.warn(&quot;Removed null object {} from pages dictionary&quot;, kid);</span>
-<span class="nc" id="L1472">                    kidsArray.remove(kid);</span>
+<span class="fc" id="L1471">                    LOG.warn(&quot;Removed null object {} from pages dictionary&quot;, kid);</span>
+<span class="fc" id="L1472">                    kidsArray.remove(kid);</span>
                 }
-<span class="nc bnc" id="L1474" title="All 2 branches missed.">                else if (kidBaseobject instanceof COSDictionary)</span>
+<span class="pc bpc" id="L1474" title="1 of 2 branches missed.">                else if (kidBaseobject instanceof COSDictionary)</span>
                 {
-<span class="nc" id="L1476">                    COSDictionary kidDictionary = (COSDictionary) kidBaseobject;</span>
-<span class="nc" id="L1477">                    COSName type = kidDictionary.getCOSName(COSName.TYPE);</span>
-<span class="nc bnc" id="L1478" title="All 2 branches missed.">                    if (COSName.PAGES.equals(type))</span>
+<span class="fc" id="L1476">                    COSDictionary kidDictionary = (COSDictionary) kidBaseobject;</span>
+<span class="fc" id="L1477">                    COSName type = kidDictionary.getCOSName(COSName.TYPE);</span>
+<span class="fc bfc" id="L1478" title="All 2 branches covered.">                    if (COSName.PAGES.equals(type))</span>
                     {
                         // process nested pages dictionaries
-<span class="nc" id="L1481">                        set.add(kidObject);</span>
-<span class="nc" id="L1482">                        numberOfPages += checkPagesDictionary(kidDictionary, set);</span>
+<span class="fc" id="L1481">                        set.add(kidObject);</span>
+<span class="fc" id="L1482">                        numberOfPages += checkPagesDictionary(kidDictionary, set);</span>
                     }
-<span class="nc bnc" id="L1484" title="All 2 branches missed.">                    else if (COSName.PAGE.equals(type))</span>
+<span class="pc bpc" id="L1484" title="1 of 2 branches missed.">                    else if (COSName.PAGE.equals(type))</span>
                     {
                         // count pages
-<span class="nc" id="L1487">                        numberOfPages++;</span>
+<span class="fc" id="L1487">                        numberOfPages++;</span>
                     }
                 }
-<span class="nc" id="L1490">            }</span>
+<span class="fc" id="L1490">            }</span>
         }
         // fix counter
-<span class="nc" id="L1493">        pagesDict.setInt(COSName.COUNT, numberOfPages);</span>
-<span class="nc" id="L1494">        return numberOfPages;</span>
+<span class="fc" id="L1493">        pagesDict.setInt(COSName.COUNT, numberOfPages);</span>
+<span class="fc" id="L1494">        return numberOfPages;</span>
     }
 
     /**
@@ -1507,10 +1507,10 @@ public class COSParser extends BaseParser implements ICOSParser
 <span class="fc" id="L1507">        long originOffset = source.getPosition();</span>
 <span class="fc bfc" id="L1508" title="All 2 branches covered.">        for (byte c : string)</span>
         {
-<span class="pc bpc" id="L1510" title="1 of 2 branches missed.">            if (source.read() != c)</span>
+<span class="fc bfc" id="L1510" title="All 2 branches covered.">            if (source.read() != c)</span>
             {
-<span class="nc" id="L1512">                bytesMatching = false;</span>
-<span class="nc" id="L1513">                break;</span>
+<span class="fc" id="L1512">                bytesMatching = false;</span>
+<span class="fc" id="L1513">                break;</span>
             }
         }
 <span class="fc" id="L1516">        source.seek(originOffset);</span>
@@ -1530,10 +1530,10 @@ public class COSParser extends BaseParser implements ICOSParser
 <span class="fc" id="L1530">        long originOffset = source.getPosition();</span>
 <span class="fc bfc" id="L1531" title="All 2 branches covered.">        for (char c : string)</span>
         {
-<span class="pc bpc" id="L1533" title="1 of 2 branches missed.">            if (source.read() != c)</span>
+<span class="fc bfc" id="L1533" title="All 2 branches covered.">            if (source.read() != c)</span>
             {
-<span class="nc" id="L1535">                bytesMatching = false;</span>
-<span class="nc" id="L1536">                break;</span>
+<span class="fc" id="L1535">                bytesMatching = false;</span>
+<span class="fc" id="L1536">                break;</span>
             }
         }
 <span class="fc" id="L1539">        source.seek(originOffset);</span>
@@ -1591,16 +1591,16 @@ public class COSParser extends BaseParser implements ICOSParser
      */
     protected String readLine() throws IOException
     {
-<span class="pc bpc" id="L1594" title="1 of 2 branches missed.">        if (source.isEOF())</span>
+<span class="fc bfc" id="L1594" title="All 2 branches covered.">        if (source.isEOF())</span>
         {
-<span class="nc" id="L1596">            throw new IOException(</span>
-<span class="nc" id="L1597">                    &quot;Error: End-of-File, expected line at offset &quot; + source.getPosition());</span>
+<span class="fc" id="L1596">            throw new IOException(</span>
+<span class="fc" id="L1597">                    &quot;Error: End-of-File, expected line at offset &quot; + source.getPosition());</span>
         }
 
 <span class="fc" id="L1600">        StringBuilder buffer = new StringBuilder(11);</span>
 
         int c;
-<span class="pc bpc" id="L1603" title="1 of 2 branches missed.">        while ((c = source.read()) != -1)</span>
+<span class="fc bfc" id="L1603" title="All 2 branches covered.">        while ((c = source.read()) != -1)</span>
         {
             // CR and LF are valid EOLs
 <span class="fc bfc" id="L1606" title="All 2 branches covered.">            if (isEOL(c))</span>
@@ -1610,7 +1610,7 @@ public class COSParser extends BaseParser implements ICOSParser
 <span class="fc" id="L1610">            buffer.append((char) c);</span>
         }
         // CR+LF is also a valid EOL
-<span class="pc bpc" id="L1613" title="1 of 4 branches missed.">        if (isCR(c) &amp;&amp; isLF(source.peek()))</span>
+<span class="fc bfc" id="L1613" title="All 4 branches covered.">        if (isCR(c) &amp;&amp; isLF(source.peek()))</span>
         {
 <span class="fc" id="L1615">            source.read();</span>
         }
@@ -1636,7 +1636,7 @@ public class COSParser extends BaseParser implements ICOSParser
      */
     protected boolean parseFDFHeader() throws IOException
     {
-<span class="nc" id="L1639">        return parseHeader(FDF_HEADER, FDF_DEFAULT_VERSION);</span>
+<span class="fc" id="L1639">        return parseHeader(FDF_HEADER, FDF_DEFAULT_VERSION);</span>
     }
 
     private boolean parseHeader(String headerMarker, String defaultVersion) throws IOException
@@ -1644,25 +1644,25 @@ public class COSParser extends BaseParser implements ICOSParser
         // read first line
 <span class="fc" id="L1645">        String header = readLine();</span>
         // some pdf-documents are broken and the pdf-version is in one of the following lines
-<span class="pc bpc" id="L1647" title="1 of 2 branches missed.">        if (!header.contains(headerMarker))</span>
+<span class="fc bfc" id="L1647" title="All 2 branches covered.">        if (!header.contains(headerMarker))</span>
         {
-<span class="nc" id="L1649">            header = readLine();</span>
-<span class="nc bnc" id="L1650" title="All 2 branches missed.">            while (!header.contains(headerMarker))</span>
+<span class="fc" id="L1649">            header = readLine();</span>
+<span class="pc bpc" id="L1650" title="1 of 2 branches missed.">            while (!header.contains(headerMarker))</span>
             {
                 // if a line starts with a digit, it has to be the first one with data in it
-<span class="nc bnc" id="L1653" title="All 4 branches missed.">                if ((!header.isEmpty()) &amp;&amp; (Character.isDigit(header.charAt(0))))</span>
+<span class="pc bpc" id="L1653" title="2 of 4 branches missed.">                if ((!header.isEmpty()) &amp;&amp; (Character.isDigit(header.charAt(0))))</span>
                 {
-<span class="nc" id="L1655">                    break;</span>
+<span class="fc" id="L1655">                    break;</span>
                 }
 <span class="nc" id="L1657">                header = readLine();</span>
             }
         }
     
         // nothing found
-<span class="pc bpc" id="L1662" title="1 of 2 branches missed.">        if (!header.contains(headerMarker))</span>
+<span class="fc bfc" id="L1662" title="All 2 branches covered.">        if (!header.contains(headerMarker))</span>
         {
-<span class="nc" id="L1664">            source.seek(0);</span>
-<span class="nc" id="L1665">            return false;</span>
+<span class="fc" id="L1664">            source.seek(0);</span>
+<span class="fc" id="L1665">            return false;</span>
         }
     
         //sometimes there is some garbage in the header before the header
@@ -1670,16 +1670,16 @@ public class COSParser extends BaseParser implements ICOSParser
 <span class="fc" id="L1670">        int headerStart = header.indexOf( headerMarker );</span>
     
         // greater than zero because if it is zero then there is no point of trimming
-<span class="pc bpc" id="L1673" title="1 of 2 branches missed.">        if ( headerStart &gt; 0 )</span>
+<span class="fc bfc" id="L1673" title="All 2 branches covered.">        if ( headerStart &gt; 0 )</span>
         {
             //trim off any leading characters
-<span class="nc" id="L1676">            header = header.substring(headerStart);</span>
+<span class="fc" id="L1676">            header = header.substring(headerStart);</span>
         }
     
         // This is used if there is garbage after the header on the same line
-<span class="pc bpc" id="L1680" title="2 of 4 branches missed.">        if (header.startsWith(headerMarker) &amp;&amp; !header.matches(headerMarker + &quot;\\d.\\d&quot;))</span>
+<span class="pc bpc" id="L1680" title="1 of 4 branches missed.">        if (header.startsWith(headerMarker) &amp;&amp; !header.matches(headerMarker + &quot;\\d.\\d&quot;))</span>
         {
-<span class="nc bnc" id="L1682" title="All 2 branches missed.">            if (header.length() &lt; headerMarker.length() + 3)</span>
+<span class="pc bpc" id="L1682" title="1 of 2 branches missed.">            if (header.length() &lt; headerMarker.length() + 3)</span>
             {
                 // No version number at all, set to 1.4 as default
 <span class="nc" id="L1685">                header = headerMarker + defaultVersion;</span>
@@ -1687,9 +1687,9 @@ public class COSParser extends BaseParser implements ICOSParser
             }
             else
             {
-<span class="nc" id="L1690">                String headerGarbage = header.substring(headerMarker.length() + 3) + &quot;\n&quot;;</span>
-<span class="nc" id="L1691">                header = header.substring(0, headerMarker.length() + 3);</span>
-<span class="nc" id="L1692">                source.rewind(headerGarbage.getBytes(StandardCharsets.ISO_8859_1).length);</span>
+<span class="fc" id="L1690">                String headerGarbage = header.substring(headerMarker.length() + 3) + &quot;\n&quot;;</span>
+<span class="fc" id="L1691">                header = header.substring(0, headerMarker.length() + 3);</span>
+<span class="fc" id="L1692">                source.rewind(headerGarbage.getBytes(StandardCharsets.ISO_8859_1).length);</span>
             }
         }
 <span class="fc" id="L1695">        float headerVersion = -1;</span>
@@ -1701,15 +1701,15 @@ public class COSParser extends BaseParser implements ICOSParser
 <span class="fc" id="L1701">                headerVersion = Float.parseFloat(headerParts[1]);</span>
             }
         }
-<span class="nc" id="L1704">        catch (NumberFormatException exception)</span>
+<span class="fc" id="L1704">        catch (NumberFormatException exception)</span>
         {
-<span class="nc" id="L1706">            LOG.debug(&quot;Can't parse the header version.&quot;, exception);</span>
+<span class="fc" id="L1706">            LOG.debug(&quot;Can't parse the header version.&quot;, exception);</span>
 <span class="fc" id="L1707">        }</span>
-<span class="pc bpc" id="L1708" title="1 of 2 branches missed.">        if (headerVersion &lt; 0)</span>
+<span class="fc bfc" id="L1708" title="All 2 branches covered.">        if (headerVersion &lt; 0)</span>
         {
-<span class="nc bnc" id="L1710" title="All 2 branches missed.">            if (isLenient)</span>
+<span class="pc bpc" id="L1710" title="1 of 2 branches missed.">            if (isLenient)</span>
             {
-<span class="nc" id="L1712">                headerVersion = 1.7f;</span>
+<span class="fc" id="L1712">                headerVersion = 1.7f;</span>
             }
             else
             {
@@ -1769,34 +1769,34 @@ public class COSParser extends BaseParser implements ICOSParser
 <span class="nc" id="L1769">            return;</span>
         }
 <span class="fc" id="L1771">        COSDictionary encryptionDictionary = document.getEncryptionDictionary();</span>
-<span class="pc bpc" id="L1772" title="1 of 2 branches missed.">        if (encryptionDictionary == null)</span>
+<span class="fc bfc" id="L1772" title="All 2 branches covered.">        if (encryptionDictionary == null)</span>
         {
 <span class="fc" id="L1774">            return;</span>
         }
 
         try
         {
-<span class="nc" id="L1779">            encryption = new PDEncryption(encryptionDictionary);</span>
+<span class="fc" id="L1779">            encryption = new PDEncryption(encryptionDictionary);</span>
             DecryptionMaterial decryptionMaterial;
-<span class="nc bnc" id="L1781" title="All 2 branches missed.">            if (keyStoreInputStream != null)</span>
+<span class="fc bfc" id="L1781" title="All 2 branches covered.">            if (keyStoreInputStream != null)</span>
             {
-<span class="nc" id="L1783">                KeyStore ks = KeyStore.getInstance(&quot;PKCS12&quot;);</span>
-<span class="nc" id="L1784">                ks.load(keyStoreInputStream, password.toCharArray());</span>
-<span class="nc" id="L1785">                decryptionMaterial = new PublicKeyDecryptionMaterial(ks, keyAlias, password);</span>
-<span class="nc" id="L1786">            }</span>
+<span class="fc" id="L1783">                KeyStore ks = KeyStore.getInstance(&quot;PKCS12&quot;);</span>
+<span class="fc" id="L1784">                ks.load(keyStoreInputStream, password.toCharArray());</span>
+<span class="fc" id="L1785">                decryptionMaterial = new PublicKeyDecryptionMaterial(ks, keyAlias, password);</span>
+<span class="fc" id="L1786">            }</span>
             else
             {
-<span class="nc" id="L1789">                decryptionMaterial = new StandardDecryptionMaterial(password);</span>
+<span class="fc" id="L1789">                decryptionMaterial = new StandardDecryptionMaterial(password);</span>
             }
 
-<span class="nc" id="L1792">            securityHandler = encryption.getSecurityHandler();</span>
-<span class="nc" id="L1793">            securityHandler.prepareForDecryption(encryption, document.getDocumentID(),</span>
+<span class="fc" id="L1792">            securityHandler = encryption.getSecurityHandler();</span>
+<span class="fc" id="L1793">            securityHandler.prepareForDecryption(encryption, document.getDocumentID(),</span>
                     decryptionMaterial);
-<span class="nc" id="L1795">            accessPermission = securityHandler.getCurrentAccessPermission();</span>
+<span class="fc" id="L1795">            accessPermission = securityHandler.getCurrentAccessPermission();</span>
         }
-<span class="nc" id="L1797">        catch (IOException e)</span>
+<span class="fc" id="L1797">        catch (IOException e)</span>
         {
-<span class="nc" id="L1799">            throw e;</span>
+<span class="fc" id="L1799">            throw e;</span>
         }
 <span class="nc" id="L1801">        catch (GeneralSecurityException e)</span>
         {
@@ -1805,12 +1805,12 @@ public class COSParser extends BaseParser implements ICOSParser
         }
         finally
         {
-<span class="nc bnc" id="L1808" title="All 2 branches missed.">            if (keyStoreInputStream != null)</span>
+<span class="fc bfc" id="L1808" title="All 2 branches covered.">            if (keyStoreInputStream != null)</span>
             {
-<span class="nc" id="L1810">                IOUtils.closeQuietly(keyStoreInputStream);</span>
+<span class="fc" id="L1810">                IOUtils.closeQuietly(keyStoreInputStream);</span>
             }
         }
-<span class="nc" id="L1813">    }</span>
+<span class="fc" id="L1813">    }</span>
 
     /**
      * This will get the security handler. The document must be parsed before this is called.
@@ -1819,7 +1819,7 @@ public class COSParser extends BaseParser implements ICOSParser
      */
     protected SecurityHandler&lt;ProtectionPolicy&gt; getSecurityHandler()
     {
-<span class="nc" id="L1822">        return securityHandler;</span>
+<span class="fc" id="L1822">        return securityHandler;</span>
     }
 
     /**
@@ -1836,29 +1836,29 @@ public class COSParser extends BaseParser implements ICOSParser
 <span class="fc bfc" id="L1836" title="All 2 branches covered.">        while (!isEndOfName(c))</span>
         {
 <span class="fc" id="L1838">            final int ch = c;</span>
-<span class="pc bpc" id="L1839" title="1 of 2 branches missed.">            if (ch == '#')</span>
+<span class="fc bfc" id="L1839" title="All 2 branches covered.">            if (ch == '#')</span>
             {
-<span class="nc" id="L1841">                int ch1 = source.read();</span>
-<span class="nc" id="L1842">                int ch2 = source.read();</span>
+<span class="fc" id="L1841">                int ch1 = source.read();</span>
+<span class="fc" id="L1842">                int ch2 = source.read();</span>
                 // Prior to PDF v1.2, the # was not a special character. Also,
                 // it has been observed that various PDF tools do not follow the
                 // spec with respect to the # escape, even though they report
                 // PDF versions of 1.2 or later. The solution here is that we
                 // interpret the # as an escape only when it is followed by two
                 // valid hex digits.
-<span class="nc bnc" id="L1849" title="All 4 branches missed.">                if (isHexDigit((char) ch1) &amp;&amp; isHexDigit((char) ch2))</span>
+<span class="pc bpc" id="L1849" title="2 of 4 branches missed.">                if (isHexDigit((char) ch1) &amp;&amp; isHexDigit((char) ch2))</span>
                 {
-<span class="nc" id="L1851">                    String hex = Character.toString((char) ch1) + (char) ch2;</span>
+<span class="fc" id="L1851">                    String hex = Character.toString((char) ch1) + (char) ch2;</span>
                     try
                     {
-<span class="nc" id="L1854">                        buffer.write(Integer.parseInt(hex, 16));</span>
+<span class="fc" id="L1854">                        buffer.write(Integer.parseInt(hex, 16));</span>
                     }
 <span class="nc" id="L1856">                    catch (NumberFormatException e)</span>
                     {
 <span class="nc" id="L1858">                        throw new IOException(&quot;Error: expected hex digit, actual='&quot; + hex + &quot;'&quot;, e);</span>
-<span class="nc" id="L1859">                    }</span>
-<span class="nc" id="L1860">                    c = source.read();</span>
-<span class="nc" id="L1861">                }</span>
+<span class="fc" id="L1859">                    }</span>
+<span class="fc" id="L1860">                    c = source.read();</span>
+<span class="fc" id="L1861">                }</span>
                 else
                 {
                     // check for premature EOF
@@ -1872,7 +1872,7 @@ public class COSParser extends BaseParser implements ICOSParser
 <span class="nc" id="L1872">                    c = ch1;</span>
 <span class="nc" id="L1873">                    buffer.write(ch);</span>
                 }
-<span class="nc" id="L1875">            }</span>
+<span class="fc" id="L1875">            }</span>
             else
             {
 <span class="fc" id="L1878">                buffer.write(ch);</span>
@@ -1924,15 +1924,15 @@ public class COSParser extends BaseParser implements ICOSParser
             {
 <span class="fc" id="L1925">                sBuf.append((char) c);</span>
             }
-<span class="pc bpc" id="L1927" title="1 of 2 branches missed.">            else if (c == '&gt;')</span>
+<span class="fc bfc" id="L1927" title="All 2 branches covered.">            else if (c == '&gt;')</span>
             {
 <span class="fc" id="L1929">                break;</span>
             }
-<span class="nc bnc" id="L1931" title="All 2 branches missed.">            else if (c &lt; 0)</span>
+<span class="pc bpc" id="L1931" title="1 of 2 branches missed.">            else if (c &lt; 0)</span>
             {
 <span class="nc" id="L1933">                throw new IOException(&quot;Missing closing bracket for hex string. Reached EOS.&quot;);</span>
             }
-<span class="nc bnc" id="L1935" title="All 12 branches missed.">            else if ((c == ' ') || (c == '\n') || (c == '\t') || (c == '\r') || (c == '\b')</span>
+<span class="pc bpc" id="L1935" title="10 of 12 branches missed.">            else if ((c == ' ') || (c == '\n') || (c == '\t') || (c == '\r') || (c == '\b')</span>
                     || (c == '\f'))
             {
 <span class="nc" id="L1938">                continue;</span>
@@ -1979,12 +1979,12 @@ public class COSParser extends BaseParser implements ICOSParser
         {
 <span class="fc" id="L1980">            return utf8Decoder.decode(ByteBuffer.wrap(buffer.toByteArray())).toString();</span>
         }
-<span class="nc" id="L1982">        catch (CharacterCodingException e)</span>
+<span class="fc" id="L1982">        catch (CharacterCodingException e)</span>
         {
             // some malformed PDFs don't use UTF-8 see PDFBOX-3347
-<span class="nc" id="L1985">            LOG.debug(() -&gt; &quot;Buffer could not be decoded using StandardCharsets.UTF_8 - trying &quot;</span>
+<span class="pc" id="L1985">            LOG.debug(() -&gt; &quot;Buffer could not be decoded using StandardCharsets.UTF_8 - trying &quot;</span>
 <span class="nc" id="L1986">                    + ALTERNATIVE_CHARSET.name(), e);</span>
-<span class="nc" id="L1987">            return buffer.toString(ALTERNATIVE_CHARSET);</span>
+<span class="fc" id="L1987">            return buffer.toString(ALTERNATIVE_CHARSET);</span>
         }
     }
 
@@ -1999,7 +1999,7 @@ public class COSParser extends BaseParser implements ICOSParser
      */
     protected COSObjectKey getObjectKey(long num, int gen)
     {
-<span class="pc bpc" id="L2002" title="1 of 4 branches missed.">        if (document == null || document.getXrefTable().isEmpty())</span>
+<span class="fc bfc" id="L2002" title="All 4 branches covered.">        if (document == null || document.getXrefTable().isEmpty())</span>
         {
 <span class="fc" id="L2004">            return new COSObjectKey(num, gen);</span>
         }
@@ -2015,7 +2015,7 @@ public class COSParser extends BaseParser implements ICOSParser
         }
 <span class="fc" id="L2016">        long internalHashCode = COSObjectKey.computeInternalHash(num, gen);</span>
 <span class="fc" id="L2017">        COSObjectKey foundKey = keyCache.get(internalHashCode);</span>
-<span class="pc bpc" id="L2018" title="1 of 2 branches missed.">        return foundKey != null ? foundKey : new COSObjectKey(num, gen);</span>
+<span class="fc bfc" id="L2018" title="All 2 branches covered.">        return foundKey != null ? foundKey : new COSObjectKey(num, gen);</span>
     }
 
 }

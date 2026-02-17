@@ -38,12 +38,12 @@ import org.apache.pdfbox.cos.COSName;
  * @author Ben Litchfield
  * @author Tilman Hausherr
  */
-<span class="nc" id="L41">public class LZWFilter extends Filter</span>
+<span class="fc" id="L41">public class LZWFilter extends Filter</span>
 {
     /**
      * Log instance.
      */
-<span class="nc" id="L46">    private static final Logger LOG = LogManager.getLogger(LZWFilter.class);</span>
+<span class="fc" id="L46">    private static final Logger LOG = LogManager.getLogger(LZWFilter.class);</span>
 
     /**
      * The LZW clear table code.
@@ -62,56 +62,56 @@ import org.apache.pdfbox.cos.COSName;
     public DecodeResult decode(InputStream encoded, OutputStream decoded,
             COSDictionary parameters, int index) throws IOException
     {
-<span class="nc" id="L65">        COSDictionary decodeParams = getDecodeParams(parameters, index);</span>
-<span class="nc bnc" id="L66" title="All 2 branches missed.">        boolean earlyChange = decodeParams.getInt(COSName.EARLY_CHANGE, 1) != 0;</span>
-<span class="nc" id="L67">        doLZWDecode(encoded, Predictor.wrapPredictor(decoded, decodeParams), earlyChange);</span>
-<span class="nc" id="L68">        return new DecodeResult(parameters);</span>
+<span class="fc" id="L65">        COSDictionary decodeParams = getDecodeParams(parameters, index);</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        boolean earlyChange = decodeParams.getInt(COSName.EARLY_CHANGE, 1) != 0;</span>
+<span class="fc" id="L67">        doLZWDecode(encoded, Predictor.wrapPredictor(decoded, decodeParams), earlyChange);</span>
+<span class="fc" id="L68">        return new DecodeResult(parameters);</span>
     }
 
     private static void doLZWDecode(InputStream encoded, OutputStream decoded, boolean earlyChange) throws IOException
     {
-<span class="nc" id="L73">        List&lt;byte[]&gt; codeTable = createCodeTable();      // includes CLEAR/EOD handling as needed</span>
-<span class="nc" id="L74">        int chunk = 9;</span>
-<span class="nc" id="L75">        final MemoryCacheImageInputStream in = new MemoryCacheImageInputStream(encoded);</span>
+<span class="fc" id="L73">        List&lt;byte[]&gt; codeTable = createCodeTable();      // includes CLEAR/EOD handling as needed</span>
+<span class="fc" id="L74">        int chunk = 9;</span>
+<span class="fc" id="L75">        final MemoryCacheImageInputStream in = new MemoryCacheImageInputStream(encoded);</span>
 
-<span class="nc" id="L77">        byte[] prev = null; // no previous string yet</span>
+<span class="fc" id="L77">        byte[] prev = null; // no previous string yet</span>
         long nextCommand;
 
         try
         {
-<span class="nc bnc" id="L82" title="All 2 branches missed.">            while ((nextCommand = in.readBits(chunk)) != EOD)</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">            while ((nextCommand = in.readBits(chunk)) != EOD)</span>
             {
-<span class="nc bnc" id="L84" title="All 2 branches missed.">                if (nextCommand == CLEAR_TABLE)</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">                if (nextCommand == CLEAR_TABLE)</span>
                 {
-<span class="nc" id="L86">                    chunk = 9;</span>
-<span class="nc" id="L87">                    codeTable = createCodeTable();</span>
-<span class="nc" id="L88">                    prev = null;</span>
-<span class="nc" id="L89">                    continue;</span>
+<span class="fc" id="L86">                    chunk = 9;</span>
+<span class="fc" id="L87">                    codeTable = createCodeTable();</span>
+<span class="fc" id="L88">                    prev = null;</span>
+<span class="fc" id="L89">                    continue;</span>
                 }
 
                 byte[] curr;
 
-<span class="nc bnc" id="L94" title="All 2 branches missed.">                if (nextCommand &lt; codeTable.size())</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">                if (nextCommand &lt; codeTable.size())</span>
                 {
                     // Normal case: code exists
-<span class="nc" id="L97">                    curr = codeTable.get((int) nextCommand);</span>
-<span class="nc" id="L98">                    decoded.write(curr);</span>
+<span class="fc" id="L97">                    curr = codeTable.get((int) nextCommand);</span>
+<span class="fc" id="L98">                    decoded.write(curr);</span>
 
-<span class="nc bnc" id="L100" title="All 2 branches missed.">                    if (prev != null)</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">                    if (prev != null)</span>
                     {
                         // Add prev + first(curr)
-<span class="nc" id="L103">                        byte[] entry = Arrays.copyOf(prev, prev.length + 1);</span>
-<span class="nc" id="L104">                        entry[prev.length] = curr[0];</span>
-<span class="nc" id="L105">                        codeTable.add(entry);</span>
-<span class="nc" id="L106">                    }</span>
+<span class="fc" id="L103">                        byte[] entry = Arrays.copyOf(prev, prev.length + 1);</span>
+<span class="fc" id="L104">                        entry[prev.length] = curr[0];</span>
+<span class="fc" id="L105">                        codeTable.add(entry);</span>
+<span class="fc" id="L106">                    }</span>
                 }
-<span class="nc bnc" id="L108" title="All 4 branches missed.">                else if (nextCommand == codeTable.size() &amp;&amp; prev != null)</span>
+<span class="pc bpc" id="L108" title="2 of 4 branches missed.">                else if (nextCommand == codeTable.size() &amp;&amp; prev != null)</span>
                 {
                     // KwKwK case: code equals next available index
-<span class="nc" id="L111">                    curr = Arrays.copyOf(prev, prev.length + 1);</span>
-<span class="nc" id="L112">                    curr[prev.length] = prev[0];</span>
-<span class="nc" id="L113">                    decoded.write(curr);</span>
-<span class="nc" id="L114">                    codeTable.add(curr);</span>
+<span class="fc" id="L111">                    curr = Arrays.copyOf(prev, prev.length + 1);</span>
+<span class="fc" id="L112">                    curr[prev.length] = prev[0];</span>
+<span class="fc" id="L113">                    decoded.write(curr);</span>
+<span class="fc" id="L114">                    codeTable.add(curr);</span>
                 }
                 else
                 {
@@ -119,17 +119,17 @@ import org.apache.pdfbox.cos.COSName;
 <span class="nc" id="L119">                    throw new EOFException(&quot;Invalid LZW code: &quot; + nextCommand);</span>
                 }
 
-<span class="nc" id="L122">                prev = curr; // move forward</span>
-<span class="nc" id="L123">                chunk = calculateChunk(codeTable.size(), earlyChange);</span>
-<span class="nc" id="L124">            }</span>
+<span class="fc" id="L122">                prev = curr; // move forward</span>
+<span class="fc" id="L123">                chunk = calculateChunk(codeTable.size(), earlyChange);</span>
+<span class="fc" id="L124">            }</span>
         }
 <span class="nc" id="L126">        catch (EOFException ex)</span>
         {
 <span class="nc" id="L128">            LOG.warn(&quot;Premature EOF in LZW stream, EOD code missing&quot;, ex);</span>
-<span class="nc" id="L129">        }</span>
+<span class="fc" id="L129">        }</span>
 
-<span class="nc" id="L131">        decoded.flush();</span>
-<span class="nc" id="L132">    }</span>
+<span class="fc" id="L131">        decoded.flush();</span>
+<span class="fc" id="L132">    }</span>
 
     /**
      * {@inheritDoc}
@@ -138,56 +138,56 @@ import org.apache.pdfbox.cos.COSName;
     protected void encode(InputStream rawData, OutputStream encoded, COSDictionary parameters)
             throws IOException
     {
-<span class="nc" id="L141">        List&lt;byte[]&gt; codeTable = createCodeTable();</span>
-<span class="nc" id="L142">        int chunk = 9;</span>
+<span class="fc" id="L141">        List&lt;byte[]&gt; codeTable = createCodeTable();</span>
+<span class="fc" id="L142">        int chunk = 9;</span>
 
-<span class="nc" id="L144">        byte[] inputPattern = null;</span>
-<span class="nc" id="L145">        try (MemoryCacheImageOutputStream out = new MemoryCacheImageOutputStream(encoded))</span>
+<span class="fc" id="L144">        byte[] inputPattern = null;</span>
+<span class="fc" id="L145">        try (MemoryCacheImageOutputStream out = new MemoryCacheImageOutputStream(encoded))</span>
         {
-<span class="nc" id="L147">            out.writeBits(CLEAR_TABLE, chunk);</span>
-<span class="nc" id="L148">            int foundCode = -1;</span>
+<span class="fc" id="L147">            out.writeBits(CLEAR_TABLE, chunk);</span>
+<span class="fc" id="L148">            int foundCode = -1;</span>
             int r;
-<span class="nc bnc" id="L150" title="All 2 branches missed.">            while ((r = rawData.read()) != -1)</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">            while ((r = rawData.read()) != -1)</span>
             {
-<span class="nc" id="L152">                byte by = (byte) r;</span>
-<span class="nc bnc" id="L153" title="All 2 branches missed.">                if (inputPattern == null)</span>
+<span class="fc" id="L152">                byte by = (byte) r;</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">                if (inputPattern == null)</span>
                 {
-<span class="nc" id="L155">                    inputPattern = new byte[] { by };</span>
-<span class="nc" id="L156">                    foundCode = by &amp; 0xff;</span>
+<span class="fc" id="L155">                    inputPattern = new byte[] { by };</span>
+<span class="fc" id="L156">                    foundCode = by &amp; 0xff;</span>
                 }
                 else
                 {
-<span class="nc" id="L160">                    inputPattern = Arrays.copyOf(inputPattern, inputPattern.length + 1);</span>
-<span class="nc" id="L161">                    inputPattern[inputPattern.length - 1] = by;</span>
-<span class="nc" id="L162">                    int newFoundCode = findPatternCode(codeTable, inputPattern);</span>
-<span class="nc bnc" id="L163" title="All 2 branches missed.">                    if (newFoundCode == -1)</span>
+<span class="fc" id="L160">                    inputPattern = Arrays.copyOf(inputPattern, inputPattern.length + 1);</span>
+<span class="fc" id="L161">                    inputPattern[inputPattern.length - 1] = by;</span>
+<span class="fc" id="L162">                    int newFoundCode = findPatternCode(codeTable, inputPattern);</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">                    if (newFoundCode == -1)</span>
                     {
                         // use previous
-<span class="nc" id="L166">                        chunk = calculateChunk(codeTable.size() - 1, true);</span>
-<span class="nc" id="L167">                        out.writeBits(foundCode, chunk);</span>
+<span class="fc" id="L166">                        chunk = calculateChunk(codeTable.size() - 1, true);</span>
+<span class="fc" id="L167">                        out.writeBits(foundCode, chunk);</span>
                         // create new table entry
-<span class="nc" id="L169">                        codeTable.add(inputPattern);</span>
+<span class="fc" id="L169">                        codeTable.add(inputPattern);</span>
                         
-<span class="nc bnc" id="L171" title="All 2 branches missed.">                        if (codeTable.size() == 4096)</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">                        if (codeTable.size() == 4096)</span>
                         {
                             // code table is full
-<span class="nc" id="L174">                            out.writeBits(CLEAR_TABLE, chunk);</span>
-<span class="nc" id="L175">                            codeTable = createCodeTable();</span>
+<span class="fc" id="L174">                            out.writeBits(CLEAR_TABLE, chunk);</span>
+<span class="fc" id="L175">                            codeTable = createCodeTable();</span>
                         }
                         
-<span class="nc" id="L178">                        inputPattern = new byte[] { by };</span>
-<span class="nc" id="L179">                        foundCode = by &amp; 0xff;</span>
+<span class="fc" id="L178">                        inputPattern = new byte[] { by };</span>
+<span class="fc" id="L179">                        foundCode = by &amp; 0xff;</span>
                     }
                     else
                     {
-<span class="nc" id="L183">                        foundCode = newFoundCode;</span>
+<span class="fc" id="L183">                        foundCode = newFoundCode;</span>
                     }
                 }
-<span class="nc" id="L186">            }</span>
-<span class="nc bnc" id="L187" title="All 2 branches missed.">            if (foundCode != -1)</span>
+<span class="fc" id="L186">            }</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">            if (foundCode != -1)</span>
             {
-<span class="nc" id="L189">                chunk = calculateChunk(codeTable.size() - 1, true);</span>
-<span class="nc" id="L190">                out.writeBits(foundCode, chunk);</span>
+<span class="fc" id="L189">                chunk = calculateChunk(codeTable.size() - 1, true);</span>
+<span class="fc" id="L190">                out.writeBits(foundCode, chunk);</span>
             }
             
             // PPDFBOX-1977: the decoder wouldn't know that the encoder would output
@@ -195,17 +195,17 @@ import org.apache.pdfbox.cos.COSName;
             // possibly adjusted the chunk. Therefore, the encoder must behave as
             // if the code table had just grown and thus it must be checked it is
             // needed to adjust the chunk, based on an increased table size parameter
-<span class="nc" id="L198">            chunk = calculateChunk(codeTable.size(), true);</span>
+<span class="fc" id="L198">            chunk = calculateChunk(codeTable.size(), true);</span>
             
-<span class="nc" id="L200">            out.writeBits(EOD, chunk);</span>
+<span class="fc" id="L200">            out.writeBits(EOD, chunk);</span>
             
             // pad with 0
-<span class="nc" id="L203">            out.writeBits(0, 7);</span>
+<span class="fc" id="L203">            out.writeBits(0, 7);</span>
             
             // must do or file will be empty :-(
-<span class="nc" id="L206">            out.flush();</span>
+<span class="fc" id="L206">            out.flush();</span>
         }
-<span class="nc" id="L208">    }</span>
+<span class="fc" id="L208">    }</span>
 
     /**
      * Find a matching pattern in the code table.
@@ -217,21 +217,21 @@ import org.apache.pdfbox.cos.COSName;
     private static int findPatternCode(List&lt;byte[]&gt; codeTable, byte[] pattern)
     {
         // for the first 256 entries, index matches value
-<span class="nc bnc" id="L220" title="All 2 branches missed.">        if (pattern.length == 1)</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">        if (pattern.length == 1)</span>
         {
 <span class="nc" id="L222">            return pattern[0];</span>
         }
 
         // no need to test the first 256 + 2 entries against longer patterns
-<span class="nc bnc" id="L226" title="All 2 branches missed.">        for (int i = 257; i &lt; codeTable.size(); i++)</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">        for (int i = 257; i &lt; codeTable.size(); i++)</span>
         {
-<span class="nc bnc" id="L228" title="All 2 branches missed.">            if (Arrays.equals(codeTable.get(i), pattern))</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">            if (Arrays.equals(codeTable.get(i), pattern))</span>
             {
-<span class="nc" id="L230">                return i;</span>
+<span class="fc" id="L230">                return i;</span>
             }
         }
 
-<span class="nc" id="L234">        return -1;</span>
+<span class="fc" id="L234">        return -1;</span>
     }
 
     /**
@@ -239,23 +239,23 @@ import org.apache.pdfbox.cos.COSName;
      */
     private static List&lt;byte[]&gt; createCodeTable()
     {
-<span class="nc" id="L242">        List&lt;byte[]&gt; codeTable = new ArrayList&lt;&gt;(4096);</span>
-<span class="nc" id="L243">        codeTable.addAll(INITIAL_CODE_TABLE);</span>
-<span class="nc" id="L244">        return codeTable;</span>
+<span class="fc" id="L242">        List&lt;byte[]&gt; codeTable = new ArrayList&lt;&gt;(4096);</span>
+<span class="fc" id="L243">        codeTable.addAll(INITIAL_CODE_TABLE);</span>
+<span class="fc" id="L244">        return codeTable;</span>
     }
 
-<span class="nc" id="L247">    private static final List&lt;byte[]&gt; INITIAL_CODE_TABLE = createInitialCodeTable();</span>
+<span class="fc" id="L247">    private static final List&lt;byte[]&gt; INITIAL_CODE_TABLE = createInitialCodeTable();</span>
 
     private static List&lt;byte[]&gt; createInitialCodeTable()
     {
-<span class="nc" id="L251">        List&lt;byte[]&gt; codeTable = new ArrayList&lt;&gt;(258);</span>
-<span class="nc bnc" id="L252" title="All 2 branches missed.">        for (int i = 0; i &lt; 256; ++i)</span>
+<span class="fc" id="L251">        List&lt;byte[]&gt; codeTable = new ArrayList&lt;&gt;(258);</span>
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        for (int i = 0; i &lt; 256; ++i)</span>
         {
-<span class="nc" id="L254">            codeTable.add(new byte[] { (byte) (i &amp; 0xFF) });</span>
+<span class="fc" id="L254">            codeTable.add(new byte[] { (byte) (i &amp; 0xFF) });</span>
         }
-<span class="nc" id="L256">        codeTable.add(null); // 256 EOD</span>
-<span class="nc" id="L257">        codeTable.add(null); // 257 CLEAR_TABLE</span>
-<span class="nc" id="L258">        return codeTable;</span>
+<span class="fc" id="L256">        codeTable.add(null); // 256 EOD</span>
+<span class="fc" id="L257">        codeTable.add(null); // 257 CLEAR_TABLE</span>
+<span class="fc" id="L258">        return codeTable;</span>
     }
 
     /**
@@ -268,20 +268,20 @@ import org.apache.pdfbox.cos.COSName;
      */
     private static int calculateChunk(int tabSize, boolean earlyChange)
     {
-<span class="nc bnc" id="L271" title="All 2 branches missed.">        int i = tabSize + (earlyChange ? 1 : 0);</span>
-<span class="nc bnc" id="L272" title="All 2 branches missed.">        if (i &gt;= 2048)</span>
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">        int i = tabSize + (earlyChange ? 1 : 0);</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">        if (i &gt;= 2048)</span>
         {
-<span class="nc" id="L274">            return 12;</span>
+<span class="fc" id="L274">            return 12;</span>
         }
-<span class="nc bnc" id="L276" title="All 2 branches missed.">        if (i &gt;= 1024)</span>
+<span class="fc bfc" id="L276" title="All 2 branches covered.">        if (i &gt;= 1024)</span>
         {
-<span class="nc" id="L278">            return 11;</span>
+<span class="fc" id="L278">            return 11;</span>
         }
-<span class="nc bnc" id="L280" title="All 2 branches missed.">        if (i &gt;= 512)</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">        if (i &gt;= 512)</span>
         {
-<span class="nc" id="L282">            return 10;</span>
+<span class="fc" id="L282">            return 10;</span>
         }
-<span class="nc" id="L284">        return 9;</span>
+<span class="fc" id="L284">        return 9;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

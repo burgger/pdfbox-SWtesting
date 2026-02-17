@@ -45,7 +45,7 @@ import org.apache.pdfbox.util.Matrix;
  */
 class TilingPaint implements Paint
 {
-<span class="nc" id="L48">    private static final Logger LOG = LogManager.getLogger(TilingPaint.class);</span>
+<span class="fc" id="L48">    private static final Logger LOG = LogManager.getLogger(TilingPaint.class);</span>
     private final Paint paint;
     private final Matrix patternMatrix;
     private static final int MAXEDGE;
@@ -53,19 +53,19 @@ class TilingPaint implements Paint
 
     static 
     {
-<span class="nc" id="L56">        String s = System.getProperty(&quot;pdfbox.rendering.tilingpaint.maxedge&quot;, DEFAULTMAXEDGE);</span>
+<span class="fc" id="L56">        String s = System.getProperty(&quot;pdfbox.rendering.tilingpaint.maxedge&quot;, DEFAULTMAXEDGE);</span>
         int val;
         try
         {
-<span class="nc" id="L60">            val = Integer.parseInt(s);</span>
+<span class="fc" id="L60">            val = Integer.parseInt(s);</span>
         }
 <span class="nc" id="L62">        catch (NumberFormatException ex)</span>
         {
 <span class="nc" id="L64">            LOG.error(&quot;Default will be used&quot;, ex);</span>
 <span class="nc" id="L65">            val = Integer.parseInt(DEFAULTMAXEDGE);</span>
-<span class="nc" id="L66">        }</span>
-<span class="nc" id="L67">        MAXEDGE = val;</span>
-<span class="nc" id="L68">    }</span>
+<span class="fc" id="L66">        }</span>
+<span class="fc" id="L67">        MAXEDGE = val;</span>
+<span class="fc" id="L68">    }</span>
 
     /**
      * Creates a new colored tiling Paint, i.e. one that has its own colors.
@@ -96,12 +96,12 @@ class TilingPaint implements Paint
      */
     TilingPaint(PageDrawer drawer, PDTilingPattern pattern, PDColorSpace colorSpace,
                        PDColor color, AffineTransform xform) throws IOException
-<span class="nc" id="L99">    {</span>
+<span class="fc" id="L99">    {</span>
         // pattern space -&gt; user space
-<span class="nc" id="L101">        patternMatrix = Matrix.concatenate(drawer.getInitialMatrix(), pattern.getMatrix());</span>
-<span class="nc" id="L102">        Rectangle2D anchorRect = getAnchorRect(pattern);</span>
-<span class="nc" id="L103">        paint = new TexturePaint(getImage(drawer, pattern, colorSpace, color, xform, anchorRect), anchorRect);</span>
-<span class="nc" id="L104">    }</span>
+<span class="fc" id="L101">        patternMatrix = Matrix.concatenate(drawer.getInitialMatrix(), pattern.getMatrix());</span>
+<span class="fc" id="L102">        Rectangle2D anchorRect = getAnchorRect(pattern);</span>
+<span class="fc" id="L103">        paint = new TexturePaint(getImage(drawer, pattern, colorSpace, color, xform, anchorRect), anchorRect);</span>
+<span class="fc" id="L104">    }</span>
 
     /**
      * Not called in TexturePaint subclasses, which is why we wrap TexturePaint.
@@ -110,15 +110,15 @@ class TilingPaint implements Paint
     public PaintContext createContext(ColorModel cm, Rectangle deviceBounds, Rectangle2D userBounds,
                                       AffineTransform xform, RenderingHints hints)
     {
-<span class="nc" id="L113">        AffineTransform xformPattern = (AffineTransform)xform.clone();</span>
+<span class="fc" id="L113">        AffineTransform xformPattern = (AffineTransform)xform.clone();</span>
 
         // applies the pattern matrix with scaling removed
-<span class="nc" id="L116">        AffineTransform patternNoScale = patternMatrix.createAffineTransform();</span>
-<span class="nc" id="L117">        patternNoScale.scale(1 / patternMatrix.getScalingFactorX(),</span>
-<span class="nc" id="L118">                             1 / patternMatrix.getScalingFactorY());</span>
-<span class="nc" id="L119">        xformPattern.concatenate(patternNoScale);</span>
+<span class="fc" id="L116">        AffineTransform patternNoScale = patternMatrix.createAffineTransform();</span>
+<span class="fc" id="L117">        patternNoScale.scale(1 / patternMatrix.getScalingFactorX(),</span>
+<span class="fc" id="L118">                             1 / patternMatrix.getScalingFactorY());</span>
+<span class="fc" id="L119">        xformPattern.concatenate(patternNoScale);</span>
 
-<span class="nc" id="L121">        return paint.createContext(cm, deviceBounds, userBounds, xformPattern, hints);</span>
+<span class="fc" id="L121">        return paint.createContext(cm, deviceBounds, userBounds, xformPattern, hints);</span>
     }
 
     /**
@@ -127,55 +127,55 @@ class TilingPaint implements Paint
     private BufferedImage getImage(PageDrawer drawer, PDTilingPattern pattern, PDColorSpace colorSpace, 
             PDColor color, AffineTransform xform, Rectangle2D anchorRect) throws IOException
     {
-<span class="nc" id="L130">        float width = (float) Math.abs(anchorRect.getWidth());</span>
-<span class="nc" id="L131">        float height = (float) Math.abs(anchorRect.getHeight());</span>
+<span class="fc" id="L130">        float width = (float) Math.abs(anchorRect.getWidth());</span>
+<span class="fc" id="L131">        float height = (float) Math.abs(anchorRect.getHeight());</span>
 
         // device scale transform (i.e. DPI) (see PDFBOX-1466.pdf)
-<span class="nc" id="L134">        Matrix xformMatrix = new Matrix(xform);</span>
-<span class="nc" id="L135">        float xScale = Math.abs(xformMatrix.getScalingFactorX());</span>
-<span class="nc" id="L136">        float yScale = Math.abs(xformMatrix.getScalingFactorY());</span>
-<span class="nc" id="L137">        width *= xScale;</span>
-<span class="nc" id="L138">        height *= yScale;</span>
+<span class="fc" id="L134">        Matrix xformMatrix = new Matrix(xform);</span>
+<span class="fc" id="L135">        float xScale = Math.abs(xformMatrix.getScalingFactorX());</span>
+<span class="fc" id="L136">        float yScale = Math.abs(xformMatrix.getScalingFactorY());</span>
+<span class="fc" id="L137">        width *= xScale;</span>
+<span class="fc" id="L138">        height *= yScale;</span>
 
-<span class="nc" id="L140">        int rasterWidth = Math.max(1, ceiling(width));</span>
-<span class="nc" id="L141">        int rasterHeight = Math.max(1, ceiling(height));</span>
+<span class="fc" id="L140">        int rasterWidth = Math.max(1, ceiling(width));</span>
+<span class="fc" id="L141">        int rasterHeight = Math.max(1, ceiling(height));</span>
 
-<span class="nc" id="L143">        BufferedImage image = new BufferedImage(rasterWidth, rasterHeight, BufferedImage.TYPE_INT_ARGB);</span>
+<span class="fc" id="L143">        BufferedImage image = new BufferedImage(rasterWidth, rasterHeight, BufferedImage.TYPE_INT_ARGB);</span>
 
-<span class="nc" id="L145">        Graphics2D graphics = image.createGraphics();</span>
+<span class="fc" id="L145">        Graphics2D graphics = image.createGraphics();</span>
 
         // flip a -ve YStep around its own axis (see gs-bugzilla694385.pdf)
-<span class="nc bnc" id="L148" title="All 2 branches missed.">        if (pattern.getYStep() &lt; 0)</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">        if (pattern.getYStep() &lt; 0)</span>
         {
 <span class="nc" id="L150">            graphics.translate(0, rasterHeight);</span>
 <span class="nc" id="L151">            graphics.scale(1, -1);</span>
         }
 
         // flip a -ve XStep around its own axis
-<span class="nc bnc" id="L155" title="All 2 branches missed.">        if (pattern.getXStep() &lt; 0)</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">        if (pattern.getXStep() &lt; 0)</span>
         {
 <span class="nc" id="L157">            graphics.translate(rasterWidth, 0);</span>
 <span class="nc" id="L158">            graphics.scale(-1, 1);</span>
         }
 
         // device scale transform (i.e. DPI)
-<span class="nc" id="L162">        graphics.scale(xScale, yScale);</span>
+<span class="fc" id="L162">        graphics.scale(xScale, yScale);</span>
 
         // apply only the scaling from the pattern transform, doing scaling here improves the
         // image quality and prevents large scale-down factors from creating huge tiling cells.
-<span class="nc" id="L166">        Matrix newPatternMatrix = Matrix.getScaleInstance(</span>
-<span class="nc" id="L167">                Math.abs(patternMatrix.getScalingFactorX()),</span>
-<span class="nc" id="L168">                Math.abs(patternMatrix.getScalingFactorY()));</span>
+<span class="fc" id="L166">        Matrix newPatternMatrix = Matrix.getScaleInstance(</span>
+<span class="fc" id="L167">                Math.abs(patternMatrix.getScalingFactorX()),</span>
+<span class="fc" id="L168">                Math.abs(patternMatrix.getScalingFactorY()));</span>
 
         // move origin to (0,0)
-<span class="nc" id="L171">        PDRectangle bBox = pattern.getBBox();</span>
-<span class="nc" id="L172">        newPatternMatrix.translate(-bBox.getLowerLeftX(), -bBox.getLowerLeftY());</span>
+<span class="fc" id="L171">        PDRectangle bBox = pattern.getBBox();</span>
+<span class="fc" id="L172">        newPatternMatrix.translate(-bBox.getLowerLeftX(), -bBox.getLowerLeftY());</span>
 
         // render using PageDrawer
-<span class="nc" id="L175">        drawer.drawTilingPattern(graphics, pattern, colorSpace, color, newPatternMatrix);</span>
-<span class="nc" id="L176">        graphics.dispose();</span>
+<span class="fc" id="L175">        drawer.drawTilingPattern(graphics, pattern, colorSpace, color, newPatternMatrix);</span>
+<span class="fc" id="L176">        graphics.dispose();</span>
 
-<span class="nc" id="L178">        return image;</span>
+<span class="fc" id="L178">        return image;</span>
     }
 
     /**
@@ -184,15 +184,15 @@ class TilingPaint implements Paint
      */
     private static int ceiling(double num)
     {
-<span class="nc" id="L187">        BigDecimal decimal = BigDecimal.valueOf(num);</span>
-<span class="nc" id="L188">        decimal = decimal.setScale(5, RoundingMode.CEILING); // 5 decimal places of accuracy</span>
-<span class="nc" id="L189">        return decimal.intValue();</span>
+<span class="fc" id="L187">        BigDecimal decimal = BigDecimal.valueOf(num);</span>
+<span class="fc" id="L188">        decimal = decimal.setScale(5, RoundingMode.CEILING); // 5 decimal places of accuracy</span>
+<span class="fc" id="L189">        return decimal.intValue();</span>
     }
 
     @Override
     public int getTransparency()
     {
-<span class="nc" id="L195">        return Transparency.TRANSLUCENT;</span>
+<span class="fc" id="L195">        return Transparency.TRANSLUCENT;</span>
     }
 
     /**
@@ -200,31 +200,31 @@ class TilingPaint implements Paint
      */
     private Rectangle2D getAnchorRect(PDTilingPattern pattern) throws IOException
     {
-<span class="nc" id="L203">        PDRectangle bbox = pattern.getBBox();</span>
-<span class="nc bnc" id="L204" title="All 2 branches missed.">        if (bbox == null)</span>
+<span class="fc" id="L203">        PDRectangle bbox = pattern.getBBox();</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">        if (bbox == null)</span>
         {
 <span class="nc" id="L206">            throw new IOException(&quot;Pattern /BBox is missing&quot;);</span>
         }
-<span class="nc" id="L208">        float xStep = pattern.getXStep();</span>
-<span class="nc bnc" id="L209" title="All 2 branches missed.">        if (Float.compare(xStep, 0) == 0)</span>
+<span class="fc" id="L208">        float xStep = pattern.getXStep();</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">        if (Float.compare(xStep, 0) == 0)</span>
         {
 <span class="nc" id="L211">            LOG.warn(&quot;/XStep is 0, using pattern /BBox width&quot;);</span>
 <span class="nc" id="L212">            xStep = bbox.getWidth();</span>
         }
 
-<span class="nc" id="L215">        float yStep = pattern.getYStep();</span>
-<span class="nc bnc" id="L216" title="All 2 branches missed.">        if (Float.compare(yStep, 0) == 0)</span>
+<span class="fc" id="L215">        float yStep = pattern.getYStep();</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">        if (Float.compare(yStep, 0) == 0)</span>
         {
 <span class="nc" id="L218">            LOG.warn(&quot;/YStep is 0, using pattern /BBox height&quot;);</span>
 <span class="nc" id="L219">            yStep = bbox.getHeight();</span>
         }
 
-<span class="nc" id="L222">        float xScale = patternMatrix.getScalingFactorX();</span>
-<span class="nc" id="L223">        float yScale = patternMatrix.getScalingFactorY();</span>
-<span class="nc" id="L224">        float width = xStep * xScale;</span>
-<span class="nc" id="L225">        float height = yStep * yScale;</span>
+<span class="fc" id="L222">        float xScale = patternMatrix.getScalingFactorX();</span>
+<span class="fc" id="L223">        float yScale = patternMatrix.getScalingFactorY();</span>
+<span class="fc" id="L224">        float width = xStep * xScale;</span>
+<span class="fc" id="L225">        float height = yStep * yScale;</span>
 
-<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (Math.abs(width * height) &gt; MAXEDGE * MAXEDGE)</span>
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">        if (Math.abs(width * height) &gt; MAXEDGE * MAXEDGE)</span>
         {
             // PDFBOX-3653: prevent huge sizes
 <span class="nc" id="L230">            LOG.warn(&quot;Pattern surface larger than {} x {}, will be clipped&quot;, MAXEDGE, MAXEDGE);</span>
@@ -240,8 +240,8 @@ class TilingPaint implements Paint
         }
 
         // returns the anchor rect with scaling applied
-<span class="nc" id="L243">        return new Rectangle2D.Float(bbox.getLowerLeftX() * xScale,</span>
-<span class="nc" id="L244">                                     bbox.getLowerLeftY() * yScale,</span>
+<span class="fc" id="L243">        return new Rectangle2D.Float(bbox.getLowerLeftX() * xScale,</span>
+<span class="fc" id="L244">                                     bbox.getLowerLeftY() * yScale,</span>
                                      width, height);
     }
 }

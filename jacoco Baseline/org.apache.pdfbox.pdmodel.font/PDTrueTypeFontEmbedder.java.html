@@ -56,73 +56,73 @@ final class PDTrueTypeFontEmbedder extends TrueTypeEmbedder
     PDTrueTypeFontEmbedder(PDDocument document, COSDictionary dict, TrueTypeFont ttf,
                            Encoding encoding) throws IOException
     {
-<span class="nc" id="L59">        super(document, dict, ttf, false);</span>
-<span class="nc" id="L60">        dict.setItem(COSName.SUBTYPE, COSName.TRUE_TYPE);</span>
+<span class="fc" id="L59">        super(document, dict, ttf, false);</span>
+<span class="fc" id="L60">        dict.setItem(COSName.SUBTYPE, COSName.TRUE_TYPE);</span>
         
-<span class="nc" id="L62">        GlyphList glyphList = GlyphList.getAdobeGlyphList();</span>
-<span class="nc" id="L63">        this.fontEncoding = encoding;</span>
-<span class="nc" id="L64">        dict.setItem(COSName.ENCODING, encoding.getCOSObject());</span>
-<span class="nc" id="L65">        fontDescriptor.setSymbolic(false);</span>
-<span class="nc" id="L66">        fontDescriptor.setNonSymbolic(true);</span>
+<span class="fc" id="L62">        GlyphList glyphList = GlyphList.getAdobeGlyphList();</span>
+<span class="fc" id="L63">        this.fontEncoding = encoding;</span>
+<span class="fc" id="L64">        dict.setItem(COSName.ENCODING, encoding.getCOSObject());</span>
+<span class="fc" id="L65">        fontDescriptor.setSymbolic(false);</span>
+<span class="fc" id="L66">        fontDescriptor.setNonSymbolic(true);</span>
         
         // add the font descriptor
-<span class="nc" id="L69">        dict.setItem(COSName.FONT_DESC, fontDescriptor);</span>
+<span class="fc" id="L69">        dict.setItem(COSName.FONT_DESC, fontDescriptor);</span>
 
         // set the glyph widths
-<span class="nc" id="L72">        setWidths(dict, glyphList);</span>
-<span class="nc" id="L73">    }</span>
+<span class="fc" id="L72">        setWidths(dict, glyphList);</span>
+<span class="fc" id="L73">    }</span>
 
     /**
      * Sets the glyph widths in the font dictionary.
      */
     private void setWidths(COSDictionary font, GlyphList glyphList) throws IOException
     {
-<span class="nc" id="L80">        float scaling = 1000f / ttf.getHeader().getUnitsPerEm();</span>
-<span class="nc" id="L81">        HorizontalMetricsTable hmtx = ttf.getHorizontalMetrics();</span>
+<span class="fc" id="L80">        float scaling = 1000f / ttf.getHeader().getUnitsPerEm();</span>
+<span class="fc" id="L81">        HorizontalMetricsTable hmtx = ttf.getHorizontalMetrics();</span>
 
-<span class="nc" id="L83">        Map&lt;Integer, String&gt; codeToName = getFontEncoding().getCodeToNameMap();</span>
-<span class="nc" id="L84">        Set&lt;Integer&gt; codes = codeToName.keySet();</span>
-<span class="nc" id="L85">        int firstChar = Collections.min(codes);</span>
-<span class="nc" id="L86">        int lastChar = Collections.max(codes);</span>
+<span class="fc" id="L83">        Map&lt;Integer, String&gt; codeToName = getFontEncoding().getCodeToNameMap();</span>
+<span class="fc" id="L84">        Set&lt;Integer&gt; codes = codeToName.keySet();</span>
+<span class="fc" id="L85">        int firstChar = Collections.min(codes);</span>
+<span class="fc" id="L86">        int lastChar = Collections.max(codes);</span>
 
-<span class="nc" id="L88">        List&lt;Integer&gt; widths = new ArrayList&lt;&gt;(lastChar - firstChar + 1);</span>
-<span class="nc bnc" id="L89" title="All 2 branches missed.">        for (int i = 0; i &lt; lastChar - firstChar + 1; i++)</span>
+<span class="fc" id="L88">        List&lt;Integer&gt; widths = new ArrayList&lt;&gt;(lastChar - firstChar + 1);</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        for (int i = 0; i &lt; lastChar - firstChar + 1; i++)</span>
         {
-<span class="nc" id="L91">            widths.add(0);</span>
+<span class="fc" id="L91">            widths.add(0);</span>
         }
 
         // a character code is mapped to a glyph name via the provided font encoding
         // afterwards, the glyph name is translated to a glyph ID.
-<span class="nc bnc" id="L96" title="All 2 branches missed.">        for (Map.Entry&lt;Integer, String&gt; entry : codeToName.entrySet())</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, String&gt; entry : codeToName.entrySet())</span>
         {
-<span class="nc" id="L98">            int code = entry.getKey();</span>
-<span class="nc" id="L99">            String name = entry.getValue();</span>
+<span class="fc" id="L98">            int code = entry.getKey();</span>
+<span class="fc" id="L99">            String name = entry.getValue();</span>
 
-<span class="nc bnc" id="L101" title="All 4 branches missed.">            if (code &gt;= firstChar &amp;&amp; code &lt;= lastChar)</span>
+<span class="pc bpc" id="L101" title="2 of 4 branches missed.">            if (code &gt;= firstChar &amp;&amp; code &lt;= lastChar)</span>
             {
-<span class="nc" id="L103">                String uni = glyphList.toUnicode(name);</span>
-<span class="nc" id="L104">                int gid = 0;</span>
-<span class="nc bnc" id="L105" title="All 2 branches missed.">                if (uni != null)</span>
+<span class="fc" id="L103">                String uni = glyphList.toUnicode(name);</span>
+<span class="fc" id="L104">                int gid = 0;</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">                if (uni != null)</span>
                 {
-<span class="nc" id="L107">                    int charCode = uni.codePointAt(0);</span>
-<span class="nc" id="L108">                    gid = cmapLookup.getGlyphId(charCode);</span>
+<span class="fc" id="L107">                    int charCode = uni.codePointAt(0);</span>
+<span class="fc" id="L108">                    gid = cmapLookup.getGlyphId(charCode);</span>
                 }
-<span class="nc" id="L110">                widths.set(entry.getKey() - firstChar,</span>
-<span class="nc" id="L111">                           Math.round(hmtx.getAdvanceWidth(gid) * scaling));</span>
+<span class="fc" id="L110">                widths.set(entry.getKey() - firstChar,</span>
+<span class="fc" id="L111">                           Math.round(hmtx.getAdvanceWidth(gid) * scaling));</span>
             }
-<span class="nc" id="L113">        }</span>
+<span class="fc" id="L113">        }</span>
 
-<span class="nc" id="L115">        font.setInt(COSName.FIRST_CHAR, firstChar);</span>
-<span class="nc" id="L116">        font.setInt(COSName.LAST_CHAR, lastChar);</span>
-<span class="nc" id="L117">        font.setItem(COSName.WIDTHS, COSArray.ofCOSIntegers(widths));</span>
-<span class="nc" id="L118">    }</span>
+<span class="fc" id="L115">        font.setInt(COSName.FIRST_CHAR, firstChar);</span>
+<span class="fc" id="L116">        font.setInt(COSName.LAST_CHAR, lastChar);</span>
+<span class="fc" id="L117">        font.setItem(COSName.WIDTHS, COSArray.ofCOSIntegers(widths));</span>
+<span class="fc" id="L118">    }</span>
 
     /**
      * Returns the font's encoding.
      */
     public Encoding getFontEncoding()
     {
-<span class="nc" id="L125">        return fontEncoding;</span>
+<span class="fc" id="L125">        return fontEncoding;</span>
     }
 
     @Override

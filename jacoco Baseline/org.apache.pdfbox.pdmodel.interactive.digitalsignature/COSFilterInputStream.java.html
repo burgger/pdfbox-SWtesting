@@ -33,13 +33,13 @@ public class COSFilterInputStream extends FilterInputStream
 {
     private int[][] ranges;
     private int range;
-<span class="nc" id="L36">    private long position = 0;</span>
+<span class="fc" id="L36">    private long position = 0;</span>
 
     public COSFilterInputStream(InputStream in, int[] byteRange)
     {
-<span class="nc" id="L40">        super(in);</span>
-<span class="nc" id="L41">        calculateRanges(byteRange);</span>
-<span class="nc" id="L42">    }</span>
+<span class="fc" id="L40">        super(in);</span>
+<span class="fc" id="L41">        calculateRanges(byteRange);</span>
+<span class="fc" id="L42">    }</span>
 
     public COSFilterInputStream(byte[] in, int[] byteRange)
     {
@@ -61,19 +61,19 @@ public class COSFilterInputStream extends FilterInputStream
     @Override
     public int read(byte[] b) throws IOException
     {
-<span class="nc" id="L64">        return read(b, 0, b.length);</span>
+<span class="fc" id="L64">        return read(b, 0, b.length);</span>
     }
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException
     {
-<span class="nc bnc" id="L70" title="All 6 branches missed.">        if ((this.range == -1 || getRemaining() &lt;= 0) &amp;&amp; !nextRange())</span>
+<span class="pc bpc" id="L70" title="1 of 6 branches missed.">        if ((this.range == -1 || getRemaining() &lt;= 0) &amp;&amp; !nextRange())</span>
         {
-<span class="nc" id="L72">            return -1; // EOF</span>
+<span class="fc" id="L72">            return -1; // EOF</span>
         }
-<span class="nc" id="L74">        int bytesRead = super.read(b, off, (int) Math.min(len, getRemaining()));</span>
-<span class="nc" id="L75">        this.position += bytesRead;</span>
-<span class="nc" id="L76">        return bytesRead;</span>
+<span class="fc" id="L74">        int bytesRead = super.read(b, off, (int) Math.min(len, getRemaining()));</span>
+<span class="fc" id="L75">        this.position += bytesRead;</span>
+<span class="fc" id="L76">        return bytesRead;</span>
     }
 
     public byte[] toByteArray() throws IOException
@@ -83,39 +83,39 @@ public class COSFilterInputStream extends FilterInputStream
 
     private void calculateRanges(int[] byteRange)
     {
-<span class="nc" id="L86">        this.ranges = new int[byteRange.length / 2][];</span>
-<span class="nc bnc" id="L87" title="All 2 branches missed.">        for (int i = 0; i &lt; byteRange.length / 2; i++)</span>
+<span class="fc" id="L86">        this.ranges = new int[byteRange.length / 2][];</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        for (int i = 0; i &lt; byteRange.length / 2; i++)</span>
         {
-<span class="nc" id="L89">            this.ranges[i] = new int[] { byteRange[i * 2], byteRange[i * 2] + byteRange[i * 2 + 1] };</span>
+<span class="fc" id="L89">            this.ranges[i] = new int[] { byteRange[i * 2], byteRange[i * 2] + byteRange[i * 2 + 1] };</span>
         }
-<span class="nc" id="L91">        this.range = -1;</span>
-<span class="nc" id="L92">    }</span>
+<span class="fc" id="L91">        this.range = -1;</span>
+<span class="fc" id="L92">    }</span>
 
     private long getRemaining()
     {
-<span class="nc" id="L96">        return this.ranges[this.range][1] - this.position;</span>
+<span class="fc" id="L96">        return this.ranges[this.range][1] - this.position;</span>
     }
 
     private boolean nextRange() throws IOException
     {
-<span class="nc bnc" id="L101" title="All 2 branches missed.">        if (this.range + 1 &lt; this.ranges.length)</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        if (this.range + 1 &lt; this.ranges.length)</span>
         {
-<span class="nc" id="L103">            this.range++;</span>
-<span class="nc bnc" id="L104" title="All 2 branches missed.">            while (this.position &lt; this.ranges[this.range][0])</span>
+<span class="fc" id="L103">            this.range++;</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            while (this.position &lt; this.ranges[this.range][0])</span>
             {
-<span class="nc" id="L106">                long skipped = super.skip(this.ranges[this.range][0] - this.position);</span>
-<span class="nc bnc" id="L107" title="All 2 branches missed.">                if (skipped == 0)</span>
+<span class="fc" id="L106">                long skipped = super.skip(this.ranges[this.range][0] - this.position);</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">                if (skipped == 0)</span>
                 {
 <span class="nc" id="L109">                    throw new IOException(&quot;FilterInputStream.skip() returns 0, range: &quot; +</span>
 <span class="nc" id="L110">                            Arrays.toString(this.ranges[this.range]));</span>
                 }
-<span class="nc" id="L112">                this.position += skipped;</span>
-<span class="nc" id="L113">            }</span>
-<span class="nc" id="L114">            return true;</span>
+<span class="fc" id="L112">                this.position += skipped;</span>
+<span class="fc" id="L113">            }</span>
+<span class="fc" id="L114">            return true;</span>
         }
         else
         {
-<span class="nc" id="L118">            return false;</span>
+<span class="fc" id="L118">            return false;</span>
         }
     }
 }

@@ -37,13 +37,13 @@ import org.apache.pdfbox.pdmodel.ResourceCache;
  */
 public final class PDFontFactory
 {
-<span class="nc" id="L40">    private static final Logger LOG = LogManager.getLogger(PDFontFactory.class);</span>
+<span class="fc" id="L40">    private static final Logger LOG = LogManager.getLogger(PDFontFactory.class);</span>
 
     private static final String FONT_TYPE1C = &quot;Type1C&quot;;
     private static final String FONT_OPEN_TYPE = &quot;OTTO&quot;;
     private static final String FONT_TTF_COLLECTION = &quot;ttcf&quot;;
     private static final String FONT_TRUE_TYPE = &quot;true&quot;;
-<span class="nc" id="L46">    private static final byte[] TTF_HEADER = new byte[] { 0, 1, 0, 0 };</span>
+<span class="fc" id="L46">    private static final byte[] TTF_HEADER = new byte[] { 0, 1, 0, 0 };</span>
 
     private PDFontFactory()
     {
@@ -63,29 +63,29 @@ public final class PDFontFactory
 
     private static class FontType
     {
-<span class="nc" id="L66">        private static final List&lt;String&gt; cidType0Types //</span>
-<span class="nc" id="L67">                = Arrays.asList(COSName.TYPE1.getName(), FONT_TYPE1C);</span>
-<span class="nc" id="L68">        private static final List&lt;String&gt; cidType2Types //</span>
-<span class="nc" id="L69">                = Arrays.asList(COSName.TRUE_TYPE.getName(), COSName.OPEN_TYPE.getName());</span>
+<span class="fc" id="L66">        private static final List&lt;String&gt; cidType0Types //</span>
+<span class="fc" id="L67">                = Arrays.asList(COSName.TYPE1.getName(), FONT_TYPE1C);</span>
+<span class="fc" id="L68">        private static final List&lt;String&gt; cidType2Types //</span>
+<span class="fc" id="L69">                = Arrays.asList(COSName.TRUE_TYPE.getName(), COSName.OPEN_TYPE.getName());</span>
         private final COSName type;
         private final COSName subtype;
 
         FontType(COSName type, String subtypeString)
-<span class="nc" id="L74">        {</span>
-<span class="nc" id="L75">            this.type = type;</span>
-<span class="nc bnc" id="L76" title="All 2 branches missed.">            if (cidType0Types.contains(subtypeString))</span>
+<span class="fc" id="L74">        {</span>
+<span class="fc" id="L75">            this.type = type;</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">            if (cidType0Types.contains(subtypeString))</span>
             {
-<span class="nc" id="L78">                subtype = COSName.CID_FONT_TYPE0;</span>
+<span class="fc" id="L78">                subtype = COSName.CID_FONT_TYPE0;</span>
             }
-<span class="nc bnc" id="L80" title="All 2 branches missed.">            else if (cidType2Types.contains(subtypeString))</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">            else if (cidType2Types.contains(subtypeString))</span>
             {
-<span class="nc" id="L82">                subtype = COSName.CID_FONT_TYPE2;</span>
+<span class="fc" id="L82">                subtype = COSName.CID_FONT_TYPE2;</span>
             }
             else
             {
 <span class="nc" id="L86">                subtype = null;</span>
             }
-<span class="nc" id="L88">        }</span>
+<span class="fc" id="L88">        }</span>
 
         FontType(COSName type, COSName subtype)
 <span class="nc" id="L91">        {</span>
@@ -105,11 +105,11 @@ public final class PDFontFactory
 
         public boolean isCIDSubtype(COSName cidSubtype)
         {
-<span class="nc bnc" id="L108" title="All 2 branches missed.">            if (!COSName.TYPE0.equals(type))</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">            if (!COSName.TYPE0.equals(type))</span>
             {
 <span class="nc" id="L110">                return false;</span>
             }
-<span class="nc bnc" id="L112" title="All 4 branches missed.">            return subtype != null &amp;&amp; subtype.equals(cidSubtype);</span>
+<span class="pc bpc" id="L112" title="2 of 4 branches missed.">            return subtype != null &amp;&amp; subtype.equals(cidSubtype);</span>
         }
     }
 
@@ -123,23 +123,23 @@ public final class PDFontFactory
      */
     public static PDFont createFont(COSDictionary dictionary, ResourceCache resourceCache) throws IOException
     {
-<span class="nc" id="L126">        COSName type = dictionary.getCOSName(COSName.TYPE, COSName.FONT);</span>
-<span class="nc bnc" id="L127" title="All 2 branches missed.">        if (!COSName.FONT.equals(type))</span>
+<span class="fc" id="L126">        COSName type = dictionary.getCOSName(COSName.TYPE, COSName.FONT);</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        if (!COSName.FONT.equals(type))</span>
         {
 <span class="nc" id="L129">            LOG.error(&quot;Expected 'Font' dictionary but found '{}'&quot;, type.getName());</span>
         }
 
-<span class="nc" id="L132">        COSName subType = dictionary.getCOSName(COSName.SUBTYPE);</span>
-<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (COSName.TYPE1.equals(subType))</span>
+<span class="fc" id="L132">        COSName subType = dictionary.getCOSName(COSName.SUBTYPE);</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        if (COSName.TYPE1.equals(subType))</span>
         {
-<span class="nc" id="L135">            COSDictionary fd = dictionary.getCOSDictionary(COSName.FONT_DESC);</span>
-<span class="nc bnc" id="L136" title="All 4 branches missed.">            if (fd != null &amp;&amp; fd.containsKey(COSName.FONT_FILE3))</span>
+<span class="fc" id="L135">            COSDictionary fd = dictionary.getCOSDictionary(COSName.FONT_DESC);</span>
+<span class="fc bfc" id="L136" title="All 4 branches covered.">            if (fd != null &amp;&amp; fd.containsKey(COSName.FONT_FILE3))</span>
             {
-<span class="nc" id="L138">                return new PDType1CFont(dictionary);</span>
+<span class="fc" id="L138">                return new PDType1CFont(dictionary);</span>
             }
-<span class="nc" id="L140">            return new PDType1Font(dictionary);</span>
+<span class="fc" id="L140">            return new PDType1Font(dictionary);</span>
         }
-<span class="nc bnc" id="L142" title="All 2 branches missed.">        else if (COSName.MM_TYPE1.equals(subType))</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">        else if (COSName.MM_TYPE1.equals(subType))</span>
         {
 <span class="nc" id="L144">            COSDictionary fd = dictionary.getCOSDictionary(COSName.FONT_DESC);</span>
 <span class="nc bnc" id="L145" title="All 4 branches missed.">            if (fd != null &amp;&amp; fd.containsKey(COSName.FONT_FILE3))</span>
@@ -148,29 +148,29 @@ public final class PDFontFactory
             }
 <span class="nc" id="L149">            return new PDMMType1Font(dictionary);</span>
         }
-<span class="nc bnc" id="L151" title="All 2 branches missed.">        else if (COSName.TRUE_TYPE.equals(subType))</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        else if (COSName.TRUE_TYPE.equals(subType))</span>
         {
-<span class="nc" id="L153">            return new PDTrueTypeFont(dictionary);</span>
+<span class="fc" id="L153">            return new PDTrueTypeFont(dictionary);</span>
         }
-<span class="nc bnc" id="L155" title="All 2 branches missed.">        else if (COSName.TYPE3.equals(subType))</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        else if (COSName.TYPE3.equals(subType))</span>
         {
-<span class="nc" id="L157">            return new PDType3Font(dictionary, resourceCache);</span>
+<span class="fc" id="L157">            return new PDType3Font(dictionary, resourceCache);</span>
         }
-<span class="nc bnc" id="L159" title="All 2 branches missed.">        else if (COSName.TYPE0.equals(subType))</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">        else if (COSName.TYPE0.equals(subType))</span>
         {
-<span class="nc" id="L161">            COSDictionary fontDescriptor = getFontDescriptor(dictionary);</span>
-<span class="nc" id="L162">            FontType fontTypeFromFont = getFontTypeFromFont(fontDescriptor, subType);</span>
-<span class="nc bnc" id="L163" title="All 2 branches missed.">            if (fontTypeFromFont != null)</span>
+<span class="fc" id="L161">            COSDictionary fontDescriptor = getFontDescriptor(dictionary);</span>
+<span class="fc" id="L162">            FontType fontTypeFromFont = getFontTypeFromFont(fontDescriptor, subType);</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">            if (fontTypeFromFont != null)</span>
             {
-<span class="nc" id="L165">                COSDictionary descendantFont = getDescendantFont(dictionary);</span>
-<span class="nc bnc" id="L166" title="All 2 branches missed.">                COSName descFontType = descendantFont != null</span>
-<span class="nc" id="L167">                        ? descendantFont.getCOSName(COSName.SUBTYPE) : null;</span>
-<span class="nc bnc" id="L168" title="All 4 branches missed.">                if (descFontType != null &amp;&amp; !fontTypeFromFont.isCIDSubtype(descFontType))</span>
+<span class="fc" id="L165">                COSDictionary descendantFont = getDescendantFont(dictionary);</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">                COSName descFontType = descendantFont != null</span>
+<span class="pc" id="L167">                        ? descendantFont.getCOSName(COSName.SUBTYPE) : null;</span>
+<span class="pc bpc" id="L168" title="2 of 4 branches missed.">                if (descFontType != null &amp;&amp; !fontTypeFromFont.isCIDSubtype(descFontType))</span>
                 {
 <span class="nc" id="L170">                    fixType0Subtype(descendantFont, fontDescriptor, fontTypeFromFont.getSubtype());</span>
                 }
             }
-<span class="nc" id="L173">            return new PDType0Font(dictionary);</span>
+<span class="fc" id="L173">            return new PDType0Font(dictionary);</span>
         }
 <span class="nc bnc" id="L175" title="All 2 branches missed.">        else if (COSName.CID_FONT_TYPE0.equals(subType))</span>
         {
@@ -214,25 +214,25 @@ public final class PDFontFactory
     private static FontType getFontTypeFromFont(COSDictionary fontDescriptor, COSName fontType)
             throws IOException
     {
-<span class="nc" id="L217">        byte[] fontHeader = getFontHeader(fontDescriptor);</span>
-<span class="nc bnc" id="L218" title="All 2 branches missed.">        if (fontHeader == null)</span>
+<span class="fc" id="L217">        byte[] fontHeader = getFontHeader(fontDescriptor);</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        if (fontHeader == null)</span>
         {
-<span class="nc" id="L220">            return null;</span>
+<span class="fc" id="L220">            return null;</span>
         }
-<span class="nc" id="L222">        boolean isComposite = COSName.TYPE0.equals(fontType);</span>
-<span class="nc bnc" id="L223" title="All 4 branches missed.">        if (isTrueTypeFile(fontHeader) || isTrueTypeCollectionFile(fontHeader))</span>
+<span class="fc" id="L222">        boolean isComposite = COSName.TYPE0.equals(fontType);</span>
+<span class="pc bpc" id="L223" title="1 of 4 branches missed.">        if (isTrueTypeFile(fontHeader) || isTrueTypeCollectionFile(fontHeader))</span>
         {
-<span class="nc bnc" id="L225" title="All 2 branches missed.">            return isComposite //</span>
-<span class="nc" id="L226">                    ? new FontType(COSName.TYPE0, COSName.TRUE_TYPE.getName())</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">            return isComposite //</span>
+<span class="fc" id="L226">                    ? new FontType(COSName.TYPE0, COSName.TRUE_TYPE.getName())</span>
 <span class="nc" id="L227">                    : new FontType(COSName.TRUE_TYPE);</span>
         }
-<span class="nc bnc" id="L229" title="All 2 branches missed.">        if (isOpenTypeFile(fontHeader))</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">        if (isOpenTypeFile(fontHeader))</span>
         {
 <span class="nc bnc" id="L231" title="All 2 branches missed.">            return isComposite //</span>
 <span class="nc" id="L232">                    ? new FontType(COSName.TYPE0, COSName.OPEN_TYPE.getName())</span>
 <span class="nc" id="L233">                    : new FontType(COSName.OPEN_TYPE);</span>
         }
-<span class="nc bnc" id="L235" title="All 4 branches missed.">        if (isType1File(fontHeader) || isPfbFile(fontHeader))</span>
+<span class="pc bpc" id="L235" title="2 of 4 branches missed.">        if (isType1File(fontHeader) || isPfbFile(fontHeader))</span>
         {
 <span class="nc bnc" id="L237" title="All 2 branches missed.">            if (isComposite)</span>
             {
@@ -244,11 +244,11 @@ public final class PDFontFactory
         }
         // CFF fonts have a more or less variable header so that the check should be done
         // after all others to avoid wrong classifications
-<span class="nc bnc" id="L247" title="All 2 branches missed.">        if (isCFFFile(fontHeader))</span>
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">        if (isCFFFile(fontHeader))</span>
         {
-<span class="nc bnc" id="L249" title="All 2 branches missed.">            if (isComposite)</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">            if (isComposite)</span>
             {
-<span class="nc" id="L251">                return new FontType(COSName.TYPE0, FONT_TYPE1C);</span>
+<span class="fc" id="L251">                return new FontType(COSName.TYPE0, FONT_TYPE1C);</span>
             }
 <span class="nc bnc" id="L253" title="All 2 branches missed.">            return fontType.equals(COSName.MM_TYPE1) //</span>
 <span class="nc" id="L254">                    ? new FontType(COSName.MM_TYPE1, FONT_TYPE1C)</span>
@@ -259,30 +259,30 @@ public final class PDFontFactory
 
     private static boolean isTrueTypeFile(byte[] header)
     {
-<span class="nc bnc" id="L262" title="All 2 branches missed.">        return Arrays.equals(TTF_HEADER, header)</span>
-<span class="nc bnc" id="L263" title="All 2 branches missed.">                || FONT_TRUE_TYPE.equals(new String(header, StandardCharsets.US_ASCII));</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">        return Arrays.equals(TTF_HEADER, header)</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">                || FONT_TRUE_TYPE.equals(new String(header, StandardCharsets.US_ASCII));</span>
     }
 
     private static boolean isTrueTypeCollectionFile(byte[] header)
     {
-<span class="nc" id="L268">        return FONT_TTF_COLLECTION.equals(new String(header, StandardCharsets.US_ASCII));</span>
+<span class="fc" id="L268">        return FONT_TTF_COLLECTION.equals(new String(header, StandardCharsets.US_ASCII));</span>
     }
 
     private static boolean isOpenTypeFile(byte[] header)
     {
-<span class="nc" id="L273">        return FONT_OPEN_TYPE.equals(new String(header, StandardCharsets.US_ASCII));</span>
+<span class="fc" id="L273">        return FONT_OPEN_TYPE.equals(new String(header, StandardCharsets.US_ASCII));</span>
     }
 
     private static boolean isType1File(byte[] header)
     {
         // All Type1 font programs must begin with the comment '%!' (0x25 + 0x21).
-<span class="nc bnc" id="L279" title="All 4 branches missed.">        return header[0] == 0x25 &amp;&amp; header[1] == 0x21;</span>
+<span class="pc bpc" id="L279" title="3 of 4 branches missed.">        return header[0] == 0x25 &amp;&amp; header[1] == 0x21;</span>
     }
 
     private static boolean isPfbFile(byte[] header)
     {
         // all PFB fonts start with 0x80 followed by either 0x01 or 0x02
-<span class="nc bnc" id="L285" title="All 6 branches missed.">        return header[0] == (byte) 0x80 &amp;&amp; (header[1] == 0x01 || header[1] == 0x02);</span>
+<span class="pc bpc" id="L285" title="5 of 6 branches missed.">        return header[0] == (byte) 0x80 &amp;&amp; (header[1] == 0x01 || header[1] == 0x02);</span>
     }
 
     private static boolean isCFFFile(byte[] header)
@@ -290,73 +290,73 @@ public final class PDFontFactory
         // the header consist of 4 values
         // major version, minor version, header size, offset size
         // the major version must be &gt;= 1 and the offset size &gt;= 1 and &lt;= 4
-<span class="nc bnc" id="L293" title="All 6 branches missed.">        return header[0] &gt;= 1 &amp;&amp; header[3] &gt;= 1 &amp;&amp; header[3] &lt;= 4;</span>
+<span class="pc bpc" id="L293" title="3 of 6 branches missed.">        return header[0] &gt;= 1 &amp;&amp; header[3] &gt;= 1 &amp;&amp; header[3] &lt;= 4;</span>
     }
 
     private static COSDictionary getFontDescriptor(COSDictionary dictionary)
     {
-<span class="nc" id="L298">        COSDictionary fontDescriptor = dictionary.getCOSDictionary(COSName.FONT_DESC);</span>
-<span class="nc bnc" id="L299" title="All 2 branches missed.">        if (fontDescriptor == null)</span>
+<span class="fc" id="L298">        COSDictionary fontDescriptor = dictionary.getCOSDictionary(COSName.FONT_DESC);</span>
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">        if (fontDescriptor == null)</span>
         {
-<span class="nc" id="L301">            COSDictionary descendantFont = getDescendantFont(dictionary);</span>
-<span class="nc bnc" id="L302" title="All 2 branches missed.">            if (descendantFont != null)</span>
+<span class="fc" id="L301">            COSDictionary descendantFont = getDescendantFont(dictionary);</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">            if (descendantFont != null)</span>
             {
-<span class="nc" id="L304">                fontDescriptor = descendantFont.getCOSDictionary(COSName.FONT_DESC);</span>
+<span class="fc" id="L304">                fontDescriptor = descendantFont.getCOSDictionary(COSName.FONT_DESC);</span>
             }
         }
-<span class="nc" id="L307">        return fontDescriptor;</span>
+<span class="fc" id="L307">        return fontDescriptor;</span>
     }
 
     private static COSDictionary getDescendantFont(COSDictionary dictionary)
     {
-<span class="nc" id="L312">        COSArray descendantFonts = dictionary.getCOSArray(COSName.DESCENDANT_FONTS);</span>
-<span class="nc bnc" id="L313" title="All 4 branches missed.">        if (descendantFonts != null &amp;&amp; !descendantFonts.isEmpty())</span>
+<span class="fc" id="L312">        COSArray descendantFonts = dictionary.getCOSArray(COSName.DESCENDANT_FONTS);</span>
+<span class="pc bpc" id="L313" title="1 of 4 branches missed.">        if (descendantFonts != null &amp;&amp; !descendantFonts.isEmpty())</span>
         {
-<span class="nc" id="L315">            COSBase descendantFontDictBase = descendantFonts.getObject(0);</span>
-<span class="nc bnc" id="L316" title="All 2 branches missed.">            if (descendantFontDictBase instanceof COSDictionary)</span>
+<span class="fc" id="L315">            COSBase descendantFontDictBase = descendantFonts.getObject(0);</span>
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">            if (descendantFontDictBase instanceof COSDictionary)</span>
             {
-<span class="nc" id="L318">                return (COSDictionary) descendantFontDictBase;</span>
+<span class="fc" id="L318">                return (COSDictionary) descendantFontDictBase;</span>
             }
         }
-<span class="nc" id="L321">        return null;</span>
+<span class="fc" id="L321">        return null;</span>
     }
 
     private static byte[] getFontHeader(COSDictionary fontDescriptor) throws IOException
     {
-<span class="nc bnc" id="L326" title="All 2 branches missed.">        if (fontDescriptor == null)</span>
+<span class="fc bfc" id="L326" title="All 2 branches covered.">        if (fontDescriptor == null)</span>
         {
-<span class="nc" id="L328">            return null;</span>
+<span class="fc" id="L328">            return null;</span>
         }
-<span class="nc" id="L330">        COSStream fontFile = fontDescriptor.getCOSStream(COSName.FONT_FILE);</span>
-<span class="nc bnc" id="L331" title="All 2 branches missed.">        if (fontFile == null)</span>
+<span class="fc" id="L330">        COSStream fontFile = fontDescriptor.getCOSStream(COSName.FONT_FILE);</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">        if (fontFile == null)</span>
         {
-<span class="nc" id="L333">            fontFile = fontDescriptor.getCOSStream(COSName.FONT_FILE2);</span>
+<span class="fc" id="L333">            fontFile = fontDescriptor.getCOSStream(COSName.FONT_FILE2);</span>
         }
-<span class="nc bnc" id="L335" title="All 2 branches missed.">        if (fontFile == null)</span>
+<span class="fc bfc" id="L335" title="All 2 branches covered.">        if (fontFile == null)</span>
         {
-<span class="nc" id="L337">            fontFile = fontDescriptor.getCOSStream(COSName.FONT_FILE3);</span>
+<span class="fc" id="L337">            fontFile = fontDescriptor.getCOSStream(COSName.FONT_FILE3);</span>
         }
-<span class="nc" id="L339">        byte[] header = null;</span>
-<span class="nc bnc" id="L340" title="All 2 branches missed.">        if (fontFile != null)</span>
+<span class="fc" id="L339">        byte[] header = null;</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">        if (fontFile != null)</span>
         {
-<span class="nc" id="L342">            try (RandomAccessRead fontView = fontFile.createView())</span>
+<span class="fc" id="L342">            try (RandomAccessRead fontView = fontFile.createView())</span>
             {
-<span class="nc" id="L344">                int headerLength = 4;</span>
-<span class="nc" id="L345">                header = new byte[headerLength];</span>
-<span class="nc" id="L346">                int remainingBytes = headerLength;</span>
+<span class="fc" id="L344">                int headerLength = 4;</span>
+<span class="fc" id="L345">                header = new byte[headerLength];</span>
+<span class="fc" id="L346">                int remainingBytes = headerLength;</span>
                 int amountRead;
-<span class="nc bnc" id="L348" title="All 2 branches missed.">                while ((amountRead = fontView.read(header, headerLength - remainingBytes,</span>
+<span class="fc bfc" id="L348" title="All 2 branches covered.">                while ((amountRead = fontView.read(header, headerLength - remainingBytes,</span>
                         remainingBytes)) &gt; 0)
                 {
-<span class="nc" id="L351">                    remainingBytes -= amountRead;</span>
+<span class="fc" id="L351">                    remainingBytes -= amountRead;</span>
                 }
             }
 <span class="nc" id="L354">            catch (IOException ex)</span>
             {
 <span class="nc" id="L356">                LOG.error(ex.getMessage(), ex);</span>
-<span class="nc" id="L357">            }</span>
+<span class="fc" id="L357">            }</span>
         }
-<span class="nc" id="L359">        return header;</span>
+<span class="fc" id="L359">        return header;</span>
     }
     /**
      * Creates a new PDCIDFont instance with the appropriate subclass.
@@ -368,19 +368,19 @@ public final class PDFontFactory
     static PDCIDFont createDescendantFont(COSDictionary dictionary, PDType0Font parent)
             throws IOException
     {
-<span class="nc" id="L371">        COSName type = dictionary.getCOSName(COSName.TYPE, COSName.FONT);</span>
-<span class="nc bnc" id="L372" title="All 2 branches missed.">        if (!COSName.FONT.equals(type))</span>
+<span class="fc" id="L371">        COSName type = dictionary.getCOSName(COSName.TYPE, COSName.FONT);</span>
+<span class="pc bpc" id="L372" title="1 of 2 branches missed.">        if (!COSName.FONT.equals(type))</span>
         {
 <span class="nc" id="L374">            throw new IOException(&quot;Expected 'Font' dictionary but found '&quot; + type.getName() + &quot;'&quot;);</span>
         }
-<span class="nc" id="L376">        COSName subType = dictionary.getCOSName(COSName.SUBTYPE);</span>
-<span class="nc bnc" id="L377" title="All 2 branches missed.">        if (COSName.CID_FONT_TYPE0.equals(subType))</span>
+<span class="fc" id="L376">        COSName subType = dictionary.getCOSName(COSName.SUBTYPE);</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">        if (COSName.CID_FONT_TYPE0.equals(subType))</span>
         {
-<span class="nc" id="L379">            return new PDCIDFontType0(dictionary, parent);</span>
+<span class="fc" id="L379">            return new PDCIDFontType0(dictionary, parent);</span>
         }
-<span class="nc bnc" id="L381" title="All 2 branches missed.">        if (COSName.CID_FONT_TYPE2.equals(subType))</span>
+<span class="pc bpc" id="L381" title="1 of 2 branches missed.">        if (COSName.CID_FONT_TYPE2.equals(subType))</span>
         {
-<span class="nc" id="L383">            return new PDCIDFontType2(dictionary, parent);</span>
+<span class="fc" id="L383">            return new PDCIDFontType2(dictionary, parent);</span>
         }
 <span class="nc" id="L385">        throw new IOException(&quot;Invalid font type: &quot; + type);</span>
     }

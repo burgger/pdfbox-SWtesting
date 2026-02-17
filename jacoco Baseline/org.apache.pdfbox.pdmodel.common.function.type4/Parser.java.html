@@ -25,9 +25,9 @@ public final class Parser
 {
 
     /** Used to indicate the parsers current state. */
-<span class="nc" id="L28">    private enum State</span>
+<span class="fc" id="L28">    private enum State</span>
     {
-<span class="nc" id="L30">        NEWLINE, WHITESPACE, COMMENT, TOKEN</span>
+<span class="fc" id="L30">        NEWLINE, WHITESPACE, COMMENT, TOKEN</span>
     }
 
     private Parser()
@@ -43,9 +43,9 @@ public final class Parser
      */
     public static void parse(CharSequence input, SyntaxHandler handler)
     {
-<span class="nc" id="L46">        Tokenizer tokenizer = new Tokenizer(input, handler);</span>
-<span class="nc" id="L47">        tokenizer.tokenize();</span>
-<span class="nc" id="L48">    }</span>
+<span class="fc" id="L46">        Tokenizer tokenizer = new Tokenizer(input, handler);</span>
+<span class="fc" id="L47">        tokenizer.tokenize();</span>
+<span class="fc" id="L48">    }</span>
 
     /**
      * This interface defines all possible syntactic elements of a Type 4 function.
@@ -83,7 +83,7 @@ public final class Parser
     /**
      * Abstract base class for a {@link SyntaxHandler}.
      */
-<span class="nc" id="L86">    public abstract static class AbstractSyntaxHandler implements SyntaxHandler</span>
+<span class="fc" id="L86">    public abstract static class AbstractSyntaxHandler implements SyntaxHandler</span>
     {
 
         /** {@inheritDoc} */
@@ -98,21 +98,21 @@ public final class Parser
         public void newLine(CharSequence text)
         {
             //nop
-<span class="nc" id="L101">        }</span>
+<span class="fc" id="L101">        }</span>
 
         /** {@inheritDoc} */
         @Override
         public void whitespace(CharSequence text)
         {
             //nop
-<span class="nc" id="L108">        }</span>
+<span class="fc" id="L108">        }</span>
 
     }
 
     /**
      * Tokenizer for Type 4 functions.
      */
-<span class="nc" id="L115">    private static final class Tokenizer</span>
+<span class="fc" id="L115">    private static final class Tokenizer</span>
     {
 
         private static final char NUL = '\u0000'; //NUL
@@ -126,35 +126,35 @@ public final class Parser
         private final CharSequence input;
         private int index;
         private final SyntaxHandler handler;
-<span class="nc" id="L129">        private State state = State.WHITESPACE;</span>
-<span class="nc" id="L130">        private final StringBuilder buffer = new StringBuilder();</span>
+<span class="fc" id="L129">        private State state = State.WHITESPACE;</span>
+<span class="fc" id="L130">        private final StringBuilder buffer = new StringBuilder();</span>
 
         private Tokenizer(CharSequence text, SyntaxHandler syntaxHandler)
-<span class="nc" id="L133">        {</span>
-<span class="nc" id="L134">            this.input = text;</span>
-<span class="nc" id="L135">            this.handler = syntaxHandler;</span>
-<span class="nc" id="L136">        }</span>
+<span class="fc" id="L133">        {</span>
+<span class="fc" id="L134">            this.input = text;</span>
+<span class="fc" id="L135">            this.handler = syntaxHandler;</span>
+<span class="fc" id="L136">        }</span>
 
         private boolean hasMore()
         {
-<span class="nc bnc" id="L140" title="All 2 branches missed.">            return index &lt; input.length();</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">            return index &lt; input.length();</span>
         }
 
         private char currentChar()
         {
-<span class="nc" id="L145">            return input.charAt(index);</span>
+<span class="fc" id="L145">            return input.charAt(index);</span>
         }
 
         private char nextChar()
         {
-<span class="nc" id="L150">            index++;</span>
-<span class="nc bnc" id="L151" title="All 2 branches missed.">            if (!hasMore())</span>
+<span class="fc" id="L150">            index++;</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">            if (!hasMore())</span>
             {
-<span class="nc" id="L153">                return EOT;</span>
+<span class="fc" id="L153">                return EOT;</span>
             }
             else
             {
-<span class="nc" id="L157">                return currentChar();</span>
+<span class="fc" id="L157">                return currentChar();</span>
             }
         }
 
@@ -172,74 +172,74 @@ public final class Parser
 
         private State nextState()
         {
-<span class="nc" id="L175">            char ch = currentChar();</span>
-<span class="nc bnc" id="L176" title="All 4 branches missed.">            switch (ch)</span>
+<span class="fc" id="L175">            char ch = currentChar();</span>
+<span class="pc bpc" id="L176" title="1 of 4 branches missed.">            switch (ch)</span>
             {
             case CR:
             case LF:
             case FF: //FF
-<span class="nc" id="L181">                state = State.NEWLINE;</span>
-<span class="nc" id="L182">                break;</span>
+<span class="fc" id="L181">                state = State.NEWLINE;</span>
+<span class="fc" id="L182">                break;</span>
             case NUL:
             case TAB:
             case SPACE:
-<span class="nc" id="L186">                state = State.WHITESPACE;</span>
-<span class="nc" id="L187">                break;</span>
+<span class="fc" id="L186">                state = State.WHITESPACE;</span>
+<span class="fc" id="L187">                break;</span>
             case '%':
 <span class="nc" id="L189">                state = State.COMMENT;</span>
 <span class="nc" id="L190">                break;</span>
             default:
-<span class="nc" id="L192">                state = State.TOKEN;</span>
+<span class="fc" id="L192">                state = State.TOKEN;</span>
             }
-<span class="nc" id="L194">            return state;</span>
+<span class="fc" id="L194">            return state;</span>
         }
 
         private void tokenize()
         {
-<span class="nc bnc" id="L199" title="All 2 branches missed.">            while (hasMore())</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">            while (hasMore())</span>
             {
-<span class="nc" id="L201">                buffer.setLength(0);</span>
-<span class="nc" id="L202">                nextState();</span>
-<span class="nc bnc" id="L203" title="All 4 branches missed.">                switch (state)</span>
+<span class="fc" id="L201">                buffer.setLength(0);</span>
+<span class="fc" id="L202">                nextState();</span>
+<span class="pc bpc" id="L203" title="1 of 4 branches missed.">                switch (state)</span>
                 {
                 case NEWLINE:
-<span class="nc" id="L206">                    scanNewLine();</span>
-<span class="nc" id="L207">                    break;</span>
+<span class="fc" id="L206">                    scanNewLine();</span>
+<span class="fc" id="L207">                    break;</span>
                 case WHITESPACE:
-<span class="nc" id="L209">                    scanWhitespace();</span>
-<span class="nc" id="L210">                    break;</span>
+<span class="fc" id="L209">                    scanWhitespace();</span>
+<span class="fc" id="L210">                    break;</span>
                 case COMMENT:
 <span class="nc" id="L212">                    scanComment();</span>
 <span class="nc" id="L213">                    break;</span>
                 default:
-<span class="nc" id="L215">                    scanToken();</span>
+<span class="fc" id="L215">                    scanToken();</span>
                 }
             }
-<span class="nc" id="L218">        }</span>
+<span class="fc" id="L218">        }</span>
 
         private void scanNewLine()
         {
-<span class="nc bnc" id="L222" title="All 2 branches missed.">            assert state == State.NEWLINE;</span>
-<span class="nc" id="L223">            char ch = currentChar();</span>
-<span class="nc" id="L224">            buffer.append(ch);</span>
-<span class="nc bnc" id="L225" title="All 4 branches missed.">            if (ch == CR &amp;&amp; peek() == LF)</span>
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">            assert state == State.NEWLINE;</span>
+<span class="fc" id="L223">            char ch = currentChar();</span>
+<span class="fc" id="L224">            buffer.append(ch);</span>
+<span class="pc bpc" id="L225" title="3 of 4 branches missed.">            if (ch == CR &amp;&amp; peek() == LF)</span>
             {
                 //CRLF is treated as one newline
 <span class="nc" id="L228">                buffer.append(nextChar());</span>
             }
-<span class="nc" id="L230">            handler.newLine(buffer);</span>
-<span class="nc" id="L231">            nextChar();</span>
-<span class="nc" id="L232">        }</span>
+<span class="fc" id="L230">            handler.newLine(buffer);</span>
+<span class="fc" id="L231">            nextChar();</span>
+<span class="fc" id="L232">        }</span>
 
         private void scanWhitespace()
         {
-<span class="nc bnc" id="L236" title="All 2 branches missed.">            assert state == State.WHITESPACE;</span>
-<span class="nc" id="L237">            buffer.append(currentChar());</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">            assert state == State.WHITESPACE;</span>
+<span class="fc" id="L237">            buffer.append(currentChar());</span>
             loop:
-<span class="nc bnc" id="L239" title="All 2 branches missed.">            while (hasMore())</span>
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">            while (hasMore())</span>
             {
-<span class="nc" id="L241">                char ch = nextChar();</span>
-<span class="nc bnc" id="L242" title="All 2 branches missed.">                switch (ch)</span>
+<span class="fc" id="L241">                char ch = nextChar();</span>
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">                switch (ch)</span>
                 {
                 case NUL:
                 case TAB:
@@ -247,11 +247,11 @@ public final class Parser
 <span class="nc" id="L247">                    buffer.append(ch);</span>
 <span class="nc" id="L248">                    break;</span>
                 default:
-<span class="nc" id="L250">                    break loop;</span>
+<span class="fc" id="L250">                    break loop;</span>
                 }
 <span class="nc" id="L252">            }</span>
-<span class="nc" id="L253">            handler.whitespace(buffer);</span>
-<span class="nc" id="L254">        }</span>
+<span class="fc" id="L253">            handler.whitespace(buffer);</span>
+<span class="fc" id="L254">        }</span>
 
         private void scanComment()
         {
@@ -277,24 +277,24 @@ public final class Parser
 
         private void scanToken()
         {
-<span class="nc bnc" id="L280" title="All 2 branches missed.">            assert state == State.TOKEN;</span>
-<span class="nc" id="L281">            char ch = currentChar();</span>
-<span class="nc" id="L282">            buffer.append(ch);</span>
-<span class="nc bnc" id="L283" title="All 2 branches missed.">            switch (ch)</span>
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">            assert state == State.TOKEN;</span>
+<span class="fc" id="L281">            char ch = currentChar();</span>
+<span class="fc" id="L282">            buffer.append(ch);</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">            switch (ch)</span>
             {
             case '{':
             case '}':
-<span class="nc" id="L287">                handler.token(buffer);</span>
-<span class="nc" id="L288">                nextChar();</span>
-<span class="nc" id="L289">                return;</span>
+<span class="fc" id="L287">                handler.token(buffer);</span>
+<span class="fc" id="L288">                nextChar();</span>
+<span class="fc" id="L289">                return;</span>
             default:
                 //continue
             }
             loop:
-<span class="nc bnc" id="L294" title="All 2 branches missed.">            while (hasMore())</span>
+<span class="pc bpc" id="L294" title="1 of 2 branches missed.">            while (hasMore())</span>
             {
-<span class="nc" id="L296">                ch = nextChar();</span>
-<span class="nc bnc" id="L297" title="All 2 branches missed.">                switch (ch)</span>
+<span class="fc" id="L296">                ch = nextChar();</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">                switch (ch)</span>
                 {
                 case NUL:
                 case TAB:
@@ -305,14 +305,14 @@ public final class Parser
                 case EOT:
                 case '{':
                 case '}':
-<span class="nc" id="L308">                    break loop;</span>
+<span class="fc" id="L308">                    break loop;</span>
                 default:
-<span class="nc" id="L310">                    buffer.append(ch);</span>
+<span class="fc" id="L310">                    buffer.append(ch);</span>
                 }
             }
             //EOF reached
-<span class="nc" id="L314">            handler.token(buffer);</span>
-<span class="nc" id="L315">        }</span>
+<span class="fc" id="L314">            handler.token(buffer);</span>
+<span class="fc" id="L315">        }</span>
 
     }
 

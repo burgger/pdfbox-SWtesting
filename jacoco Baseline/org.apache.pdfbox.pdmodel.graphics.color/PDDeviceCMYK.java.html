@@ -43,17 +43,17 @@ public class PDDeviceCMYK extends PDDeviceColorSpace
     public static PDDeviceCMYK INSTANCE;
     static
     {
-<span class="nc" id="L46">        INSTANCE = new PDDeviceCMYK();</span>
-<span class="nc" id="L47">    }</span>
+<span class="fc" id="L46">        INSTANCE = new PDDeviceCMYK();</span>
+<span class="fc" id="L47">    }</span>
 
-<span class="nc" id="L49">    private final PDColor initialColor = new PDColor(new float[] { 0, 0, 0, 1 }, this);</span>
+<span class="fc" id="L49">    private final PDColor initialColor = new PDColor(new float[] { 0, 0, 0, 1 }, this);</span>
     private ICC_ColorSpace awtColorSpace;
-<span class="nc" id="L51">    private volatile boolean initDone = false;</span>
-<span class="nc" id="L52">    private boolean usePureJavaCMYKConversion = false;</span>
+<span class="fc" id="L51">    private volatile boolean initDone = false;</span>
+<span class="fc" id="L52">    private boolean usePureJavaCMYKConversion = false;</span>
 
     protected PDDeviceCMYK()
-<span class="nc" id="L55">    {</span>
-<span class="nc" id="L56">    }</span>
+<span class="fc" id="L55">    {</span>
+<span class="fc" id="L56">    }</span>
 
     /**
      * Lazy load the ICC profile, because it's slow.
@@ -63,36 +63,36 @@ public class PDDeviceCMYK extends PDDeviceColorSpace
     protected void init() throws IOException
     {
         // no need to synchronize this check as it is atomic
-<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (initDone)</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (initDone)</span>
         {
-<span class="nc" id="L68">            return;</span>
+<span class="fc" id="L68">            return;</span>
         }
-<span class="nc" id="L70">        synchronized (this)</span>
+<span class="fc" id="L70">        synchronized (this)</span>
         {
             // we might have been waiting for another thread, so check again
-<span class="nc bnc" id="L73" title="All 2 branches missed.">            if (initDone)</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">            if (initDone)</span>
             {
 <span class="nc" id="L75">                return;</span>
             }
             // loads the ICC color profile for CMYK
-<span class="nc" id="L78">            ICC_Profile iccProfile = getICCProfile();</span>
-<span class="nc bnc" id="L79" title="All 2 branches missed.">            if (iccProfile == null)</span>
+<span class="fc" id="L78">            ICC_Profile iccProfile = getICCProfile();</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">            if (iccProfile == null)</span>
             {
 <span class="nc" id="L81">                throw new IOException(&quot;Default CMYK color profile could not be loaded&quot;);</span>
             }
-<span class="nc" id="L83">            awtColorSpace = new ICC_ColorSpace(iccProfile);</span>
+<span class="fc" id="L83">            awtColorSpace = new ICC_ColorSpace(iccProfile);</span>
 
             // there is a JVM bug which results in a CMMException which appears to be a race
             // condition caused by lazy initialization of the color transform, so we perform
             // an initial color conversion while we're still in a static context, see PDFBOX-2184
-<span class="nc" id="L88">            awtColorSpace.toRGB(new float[] { 0, 0, 0, 0 });</span>
-<span class="nc" id="L89">            usePureJavaCMYKConversion = System</span>
-<span class="nc bnc" id="L90" title="All 2 branches missed.">                    .getProperty(&quot;org.apache.pdfbox.rendering.UsePureJavaCMYKConversion&quot;) != null;</span>
+<span class="fc" id="L88">            awtColorSpace.toRGB(new float[] { 0, 0, 0, 0 });</span>
+<span class="fc" id="L89">            usePureJavaCMYKConversion = System</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">                    .getProperty(&quot;org.apache.pdfbox.rendering.UsePureJavaCMYKConversion&quot;) != null;</span>
 
             // Assignment to volatile must be the LAST statement in this block!
-<span class="nc" id="L93">            initDone = true;</span>
-<span class="nc" id="L94">        }</span>
-<span class="nc" id="L95">    }</span>
+<span class="fc" id="L93">            initDone = true;</span>
+<span class="fc" id="L94">        }</span>
+<span class="fc" id="L95">    }</span>
 
     protected ICC_Profile getICCProfile() throws IOException
     {
@@ -101,34 +101,34 @@ public class PDDeviceCMYK extends PDDeviceColorSpace
         // Instead, the &quot;CGATS001Compat-v2-micro&quot; is used, which is an open
         // alternative to the &quot;U.S. Web Coated (SWOP) v2&quot; profile.
         // https://github.com/saucecontrol/Compact-ICC-Profiles#cmyk
-<span class="nc" id="L104">        String resourceName = &quot;/org/apache/pdfbox/resources/icc/CGATS001Compat-v2-micro.icc&quot;;</span>
-<span class="nc" id="L105">        InputStream resourceAsStream = PDDeviceCMYK.class.getResourceAsStream(resourceName);</span>
-<span class="nc bnc" id="L106" title="All 2 branches missed.">        if (resourceAsStream == null)</span>
+<span class="fc" id="L104">        String resourceName = &quot;/org/apache/pdfbox/resources/icc/CGATS001Compat-v2-micro.icc&quot;;</span>
+<span class="fc" id="L105">        InputStream resourceAsStream = PDDeviceCMYK.class.getResourceAsStream(resourceName);</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        if (resourceAsStream == null)</span>
         {
 <span class="nc" id="L108">            throw new IOException(&quot;resource '&quot; + resourceName + &quot;' not found&quot;);</span>
         }    
-<span class="nc" id="L110">        try (InputStream is = new BufferedInputStream(resourceAsStream))</span>
+<span class="fc" id="L110">        try (InputStream is = new BufferedInputStream(resourceAsStream))</span>
         {
-<span class="nc" id="L112">            return ICC_Profile.getInstance(is);</span>
+<span class="fc" id="L112">            return ICC_Profile.getInstance(is);</span>
         }
     }
 
     @Override
     public String getName()
     {
-<span class="nc" id="L119">        return COSName.DEVICECMYK.getName();</span>
+<span class="fc" id="L119">        return COSName.DEVICECMYK.getName();</span>
     }
 
     @Override
     public int getNumberOfComponents()
     {
-<span class="nc" id="L125">        return 4;</span>
+<span class="fc" id="L125">        return 4;</span>
     }
 
     @Override
     public float[] getDefaultDecode(int bitsPerComponent)
     {
-<span class="nc" id="L131">        return new float[] { 0, 1, 0, 1, 0, 1, 0, 1 };</span>
+<span class="fc" id="L131">        return new float[] { 0, 1, 0, 1, 0, 1, 0, 1 };</span>
     }
 
     @Override
@@ -140,8 +140,8 @@ public class PDDeviceCMYK extends PDDeviceColorSpace
     @Override
     public float[] toRGB(float[] value) throws IOException
     {
-<span class="nc" id="L143">        init();</span>
-<span class="nc" id="L144">        return awtColorSpace.toRGB(value);</span>
+<span class="fc" id="L143">        init();</span>
+<span class="fc" id="L144">        return awtColorSpace.toRGB(value);</span>
     }
 
     @Override
@@ -155,14 +155,14 @@ public class PDDeviceCMYK extends PDDeviceColorSpace
     @Override
     public BufferedImage toRGBImage(WritableRaster raster) throws IOException
     {
-<span class="nc" id="L158">        init();</span>
-<span class="nc" id="L159">        return toRGBImageAWT(raster, awtColorSpace);</span>
+<span class="fc" id="L158">        init();</span>
+<span class="fc" id="L159">        return toRGBImageAWT(raster, awtColorSpace);</span>
     }
 
     @Override
     protected BufferedImage toRGBImageAWT(WritableRaster raster, ColorSpace colorSpace)
     {
-<span class="nc bnc" id="L165" title="All 2 branches missed.">        if (usePureJavaCMYKConversion)</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">        if (usePureJavaCMYKConversion)</span>
         {
 <span class="nc" id="L167">            BufferedImage dest = new BufferedImage(raster.getWidth(), raster.getHeight(),</span>
                     BufferedImage.TYPE_INT_RGB);
@@ -209,7 +209,7 @@ public class PDDeviceCMYK extends PDDeviceColorSpace
         }
         else
         {
-<span class="nc" id="L212">            return super.toRGBImageAWT(raster, colorSpace);</span>
+<span class="fc" id="L212">            return super.toRGBImageAWT(raster, colorSpace);</span>
         }
     }
 }

@@ -76,25 +76,25 @@ import org.apache.pdfbox.util.StringUtil;
  */
 abstract class PDAbstractContentStream implements Closeable
 {
-<span class="nc" id="L79">    private static final Logger LOG = LogManager.getLogger(PDAbstractContentStream.class);</span>
+<span class="fc" id="L79">    private static final Logger LOG = LogManager.getLogger(PDAbstractContentStream.class);</span>
 
     protected final PDDocument document; // may be null
 
     protected final OutputStream outputStream;
     protected final PDResources resources;
 
-<span class="nc" id="L86">    protected boolean inTextMode = false;</span>
-<span class="nc" id="L87">    protected final Deque&lt;PDFont&gt; fontStack = new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L86">    protected boolean inTextMode = false;</span>
+<span class="fc" id="L87">    protected final Deque&lt;PDFont&gt; fontStack = new ArrayDeque&lt;&gt;();</span>
 
-<span class="nc" id="L89">    protected final Deque&lt;PDColorSpace&gt; nonStrokingColorSpaceStack = new ArrayDeque&lt;&gt;();</span>
-<span class="nc" id="L90">    protected final Deque&lt;PDColorSpace&gt; strokingColorSpaceStack = new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L89">    protected final Deque&lt;PDColorSpace&gt; nonStrokingColorSpaceStack = new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L90">    protected final Deque&lt;PDColorSpace&gt; strokingColorSpaceStack = new ArrayDeque&lt;&gt;();</span>
 
     // number format
-<span class="nc" id="L93">    private final NumberFormat formatDecimal = NumberFormat.getNumberInstance(Locale.US);</span>
-<span class="nc" id="L94">    private final byte[] formatBuffer = new byte[32];</span>
+<span class="fc" id="L93">    private final NumberFormat formatDecimal = NumberFormat.getNumberInstance(Locale.US);</span>
+<span class="fc" id="L94">    private final byte[] formatBuffer = new byte[32];</span>
 
-<span class="nc" id="L96">    private final Map&lt;PDType0Font, GsubWorker&gt; gsubWorkers = new HashMap&lt;&gt;();</span>
-<span class="nc" id="L97">    private final GsubWorkerFactory gsubWorkerFactory = new GsubWorkerFactory();</span>
+<span class="fc" id="L96">    private final Map&lt;PDType0Font, GsubWorker&gt; gsubWorkers = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L97">    private final GsubWorkerFactory gsubWorkerFactory = new GsubWorkerFactory();</span>
 
     /**
      * Create a new appearance stream.
@@ -104,14 +104,14 @@ abstract class PDAbstractContentStream implements Closeable
      * @param resources The resources to use
      */
     PDAbstractContentStream(PDDocument document, OutputStream outputStream, PDResources resources)
-<span class="nc" id="L107">    {</span>
-<span class="nc" id="L108">        this.document = document;</span>
-<span class="nc" id="L109">        this.outputStream = outputStream;</span>
-<span class="nc" id="L110">        this.resources = resources;</span>
+<span class="fc" id="L107">    {</span>
+<span class="fc" id="L108">        this.document = document;</span>
+<span class="fc" id="L109">        this.outputStream = outputStream;</span>
+<span class="fc" id="L110">        this.resources = resources;</span>
 
-<span class="nc" id="L112">        formatDecimal.setMaximumFractionDigits(4);</span>
-<span class="nc" id="L113">        formatDecimal.setGroupingUsed(false);</span>
-<span class="nc" id="L114">    }</span>
+<span class="fc" id="L112">        formatDecimal.setMaximumFractionDigits(4);</span>
+<span class="fc" id="L113">        formatDecimal.setGroupingUsed(false);</span>
+<span class="fc" id="L114">    }</span>
 
     /**
      * Sets the maximum number of digits allowed for fractional numbers.
@@ -121,8 +121,8 @@ abstract class PDAbstractContentStream implements Closeable
      */
     protected void setMaximumFractionDigits(int fractionDigitsNumber)
     {
-<span class="nc" id="L124">        formatDecimal.setMaximumFractionDigits(fractionDigitsNumber);</span>
-<span class="nc" id="L125">    }</span>
+<span class="fc" id="L124">        formatDecimal.setMaximumFractionDigits(fractionDigitsNumber);</span>
+<span class="fc" id="L125">    }</span>
 
     /**
      * Begin some text operations.
@@ -133,13 +133,13 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void beginText() throws IOException
     {
-<span class="nc bnc" id="L136" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">        if (inTextMode)</span>
         {
 <span class="nc" id="L138">            throw new IllegalStateException(&quot;Error: Nested beginText() calls are not allowed.&quot;);</span>
         }
-<span class="nc" id="L140">        writeOperator(OperatorName.BEGIN_TEXT);</span>
-<span class="nc" id="L141">        inTextMode = true;</span>
-<span class="nc" id="L142">    }</span>
+<span class="fc" id="L140">        writeOperator(OperatorName.BEGIN_TEXT);</span>
+<span class="fc" id="L141">        inTextMode = true;</span>
+<span class="fc" id="L142">    }</span>
 
     /**
      * End some text operations.
@@ -150,13 +150,13 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void endText() throws IOException
     {
-<span class="nc bnc" id="L153" title="All 2 branches missed.">        if (!inTextMode)</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">        if (!inTextMode)</span>
         {
 <span class="nc" id="L155">            throw new IllegalStateException(&quot;Error: You must call beginText() before calling endText.&quot;);</span>
         }
-<span class="nc" id="L157">        writeOperator(OperatorName.END_TEXT);</span>
-<span class="nc" id="L158">        inTextMode = false;</span>
-<span class="nc" id="L159">    }</span>
+<span class="fc" id="L157">        writeOperator(OperatorName.END_TEXT);</span>
+<span class="fc" id="L158">        inTextMode = false;</span>
+<span class="fc" id="L159">    }</span>
     
     /**
      * Set the font and font size to draw text with.
@@ -167,22 +167,22 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setFont(PDFont font, float fontSize) throws IOException
     {
-<span class="nc bnc" id="L170" title="All 2 branches missed.">        if (fontStack.isEmpty())</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        if (fontStack.isEmpty())</span>
         {
-<span class="nc" id="L172">            fontStack.add(font);</span>
+<span class="fc" id="L172">            fontStack.add(font);</span>
         }
         else
         {
-<span class="nc" id="L176">            fontStack.pop();</span>
-<span class="nc" id="L177">            fontStack.push(font);</span>
+<span class="fc" id="L176">            fontStack.pop();</span>
+<span class="fc" id="L177">            fontStack.push(font);</span>
         }
 
         // keep track of fonts which are configured for subsetting
-<span class="nc bnc" id="L181" title="All 2 branches missed.">        if (font.willBeSubset())</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        if (font.willBeSubset())</span>
         {
-<span class="nc bnc" id="L183" title="All 2 branches missed.">            if (document != null)</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">            if (document != null)</span>
             {
-<span class="nc" id="L185">                document.getFontsToSubset().add(font);</span>
+<span class="fc" id="L185">                document.getFontsToSubset().add(font);</span>
             }
             else
             {
@@ -191,31 +191,31 @@ abstract class PDAbstractContentStream implements Closeable
 <span class="nc" id="L191">                        font.getName());</span>
             }
         }
-<span class="nc bnc" id="L194" title="All 4 branches missed.">        else if (!font.isEmbedded() &amp;&amp; !font.isStandard14())</span>
+<span class="fc bfc" id="L194" title="All 4 branches covered.">        else if (!font.isEmbedded() &amp;&amp; !font.isStandard14())</span>
         {
-<span class="nc" id="L196">            LOG.warn(&quot;attempting to use font '{}' that isn't embedded&quot;, font.getName());</span>
+<span class="fc" id="L196">            LOG.warn(&quot;attempting to use font '{}' that isn't embedded&quot;, font.getName());</span>
         }
 
         // complex text layout
-<span class="nc bnc" id="L200" title="All 2 branches missed.">        if (font instanceof PDType0Font)</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        if (font instanceof PDType0Font)</span>
         {
-<span class="nc" id="L202">            PDType0Font type0Font = (PDType0Font) font;</span>
-<span class="nc" id="L203">            GsubData gsubData = type0Font.getGsubData();</span>
-<span class="nc bnc" id="L204" title="All 2 branches missed.">            if (gsubData != GsubData.NO_DATA_FOUND)</span>
+<span class="fc" id="L202">            PDType0Font type0Font = (PDType0Font) font;</span>
+<span class="fc" id="L203">            GsubData gsubData = type0Font.getGsubData();</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">            if (gsubData != GsubData.NO_DATA_FOUND)</span>
             {
-<span class="nc" id="L206">                GsubWorker gsubWorker = gsubWorkerFactory.getGsubWorker(type0Font.getCmapLookup(), gsubData);</span>
-<span class="nc" id="L207">                gsubWorkers.put(type0Font, gsubWorker);</span>
-<span class="nc" id="L208">            }</span>
+<span class="fc" id="L206">                GsubWorker gsubWorker = gsubWorkerFactory.getGsubWorker(type0Font.getCmapLookup(), gsubData);</span>
+<span class="fc" id="L207">                gsubWorkers.put(type0Font, gsubWorker);</span>
+<span class="fc" id="L208">            }</span>
             else
             {
-<span class="nc" id="L211">                LOG.info(&quot;No GSUB data found in font {}&quot;, font.getName());</span>
+<span class="fc" id="L211">                LOG.info(&quot;No GSUB data found in font {}&quot;, font.getName());</span>
             }
         }
 
-<span class="nc" id="L215">        writeOperand(resources.add(font));</span>
-<span class="nc" id="L216">        writeOperand(fontSize);</span>
-<span class="nc" id="L217">        writeOperator(OperatorName.SET_FONT_AND_SIZE);</span>
-<span class="nc" id="L218">    }</span>
+<span class="fc" id="L215">        writeOperand(resources.add(font));</span>
+<span class="fc" id="L216">        writeOperand(fontSize);</span>
+<span class="fc" id="L217">        writeOperator(OperatorName.SET_FONT_AND_SIZE);</span>
+<span class="fc" id="L218">    }</span>
 
     /**
      * Shows the given text at the location specified by the current text matrix with the given
@@ -261,10 +261,10 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void showText(String text) throws IOException
     {
-<span class="nc" id="L264">        showTextInternal(text);</span>
-<span class="nc" id="L265">        write(&quot; &quot;);</span>
-<span class="nc" id="L266">        writeOperator(OperatorName.SHOW_TEXT);</span>
-<span class="nc" id="L267">    }</span>
+<span class="fc" id="L264">        showTextInternal(text);</span>
+<span class="fc" id="L265">        write(&quot; &quot;);</span>
+<span class="fc" id="L266">        writeOperator(OperatorName.SHOW_TEXT);</span>
+<span class="fc" id="L267">    }</span>
 
     /**
      * Outputs a string using the correct encoding and subsetting as required.
@@ -275,54 +275,54 @@ abstract class PDAbstractContentStream implements Closeable
      */
     protected void showTextInternal(String text) throws IOException
     {
-<span class="nc bnc" id="L278" title="All 2 branches missed.">        if (!inTextMode)</span>
+<span class="pc bpc" id="L278" title="1 of 2 branches missed.">        if (!inTextMode)</span>
         {
 <span class="nc" id="L280">            throw new IllegalStateException(&quot;Must call beginText() before showText()&quot;);</span>
         }
 
-<span class="nc bnc" id="L283" title="All 2 branches missed.">        if (fontStack.isEmpty())</span>
+<span class="pc bpc" id="L283" title="1 of 2 branches missed.">        if (fontStack.isEmpty())</span>
         {
 <span class="nc" id="L285">            throw new IllegalStateException(&quot;Must call setFont() before showText()&quot;);</span>
         }
 
-<span class="nc" id="L288">        PDFont font = fontStack.peek();</span>
+<span class="fc" id="L288">        PDFont font = fontStack.peek();</span>
 
         // complex text layout
-<span class="nc" id="L291">        byte[] encodedText = null;</span>
-<span class="nc bnc" id="L292" title="All 2 branches missed.">        if (font instanceof PDType0Font)</span>
+<span class="fc" id="L291">        byte[] encodedText = null;</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">        if (font instanceof PDType0Font)</span>
         {
-<span class="nc" id="L294">            GsubWorker gsubWorker = gsubWorkers.get(font);</span>
-<span class="nc bnc" id="L295" title="All 2 branches missed.">            if (gsubWorker != null)</span>
+<span class="fc" id="L294">            GsubWorker gsubWorker = gsubWorkers.get(font);</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">            if (gsubWorker != null)</span>
             {
-<span class="nc" id="L297">                PDType0Font type0Font = (PDType0Font) font;</span>
-<span class="nc" id="L298">                Set&lt;Integer&gt; glyphIds = new HashSet&lt;&gt;();</span>
-<span class="nc" id="L299">                encodedText = encodeForGsub(gsubWorker, glyphIds, type0Font, text);</span>
-<span class="nc bnc" id="L300" title="All 2 branches missed.">                if (type0Font.willBeSubset())</span>
+<span class="fc" id="L297">                PDType0Font type0Font = (PDType0Font) font;</span>
+<span class="fc" id="L298">                Set&lt;Integer&gt; glyphIds = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L299">                encodedText = encodeForGsub(gsubWorker, glyphIds, type0Font, text);</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">                if (type0Font.willBeSubset())</span>
                 {
-<span class="nc" id="L302">                    type0Font.addGlyphsToSubset(glyphIds);</span>
+<span class="fc" id="L302">                    type0Font.addGlyphsToSubset(glyphIds);</span>
                 }
             }
         }
 
-<span class="nc bnc" id="L307" title="All 2 branches missed.">        if (encodedText == null)</span>
+<span class="fc bfc" id="L307" title="All 2 branches covered.">        if (encodedText == null)</span>
         {
-<span class="nc" id="L309">            encodedText = font.encode(text);</span>
+<span class="fc" id="L309">            encodedText = font.encode(text);</span>
         }
 
         // Unicode code points to keep when subsetting
-<span class="nc bnc" id="L313" title="All 2 branches missed.">        if (font.willBeSubset())</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">        if (font.willBeSubset())</span>
         {
-<span class="nc" id="L315">            int offset = 0;</span>
-<span class="nc bnc" id="L316" title="All 2 branches missed.">            while (offset &lt; text.length())</span>
+<span class="fc" id="L315">            int offset = 0;</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">            while (offset &lt; text.length())</span>
             {
-<span class="nc" id="L318">                int codePoint = text.codePointAt(offset);</span>
-<span class="nc" id="L319">                font.addToSubset(codePoint);</span>
-<span class="nc" id="L320">                offset += Character.charCount(codePoint);</span>
-<span class="nc" id="L321">            }</span>
+<span class="fc" id="L318">                int codePoint = text.codePointAt(offset);</span>
+<span class="fc" id="L319">                font.addToSubset(codePoint);</span>
+<span class="fc" id="L320">                offset += Character.charCount(codePoint);</span>
+<span class="fc" id="L321">            }</span>
         }
 
-<span class="nc" id="L324">        COSWriter.writeString(encodedText, outputStream);</span>
-<span class="nc" id="L325">    }</span>
+<span class="fc" id="L324">        COSWriter.writeString(encodedText, outputStream);</span>
+<span class="fc" id="L325">    }</span>
 
     /**
      * Sets the text leading.
@@ -362,14 +362,14 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void newLineAtOffset(float tx, float ty) throws IOException
     {
-<span class="nc bnc" id="L365" title="All 2 branches missed.">        if (!inTextMode)</span>
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">        if (!inTextMode)</span>
         {
 <span class="nc" id="L367">            throw new IllegalStateException(&quot;Error: must call beginText() before newLineAtOffset()&quot;);</span>
         }
-<span class="nc" id="L369">        writeOperand(tx);</span>
-<span class="nc" id="L370">        writeOperand(ty);</span>
-<span class="nc" id="L371">        writeOperator(OperatorName.MOVE_TEXT);</span>
-<span class="nc" id="L372">    }</span>
+<span class="fc" id="L369">        writeOperand(tx);</span>
+<span class="fc" id="L370">        writeOperand(ty);</span>
+<span class="fc" id="L371">        writeOperator(OperatorName.MOVE_TEXT);</span>
+<span class="fc" id="L372">    }</span>
 
     /**
      * The Tm operator. Sets the text matrix to the given values.
@@ -381,13 +381,13 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setTextMatrix(Matrix matrix) throws IOException
     {
-<span class="nc bnc" id="L384" title="All 2 branches missed.">        if (!inTextMode)</span>
+<span class="pc bpc" id="L384" title="1 of 2 branches missed.">        if (!inTextMode)</span>
         {
 <span class="nc" id="L386">            throw new IllegalStateException(&quot;Error: must call beginText() before setTextMatrix&quot;);</span>
         }
-<span class="nc" id="L388">        writeAffineTransform(matrix.createAffineTransform());</span>
-<span class="nc" id="L389">        writeOperator(OperatorName.SET_MATRIX);</span>
-<span class="nc" id="L390">    }</span>
+<span class="fc" id="L388">        writeAffineTransform(matrix.createAffineTransform());</span>
+<span class="fc" id="L389">        writeOperator(OperatorName.SET_MATRIX);</span>
+<span class="fc" id="L390">    }</span>
 
     /**
      * Draw an image at the x,y coordinates, with the default size of the image.
@@ -400,8 +400,8 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void drawImage(PDImageXObject image, float x, float y) throws IOException
     {
-<span class="nc" id="L403">        drawImage(image, x, y, image.getWidth(), image.getHeight());</span>
-<span class="nc" id="L404">    }</span>
+<span class="fc" id="L403">        drawImage(image, x, y, image.getWidth(), image.getHeight());</span>
+<span class="fc" id="L404">    }</span>
 
     /**
      * Draw an image at the x,y coordinates, with the given size.
@@ -417,21 +417,21 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void drawImage(PDImageXObject image, float x, float y, float width, float height) throws IOException
     {
-<span class="nc bnc" id="L420" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="fc bfc" id="L420" title="All 2 branches covered.">        if (inTextMode)</span>
         {
-<span class="nc" id="L422">            throw new IllegalStateException(&quot;Error: drawImage is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L422">            throw new IllegalStateException(&quot;Error: drawImage is not allowed within a text block.&quot;);</span>
         }
 
-<span class="nc" id="L425">        saveGraphicsState();</span>
+<span class="fc" id="L425">        saveGraphicsState();</span>
 
-<span class="nc" id="L427">        AffineTransform transform = new AffineTransform(width, 0, 0, height, x, y);</span>
-<span class="nc" id="L428">        transform(new Matrix(transform));</span>
+<span class="fc" id="L427">        AffineTransform transform = new AffineTransform(width, 0, 0, height, x, y);</span>
+<span class="fc" id="L428">        transform(new Matrix(transform));</span>
 
-<span class="nc" id="L430">        writeOperand(resources.add(image));</span>
-<span class="nc" id="L431">        writeOperator(OperatorName.DRAW_OBJECT);</span>
+<span class="fc" id="L430">        writeOperand(resources.add(image));</span>
+<span class="fc" id="L431">        writeOperator(OperatorName.DRAW_OBJECT);</span>
 
-<span class="nc" id="L433">        restoreGraphicsState();</span>
-<span class="nc" id="L434">    }</span>
+<span class="fc" id="L433">        restoreGraphicsState();</span>
+<span class="fc" id="L434">    }</span>
 
     /**
      * Draw an image at the origin with the given transformation matrix.
@@ -444,9 +444,9 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void drawImage(PDImageXObject image, Matrix matrix) throws IOException
     {
-<span class="nc bnc" id="L447" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="pc bpc" id="L447" title="1 of 2 branches missed.">        if (inTextMode)</span>
         {
-<span class="nc" id="L449">            throw new IllegalStateException(&quot;Error: drawImage is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L449">            throw new IllegalStateException(&quot;Error: drawImage is not allowed within a text block.&quot;);</span>
         }
 
 <span class="nc" id="L452">        saveGraphicsState();</span>
@@ -471,8 +471,8 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void drawImage(PDInlineImage inlineImage, float x, float y) throws IOException
     {
-<span class="nc" id="L474">        drawImage(inlineImage, x, y, inlineImage.getWidth(), inlineImage.getHeight());</span>
-<span class="nc" id="L475">    }</span>
+<span class="fc" id="L474">        drawImage(inlineImage, x, y, inlineImage.getWidth(), inlineImage.getHeight());</span>
+<span class="fc" id="L475">    }</span>
 
     /**
      * Draw an inline image at the x,y coordinates and a certain width and height.
@@ -488,61 +488,61 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void drawImage(PDInlineImage inlineImage, float x, float y, float width, float height) throws IOException
     {
-<span class="nc bnc" id="L491" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="fc bfc" id="L491" title="All 2 branches covered.">        if (inTextMode)</span>
         {
-<span class="nc" id="L493">            throw new IllegalStateException(&quot;Error: drawImage is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L493">            throw new IllegalStateException(&quot;Error: drawImage is not allowed within a text block.&quot;);</span>
         }
 
-<span class="nc" id="L496">        saveGraphicsState();</span>
-<span class="nc" id="L497">        transform(new Matrix(width, 0, 0, height, x, y));</span>
+<span class="fc" id="L496">        saveGraphicsState();</span>
+<span class="fc" id="L497">        transform(new Matrix(width, 0, 0, height, x, y));</span>
 
         // create the image dictionary
-<span class="nc" id="L500">        StringBuilder sb = new StringBuilder();</span>
-<span class="nc" id="L501">        sb.append(OperatorName.BEGIN_INLINE_IMAGE);</span>
+<span class="fc" id="L500">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L501">        sb.append(OperatorName.BEGIN_INLINE_IMAGE);</span>
 
-<span class="nc" id="L503">        sb.append(&quot;\n /W &quot;);</span>
-<span class="nc" id="L504">        sb.append(inlineImage.getWidth());</span>
+<span class="fc" id="L503">        sb.append(&quot;\n /W &quot;);</span>
+<span class="fc" id="L504">        sb.append(inlineImage.getWidth());</span>
 
-<span class="nc" id="L506">        sb.append(&quot;\n /H &quot;);</span>
-<span class="nc" id="L507">        sb.append(inlineImage.getHeight());</span>
+<span class="fc" id="L506">        sb.append(&quot;\n /H &quot;);</span>
+<span class="fc" id="L507">        sb.append(inlineImage.getHeight());</span>
 
-<span class="nc" id="L509">        sb.append(&quot;\n /CS &quot;);</span>
-<span class="nc" id="L510">        sb.append('/');</span>
-<span class="nc" id="L511">        sb.append(inlineImage.getColorSpace().getName());</span>
+<span class="fc" id="L509">        sb.append(&quot;\n /CS &quot;);</span>
+<span class="fc" id="L510">        sb.append('/');</span>
+<span class="fc" id="L511">        sb.append(inlineImage.getColorSpace().getName());</span>
 
-<span class="nc" id="L513">        COSArray decodeArray = inlineImage.getDecode();</span>
-<span class="nc bnc" id="L514" title="All 4 branches missed.">        if (decodeArray != null &amp;&amp; !decodeArray.isEmpty())</span>
+<span class="fc" id="L513">        COSArray decodeArray = inlineImage.getDecode();</span>
+<span class="pc bpc" id="L514" title="1 of 4 branches missed.">        if (decodeArray != null &amp;&amp; !decodeArray.isEmpty())</span>
         {
-<span class="nc" id="L516">            sb.append(&quot;\n /D &quot;);</span>
-<span class="nc" id="L517">            sb.append('[');</span>
-<span class="nc bnc" id="L518" title="All 2 branches missed.">            for (COSBase base : decodeArray)</span>
+<span class="fc" id="L516">            sb.append(&quot;\n /D &quot;);</span>
+<span class="fc" id="L517">            sb.append('[');</span>
+<span class="fc bfc" id="L518" title="All 2 branches covered.">            for (COSBase base : decodeArray)</span>
             {
-<span class="nc" id="L520">                sb.append(((COSNumber) base).intValue());</span>
-<span class="nc" id="L521">                sb.append(' ');</span>
-<span class="nc" id="L522">            }</span>
-<span class="nc" id="L523">            sb.append(']');</span>
+<span class="fc" id="L520">                sb.append(((COSNumber) base).intValue());</span>
+<span class="fc" id="L521">                sb.append(' ');</span>
+<span class="fc" id="L522">            }</span>
+<span class="fc" id="L523">            sb.append(']');</span>
         }
 
-<span class="nc bnc" id="L526" title="All 2 branches missed.">        if (inlineImage.isStencil())</span>
+<span class="pc bpc" id="L526" title="1 of 2 branches missed.">        if (inlineImage.isStencil())</span>
         {
-<span class="nc" id="L528">            sb.append(&quot;\n /IM true&quot;);</span>
+<span class="fc" id="L528">            sb.append(&quot;\n /IM true&quot;);</span>
         }
 
-<span class="nc" id="L531">        sb.append(&quot;\n /BPC &quot;);</span>
-<span class="nc" id="L532">        sb.append(inlineImage.getBitsPerComponent());</span>
+<span class="fc" id="L531">        sb.append(&quot;\n /BPC &quot;);</span>
+<span class="fc" id="L532">        sb.append(inlineImage.getBitsPerComponent());</span>
 
         // image dictionary
-<span class="nc" id="L535">        write(sb.toString());</span>
-<span class="nc" id="L536">        writeLine();</span>
+<span class="fc" id="L535">        write(sb.toString());</span>
+<span class="fc" id="L536">        writeLine();</span>
 
         // binary data
-<span class="nc" id="L539">        writeOperator(OperatorName.BEGIN_INLINE_IMAGE_DATA);</span>
-<span class="nc" id="L540">        writeBytes(inlineImage.getData());</span>
-<span class="nc" id="L541">        writeLine();</span>
-<span class="nc" id="L542">        writeOperator(OperatorName.END_INLINE_IMAGE);</span>
+<span class="fc" id="L539">        writeOperator(OperatorName.BEGIN_INLINE_IMAGE_DATA);</span>
+<span class="fc" id="L540">        writeBytes(inlineImage.getData());</span>
+<span class="fc" id="L541">        writeLine();</span>
+<span class="fc" id="L542">        writeOperator(OperatorName.END_INLINE_IMAGE);</span>
 
-<span class="nc" id="L544">        restoreGraphicsState();</span>
-<span class="nc" id="L545">    }</span>
+<span class="fc" id="L544">        restoreGraphicsState();</span>
+<span class="fc" id="L545">    }</span>
 
     /**
      * Draws the given Form XObject at the current location.
@@ -553,14 +553,14 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void drawForm(PDFormXObject form) throws IOException
     {
-<span class="nc bnc" id="L556" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="pc bpc" id="L556" title="1 of 2 branches missed.">        if (inTextMode)</span>
         {
 <span class="nc" id="L558">            throw new IllegalStateException(&quot;Error: drawForm is not allowed within a text block.&quot;);</span>
         }
 
-<span class="nc" id="L561">        writeOperand(resources.add(form));</span>
-<span class="nc" id="L562">        writeOperator(OperatorName.DRAW_OBJECT);</span>
-<span class="nc" id="L563">    }</span>
+<span class="fc" id="L561">        writeOperand(resources.add(form));</span>
+<span class="fc" id="L562">        writeOperator(OperatorName.DRAW_OBJECT);</span>
+<span class="fc" id="L563">    }</span>
 
     /**
      * The cm operator. Concatenates the given matrix with the current transformation matrix (CTM),
@@ -573,14 +573,14 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void transform(Matrix matrix) throws IOException
     {
-<span class="nc bnc" id="L576" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="pc bpc" id="L576" title="1 of 2 branches missed.">        if (inTextMode)</span>
         {
 <span class="nc" id="L578">            throw new IllegalStateException(&quot;Error: Modifying the current transformation matrix is not allowed within text objects.&quot;);</span>
         }
 
-<span class="nc" id="L581">        writeAffineTransform(matrix.createAffineTransform());</span>
-<span class="nc" id="L582">        writeOperator(OperatorName.CONCAT);</span>
-<span class="nc" id="L583">    }</span>
+<span class="fc" id="L581">        writeAffineTransform(matrix.createAffineTransform());</span>
+<span class="fc" id="L582">        writeOperator(OperatorName.CONCAT);</span>
+<span class="fc" id="L583">    }</span>
 
     /**
      * q operator. Saves the current graphics state.
@@ -588,25 +588,25 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void saveGraphicsState() throws IOException
     {
-<span class="nc bnc" id="L591" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="pc bpc" id="L591" title="1 of 2 branches missed.">        if (inTextMode)</span>
         {
 <span class="nc" id="L593">            throw new IllegalStateException(&quot;Error: Saving the graphics state is not allowed within text objects.&quot;);</span>
         }
 
-<span class="nc bnc" id="L596" title="All 2 branches missed.">        if (!fontStack.isEmpty())</span>
+<span class="pc bpc" id="L596" title="1 of 2 branches missed.">        if (!fontStack.isEmpty())</span>
         {
 <span class="nc" id="L598">            fontStack.push(fontStack.peek());</span>
         }
-<span class="nc bnc" id="L600" title="All 2 branches missed.">        if (!strokingColorSpaceStack.isEmpty())</span>
+<span class="pc bpc" id="L600" title="1 of 2 branches missed.">        if (!strokingColorSpaceStack.isEmpty())</span>
         {
 <span class="nc" id="L602">            strokingColorSpaceStack.push(strokingColorSpaceStack.peek());</span>
         }
-<span class="nc bnc" id="L604" title="All 2 branches missed.">        if (!nonStrokingColorSpaceStack.isEmpty())</span>
+<span class="fc bfc" id="L604" title="All 2 branches covered.">        if (!nonStrokingColorSpaceStack.isEmpty())</span>
         {
-<span class="nc" id="L606">            nonStrokingColorSpaceStack.push(nonStrokingColorSpaceStack.peek());</span>
+<span class="fc" id="L606">            nonStrokingColorSpaceStack.push(nonStrokingColorSpaceStack.peek());</span>
         }
-<span class="nc" id="L608">        writeOperator(OperatorName.SAVE);</span>
-<span class="nc" id="L609">    }</span>
+<span class="fc" id="L608">        writeOperator(OperatorName.SAVE);</span>
+<span class="fc" id="L609">    }</span>
 
     /**
      * Q operator. Restores the current graphics state.
@@ -614,33 +614,33 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void restoreGraphicsState() throws IOException
     {
-<span class="nc bnc" id="L617" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="pc bpc" id="L617" title="1 of 2 branches missed.">        if (inTextMode)</span>
         {
 <span class="nc" id="L619">            throw new IllegalStateException(&quot;Error: Restoring the graphics state is not allowed within text objects.&quot;);</span>
         }
 
-<span class="nc bnc" id="L622" title="All 2 branches missed.">        if (!fontStack.isEmpty())</span>
+<span class="fc bfc" id="L622" title="All 2 branches covered.">        if (!fontStack.isEmpty())</span>
         {
-<span class="nc" id="L624">            fontStack.pop();</span>
+<span class="fc" id="L624">            fontStack.pop();</span>
         }
-<span class="nc bnc" id="L626" title="All 2 branches missed.">        if (!strokingColorSpaceStack.isEmpty())</span>
+<span class="pc bpc" id="L626" title="1 of 2 branches missed.">        if (!strokingColorSpaceStack.isEmpty())</span>
         {
 <span class="nc" id="L628">            strokingColorSpaceStack.pop();</span>
         }
-<span class="nc bnc" id="L630" title="All 2 branches missed.">        if (!nonStrokingColorSpaceStack.isEmpty())</span>
+<span class="fc bfc" id="L630" title="All 2 branches covered.">        if (!nonStrokingColorSpaceStack.isEmpty())</span>
         {
-<span class="nc" id="L632">            nonStrokingColorSpaceStack.pop();</span>
+<span class="fc" id="L632">            nonStrokingColorSpaceStack.pop();</span>
         }
-<span class="nc" id="L634">        writeOperator(OperatorName.RESTORE);</span>
-<span class="nc" id="L635">    }</span>
+<span class="fc" id="L634">        writeOperator(OperatorName.RESTORE);</span>
+<span class="fc" id="L635">    }</span>
 
     protected COSName getName(PDColorSpace colorSpace)
     {
-<span class="nc bnc" id="L639" title="All 6 branches missed.">        if (colorSpace instanceof PDDeviceGray ||</span>
+<span class="pc bpc" id="L639" title="3 of 6 branches missed.">        if (colorSpace instanceof PDDeviceGray ||</span>
             colorSpace instanceof PDDeviceRGB ||
             colorSpace instanceof PDDeviceCMYK)
         {
-<span class="nc" id="L643">            return COSName.getPDFName(colorSpace.getName());</span>
+<span class="fc" id="L643">            return COSName.getPDFName(colorSpace.getName());</span>
         }
         else
         {
@@ -656,26 +656,26 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setStrokingColor(PDColor color) throws IOException
     {
-<span class="nc" id="L659">        PDColorSpace colorSpace = color.getColorSpace();</span>
-<span class="nc bnc" id="L660" title="All 2 branches missed.">        if (strokingColorSpaceStack.isEmpty() ||</span>
+<span class="fc" id="L659">        PDColorSpace colorSpace = color.getColorSpace();</span>
+<span class="pc bpc" id="L660" title="1 of 2 branches missed.">        if (strokingColorSpaceStack.isEmpty() ||</span>
 <span class="nc bnc" id="L661" title="All 2 branches missed.">            strokingColorSpaceStack.peek() != colorSpace)</span>
         {
-<span class="nc" id="L663">            writeOperand(getName(colorSpace));</span>
-<span class="nc" id="L664">            writeOperator(OperatorName.STROKING_COLORSPACE);</span>
-<span class="nc" id="L665">            setStrokingColorSpaceStack(colorSpace);</span>
+<span class="fc" id="L663">            writeOperand(getName(colorSpace));</span>
+<span class="fc" id="L664">            writeOperator(OperatorName.STROKING_COLORSPACE);</span>
+<span class="fc" id="L665">            setStrokingColorSpaceStack(colorSpace);</span>
         }
 
-<span class="nc bnc" id="L668" title="All 2 branches missed.">        for (float value : color.getComponents())</span>
+<span class="fc bfc" id="L668" title="All 2 branches covered.">        for (float value : color.getComponents())</span>
         {
-<span class="nc" id="L670">            writeOperand(value);</span>
+<span class="fc" id="L670">            writeOperand(value);</span>
         }
 
-<span class="nc bnc" id="L673" title="All 2 branches missed.">        if (colorSpace instanceof PDPattern)</span>
+<span class="pc bpc" id="L673" title="1 of 2 branches missed.">        if (colorSpace instanceof PDPattern)</span>
         {
 <span class="nc" id="L675">            writeOperand(color.getPatternName());</span>
         }
 
-<span class="nc bnc" id="L678" title="All 8 branches missed.">        if (colorSpace instanceof PDPattern ||</span>
+<span class="pc bpc" id="L678" title="4 of 8 branches missed.">        if (colorSpace instanceof PDPattern ||</span>
             colorSpace instanceof PDSeparation ||
             colorSpace instanceof PDDeviceN ||
             colorSpace instanceof PDICCBased)
@@ -684,9 +684,9 @@ abstract class PDAbstractContentStream implements Closeable
         }
         else
         {
-<span class="nc" id="L687">            writeOperator(OperatorName.STROKING_COLOR);</span>
+<span class="fc" id="L687">            writeOperator(OperatorName.STROKING_COLOR);</span>
         }
-<span class="nc" id="L689">    }</span>
+<span class="fc" id="L689">    }</span>
 
     /**
      * Set the stroking color using an AWT color. Conversion uses the default sRGB color space.
@@ -713,17 +713,17 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setStrokingColor(float r, float g, float b) throws IOException
     {
-<span class="nc bnc" id="L716" title="All 6 branches missed.">        if (isOutsideOneInterval(r) || isOutsideOneInterval(g) || isOutsideOneInterval(b))</span>
+<span class="fc bfc" id="L716" title="All 6 branches covered.">        if (isOutsideOneInterval(r) || isOutsideOneInterval(g) || isOutsideOneInterval(b))</span>
         {
-<span class="nc" id="L718">            throw new IllegalArgumentException(&quot;Parameters must be within 0..1, but are &quot;</span>
-<span class="nc" id="L719">                    + String.format(&quot;(%.2f,%.2f,%.2f)&quot;, r, g, b));</span>
+<span class="fc" id="L718">            throw new IllegalArgumentException(&quot;Parameters must be within 0..1, but are &quot;</span>
+<span class="fc" id="L719">                    + String.format(&quot;(%.2f,%.2f,%.2f)&quot;, r, g, b));</span>
         }
-<span class="nc" id="L721">        writeOperand(r);</span>
-<span class="nc" id="L722">        writeOperand(g);</span>
-<span class="nc" id="L723">        writeOperand(b);</span>
-<span class="nc" id="L724">        writeOperator(OperatorName.STROKING_COLOR_RGB);</span>
-<span class="nc" id="L725">        setStrokingColorSpaceStack(PDDeviceRGB.INSTANCE);</span>
-<span class="nc" id="L726">    }</span>
+<span class="fc" id="L721">        writeOperand(r);</span>
+<span class="fc" id="L722">        writeOperand(g);</span>
+<span class="fc" id="L723">        writeOperand(b);</span>
+<span class="fc" id="L724">        writeOperator(OperatorName.STROKING_COLOR_RGB);</span>
+<span class="fc" id="L725">        setStrokingColorSpaceStack(PDDeviceRGB.INSTANCE);</span>
+<span class="fc" id="L726">    }</span>
 
     /**
      * Set the stroking color in the DeviceCMYK color space. Range is 0..1
@@ -737,18 +737,18 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setStrokingColor(float c, float m, float y, float k) throws IOException
     {
-<span class="nc bnc" id="L740" title="All 8 branches missed.">        if (isOutsideOneInterval(c) || isOutsideOneInterval(m) || isOutsideOneInterval(y) || isOutsideOneInterval(k))</span>
+<span class="fc bfc" id="L740" title="All 8 branches covered.">        if (isOutsideOneInterval(c) || isOutsideOneInterval(m) || isOutsideOneInterval(y) || isOutsideOneInterval(k))</span>
         {
-<span class="nc" id="L742">            throw new IllegalArgumentException(&quot;Parameters must be within 0..1, but are &quot;</span>
-<span class="nc" id="L743">                    + String.format(&quot;(%.2f,%.2f,%.2f,%.2f)&quot;, c, m, y, k));</span>
+<span class="fc" id="L742">            throw new IllegalArgumentException(&quot;Parameters must be within 0..1, but are &quot;</span>
+<span class="fc" id="L743">                    + String.format(&quot;(%.2f,%.2f,%.2f,%.2f)&quot;, c, m, y, k));</span>
         }
-<span class="nc" id="L745">        writeOperand(c);</span>
-<span class="nc" id="L746">        writeOperand(m);</span>
-<span class="nc" id="L747">        writeOperand(y);</span>
-<span class="nc" id="L748">        writeOperand(k);</span>
-<span class="nc" id="L749">        writeOperator(OperatorName.STROKING_COLOR_CMYK);</span>
-<span class="nc" id="L750">        setStrokingColorSpaceStack(PDDeviceCMYK.INSTANCE);</span>
-<span class="nc" id="L751">    }</span>
+<span class="fc" id="L745">        writeOperand(c);</span>
+<span class="fc" id="L746">        writeOperand(m);</span>
+<span class="fc" id="L747">        writeOperand(y);</span>
+<span class="fc" id="L748">        writeOperand(k);</span>
+<span class="fc" id="L749">        writeOperator(OperatorName.STROKING_COLOR_CMYK);</span>
+<span class="fc" id="L750">        setStrokingColorSpaceStack(PDDeviceCMYK.INSTANCE);</span>
+<span class="fc" id="L751">    }</span>
 
     /**
      * Set the stroking color in the DeviceGray color space. Range is 0..1.
@@ -759,14 +759,14 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setStrokingColor(float g) throws IOException
     {
-<span class="nc bnc" id="L762" title="All 2 branches missed.">        if (isOutsideOneInterval(g))</span>
+<span class="fc bfc" id="L762" title="All 2 branches covered.">        if (isOutsideOneInterval(g))</span>
         {
-<span class="nc" id="L764">            throw new IllegalArgumentException(&quot;Parameter must be within 0..1, but is &quot; + g);</span>
+<span class="fc" id="L764">            throw new IllegalArgumentException(&quot;Parameter must be within 0..1, but is &quot; + g);</span>
         }
-<span class="nc" id="L766">        writeOperand(g);</span>
-<span class="nc" id="L767">        writeOperator(OperatorName.STROKING_COLOR_GRAY);</span>
-<span class="nc" id="L768">        setStrokingColorSpaceStack(PDDeviceGray.INSTANCE);</span>
-<span class="nc" id="L769">    }</span>
+<span class="fc" id="L766">        writeOperand(g);</span>
+<span class="fc" id="L767">        writeOperator(OperatorName.STROKING_COLOR_GRAY);</span>
+<span class="fc" id="L768">        setStrokingColorSpaceStack(PDDeviceGray.INSTANCE);</span>
+<span class="fc" id="L769">    }</span>
 
     /**
      * Sets the non-stroking color and, if necessary, the non-stroking color space.
@@ -776,26 +776,26 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setNonStrokingColor(PDColor color) throws IOException
     {
-<span class="nc" id="L779">        PDColorSpace colorSpace = color.getColorSpace();</span>
-<span class="nc bnc" id="L780" title="All 2 branches missed.">        if (nonStrokingColorSpaceStack.isEmpty() ||</span>
-<span class="nc bnc" id="L781" title="All 2 branches missed.">            nonStrokingColorSpaceStack.peek() != colorSpace)</span>
+<span class="fc" id="L779">        PDColorSpace colorSpace = color.getColorSpace();</span>
+<span class="fc bfc" id="L780" title="All 2 branches covered.">        if (nonStrokingColorSpaceStack.isEmpty() ||</span>
+<span class="pc bpc" id="L781" title="1 of 2 branches missed.">            nonStrokingColorSpaceStack.peek() != colorSpace)</span>
         {
-<span class="nc" id="L783">            writeOperand(getName(colorSpace));</span>
-<span class="nc" id="L784">            writeOperator(OperatorName.NON_STROKING_COLORSPACE);</span>
-<span class="nc" id="L785">            setNonStrokingColorSpaceStack(colorSpace);</span>
+<span class="fc" id="L783">            writeOperand(getName(colorSpace));</span>
+<span class="fc" id="L784">            writeOperator(OperatorName.NON_STROKING_COLORSPACE);</span>
+<span class="fc" id="L785">            setNonStrokingColorSpaceStack(colorSpace);</span>
         }
 
-<span class="nc bnc" id="L788" title="All 2 branches missed.">        for (float value : color.getComponents())</span>
+<span class="fc bfc" id="L788" title="All 2 branches covered.">        for (float value : color.getComponents())</span>
         {
-<span class="nc" id="L790">            writeOperand(value);</span>
+<span class="fc" id="L790">            writeOperand(value);</span>
         }
 
-<span class="nc bnc" id="L793" title="All 2 branches missed.">        if (colorSpace instanceof PDPattern)</span>
+<span class="pc bpc" id="L793" title="1 of 2 branches missed.">        if (colorSpace instanceof PDPattern)</span>
         {
 <span class="nc" id="L795">            writeOperand(color.getPatternName());</span>
         }
 
-<span class="nc bnc" id="L798" title="All 8 branches missed.">        if (colorSpace instanceof PDPattern ||</span>
+<span class="pc bpc" id="L798" title="4 of 8 branches missed.">        if (colorSpace instanceof PDPattern ||</span>
             colorSpace instanceof PDSeparation ||
             colorSpace instanceof PDDeviceN ||
             colorSpace instanceof PDICCBased)
@@ -804,9 +804,9 @@ abstract class PDAbstractContentStream implements Closeable
         }
         else
         {
-<span class="nc" id="L807">            writeOperator(OperatorName.NON_STROKING_COLOR);</span>
+<span class="fc" id="L807">            writeOperator(OperatorName.NON_STROKING_COLOR);</span>
         }
-<span class="nc" id="L809">    }</span>
+<span class="fc" id="L809">    }</span>
 
     /**
      * Set the non-stroking color using an AWT color. Conversion uses the default sRGB color space.
@@ -816,11 +816,11 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setNonStrokingColor(Color color) throws IOException
     {
-<span class="nc" id="L819">        float[] components = {</span>
-<span class="nc" id="L820">                color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f };</span>
-<span class="nc" id="L821">        PDColor pdColor = new PDColor(components, PDDeviceRGB.INSTANCE);</span>
-<span class="nc" id="L822">        setNonStrokingColor(pdColor);</span>
-<span class="nc" id="L823">    }</span>
+<span class="fc" id="L819">        float[] components = {</span>
+<span class="fc" id="L820">                color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f };</span>
+<span class="fc" id="L821">        PDColor pdColor = new PDColor(components, PDDeviceRGB.INSTANCE);</span>
+<span class="fc" id="L822">        setNonStrokingColor(pdColor);</span>
+<span class="fc" id="L823">    }</span>
 
     /**
      * Set the non-stroking color in the DeviceRGB color space. Range is 0..1.
@@ -833,17 +833,17 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setNonStrokingColor(float r, float g, float b) throws IOException
     {
-<span class="nc bnc" id="L836" title="All 6 branches missed.">        if (isOutsideOneInterval(r) || isOutsideOneInterval(g) || isOutsideOneInterval(b))</span>
+<span class="fc bfc" id="L836" title="All 6 branches covered.">        if (isOutsideOneInterval(r) || isOutsideOneInterval(g) || isOutsideOneInterval(b))</span>
         {
-<span class="nc" id="L838">            throw new IllegalArgumentException(&quot;Parameters must be within 0..1, but are &quot;</span>
-<span class="nc" id="L839">                    + String.format(&quot;(%.2f,%.2f,%.2f)&quot;, r, g, b));</span>
+<span class="fc" id="L838">            throw new IllegalArgumentException(&quot;Parameters must be within 0..1, but are &quot;</span>
+<span class="fc" id="L839">                    + String.format(&quot;(%.2f,%.2f,%.2f)&quot;, r, g, b));</span>
         }
-<span class="nc" id="L841">        writeOperand(r);</span>
-<span class="nc" id="L842">        writeOperand(g);</span>
-<span class="nc" id="L843">        writeOperand(b);</span>
-<span class="nc" id="L844">        writeOperator(OperatorName.NON_STROKING_RGB);</span>
-<span class="nc" id="L845">        setNonStrokingColorSpaceStack(PDDeviceRGB.INSTANCE);</span>
-<span class="nc" id="L846">    }</span>
+<span class="fc" id="L841">        writeOperand(r);</span>
+<span class="fc" id="L842">        writeOperand(g);</span>
+<span class="fc" id="L843">        writeOperand(b);</span>
+<span class="fc" id="L844">        writeOperator(OperatorName.NON_STROKING_RGB);</span>
+<span class="fc" id="L845">        setNonStrokingColorSpaceStack(PDDeviceRGB.INSTANCE);</span>
+<span class="fc" id="L846">    }</span>
 
     /**
      * Set the non-stroking color in the DeviceCMYK color space. Range is 0..1.
@@ -856,18 +856,18 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setNonStrokingColor(float c, float m, float y, float k) throws IOException
     {
-<span class="nc bnc" id="L859" title="All 8 branches missed.">        if (isOutsideOneInterval(c) || isOutsideOneInterval(m) || isOutsideOneInterval(y) || isOutsideOneInterval(k))</span>
+<span class="fc bfc" id="L859" title="All 8 branches covered.">        if (isOutsideOneInterval(c) || isOutsideOneInterval(m) || isOutsideOneInterval(y) || isOutsideOneInterval(k))</span>
         {
-<span class="nc" id="L861">            throw new IllegalArgumentException(&quot;Parameters must be within 0..1, but are &quot;</span>
-<span class="nc" id="L862">                    + String.format(&quot;(%.2f,%.2f,%.2f,%.2f)&quot;, c, m, y, k));</span>
+<span class="fc" id="L861">            throw new IllegalArgumentException(&quot;Parameters must be within 0..1, but are &quot;</span>
+<span class="fc" id="L862">                    + String.format(&quot;(%.2f,%.2f,%.2f,%.2f)&quot;, c, m, y, k));</span>
         }
-<span class="nc" id="L864">        writeOperand(c);</span>
-<span class="nc" id="L865">        writeOperand(m);</span>
-<span class="nc" id="L866">        writeOperand(y);</span>
-<span class="nc" id="L867">        writeOperand(k);</span>
-<span class="nc" id="L868">        writeOperator(OperatorName.NON_STROKING_CMYK);</span>
-<span class="nc" id="L869">        setNonStrokingColorSpaceStack(PDDeviceCMYK.INSTANCE);</span>
-<span class="nc" id="L870">    }</span>
+<span class="fc" id="L864">        writeOperand(c);</span>
+<span class="fc" id="L865">        writeOperand(m);</span>
+<span class="fc" id="L866">        writeOperand(y);</span>
+<span class="fc" id="L867">        writeOperand(k);</span>
+<span class="fc" id="L868">        writeOperator(OperatorName.NON_STROKING_CMYK);</span>
+<span class="fc" id="L869">        setNonStrokingColorSpaceStack(PDDeviceCMYK.INSTANCE);</span>
+<span class="fc" id="L870">    }</span>
 
     /**
      * Set the non-stroking color in the DeviceGray color space. Range is 0..1.
@@ -878,14 +878,14 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setNonStrokingColor(float g) throws IOException
     {
-<span class="nc bnc" id="L881" title="All 2 branches missed.">        if (isOutsideOneInterval(g))</span>
+<span class="fc bfc" id="L881" title="All 2 branches covered.">        if (isOutsideOneInterval(g))</span>
         {
-<span class="nc" id="L883">            throw new IllegalArgumentException(&quot;Parameter must be within 0..1, but is &quot; + g);</span>
+<span class="fc" id="L883">            throw new IllegalArgumentException(&quot;Parameter must be within 0..1, but is &quot; + g);</span>
         }
-<span class="nc" id="L885">        writeOperand(g);</span>
-<span class="nc" id="L886">        writeOperator(OperatorName.NON_STROKING_GRAY);</span>
-<span class="nc" id="L887">        setNonStrokingColorSpaceStack(PDDeviceGray.INSTANCE);</span>
-<span class="nc" id="L888">    }</span>
+<span class="fc" id="L885">        writeOperand(g);</span>
+<span class="fc" id="L886">        writeOperator(OperatorName.NON_STROKING_GRAY);</span>
+<span class="fc" id="L887">        setNonStrokingColorSpaceStack(PDDeviceGray.INSTANCE);</span>
+<span class="fc" id="L888">    }</span>
 
     /**
      * Add a rectangle to the current path.
@@ -899,16 +899,16 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void addRect(float x, float y, float width, float height) throws IOException
     {
-<span class="nc bnc" id="L902" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="fc bfc" id="L902" title="All 2 branches covered.">        if (inTextMode)</span>
         {
-<span class="nc" id="L904">            throw new IllegalStateException(&quot;Error: addRect is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L904">            throw new IllegalStateException(&quot;Error: addRect is not allowed within a text block.&quot;);</span>
         }
-<span class="nc" id="L906">        writeOperand(x);</span>
-<span class="nc" id="L907">        writeOperand(y);</span>
-<span class="nc" id="L908">        writeOperand(width);</span>
-<span class="nc" id="L909">        writeOperand(height);</span>
-<span class="nc" id="L910">        writeOperator(OperatorName.APPEND_RECT);</span>
-<span class="nc" id="L911">    }</span>
+<span class="fc" id="L906">        writeOperand(x);</span>
+<span class="fc" id="L907">        writeOperand(y);</span>
+<span class="fc" id="L908">        writeOperand(width);</span>
+<span class="fc" id="L909">        writeOperand(height);</span>
+<span class="fc" id="L910">        writeOperator(OperatorName.APPEND_RECT);</span>
+<span class="fc" id="L911">    }</span>
 
     /**
      * Append a cubic Bézier curve to the current path. The curve extends from the current point to
@@ -925,9 +925,9 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void curveTo(float x1, float y1, float x2, float y2, float x3, float y3) throws IOException
     {
-<span class="nc bnc" id="L928" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="pc bpc" id="L928" title="1 of 2 branches missed.">        if (inTextMode)</span>
         {
-<span class="nc" id="L930">            throw new IllegalStateException(&quot;Error: curveTo is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L930">            throw new IllegalStateException(&quot;Error: curveTo is not allowed within a text block.&quot;);</span>
         }
 <span class="nc" id="L932">        writeOperand(x1);</span>
 <span class="nc" id="L933">        writeOperand(y1);</span>
@@ -951,9 +951,9 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void curveTo2(float x2, float y2, float x3, float y3) throws IOException
     {
-<span class="nc bnc" id="L954" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="pc bpc" id="L954" title="1 of 2 branches missed.">        if (inTextMode)</span>
         {
-<span class="nc" id="L956">            throw new IllegalStateException(&quot;Error: curveTo2 is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L956">            throw new IllegalStateException(&quot;Error: curveTo2 is not allowed within a text block.&quot;);</span>
         }
 <span class="nc" id="L958">        writeOperand(x2);</span>
 <span class="nc" id="L959">        writeOperand(y2);</span>
@@ -975,9 +975,9 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void curveTo1(float x1, float y1, float x3, float y3) throws IOException
     {
-<span class="nc bnc" id="L978" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="pc bpc" id="L978" title="1 of 2 branches missed.">        if (inTextMode)</span>
         {
-<span class="nc" id="L980">            throw new IllegalStateException(&quot;Error: curveTo1 is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L980">            throw new IllegalStateException(&quot;Error: curveTo1 is not allowed within a text block.&quot;);</span>
         }
 <span class="nc" id="L982">        writeOperand(x1);</span>
 <span class="nc" id="L983">        writeOperand(y1);</span>
@@ -996,14 +996,14 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void moveTo(float x, float y) throws IOException
     {
-<span class="nc bnc" id="L999" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="fc bfc" id="L999" title="All 2 branches covered.">        if (inTextMode)</span>
         {
-<span class="nc" id="L1001">            throw new IllegalStateException(&quot;Error: moveTo is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L1001">            throw new IllegalStateException(&quot;Error: moveTo is not allowed within a text block.&quot;);</span>
         }
-<span class="nc" id="L1003">        writeOperand(x);</span>
-<span class="nc" id="L1004">        writeOperand(y);</span>
-<span class="nc" id="L1005">        writeOperator(OperatorName.MOVE_TO);</span>
-<span class="nc" id="L1006">    }</span>
+<span class="fc" id="L1003">        writeOperand(x);</span>
+<span class="fc" id="L1004">        writeOperand(y);</span>
+<span class="fc" id="L1005">        writeOperator(OperatorName.MOVE_TO);</span>
+<span class="fc" id="L1006">    }</span>
 
     /**
      * Draw a line from the current position to the given coordinates.
@@ -1015,14 +1015,14 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void lineTo(float x, float y) throws IOException
     {
-<span class="nc bnc" id="L1018" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="fc bfc" id="L1018" title="All 2 branches covered.">        if (inTextMode)</span>
         {
-<span class="nc" id="L1020">            throw new IllegalStateException(&quot;Error: lineTo is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L1020">            throw new IllegalStateException(&quot;Error: lineTo is not allowed within a text block.&quot;);</span>
         }
-<span class="nc" id="L1022">        writeOperand(x);</span>
-<span class="nc" id="L1023">        writeOperand(y);</span>
-<span class="nc" id="L1024">        writeOperator(OperatorName.LINE_TO);</span>
-<span class="nc" id="L1025">    }</span>
+<span class="fc" id="L1022">        writeOperand(x);</span>
+<span class="fc" id="L1023">        writeOperand(y);</span>
+<span class="fc" id="L1024">        writeOperator(OperatorName.LINE_TO);</span>
+<span class="fc" id="L1025">    }</span>
 
     /**
      * Stroke the path.
@@ -1032,12 +1032,12 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void stroke() throws IOException
     {
-<span class="nc bnc" id="L1035" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="fc bfc" id="L1035" title="All 2 branches covered.">        if (inTextMode)</span>
         {
-<span class="nc" id="L1037">            throw new IllegalStateException(&quot;Error: stroke is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L1037">            throw new IllegalStateException(&quot;Error: stroke is not allowed within a text block.&quot;);</span>
         }
-<span class="nc" id="L1039">        writeOperator(OperatorName.STROKE_PATH);</span>
-<span class="nc" id="L1040">    }</span>
+<span class="fc" id="L1039">        writeOperator(OperatorName.STROKE_PATH);</span>
+<span class="fc" id="L1040">    }</span>
 
     /**
      * Close and stroke the path.
@@ -1047,12 +1047,12 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void closeAndStroke() throws IOException
     {
-<span class="nc bnc" id="L1050" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="fc bfc" id="L1050" title="All 2 branches covered.">        if (inTextMode)</span>
         {
-<span class="nc" id="L1052">            throw new IllegalStateException(&quot;Error: closeAndStroke is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L1052">            throw new IllegalStateException(&quot;Error: closeAndStroke is not allowed within a text block.&quot;);</span>
         }
-<span class="nc" id="L1054">        writeOperator(OperatorName.CLOSE_AND_STROKE);</span>
-<span class="nc" id="L1055">    }</span>
+<span class="fc" id="L1054">        writeOperator(OperatorName.CLOSE_AND_STROKE);</span>
+<span class="fc" id="L1055">    }</span>
 
     /**
      * Fills the path using the nonzero winding number rule.
@@ -1062,12 +1062,12 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void fill() throws IOException
     {
-<span class="nc bnc" id="L1065" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="fc bfc" id="L1065" title="All 2 branches covered.">        if (inTextMode)</span>
         {
-<span class="nc" id="L1067">            throw new IllegalStateException(&quot;Error: fill is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L1067">            throw new IllegalStateException(&quot;Error: fill is not allowed within a text block.&quot;);</span>
         }
-<span class="nc" id="L1069">        writeOperator(OperatorName.FILL_NON_ZERO);</span>
-<span class="nc" id="L1070">    }</span>
+<span class="fc" id="L1069">        writeOperator(OperatorName.FILL_NON_ZERO);</span>
+<span class="fc" id="L1070">    }</span>
 
     /**
      * Fills the path using the even-odd winding rule.
@@ -1077,9 +1077,9 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void fillEvenOdd() throws IOException
     {
-<span class="nc bnc" id="L1080" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="pc bpc" id="L1080" title="1 of 2 branches missed.">        if (inTextMode)</span>
         {
-<span class="nc" id="L1082">            throw new IllegalStateException(&quot;Error: fillEvenOdd is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L1082">            throw new IllegalStateException(&quot;Error: fillEvenOdd is not allowed within a text block.&quot;);</span>
         }
 <span class="nc" id="L1084">        writeOperator(OperatorName.FILL_EVEN_ODD);</span>
 <span class="nc" id="L1085">    }</span>
@@ -1094,9 +1094,9 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void fillAndStroke() throws IOException
     {
-<span class="nc bnc" id="L1097" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="pc bpc" id="L1097" title="1 of 2 branches missed.">        if (inTextMode)</span>
         {
-<span class="nc" id="L1099">            throw new IllegalStateException(&quot;Error: fillAndStroke is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L1099">            throw new IllegalStateException(&quot;Error: fillAndStroke is not allowed within a text block.&quot;);</span>
         }
 <span class="nc" id="L1101">        writeOperator(OperatorName.FILL_NON_ZERO_AND_STROKE);</span>
 <span class="nc" id="L1102">    }</span>
@@ -1111,9 +1111,9 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void fillAndStrokeEvenOdd() throws IOException
     {
-<span class="nc bnc" id="L1114" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="pc bpc" id="L1114" title="1 of 2 branches missed.">        if (inTextMode)</span>
         {
-<span class="nc" id="L1116">            throw new IllegalStateException(&quot;Error: fillAndStrokeEvenOdd is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L1116">            throw new IllegalStateException(&quot;Error: fillAndStrokeEvenOdd is not allowed within a text block.&quot;);</span>
         }
 <span class="nc" id="L1118">        writeOperator(OperatorName.FILL_EVEN_ODD_AND_STROKE);</span>
 <span class="nc" id="L1119">    }</span>
@@ -1128,9 +1128,9 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void closeAndFillAndStroke() throws IOException
     {
-<span class="nc bnc" id="L1131" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="pc bpc" id="L1131" title="1 of 2 branches missed.">        if (inTextMode)</span>
         {
-<span class="nc" id="L1133">            throw new IllegalStateException(&quot;Error: closeAndFillAndStroke is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L1133">            throw new IllegalStateException(&quot;Error: closeAndFillAndStroke is not allowed within a text block.&quot;);</span>
         }
 <span class="nc" id="L1135">        writeOperator(OperatorName.CLOSE_FILL_NON_ZERO_AND_STROKE);</span>
 <span class="nc" id="L1136">    }</span>
@@ -1145,9 +1145,9 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void closeAndFillAndStrokeEvenOdd() throws IOException
     {
-<span class="nc bnc" id="L1148" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="pc bpc" id="L1148" title="1 of 2 branches missed.">        if (inTextMode)</span>
         {
-<span class="nc" id="L1150">            throw new IllegalStateException(&quot;Error: closeAndFillAndStrokeEvenOdd is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L1150">            throw new IllegalStateException(&quot;Error: closeAndFillAndStrokeEvenOdd is not allowed within a text block.&quot;);</span>
         }
 <span class="nc" id="L1152">        writeOperator(OperatorName.CLOSE_FILL_EVEN_ODD_AND_STROKE);</span>
 <span class="nc" id="L1153">    }</span>
@@ -1161,9 +1161,9 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void shadingFill(PDShading shading) throws IOException
     {
-<span class="nc bnc" id="L1164" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="pc bpc" id="L1164" title="1 of 2 branches missed.">        if (inTextMode)</span>
         {
-<span class="nc" id="L1166">            throw new IllegalStateException(&quot;Error: shadingFill is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L1166">            throw new IllegalStateException(&quot;Error: shadingFill is not allowed within a text block.&quot;);</span>
         }
 
 <span class="nc" id="L1169">        writeOperand(resources.add(shading));</span>
@@ -1178,12 +1178,12 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void closePath() throws IOException
     {
-<span class="nc bnc" id="L1181" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="fc bfc" id="L1181" title="All 2 branches covered.">        if (inTextMode)</span>
         {
-<span class="nc" id="L1183">            throw new IllegalStateException(&quot;Error: closePath is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L1183">            throw new IllegalStateException(&quot;Error: closePath is not allowed within a text block.&quot;);</span>
         }
-<span class="nc" id="L1185">        writeOperator(OperatorName.CLOSE_PATH);</span>
-<span class="nc" id="L1186">    }</span>
+<span class="fc" id="L1185">        writeOperator(OperatorName.CLOSE_PATH);</span>
+<span class="fc" id="L1186">    }</span>
 
     /**
      * Intersects the current clipping path with the current path, using the nonzero rule.
@@ -1193,15 +1193,15 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void clip() throws IOException
     {
-<span class="nc bnc" id="L1196" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="fc bfc" id="L1196" title="All 2 branches covered.">        if (inTextMode)</span>
         {
-<span class="nc" id="L1198">            throw new IllegalStateException(&quot;Error: clip is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L1198">            throw new IllegalStateException(&quot;Error: clip is not allowed within a text block.&quot;);</span>
         }
-<span class="nc" id="L1200">        writeOperator(OperatorName.CLIP_NON_ZERO);</span>
+<span class="fc" id="L1200">        writeOperator(OperatorName.CLIP_NON_ZERO);</span>
         
         // end path without filling or stroking
-<span class="nc" id="L1203">        writeOperator(OperatorName.ENDPATH);</span>
-<span class="nc" id="L1204">    }</span>
+<span class="fc" id="L1203">        writeOperator(OperatorName.ENDPATH);</span>
+<span class="fc" id="L1204">    }</span>
 
     /**
      * Intersects the current clipping path with the current path, using the even-odd rule.
@@ -1211,9 +1211,9 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void clipEvenOdd() throws IOException
     {
-<span class="nc bnc" id="L1214" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="pc bpc" id="L1214" title="1 of 2 branches missed.">        if (inTextMode)</span>
         {
-<span class="nc" id="L1216">            throw new IllegalStateException(&quot;Error: clipEvenOdd is not allowed within a text block.&quot;);</span>
+<span class="fc" id="L1216">            throw new IllegalStateException(&quot;Error: clipEvenOdd is not allowed within a text block.&quot;);</span>
         }
 <span class="nc" id="L1218">        writeOperator(OperatorName.CLIP_EVEN_ODD);</span>
         
@@ -1229,9 +1229,9 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setLineWidth(float lineWidth) throws IOException
     {
-<span class="nc" id="L1232">        writeOperand(lineWidth);</span>
-<span class="nc" id="L1233">        writeOperator(OperatorName.SET_LINE_WIDTH);</span>
-<span class="nc" id="L1234">    }</span>
+<span class="fc" id="L1232">        writeOperand(lineWidth);</span>
+<span class="fc" id="L1233">        writeOperator(OperatorName.SET_LINE_WIDTH);</span>
+<span class="fc" id="L1234">    }</span>
 
     /**
      * Set the line join style.
@@ -1242,16 +1242,16 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setLineJoinStyle(int lineJoinStyle) throws IOException
     {
-<span class="nc bnc" id="L1245" title="All 4 branches missed.">        if (lineJoinStyle &gt;= 0 &amp;&amp; lineJoinStyle &lt;= 2)</span>
+<span class="pc bpc" id="L1245" title="2 of 4 branches missed.">        if (lineJoinStyle &gt;= 0 &amp;&amp; lineJoinStyle &lt;= 2)</span>
         {
-<span class="nc" id="L1247">            writeOperand(lineJoinStyle);</span>
-<span class="nc" id="L1248">            writeOperator(OperatorName.SET_LINE_JOINSTYLE);</span>
+<span class="fc" id="L1247">            writeOperand(lineJoinStyle);</span>
+<span class="fc" id="L1248">            writeOperator(OperatorName.SET_LINE_JOINSTYLE);</span>
         }
         else
         {
 <span class="nc" id="L1252">            throw new IllegalArgumentException(&quot;Error: unknown value for line join style&quot;);</span>
         }
-<span class="nc" id="L1254">    }</span>
+<span class="fc" id="L1254">    }</span>
 
     /**
      * Set the line cap style.
@@ -1262,16 +1262,16 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setLineCapStyle(int lineCapStyle) throws IOException
     {
-<span class="nc bnc" id="L1265" title="All 4 branches missed.">        if (lineCapStyle &gt;= 0 &amp;&amp; lineCapStyle &lt;= 2)</span>
+<span class="pc bpc" id="L1265" title="2 of 4 branches missed.">        if (lineCapStyle &gt;= 0 &amp;&amp; lineCapStyle &lt;= 2)</span>
         {
-<span class="nc" id="L1267">            writeOperand(lineCapStyle);</span>
-<span class="nc" id="L1268">            writeOperator(OperatorName.SET_LINE_CAPSTYLE);</span>
+<span class="fc" id="L1267">            writeOperand(lineCapStyle);</span>
+<span class="fc" id="L1268">            writeOperator(OperatorName.SET_LINE_CAPSTYLE);</span>
         }
         else
         {
 <span class="nc" id="L1272">            throw new IllegalArgumentException(&quot;Error: unknown value for line cap style&quot;);</span>
         }
-<span class="nc" id="L1274">    }</span>
+<span class="fc" id="L1274">    }</span>
 
     /**
      * Set the line dash pattern.
@@ -1282,15 +1282,15 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setLineDashPattern(float[] pattern, float phase) throws IOException
     {
-<span class="nc" id="L1285">        write(&quot;[&quot;);</span>
-<span class="nc bnc" id="L1286" title="All 2 branches missed.">        for (float value : pattern)</span>
+<span class="fc" id="L1285">        write(&quot;[&quot;);</span>
+<span class="fc bfc" id="L1286" title="All 2 branches covered.">        for (float value : pattern)</span>
         {
-<span class="nc" id="L1288">            writeOperand(value);</span>
+<span class="fc" id="L1288">            writeOperand(value);</span>
         }
-<span class="nc" id="L1290">        write(&quot;] &quot;);</span>
-<span class="nc" id="L1291">        writeOperand(phase);</span>
-<span class="nc" id="L1292">        writeOperator(OperatorName.SET_LINE_DASHPATTERN);</span>
-<span class="nc" id="L1293">    }</span>
+<span class="fc" id="L1290">        write(&quot;] &quot;);</span>
+<span class="fc" id="L1291">        writeOperand(phase);</span>
+<span class="fc" id="L1292">        writeOperator(OperatorName.SET_LINE_DASHPATTERN);</span>
+<span class="fc" id="L1293">    }</span>
 
     /**
      * Set the miter limit.
@@ -1301,13 +1301,13 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setMiterLimit(float miterLimit) throws IOException
     {
-<span class="nc bnc" id="L1304" title="All 2 branches missed.">        if (miterLimit &lt;= 0.0)</span>
+<span class="pc bpc" id="L1304" title="1 of 2 branches missed.">        if (miterLimit &lt;= 0.0)</span>
         {
 <span class="nc" id="L1306">            throw new IllegalArgumentException(&quot;A miter limit &lt;= 0 is invalid and will not render in Acrobat Reader&quot;);</span>
         }
-<span class="nc" id="L1308">        writeOperand(miterLimit);</span>
-<span class="nc" id="L1309">        writeOperator(OperatorName.SET_LINE_MITERLIMIT);</span>
-<span class="nc" id="L1310">    }</span>
+<span class="fc" id="L1308">        writeOperand(miterLimit);</span>
+<span class="fc" id="L1309">        writeOperator(OperatorName.SET_LINE_MITERLIMIT);</span>
+<span class="fc" id="L1310">    }</span>
 
     /**
      * Begin a marked content sequence.
@@ -1348,21 +1348,21 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void beginMarkedContent(COSName tag, PDPropertyList propertyList) throws IOException
     {
-<span class="nc" id="L1351">        writeOperand(tag);</span>
+<span class="fc" id="L1351">        writeOperand(tag);</span>
 
-<span class="nc" id="L1353">        COSDictionary dict = propertyList.getCOSObject();</span>
-<span class="nc bnc" id="L1354" title="All 4 branches missed.">        if (dict.getInt(COSName.MCID) &gt; -1 &amp;&amp; dict.size() == 1)</span>
+<span class="fc" id="L1353">        COSDictionary dict = propertyList.getCOSObject();</span>
+<span class="pc bpc" id="L1354" title="3 of 4 branches missed.">        if (dict.getInt(COSName.MCID) &gt; -1 &amp;&amp; dict.size() == 1)</span>
         {
             // PDFBOX-5890: use simplified notation if there's only an MCID
 <span class="nc" id="L1357">            write(&quot;&lt;&lt;/MCID &quot; + dict.getInt(COSName.MCID) + &quot;&gt;&gt; &quot;);</span>
         }
         else
         {
-<span class="nc" id="L1361">            writeOperand(resources.add(propertyList));</span>
+<span class="fc" id="L1361">            writeOperand(resources.add(propertyList));</span>
         }
 
-<span class="nc" id="L1364">        writeOperator(OperatorName.BEGIN_MARKED_CONTENT_SEQ);</span>
-<span class="nc" id="L1365">    }</span>
+<span class="fc" id="L1364">        writeOperator(OperatorName.BEGIN_MARKED_CONTENT_SEQ);</span>
+<span class="fc" id="L1365">    }</span>
 
     /**
      * End a marked content sequence.
@@ -1371,8 +1371,8 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void endMarkedContent() throws IOException
     {
-<span class="nc" id="L1374">        writeOperator(OperatorName.END_MARKED_CONTENT);</span>
-<span class="nc" id="L1375">    }</span>
+<span class="fc" id="L1374">        writeOperator(OperatorName.END_MARKED_CONTENT);</span>
+<span class="fc" id="L1375">    }</span>
 
     /**
      * set a marked content point.
@@ -1408,9 +1408,9 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setGraphicsStateParameters(PDExtendedGraphicsState state) throws IOException
     {
-<span class="nc" id="L1411">        writeOperand(resources.add(state));</span>
-<span class="nc" id="L1412">        writeOperator(OperatorName.SET_GRAPHICS_STATE_PARAMS);</span>
-<span class="nc" id="L1413">    }</span>
+<span class="fc" id="L1411">        writeOperand(resources.add(state));</span>
+<span class="fc" id="L1412">        writeOperator(OperatorName.SET_GRAPHICS_STATE_PARAMS);</span>
+<span class="fc" id="L1413">    }</span>
 
     /**
      * Write a comment line.
@@ -1442,23 +1442,23 @@ abstract class PDAbstractContentStream implements Closeable
      */
     protected void writeOperand(float real) throws IOException
     {
-<span class="nc bnc" id="L1445" title="All 2 branches missed.">        if (!Float.isFinite(real))</span>
+<span class="pc bpc" id="L1445" title="1 of 2 branches missed.">        if (!Float.isFinite(real))</span>
         {
 <span class="nc" id="L1447">            throw new IllegalArgumentException(real + &quot; is not a finite number&quot;);</span>
         }
-<span class="nc" id="L1449">        int byteCount = NumberFormatUtil.formatFloatFast(real, formatDecimal.getMaximumFractionDigits(), formatBuffer);</span>
+<span class="fc" id="L1449">        int byteCount = NumberFormatUtil.formatFloatFast(real, formatDecimal.getMaximumFractionDigits(), formatBuffer);</span>
 
-<span class="nc bnc" id="L1451" title="All 2 branches missed.">        if (byteCount == -1)</span>
+<span class="pc bpc" id="L1451" title="1 of 2 branches missed.">        if (byteCount == -1)</span>
         {
             //Fast formatting failed
 <span class="nc" id="L1454">            write(formatDecimal.format(real));</span>
         }
         else
         {
-<span class="nc" id="L1458">            outputStream.write(formatBuffer, 0, byteCount);</span>
+<span class="fc" id="L1458">            outputStream.write(formatBuffer, 0, byteCount);</span>
         }
-<span class="nc" id="L1460">        outputStream.write(' ');</span>
-<span class="nc" id="L1461">    }</span>
+<span class="fc" id="L1460">        outputStream.write(' ');</span>
+<span class="fc" id="L1461">    }</span>
 
     /**
      * Writes an integer number to the content stream.
@@ -1468,9 +1468,9 @@ abstract class PDAbstractContentStream implements Closeable
      */
     protected void writeOperand(int integer) throws IOException
     {
-<span class="nc" id="L1471">        write(formatDecimal.format(integer));</span>
-<span class="nc" id="L1472">        outputStream.write(' ');</span>
-<span class="nc" id="L1473">    }</span>
+<span class="fc" id="L1471">        write(formatDecimal.format(integer));</span>
+<span class="fc" id="L1472">        outputStream.write(' ');</span>
+<span class="fc" id="L1473">    }</span>
 
     /**
      * Writes a COSName to the content stream.
@@ -1480,9 +1480,9 @@ abstract class PDAbstractContentStream implements Closeable
      */
     protected void writeOperand(COSName name) throws IOException
     {
-<span class="nc" id="L1483">        name.writePDF(outputStream);</span>
-<span class="nc" id="L1484">        outputStream.write(' ');</span>
-<span class="nc" id="L1485">    }</span>
+<span class="fc" id="L1483">        name.writePDF(outputStream);</span>
+<span class="fc" id="L1484">        outputStream.write(' ');</span>
+<span class="fc" id="L1485">    }</span>
 
     /**
      * Writes a string to the content stream as ASCII.
@@ -1492,9 +1492,9 @@ abstract class PDAbstractContentStream implements Closeable
      */
     protected void writeOperator(String text) throws IOException
     {
-<span class="nc" id="L1495">        write(text);</span>
-<span class="nc" id="L1496">        writeLine();</span>
-<span class="nc" id="L1497">    }</span>
+<span class="fc" id="L1495">        write(text);</span>
+<span class="fc" id="L1496">        writeLine();</span>
+<span class="fc" id="L1497">    }</span>
 
     /**
      * Writes a string to the content stream as ASCII.
@@ -1504,8 +1504,8 @@ abstract class PDAbstractContentStream implements Closeable
      */
     protected void write(String text) throws IOException
     {
-<span class="nc" id="L1507">        writeBytes(text.getBytes(StandardCharsets.US_ASCII));</span>
-<span class="nc" id="L1508">    }</span>
+<span class="fc" id="L1507">        writeBytes(text.getBytes(StandardCharsets.US_ASCII));</span>
+<span class="fc" id="L1508">    }</span>
 
     /**
      * Writes a newline to the content stream as ASCII.
@@ -1514,8 +1514,8 @@ abstract class PDAbstractContentStream implements Closeable
      */
     protected void writeLine() throws IOException
     {
-<span class="nc" id="L1517">        outputStream.write('\n');</span>
-<span class="nc" id="L1518">    }</span>
+<span class="fc" id="L1517">        outputStream.write('\n');</span>
+<span class="fc" id="L1518">    }</span>
 
     /**
      * Writes binary data to the content stream.
@@ -1525,8 +1525,8 @@ abstract class PDAbstractContentStream implements Closeable
      */
     protected void writeBytes(byte[] data) throws IOException
     {
-<span class="nc" id="L1528">        outputStream.write(data);</span>
-<span class="nc" id="L1529">    }</span>
+<span class="fc" id="L1528">        outputStream.write(data);</span>
+<span class="fc" id="L1529">    }</span>
 
     /**
      * Writes an AffineTransform to the content stream as an array.
@@ -1536,13 +1536,13 @@ abstract class PDAbstractContentStream implements Closeable
      */
     private void writeAffineTransform(AffineTransform transform) throws IOException
     {
-<span class="nc" id="L1539">        double[] values = new double[6];</span>
-<span class="nc" id="L1540">        transform.getMatrix(values);</span>
-<span class="nc bnc" id="L1541" title="All 2 branches missed.">        for (double v : values)</span>
+<span class="fc" id="L1539">        double[] values = new double[6];</span>
+<span class="fc" id="L1540">        transform.getMatrix(values);</span>
+<span class="fc bfc" id="L1541" title="All 2 branches covered.">        for (double v : values)</span>
         {
-<span class="nc" id="L1543">            writeOperand((float) v);</span>
+<span class="fc" id="L1543">            writeOperand((float) v);</span>
         }
-<span class="nc" id="L1545">    }</span>
+<span class="fc" id="L1545">    }</span>
 
     /**
      * Close the content stream.  This must be called when you are done with this object.
@@ -1552,12 +1552,12 @@ abstract class PDAbstractContentStream implements Closeable
     @Override
     public void close() throws IOException
     {
-<span class="nc bnc" id="L1555" title="All 2 branches missed.">        if (inTextMode)</span>
+<span class="fc bfc" id="L1555" title="All 2 branches covered.">        if (inTextMode)</span>
         {
-<span class="nc" id="L1557">            LOG.warn(&quot;You did not call endText(), some viewers won't display your text&quot;);</span>
+<span class="fc" id="L1557">            LOG.warn(&quot;You did not call endText(), some viewers won't display your text&quot;);</span>
         }
-<span class="nc" id="L1559">        outputStream.close();</span>
-<span class="nc" id="L1560">    }</span>
+<span class="fc" id="L1559">        outputStream.close();</span>
+<span class="fc" id="L1560">    }</span>
 
     protected boolean isOutside255Interval(int val)
     {
@@ -1566,34 +1566,34 @@ abstract class PDAbstractContentStream implements Closeable
 
     private boolean isOutsideOneInterval(double val)
     {
-<span class="nc bnc" id="L1569" title="All 4 branches missed.">        return val &lt; 0 || val &gt; 1;</span>
+<span class="pc bpc" id="L1569" title="1 of 4 branches missed.">        return val &lt; 0 || val &gt; 1;</span>
     }
 
     protected void setStrokingColorSpaceStack(PDColorSpace colorSpace)
     {
-<span class="nc bnc" id="L1574" title="All 2 branches missed.">        if (strokingColorSpaceStack.isEmpty())</span>
+<span class="fc bfc" id="L1574" title="All 2 branches covered.">        if (strokingColorSpaceStack.isEmpty())</span>
         {
-<span class="nc" id="L1576">            strokingColorSpaceStack.add(colorSpace);</span>
+<span class="fc" id="L1576">            strokingColorSpaceStack.add(colorSpace);</span>
         }
         else
         {
-<span class="nc" id="L1580">            strokingColorSpaceStack.pop();</span>
-<span class="nc" id="L1581">            strokingColorSpaceStack.push(colorSpace);</span>
+<span class="fc" id="L1580">            strokingColorSpaceStack.pop();</span>
+<span class="fc" id="L1581">            strokingColorSpaceStack.push(colorSpace);</span>
         }
-<span class="nc" id="L1583">    }</span>
+<span class="fc" id="L1583">    }</span>
 
     protected void setNonStrokingColorSpaceStack(PDColorSpace colorSpace)
     {
-<span class="nc bnc" id="L1587" title="All 2 branches missed.">        if (nonStrokingColorSpaceStack.isEmpty())</span>
+<span class="fc bfc" id="L1587" title="All 2 branches covered.">        if (nonStrokingColorSpaceStack.isEmpty())</span>
         {
-<span class="nc" id="L1589">            nonStrokingColorSpaceStack.add(colorSpace);</span>
+<span class="fc" id="L1589">            nonStrokingColorSpaceStack.add(colorSpace);</span>
         }
         else
         {
-<span class="nc" id="L1593">            nonStrokingColorSpaceStack.pop();</span>
-<span class="nc" id="L1594">            nonStrokingColorSpaceStack.push(colorSpace);</span>
+<span class="fc" id="L1593">            nonStrokingColorSpaceStack.pop();</span>
+<span class="fc" id="L1594">            nonStrokingColorSpaceStack.push(colorSpace);</span>
         }
-<span class="nc" id="L1596">    }</span>
+<span class="fc" id="L1596">    }</span>
 
     /**
      * Set the character spacing. The value shall be added to the horizontal or vertical component
@@ -1685,20 +1685,20 @@ abstract class PDAbstractContentStream implements Closeable
     private byte[] encodeForGsub(GsubWorker gsubWorker,
             Set&lt;Integer&gt; glyphIds, PDType0Font font, String text) throws IOException
     {
-<span class="nc" id="L1688">        ByteArrayOutputStream out = new ByteArrayOutputStream(2 * text.length());</span>
-<span class="nc" id="L1689">        String[] words = StringUtil.tokenizeOnSpace(text);</span>
-<span class="nc bnc" id="L1690" title="All 2 branches missed.">        for (String word : words)</span>
+<span class="fc" id="L1688">        ByteArrayOutputStream out = new ByteArrayOutputStream(2 * text.length());</span>
+<span class="fc" id="L1689">        String[] words = StringUtil.tokenizeOnSpace(text);</span>
+<span class="fc bfc" id="L1690" title="All 2 branches covered.">        for (String word : words)</span>
         {
-<span class="nc bnc" id="L1692" title="All 4 branches missed.">            if (word.length() == 1 &amp;&amp; word.isBlank())</span>
+<span class="fc bfc" id="L1692" title="All 4 branches covered.">            if (word.length() == 1 &amp;&amp; word.isBlank())</span>
             {
-<span class="nc" id="L1694">                out.writeBytes(font.encode(word));</span>
+<span class="fc" id="L1694">                out.writeBytes(font.encode(word));</span>
             }
             else
             {
-<span class="nc" id="L1698">                glyphIds.addAll(applyGSUBRules(gsubWorker, out, font, word));</span>
+<span class="fc" id="L1698">                glyphIds.addAll(applyGSUBRules(gsubWorker, out, font, word));</span>
             }
         }
-<span class="nc" id="L1701">        return out.toByteArray();</span>
+<span class="fc" id="L1701">        return out.toByteArray();</span>
     }
 
     /**
@@ -1716,44 +1716,44 @@ abstract class PDAbstractContentStream implements Closeable
      */
     private List&lt;Integer&gt; applyGSUBRules(GsubWorker gsubWorker, ByteArrayOutputStream out, PDType0Font font, String word)
     {
-<span class="nc" id="L1719">        int[] codePoints = word.codePoints().toArray();</span>
-<span class="nc" id="L1720">        List&lt;Integer&gt; originalGlyphIds = new ArrayList&lt;&gt;(codePoints.length);</span>
-<span class="nc" id="L1721">        CmapLookup cmapLookup = font.getCmapLookup();</span>
+<span class="fc" id="L1719">        int[] codePoints = word.codePoints().toArray();</span>
+<span class="fc" id="L1720">        List&lt;Integer&gt; originalGlyphIds = new ArrayList&lt;&gt;(codePoints.length);</span>
+<span class="fc" id="L1721">        CmapLookup cmapLookup = font.getCmapLookup();</span>
 
         // convert characters into glyph IDs
-<span class="nc bnc" id="L1724" title="All 2 branches missed.">        for (int codePoint : codePoints)</span>
+<span class="fc bfc" id="L1724" title="All 2 branches covered.">        for (int codePoint : codePoints)</span>
         {
-<span class="nc" id="L1726">            int glyphId = cmapLookup.getGlyphId(codePoint);</span>
-<span class="nc bnc" id="L1727" title="All 2 branches missed.">            if (glyphId &lt;= 0)</span>
+<span class="fc" id="L1726">            int glyphId = cmapLookup.getGlyphId(codePoint);</span>
+<span class="fc bfc" id="L1727" title="All 2 branches covered.">            if (glyphId &lt;= 0)</span>
             {
                 String source;
-<span class="nc bnc" id="L1730" title="All 2 branches missed.">                if (Character.isBmpCodePoint(codePoint))</span>
+<span class="fc bfc" id="L1730" title="All 2 branches covered.">                if (Character.isBmpCodePoint(codePoint))</span>
                 {
-<span class="nc" id="L1732">                    source = String.valueOf((char) codePoint);</span>
+<span class="fc" id="L1732">                    source = String.valueOf((char) codePoint);</span>
                 }
-<span class="nc bnc" id="L1734" title="All 2 branches missed.">                else if (Character.isValidCodePoint(codePoint))</span>
+<span class="pc bpc" id="L1734" title="1 of 2 branches missed.">                else if (Character.isValidCodePoint(codePoint))</span>
                 {
-<span class="nc" id="L1736">                    source = new String(new int[] {codePoint},0,1);</span>
+<span class="fc" id="L1736">                    source = new String(new int[] {codePoint},0,1);</span>
                 }
                 else
                 {
 <span class="nc" id="L1740">                    source = &quot;?&quot;;</span>
                 }
-<span class="nc" id="L1742">                throw new IllegalStateException(&quot;could not find the glyphId for the character: &quot; +</span>
+<span class="fc" id="L1742">                throw new IllegalStateException(&quot;could not find the glyphId for the character: &quot; +</span>
                         source + &quot;, codePoint: &quot; + codePoint +
-<span class="nc" id="L1744">                        &quot; (0x&quot; + Integer.toHexString(codePoint).toUpperCase() + &quot;)&quot;);</span>
+<span class="fc" id="L1744">                        &quot; (0x&quot; + Integer.toHexString(codePoint).toUpperCase() + &quot;)&quot;);</span>
             }
-<span class="nc" id="L1746">            originalGlyphIds.add(glyphId);</span>
+<span class="fc" id="L1746">            originalGlyphIds.add(glyphId);</span>
         }
 
         // transform glyph IDs, write them to the output stream
-<span class="nc" id="L1750">        List&lt;Integer&gt; glyphIdsAfterGsub = gsubWorker.applyTransforms(originalGlyphIds);</span>
-<span class="nc bnc" id="L1751" title="All 2 branches missed.">        for (Integer glyphId : glyphIdsAfterGsub)</span>
+<span class="fc" id="L1750">        List&lt;Integer&gt; glyphIdsAfterGsub = gsubWorker.applyTransforms(originalGlyphIds);</span>
+<span class="fc bfc" id="L1751" title="All 2 branches covered.">        for (Integer glyphId : glyphIdsAfterGsub)</span>
         {
-<span class="nc" id="L1753">            out.writeBytes(font.encodeGlyphId(glyphId));</span>
-<span class="nc" id="L1754">        }</span>
+<span class="fc" id="L1753">            out.writeBytes(font.encodeGlyphId(glyphId));</span>
+<span class="fc" id="L1754">        }</span>
 
-<span class="nc" id="L1756">        return glyphIdsAfterGsub;</span>
+<span class="fc" id="L1756">        return glyphIdsAfterGsub;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

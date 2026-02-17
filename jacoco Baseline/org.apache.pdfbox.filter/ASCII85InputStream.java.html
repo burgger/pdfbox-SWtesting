@@ -50,13 +50,13 @@ final class ASCII85InputStream extends FilterInputStream
      */
     ASCII85InputStream(InputStream is)
     {
-<span class="nc" id="L53">        super(is);</span>
-<span class="nc" id="L54">        index = 0;</span>
-<span class="nc" id="L55">        n = 0;</span>
-<span class="nc" id="L56">        eof = false;</span>
-<span class="nc" id="L57">        ascii = new byte[5];</span>
-<span class="nc" id="L58">        b = new byte[4];</span>
-<span class="nc" id="L59">    }</span>
+<span class="fc" id="L53">        super(is);</span>
+<span class="fc" id="L54">        index = 0;</span>
+<span class="fc" id="L55">        n = 0;</span>
+<span class="fc" id="L56">        eof = false;</span>
+<span class="fc" id="L57">        ascii = new byte[5];</span>
+<span class="fc" id="L58">        b = new byte[4];</span>
+<span class="fc" id="L59">    }</span>
 
     /**
      * This will read the next byte from the stream.
@@ -68,84 +68,84 @@ final class ASCII85InputStream extends FilterInputStream
     @Override
     public int read() throws IOException
     {
-<span class="nc bnc" id="L71" title="All 2 branches missed.">        if (index &gt;= n)</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (index &gt;= n)</span>
         {
-<span class="nc bnc" id="L73" title="All 2 branches missed.">            if (eof)</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            if (eof)</span>
             {
-<span class="nc" id="L75">                return -1;</span>
+<span class="fc" id="L75">                return -1;</span>
             }
-<span class="nc" id="L77">            index = 0;</span>
+<span class="fc" id="L77">            index = 0;</span>
             int k;
             byte z;
             do
             {
-<span class="nc" id="L82">                int zz = (byte) in.read();</span>
-<span class="nc bnc" id="L83" title="All 2 branches missed.">                if (zz == -1)</span>
+<span class="fc" id="L82">                int zz = (byte) in.read();</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">                if (zz == -1)</span>
                 {
 <span class="nc" id="L85">                    eof = true;</span>
 <span class="nc" id="L86">                    return -1;</span>
                 }
-<span class="nc" id="L88">                z = (byte) zz;</span>
-<span class="nc bnc" id="L89" title="All 6 branches missed.">            } while (z == NEWLINE || z == RETURN || z == SPACE);</span>
+<span class="fc" id="L88">                z = (byte) zz;</span>
+<span class="pc bpc" id="L89" title="2 of 6 branches missed.">            } while (z == NEWLINE || z == RETURN || z == SPACE);</span>
 
-<span class="nc bnc" id="L91" title="All 2 branches missed.">            if (z == TERMINATOR)</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            if (z == TERMINATOR)</span>
             {
-<span class="nc" id="L93">                eof = true;</span>
-<span class="nc" id="L94">                ascii = b = null;</span>
-<span class="nc" id="L95">                n = 0;</span>
-<span class="nc" id="L96">                return -1;</span>
+<span class="fc" id="L93">                eof = true;</span>
+<span class="fc" id="L94">                ascii = b = null;</span>
+<span class="fc" id="L95">                n = 0;</span>
+<span class="fc" id="L96">                return -1;</span>
             }
-<span class="nc bnc" id="L98" title="All 2 branches missed.">            else if (z == Z)</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">            else if (z == Z)</span>
             {
-<span class="nc" id="L100">                b[0] = b[1] = b[2] = b[3] = 0;</span>
-<span class="nc" id="L101">                n = 4;</span>
+<span class="fc" id="L100">                b[0] = b[1] = b[2] = b[3] = 0;</span>
+<span class="fc" id="L101">                n = 4;</span>
             }
             else
             {
-<span class="nc" id="L105">                ascii[0] = z; // may be EOF here....</span>
-<span class="nc bnc" id="L106" title="All 2 branches missed.">                for (k = 1; k &lt; 5; ++k)</span>
+<span class="fc" id="L105">                ascii[0] = z; // may be EOF here....</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">                for (k = 1; k &lt; 5; ++k)</span>
                 {
                     do
                     {
-<span class="nc" id="L110">                        int zz = (byte) in.read();</span>
-<span class="nc bnc" id="L111" title="All 2 branches missed.">                        if (zz == -1)</span>
+<span class="fc" id="L110">                        int zz = (byte) in.read();</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">                        if (zz == -1)</span>
                         {
 <span class="nc" id="L113">                            eof = true;</span>
 <span class="nc" id="L114">                            return -1;</span>
                         }
-<span class="nc" id="L116">                        z = (byte) zz;</span>
-<span class="nc bnc" id="L117" title="All 6 branches missed.">                    } while (z == NEWLINE || z == RETURN || z == SPACE);</span>
-<span class="nc" id="L118">                    ascii[k] = z;</span>
-<span class="nc bnc" id="L119" title="All 2 branches missed.">                    if (z == TERMINATOR)</span>
+<span class="fc" id="L116">                        z = (byte) zz;</span>
+<span class="pc bpc" id="L117" title="2 of 6 branches missed.">                    } while (z == NEWLINE || z == RETURN || z == SPACE);</span>
+<span class="fc" id="L118">                    ascii[k] = z;</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">                    if (z == TERMINATOR)</span>
                     {
                         // don't include ~ as padding byte
-<span class="nc" id="L122">                        ascii[k] = (byte) PADDING_U;</span>
-<span class="nc" id="L123">                        break;</span>
+<span class="fc" id="L122">                        ascii[k] = (byte) PADDING_U;</span>
+<span class="fc" id="L123">                        break;</span>
                     }
                 }
-<span class="nc" id="L126">                n = k - 1;</span>
-<span class="nc bnc" id="L127" title="All 2 branches missed.">                if (n == 0)</span>
+<span class="fc" id="L126">                n = k - 1;</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">                if (n == 0)</span>
                 {
 <span class="nc" id="L129">                    eof = true;</span>
 <span class="nc" id="L130">                    ascii = null;</span>
 <span class="nc" id="L131">                    b = null;</span>
 <span class="nc" id="L132">                    return -1;</span>
                 }
-<span class="nc bnc" id="L134" title="All 2 branches missed.">                if (k &lt; 5)</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">                if (k &lt; 5)</span>
                 {
-<span class="nc bnc" id="L136" title="All 2 branches missed.">                    for (++k; k &lt; 5; ++k)</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">                    for (++k; k &lt; 5; ++k)</span>
                     {
                         // use 'u' for padding
-<span class="nc" id="L139">                        ascii[k] = (byte) PADDING_U;</span>
+<span class="fc" id="L139">                        ascii[k] = (byte) PADDING_U;</span>
                     }
-<span class="nc" id="L141">                    eof = true;</span>
+<span class="fc" id="L141">                    eof = true;</span>
                 }
                 // decode stream
-<span class="nc" id="L144">                long t = 0;</span>
-<span class="nc bnc" id="L145" title="All 2 branches missed.">                for (k = 0; k &lt; 5; ++k)</span>
+<span class="fc" id="L144">                long t = 0;</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">                for (k = 0; k &lt; 5; ++k)</span>
                 {
-<span class="nc" id="L147">                    z = (byte) (ascii[k] - OFFSET);</span>
-<span class="nc bnc" id="L148" title="All 4 branches missed.">                    if (z &lt; 0 || z &gt; 93)</span>
+<span class="fc" id="L147">                    z = (byte) (ascii[k] - OFFSET);</span>
+<span class="pc bpc" id="L148" title="2 of 4 branches missed.">                    if (z &lt; 0 || z &gt; 93)</span>
                     {
 <span class="nc" id="L150">                        n = 0;</span>
 <span class="nc" id="L151">                        eof = true;</span>
@@ -153,16 +153,16 @@ final class ASCII85InputStream extends FilterInputStream
 <span class="nc" id="L153">                        b = null;</span>
 <span class="nc" id="L154">                        throw new IOException(&quot;Invalid data in Ascii85 stream&quot;);</span>
                     }
-<span class="nc" id="L156">                    t = (t * 85L) + z;</span>
+<span class="fc" id="L156">                    t = (t * 85L) + z;</span>
                 }
-<span class="nc bnc" id="L158" title="All 2 branches missed.">                for (k = 3; k &gt;= 0; --k)</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">                for (k = 3; k &gt;= 0; --k)</span>
                 {
-<span class="nc" id="L160">                    b[k] = (byte) (t &amp; 0xFFL);</span>
-<span class="nc" id="L161">                    t &gt;&gt;&gt;= 8;</span>
+<span class="fc" id="L160">                    b[k] = (byte) (t &amp; 0xFFL);</span>
+<span class="fc" id="L161">                    t &gt;&gt;&gt;= 8;</span>
                 }
             }
         }
-<span class="nc" id="L165">        return b[index++] &amp; 0xFF;</span>
+<span class="fc" id="L165">        return b[index++] &amp; 0xFF;</span>
     }
 
     /**
@@ -179,27 +179,27 @@ final class ASCII85InputStream extends FilterInputStream
     @Override
     public int read(byte[] data, int offset, int len) throws IOException
     {
-<span class="nc bnc" id="L182" title="All 4 branches missed.">        if (eof &amp;&amp; index &gt;= n)</span>
+<span class="pc bpc" id="L182" title="1 of 4 branches missed.">        if (eof &amp;&amp; index &gt;= n)</span>
         {
-<span class="nc" id="L184">            return -1;</span>
+<span class="fc" id="L184">            return -1;</span>
         }
-<span class="nc bnc" id="L186" title="All 2 branches missed.">        for (int i = 0; i &lt; len; i++)</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        for (int i = 0; i &lt; len; i++)</span>
         {
-<span class="nc bnc" id="L188" title="All 2 branches missed.">            if (index &lt; n)</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">            if (index &lt; n)</span>
             {
-<span class="nc" id="L190">                data[i + offset] = b[index++];</span>
+<span class="fc" id="L190">                data[i + offset] = b[index++];</span>
             }
             else
             {
-<span class="nc" id="L194">                int t = read();</span>
-<span class="nc bnc" id="L195" title="All 2 branches missed.">                if (t == -1)</span>
+<span class="fc" id="L194">                int t = read();</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">                if (t == -1)</span>
                 {
-<span class="nc" id="L197">                    return i;</span>
+<span class="fc" id="L197">                    return i;</span>
                 }
-<span class="nc" id="L199">                data[i + offset] = (byte) t;</span>
+<span class="fc" id="L199">                data[i + offset] = (byte) t;</span>
             }
         }
-<span class="nc" id="L202">        return len;</span>
+<span class="fc" id="L202">        return len;</span>
     }
 
     /**
@@ -210,11 +210,11 @@ final class ASCII85InputStream extends FilterInputStream
     @Override
     public void close() throws IOException
     {
-<span class="nc" id="L213">        ascii = null;</span>
-<span class="nc" id="L214">        eof = true;</span>
-<span class="nc" id="L215">        b = null;</span>
-<span class="nc" id="L216">        super.close();</span>
-<span class="nc" id="L217">    }</span>
+<span class="fc" id="L213">        ascii = null;</span>
+<span class="fc" id="L214">        eof = true;</span>
+<span class="fc" id="L215">        b = null;</span>
+<span class="fc" id="L216">        super.close();</span>
+<span class="fc" id="L217">    }</span>
 
     /**
      * non supported interface methods.

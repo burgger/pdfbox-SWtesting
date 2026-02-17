@@ -133,10 +133,10 @@ public class PDDocument implements Closeable
     private AccessPermission accessPermission;
     
     // fonts to subset before saving
-<span class="pc" id="L136">    private final Set&lt;PDFont&gt; fontsToSubset = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L136">    private final Set&lt;PDFont&gt; fontsToSubset = new HashSet&lt;&gt;();</span>
 
     // fonts to close when closing document
-<span class="pc" id="L139">    private final Set&lt;TrueTypeFont&gt; fontsToClose = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L139">    private final Set&lt;TrueTypeFont&gt; fontsToClose = new HashSet&lt;&gt;();</span>
 
     // Signature interface
     private SignatureInterface signInterface;
@@ -145,10 +145,10 @@ public class PDDocument implements Closeable
     private SigningSupport signingSupport;
 
     // document-wide cached resources
-<span class="pc" id="L148">    private ResourceCache resourceCache = ResourceCacheFactory.createResourceCache();</span>
+<span class="fc" id="L148">    private ResourceCache resourceCache = ResourceCacheFactory.createResourceCache();</span>
 
     // to make sure only one signature is added
-<span class="pc" id="L151">    private boolean signatureAdded = false;</span>
+<span class="fc" id="L151">    private boolean signatureAdded = false;</span>
 
     /**
      * Creates an empty PDF document.
@@ -156,8 +156,8 @@ public class PDDocument implements Closeable
      */
     public PDDocument()
     {
-<span class="nc" id="L159">        this(IOUtils.createMemoryOnlyStreamCache());</span>
-<span class="nc" id="L160">    }</span>
+<span class="fc" id="L159">        this(IOUtils.createMemoryOnlyStreamCache());</span>
+<span class="fc" id="L160">    }</span>
 
     /**
      * Creates an empty PDF document. You need to add at least one page for the document to be valid.
@@ -165,29 +165,29 @@ public class PDDocument implements Closeable
      * @param streamCacheCreateFunction a function to create an instance of a stream cache for buffering PDF streams
      */
     public PDDocument(StreamCacheCreateFunction streamCacheCreateFunction)
-<span class="nc" id="L168">    {</span>
-<span class="nc" id="L169">        document = new COSDocument(streamCacheCreateFunction);</span>
-<span class="nc" id="L170">        document.getDocumentState().setParsing(false);</span>
-<span class="nc" id="L171">        pdfSource = null;</span>
+<span class="fc" id="L168">    {</span>
+<span class="fc" id="L169">        document = new COSDocument(streamCacheCreateFunction);</span>
+<span class="fc" id="L170">        document.getDocumentState().setParsing(false);</span>
+<span class="fc" id="L171">        pdfSource = null;</span>
 
         // First we need a trailer
-<span class="nc" id="L174">        COSDictionary trailer = new COSDictionary();</span>
-<span class="nc" id="L175">        document.setTrailer(trailer);</span>
+<span class="fc" id="L174">        COSDictionary trailer = new COSDictionary();</span>
+<span class="fc" id="L175">        document.setTrailer(trailer);</span>
 
         // Next we need the root dictionary.
-<span class="nc" id="L178">        COSDictionary rootDictionary = new COSDictionary();</span>
-<span class="nc" id="L179">        trailer.setItem(COSName.ROOT, rootDictionary);</span>
-<span class="nc" id="L180">        rootDictionary.setItem(COSName.TYPE, COSName.CATALOG);</span>
-<span class="nc" id="L181">        rootDictionary.setItem(COSName.VERSION, COSName.getPDFName(&quot;1.4&quot;));</span>
+<span class="fc" id="L178">        COSDictionary rootDictionary = new COSDictionary();</span>
+<span class="fc" id="L179">        trailer.setItem(COSName.ROOT, rootDictionary);</span>
+<span class="fc" id="L180">        rootDictionary.setItem(COSName.TYPE, COSName.CATALOG);</span>
+<span class="fc" id="L181">        rootDictionary.setItem(COSName.VERSION, COSName.getPDFName(&quot;1.4&quot;));</span>
 
         // next we need the pages tree structure
-<span class="nc" id="L184">        COSDictionary pages = new COSDictionary();</span>
-<span class="nc" id="L185">        rootDictionary.setItem(COSName.PAGES, pages);</span>
-<span class="nc" id="L186">        pages.setItem(COSName.TYPE, COSName.PAGES);</span>
-<span class="nc" id="L187">        COSArray kidsArray = new COSArray();</span>
-<span class="nc" id="L188">        pages.setItem(COSName.KIDS, kidsArray);</span>
-<span class="nc" id="L189">        pages.setItem(COSName.COUNT, COSInteger.ZERO);</span>
-<span class="nc" id="L190">    }</span>
+<span class="fc" id="L184">        COSDictionary pages = new COSDictionary();</span>
+<span class="fc" id="L185">        rootDictionary.setItem(COSName.PAGES, pages);</span>
+<span class="fc" id="L186">        pages.setItem(COSName.TYPE, COSName.PAGES);</span>
+<span class="fc" id="L187">        COSArray kidsArray = new COSArray();</span>
+<span class="fc" id="L188">        pages.setItem(COSName.KIDS, kidsArray);</span>
+<span class="fc" id="L189">        pages.setItem(COSName.COUNT, COSInteger.ZERO);</span>
+<span class="fc" id="L190">    }</span>
 
     /**
      * Constructor that uses an existing document. The COSDocument that is passed in must be valid.
@@ -649,8 +649,8 @@ public class PDDocument implements Closeable
      */
     public void removePage(PDPage page)
     {
-<span class="nc" id="L652">        getPages().remove(page);</span>
-<span class="nc" id="L653">    }</span>
+<span class="fc" id="L652">        getPages().remove(page);</span>
+<span class="fc" id="L653">    }</span>
 
     /**
      * Remove the page from the document. Do not use this method if other pages link to this one or
@@ -693,22 +693,22 @@ public class PDDocument implements Closeable
     {
         // BEWARE: when making changes here, make sure that these changes don't mess with the code
         // in the splitter, and avoid making changes in the source document (as happened in PDFBOX-5809)
-<span class="nc" id="L696">        PDPage importedPage = new PDPage(new COSDictionary(page.getCOSObject()), resourceCache);</span>
-<span class="nc" id="L697">        importedPage.getCOSObject().removeItem(COSName.PARENT);</span>
-<span class="nc" id="L698">        PDStream dest = new PDStream(this, page.getContents(), COSName.FLATE_DECODE);</span>
-<span class="nc" id="L699">        importedPage.setContents(dest);</span>
+<span class="fc" id="L696">        PDPage importedPage = new PDPage(new COSDictionary(page.getCOSObject()), resourceCache);</span>
+<span class="fc" id="L697">        importedPage.getCOSObject().removeItem(COSName.PARENT);</span>
+<span class="fc" id="L698">        PDStream dest = new PDStream(this, page.getContents(), COSName.FLATE_DECODE);</span>
+<span class="fc" id="L699">        importedPage.setContents(dest);</span>
         // reset imported object keys to avoid overlapping object numbers
-<span class="nc" id="L701">        importedPage.getCOSObject().resetImportedObjectKeys();</span>
-<span class="nc" id="L702">        addPage(importedPage);</span>
-<span class="nc" id="L703">        importedPage.setCropBox(new PDRectangle(page.getCropBox().getCOSArray()));</span>
-<span class="nc" id="L704">        importedPage.setMediaBox(new PDRectangle(page.getMediaBox().getCOSArray()));</span>
-<span class="nc" id="L705">        importedPage.setRotation(page.getRotation());</span>
-<span class="nc bnc" id="L706" title="All 4 branches missed.">        if (page.getResources() != null &amp;&amp; !page.getCOSObject().containsKey(COSName.RESOURCES))</span>
+<span class="fc" id="L701">        importedPage.getCOSObject().resetImportedObjectKeys();</span>
+<span class="fc" id="L702">        addPage(importedPage);</span>
+<span class="fc" id="L703">        importedPage.setCropBox(new PDRectangle(page.getCropBox().getCOSArray()));</span>
+<span class="fc" id="L704">        importedPage.setMediaBox(new PDRectangle(page.getMediaBox().getCOSArray()));</span>
+<span class="fc" id="L705">        importedPage.setRotation(page.getRotation());</span>
+<span class="pc bpc" id="L706" title="1 of 4 branches missed.">        if (page.getResources() != null &amp;&amp; !page.getCOSObject().containsKey(COSName.RESOURCES))</span>
         {
 <span class="nc" id="L708">            LOG.warn(&quot;inherited resources of source document are not imported to destination page&quot;);</span>
 <span class="nc" id="L709">            LOG.warn(&quot;call importedPage.setResources(page.getResources()) to do this&quot;);</span>
         }
-<span class="nc" id="L711">        return importedPage;</span>
+<span class="fc" id="L711">        return importedPage;</span>
     }
 
     /**
@@ -733,18 +733,18 @@ public class PDDocument implements Closeable
      */
     public PDDocumentInformation getDocumentInformation()
     {
-<span class="nc bnc" id="L736" title="All 2 branches missed.">        if (documentInformation == null)</span>
+<span class="fc bfc" id="L736" title="All 2 branches covered.">        if (documentInformation == null)</span>
         {
-<span class="nc" id="L738">            COSDictionary trailer = document.getTrailer();</span>
-<span class="nc" id="L739">            COSDictionary infoDic = trailer.getCOSDictionary(COSName.INFO);</span>
-<span class="nc bnc" id="L740" title="All 2 branches missed.">            if (infoDic == null)</span>
+<span class="fc" id="L738">            COSDictionary trailer = document.getTrailer();</span>
+<span class="fc" id="L739">            COSDictionary infoDic = trailer.getCOSDictionary(COSName.INFO);</span>
+<span class="fc bfc" id="L740" title="All 2 branches covered.">            if (infoDic == null)</span>
             {
-<span class="nc" id="L742">                infoDic = new COSDictionary();</span>
-<span class="nc" id="L743">                trailer.setItem(COSName.INFO, infoDic);</span>
+<span class="fc" id="L742">                infoDic = new COSDictionary();</span>
+<span class="fc" id="L743">                trailer.setItem(COSName.INFO, infoDic);</span>
             }
-<span class="nc" id="L745">            documentInformation = new PDDocumentInformation(infoDic);</span>
+<span class="fc" id="L745">            documentInformation = new PDDocumentInformation(infoDic);</span>
         }
-<span class="nc" id="L747">        return documentInformation;</span>
+<span class="fc" id="L747">        return documentInformation;</span>
     }
 
     /**
@@ -758,9 +758,9 @@ public class PDDocument implements Closeable
      */
     public void setDocumentInformation(PDDocumentInformation info)
     {
-<span class="nc" id="L761">        documentInformation = info;</span>
-<span class="nc" id="L762">        document.getTrailer().setItem(COSName.INFO, info.getCOSObject());</span>
-<span class="nc" id="L763">    }</span>
+<span class="fc" id="L761">        documentInformation = info;</span>
+<span class="fc" id="L762">        document.getTrailer().setItem(COSName.INFO, info.getCOSObject());</span>
+<span class="fc" id="L763">    }</span>
 
     /**
      * This will get the document CATALOG. This is guaranteed to not return null.
@@ -805,7 +805,7 @@ public class PDDocument implements Closeable
      */
     public PDEncryption getEncryption()
     {
-<span class="pc bpc" id="L808" title="2 of 4 branches missed.">        if (encryption == null &amp;&amp; isEncrypted())</span>
+<span class="pc bpc" id="L808" title="1 of 4 branches missed.">        if (encryption == null &amp;&amp; isEncrypted())</span>
         {
 <span class="nc" id="L810">            encryption = new PDEncryption(document.getEncryptionDictionary());</span>
         }
@@ -846,19 +846,19 @@ public class PDDocument implements Closeable
      */
     public List&lt;PDSignatureField&gt; getSignatureFields()
     {
-<span class="nc" id="L849">        List&lt;PDSignatureField&gt; fields = new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L850">        PDAcroForm acroForm = getDocumentCatalog().getAcroForm(null);</span>
-<span class="nc bnc" id="L851" title="All 2 branches missed.">        if (acroForm != null)</span>
+<span class="fc" id="L849">        List&lt;PDSignatureField&gt; fields = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L850">        PDAcroForm acroForm = getDocumentCatalog().getAcroForm(null);</span>
+<span class="pc bpc" id="L851" title="1 of 2 branches missed.">        if (acroForm != null)</span>
         {
-<span class="nc bnc" id="L853" title="All 2 branches missed.">            for (PDField field : acroForm.getFieldTree())</span>
+<span class="fc bfc" id="L853" title="All 2 branches covered.">            for (PDField field : acroForm.getFieldTree())</span>
             {
-<span class="nc bnc" id="L855" title="All 2 branches missed.">                if (field instanceof PDSignatureField)</span>
+<span class="fc bfc" id="L855" title="All 2 branches covered.">                if (field instanceof PDSignatureField)</span>
                 {
-<span class="nc" id="L857">                    fields.add((PDSignatureField)field);</span>
+<span class="fc" id="L857">                    fields.add((PDSignatureField)field);</span>
                 }
-<span class="nc" id="L859">            }</span>
+<span class="fc" id="L859">            }</span>
         }
-<span class="nc" id="L861">        return fields;</span>
+<span class="fc" id="L861">        return fields;</span>
     }
 
     /**
@@ -868,16 +868,16 @@ public class PDDocument implements Closeable
      */
     public List&lt;PDSignature&gt; getSignatureDictionaries()
     {
-<span class="nc" id="L871">        List&lt;PDSignature&gt; signatures = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L872" title="All 2 branches missed.">        for (PDSignatureField field : getSignatureFields())</span>
+<span class="fc" id="L871">        List&lt;PDSignature&gt; signatures = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L872" title="All 2 branches covered.">        for (PDSignatureField field : getSignatureFields())</span>
         {
-<span class="nc" id="L874">            COSDictionary value = field.getCOSObject().getCOSDictionary(COSName.V);</span>
-<span class="nc bnc" id="L875" title="All 2 branches missed.">            if (value != null)</span>
+<span class="fc" id="L874">            COSDictionary value = field.getCOSObject().getCOSDictionary(COSName.V);</span>
+<span class="pc bpc" id="L875" title="1 of 2 branches missed.">            if (value != null)</span>
             {
 <span class="nc" id="L877">                signatures.add(new PDSignature(value));</span>
             }
-<span class="nc" id="L879">        }</span>
-<span class="nc" id="L880">        return signatures;</span>
+<span class="fc" id="L879">        }</span>
+<span class="fc" id="L880">        return signatures;</span>
     }
 
     /**
@@ -889,15 +889,15 @@ public class PDDocument implements Closeable
      */
     public void registerTrueTypeFontForClosing(TrueTypeFont ttf)
     {
-<span class="nc" id="L892">        fontsToClose.add(ttf);</span>
-<span class="nc" id="L893">    }</span>
+<span class="fc" id="L892">        fontsToClose.add(ttf);</span>
+<span class="fc" id="L893">    }</span>
 
     /**
      * Returns the list of fonts which will be subset before the document is saved.
      */
     Set&lt;PDFont&gt; getFontsToSubset()
     {
-<span class="nc" id="L900">        return fontsToSubset;</span>
+<span class="fc" id="L900">        return fontsToSubset;</span>
     }
     
     /**
@@ -916,8 +916,8 @@ public class PDDocument implements Closeable
      */
     public void save(String fileName) throws IOException
     {
-<span class="nc" id="L919">        save(new File(fileName));</span>
-<span class="nc" id="L920">    }</span>
+<span class="fc" id="L919">        save(new File(fileName));</span>
+<span class="fc" id="L920">    }</span>
 
     /**
      * Save the document to a file using default compression.
@@ -935,8 +935,8 @@ public class PDDocument implements Closeable
      */
     public void save(File file) throws IOException
     {
-<span class="nc" id="L938">        save(file, CompressParameters.DEFAULT_COMPRESSION);</span>
-<span class="nc" id="L939">    }</span>
+<span class="fc" id="L938">        save(file, CompressParameters.DEFAULT_COMPRESSION);</span>
+<span class="fc" id="L939">    }</span>
 
     /**
      * This will save the document to an output stream.
@@ -955,8 +955,8 @@ public class PDDocument implements Closeable
      */
     public void save(OutputStream output) throws IOException
     {
-<span class="nc" id="L958">        save(output, CompressParameters.DEFAULT_COMPRESSION);</span>
-<span class="nc" id="L959">    }</span>
+<span class="fc" id="L958">        save(output, CompressParameters.DEFAULT_COMPRESSION);</span>
+<span class="fc" id="L959">    }</span>
 
     /**
      * Save the document using the given compression.
@@ -974,11 +974,11 @@ public class PDDocument implements Closeable
      */
     public void save(File file, CompressParameters compressParameters) throws IOException
     {
-<span class="pc bpc" id="L977" title="3 of 4 branches missed.">        if (file.exists() &amp;&amp; file.length() &gt; 0)</span>
+<span class="fc bfc" id="L977" title="All 4 branches covered.">        if (file.exists() &amp;&amp; file.length() &gt; 0)</span>
         {
-<span class="nc" id="L979">            LOG.warn(</span>
+<span class="fc" id="L979">            LOG.warn(</span>
                     &quot;You are overwriting the existing file {}, this will produce a corrupted file if you're also reading from it&quot;,
-<span class="nc" id="L981">                    file.getName());</span>
+<span class="fc" id="L981">                    file.getName());</span>
         }
 <span class="fc" id="L983">        try (BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(</span>
                 new FileOutputStream(file)))
@@ -1004,8 +1004,8 @@ public class PDDocument implements Closeable
      */
     public void save(String fileName, CompressParameters compressParameters) throws IOException
     {
-<span class="nc" id="L1007">        save(new File(fileName), compressParameters);</span>
-<span class="nc" id="L1008">    }</span>
+<span class="fc" id="L1007">        save(new File(fileName), compressParameters);</span>
+<span class="fc" id="L1008">    }</span>
 
     /**
      * Save the document using the given compression.
@@ -1031,7 +1031,7 @@ public class PDDocument implements Closeable
         }
 
         // object stream compression requires a cross reference stream.
-<span class="pc bpc" id="L1034" title="2 of 4 branches missed.">        document.setIsXRefStream(compressParameters != null //</span>
+<span class="pc bpc" id="L1034" title="1 of 4 branches missed.">        document.setIsXRefStream(compressParameters != null //</span>
                 &amp;&amp; CompressParameters.NO_COMPRESSION != compressParameters);
 <span class="fc" id="L1036">        subsetDesignatedFonts();</span>
 
@@ -1043,10 +1043,10 @@ public class PDDocument implements Closeable
     private void subsetDesignatedFonts() throws IOException
     {
         // subset designated fonts
-<span class="pc bpc" id="L1046" title="1 of 2 branches missed.">        for (PDFont font : fontsToSubset)</span>
+<span class="fc bfc" id="L1046" title="All 2 branches covered.">        for (PDFont font : fontsToSubset)</span>
         {
-<span class="nc" id="L1048">            font.subset();</span>
-<span class="nc" id="L1049">        }</span>
+<span class="fc" id="L1048">            font.subset();</span>
+<span class="fc" id="L1049">        }</span>
 <span class="fc" id="L1050">        fontsToSubset.clear();</span>
 <span class="fc" id="L1051">    }</span>
 
@@ -1085,14 +1085,14 @@ public class PDDocument implements Closeable
      */
     public void saveIncremental(OutputStream output) throws IOException
     {
-<span class="nc" id="L1088">        subsetDesignatedFonts();</span>
-<span class="nc bnc" id="L1089" title="All 2 branches missed.">        if (pdfSource == null)</span>
+<span class="fc" id="L1088">        subsetDesignatedFonts();</span>
+<span class="pc bpc" id="L1089" title="1 of 2 branches missed.">        if (pdfSource == null)</span>
         {
 <span class="nc" id="L1091">            throw new IllegalStateException(&quot;document was not loaded from a file or a stream&quot;);</span>
         }
-<span class="nc" id="L1093">        COSWriter writer = new COSWriter(output, pdfSource);</span>
-<span class="nc" id="L1094">        writer.write(this, signInterface);</span>
-<span class="nc" id="L1095">    }</span>
+<span class="fc" id="L1093">        COSWriter writer = new COSWriter(output, pdfSource);</span>
+<span class="fc" id="L1094">        writer.write(this, signInterface);</span>
+<span class="fc" id="L1095">    }</span>
 
     /**
      * Save the PDF as an incremental update. This is only possible if the PDF was loaded from a file or a stream, not
@@ -1220,7 +1220,7 @@ public class PDDocument implements Closeable
      */
     public PDPage getPage(int pageIndex) // todo: REPLACE most calls to this method with BELOW method
     {
-<span class="nc" id="L1223">        return getDocumentCatalog().getPages().get(pageIndex);</span>
+<span class="fc" id="L1223">        return getDocumentCatalog().getPages().get(pageIndex);</span>
     }
 
     /**
@@ -1251,7 +1251,7 @@ public class PDDocument implements Closeable
     @Override
     public void close() throws IOException
     {
-<span class="pc bpc" id="L1254" title="1 of 2 branches missed.">        if (!document.isClosed())</span>
+<span class="fc bfc" id="L1254" title="All 2 branches covered.">        if (!document.isClosed())</span>
         {
              // Make sure that:
             // - first Exception is kept
@@ -1270,16 +1270,16 @@ public class PDDocument implements Closeable
 <span class="fc" id="L1270">            firstException = IOUtils.closeAndLogException(document, LOG, &quot;COSDocument&quot;, firstException);</span>
             
             // close the source PDF stream, if we read from one
-<span class="pc bpc" id="L1273" title="1 of 2 branches missed.">            if (pdfSource != null)</span>
+<span class="fc bfc" id="L1273" title="All 2 branches covered.">            if (pdfSource != null)</span>
             {
 <span class="fc" id="L1275">                firstException = IOUtils.closeAndLogException(pdfSource, LOG, &quot;RandomAccessRead pdfSource&quot;, firstException);</span>
             }
 
             // close fonts
-<span class="pc bpc" id="L1279" title="1 of 2 branches missed.">            for (TrueTypeFont ttf : fontsToClose)</span>
+<span class="fc bfc" id="L1279" title="All 2 branches covered.">            for (TrueTypeFont ttf : fontsToClose)</span>
             {
-<span class="nc" id="L1281">                firstException = IOUtils.closeAndLogException(ttf, LOG, &quot;TrueTypeFont&quot;, firstException);</span>
-<span class="nc" id="L1282">            }</span>
+<span class="fc" id="L1281">                firstException = IOUtils.closeAndLogException(ttf, LOG, &quot;TrueTypeFont&quot;, firstException);</span>
+<span class="fc" id="L1282">            }</span>
 
             // rethrow first exception to keep method contract
 <span class="pc bpc" id="L1285" title="1 of 2 branches missed.">            if (firstException != null)</span>
@@ -1307,27 +1307,27 @@ public class PDDocument implements Closeable
      */
     public void protect(ProtectionPolicy policy) throws IOException
     {
-<span class="nc bnc" id="L1310" title="All 2 branches missed.">        if (isAllSecurityToBeRemoved())</span>
+<span class="fc bfc" id="L1310" title="All 2 branches covered.">        if (isAllSecurityToBeRemoved())</span>
         {
-<span class="nc" id="L1312">            LOG.warn(&quot;do not call setAllSecurityToBeRemoved(true) before calling protect(), &quot;</span>
+<span class="fc" id="L1312">            LOG.warn(&quot;do not call setAllSecurityToBeRemoved(true) before calling protect(), &quot;</span>
                     + &quot;as protect() implies setAllSecurityToBeRemoved(false)&quot;);
-<span class="nc" id="L1314">            setAllSecurityToBeRemoved(false);</span>
+<span class="fc" id="L1314">            setAllSecurityToBeRemoved(false);</span>
         }
         
-<span class="nc bnc" id="L1317" title="All 2 branches missed.">        if (!isEncrypted())</span>
+<span class="pc bpc" id="L1317" title="1 of 2 branches missed.">        if (!isEncrypted())</span>
         {
-<span class="nc" id="L1319">            encryption = new PDEncryption();</span>
+<span class="fc" id="L1319">            encryption = new PDEncryption();</span>
         }
 
-<span class="nc" id="L1322">        SecurityHandler&lt;ProtectionPolicy&gt; securityHandler =</span>
-<span class="nc" id="L1323">                SecurityHandlerFactory.INSTANCE.newSecurityHandlerForPolicy(policy);</span>
-<span class="nc bnc" id="L1324" title="All 2 branches missed.">        if (securityHandler == null)</span>
+<span class="fc" id="L1322">        SecurityHandler&lt;ProtectionPolicy&gt; securityHandler =</span>
+<span class="fc" id="L1323">                SecurityHandlerFactory.INSTANCE.newSecurityHandlerForPolicy(policy);</span>
+<span class="pc bpc" id="L1324" title="1 of 2 branches missed.">        if (securityHandler == null)</span>
         {
 <span class="nc" id="L1326">            throw new IOException(&quot;No security handler for policy &quot; + policy);</span>
         }
 
-<span class="nc" id="L1329">        getEncryption().setSecurityHandler(securityHandler);</span>
-<span class="nc" id="L1330">    }</span>
+<span class="fc" id="L1329">        getEncryption().setSecurityHandler(securityHandler);</span>
+<span class="fc" id="L1330">    }</span>
 
     /**
      * Returns the access permissions granted when the document was decrypted. If the document was not decrypted this
@@ -1339,11 +1339,11 @@ public class PDDocument implements Closeable
      */
     public AccessPermission getCurrentAccessPermission()
     {
-<span class="nc bnc" id="L1342" title="All 2 branches missed.">        if (accessPermission == null)</span>
+<span class="pc bpc" id="L1342" title="1 of 2 branches missed.">        if (accessPermission == null)</span>
         {
 <span class="nc" id="L1344">            accessPermission = AccessPermission.getOwnerAccessPermission();</span>
         }
-<span class="nc" id="L1346">        return accessPermission;</span>
+<span class="fc" id="L1346">        return accessPermission;</span>
     }
 
     /**
@@ -1363,8 +1363,8 @@ public class PDDocument implements Closeable
      */
     public void setAllSecurityToBeRemoved(boolean removeAllSecurity)
     {
-<span class="nc" id="L1366">        allSecurityToBeRemoved = removeAllSecurity;</span>
-<span class="nc" id="L1367">    }</span>
+<span class="fc" id="L1366">        allSecurityToBeRemoved = removeAllSecurity;</span>
+<span class="fc" id="L1367">    }</span>
 
     /**
      * Provides the document ID. This is not the trailer document ID but the time used to create it.
@@ -1399,29 +1399,29 @@ public class PDDocument implements Closeable
      */
     public float getVersion()
     {
-<span class="nc" id="L1402">        float headerVersionFloat = getDocument().getVersion();</span>
+<span class="fc" id="L1402">        float headerVersionFloat = getDocument().getVersion();</span>
         // there may be a second version information in the document catalog starting with 1.4
-<span class="nc bnc" id="L1404" title="All 2 branches missed.">        if (headerVersionFloat &gt;= 1.4f)</span>
+<span class="fc bfc" id="L1404" title="All 2 branches covered.">        if (headerVersionFloat &gt;= 1.4f)</span>
         {
-<span class="nc" id="L1406">            String catalogVersion = getDocumentCatalog().getVersion();</span>
-<span class="nc" id="L1407">            float catalogVersionFloat = -1;</span>
-<span class="nc bnc" id="L1408" title="All 2 branches missed.">            if (catalogVersion != null)</span>
+<span class="fc" id="L1406">            String catalogVersion = getDocumentCatalog().getVersion();</span>
+<span class="fc" id="L1407">            float catalogVersionFloat = -1;</span>
+<span class="fc bfc" id="L1408" title="All 2 branches covered.">            if (catalogVersion != null)</span>
             {
                 try
                 {
-<span class="nc" id="L1412">                    catalogVersionFloat = Float.parseFloat(catalogVersion);</span>
+<span class="fc" id="L1412">                    catalogVersionFloat = Float.parseFloat(catalogVersion);</span>
                 }
 <span class="nc" id="L1414">                catch(NumberFormatException exception)</span>
                 {
 <span class="nc" id="L1416">                    LOG.error(&quot;Can't extract the version number of the document catalog.&quot;, exception);</span>
-<span class="nc" id="L1417">                }</span>
+<span class="fc" id="L1417">                }</span>
             }
             // the most recent version is the correct one
-<span class="nc" id="L1420">            return Math.max(catalogVersionFloat, headerVersionFloat);</span>
+<span class="fc" id="L1420">            return Math.max(catalogVersionFloat, headerVersionFloat);</span>
         }
         else
         {
-<span class="nc" id="L1424">            return headerVersionFloat;</span>
+<span class="fc" id="L1424">            return headerVersionFloat;</span>
         }
     }
 
@@ -1433,29 +1433,29 @@ public class PDDocument implements Closeable
      */
     public void setVersion(float newVersion)
     {
-<span class="nc" id="L1436">        float currentVersion = getVersion();</span>
+<span class="fc" id="L1436">        float currentVersion = getVersion();</span>
         // nothing to do?
-<span class="nc bnc" id="L1438" title="All 2 branches missed.">        if (Float.compare(newVersion,currentVersion) == 0)</span>
+<span class="fc bfc" id="L1438" title="All 2 branches covered.">        if (Float.compare(newVersion,currentVersion) == 0)</span>
         {
-<span class="nc" id="L1440">            return;</span>
+<span class="fc" id="L1440">            return;</span>
         }
         // the version can't be downgraded
-<span class="nc bnc" id="L1443" title="All 2 branches missed.">        if (newVersion &lt; currentVersion)</span>
+<span class="fc bfc" id="L1443" title="All 2 branches covered.">        if (newVersion &lt; currentVersion)</span>
         {
-<span class="nc" id="L1445">            LOG.error(&quot;It's not allowed to downgrade the version of a pdf.&quot;);</span>
-<span class="nc" id="L1446">            return;</span>
+<span class="fc" id="L1445">            LOG.error(&quot;It's not allowed to downgrade the version of a pdf.&quot;);</span>
+<span class="fc" id="L1446">            return;</span>
         }
         // update the catalog version if the document version is &gt;= 1.4
-<span class="nc bnc" id="L1449" title="All 2 branches missed.">        if (getDocument().getVersion() &gt;= 1.4f)</span>
+<span class="fc bfc" id="L1449" title="All 2 branches covered.">        if (getDocument().getVersion() &gt;= 1.4f)</span>
         {
-<span class="nc" id="L1451">            getDocumentCatalog().setVersion(Float.toString(newVersion));</span>
+<span class="fc" id="L1451">            getDocumentCatalog().setVersion(Float.toString(newVersion));</span>
         }
         else
         {
             // versions &lt; 1.4f have a version header only
-<span class="nc" id="L1456">            getDocument().setVersion(newVersion);</span>
+<span class="fc" id="L1456">            getDocument().setVersion(newVersion);</span>
         }
-<span class="nc" id="L1458">    }</span>
+<span class="fc" id="L1458">    }</span>
 
     /**
      * Returns the resource cache associated with this document, or null if there is none.
@@ -1464,7 +1464,7 @@ public class PDDocument implements Closeable
      */
     public ResourceCache getResourceCache()
     {
-<span class="nc" id="L1467">        return resourceCache;</span>
+<span class="fc" id="L1467">        return resourceCache;</span>
     }
 
     /**

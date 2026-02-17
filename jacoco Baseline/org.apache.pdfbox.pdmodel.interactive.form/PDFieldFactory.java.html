@@ -53,39 +53,39 @@ public final class PDFieldFactory
         // properties which do apply to other fields
         // A non terminal fields has Kids entries which do have
         // a field name (other than annotations)
-<span class="nc bnc" id="L56" title="All 2 branches missed.">        if (field.containsKey(COSName.KIDS))</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (field.containsKey(COSName.KIDS))</span>
         {
-<span class="nc" id="L58">            COSArray kids = field.getCOSArray(COSName.KIDS);</span>
-<span class="nc bnc" id="L59" title="All 4 branches missed.">            if (kids != null &amp;&amp; !kids.isEmpty())</span>
+<span class="fc" id="L58">            COSArray kids = field.getCOSArray(COSName.KIDS);</span>
+<span class="pc bpc" id="L59" title="2 of 4 branches missed.">            if (kids != null &amp;&amp; !kids.isEmpty())</span>
             {
-<span class="nc bnc" id="L61" title="All 2 branches missed.">                for (int i = 0; i &lt; kids.size(); i++)</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">                for (int i = 0; i &lt; kids.size(); i++)</span>
                 {
-<span class="nc" id="L63">                    COSBase kid = kids.getObject(i);</span>
-<span class="nc bnc" id="L64" title="All 4 branches missed.">                    if (kid instanceof COSDictionary &amp;&amp; ((COSDictionary) kid).getString(COSName.T) != null)</span>
+<span class="fc" id="L63">                    COSBase kid = kids.getObject(i);</span>
+<span class="pc bpc" id="L64" title="1 of 4 branches missed.">                    if (kid instanceof COSDictionary &amp;&amp; ((COSDictionary) kid).getString(COSName.T) != null)</span>
                     {
-<span class="nc" id="L66">                        return new PDNonTerminalField(form, field, parent);</span>
+<span class="fc" id="L66">                        return new PDNonTerminalField(form, field, parent);</span>
                     }
                 }
             }
         } 
 
-<span class="nc" id="L72">        String fieldType = findFieldType(field, new HashSet&lt;&gt;());</span>
+<span class="fc" id="L72">        String fieldType = findFieldType(field, new HashSet&lt;&gt;());</span>
 
-<span class="nc bnc" id="L74" title="All 2 branches missed.">        if (FIELD_TYPE_CHOICE.equals(fieldType))</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (FIELD_TYPE_CHOICE.equals(fieldType))</span>
         {
-<span class="nc" id="L76">            return createChoiceSubType(form, field, parent);</span>
+<span class="fc" id="L76">            return createChoiceSubType(form, field, parent);</span>
         }
-<span class="nc bnc" id="L78" title="All 2 branches missed.">        else if (FIELD_TYPE_TEXT.equals(fieldType))</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        else if (FIELD_TYPE_TEXT.equals(fieldType))</span>
         {
-<span class="nc" id="L80">            return new PDTextField(form, field, parent);</span>
+<span class="fc" id="L80">            return new PDTextField(form, field, parent);</span>
         }
-<span class="nc bnc" id="L82" title="All 2 branches missed.">        else if (FIELD_TYPE_SIGNATURE.equals(fieldType))</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        else if (FIELD_TYPE_SIGNATURE.equals(fieldType))</span>
         {
-<span class="nc" id="L84">            return new PDSignatureField(form, field, parent);</span>
+<span class="fc" id="L84">            return new PDSignatureField(form, field, parent);</span>
         }
-<span class="nc bnc" id="L86" title="All 2 branches missed.">        else if (FIELD_TYPE_BUTTON.equals(fieldType))</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        else if (FIELD_TYPE_BUTTON.equals(fieldType))</span>
         {
-<span class="nc" id="L88">            return createButtonSubType(form, field, parent);</span>
+<span class="fc" id="L88">            return createButtonSubType(form, field, parent);</span>
         }
         else
         {
@@ -97,53 +97,53 @@ public final class PDFieldFactory
     private static PDField createChoiceSubType(PDAcroForm form, COSDictionary field,
                                                PDNonTerminalField parent)
     {
-<span class="nc" id="L100">        int flags = field.getInt(COSName.FF, 0);</span>
-<span class="nc bnc" id="L101" title="All 2 branches missed.">        if ((flags &amp; PDChoice.FLAG_COMBO) != 0)</span>
+<span class="fc" id="L100">        int flags = field.getInt(COSName.FF, 0);</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        if ((flags &amp; PDChoice.FLAG_COMBO) != 0)</span>
         {
-<span class="nc" id="L103">            return new PDComboBox(form, field, parent);</span>
+<span class="fc" id="L103">            return new PDComboBox(form, field, parent);</span>
         }
         else
         {
-<span class="nc" id="L107">            return new PDListBox(form, field, parent);</span>
+<span class="fc" id="L107">            return new PDListBox(form, field, parent);</span>
         }
     }
 
     private static PDField createButtonSubType(PDAcroForm form, COSDictionary field,
                                                PDNonTerminalField parent)
     {
-<span class="nc" id="L114">        int flags = field.getInt(COSName.FF, 0);</span>
+<span class="fc" id="L114">        int flags = field.getInt(COSName.FF, 0);</span>
         // BJL: I have found that the radio flag bit is not always set
         // and that sometimes there is just a kids dictionary.
         // so, if there is a kids dictionary then it must be a radio button group.
-<span class="nc bnc" id="L118" title="All 2 branches missed.">        if ((flags &amp; PDButton.FLAG_RADIO) != 0)</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if ((flags &amp; PDButton.FLAG_RADIO) != 0)</span>
         {
-<span class="nc" id="L120">            return new PDRadioButton(form, field, parent);</span>
+<span class="fc" id="L120">            return new PDRadioButton(form, field, parent);</span>
         }
-<span class="nc bnc" id="L122" title="All 2 branches missed.">        else if ((flags &amp; PDButton.FLAG_PUSHBUTTON) != 0)</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        else if ((flags &amp; PDButton.FLAG_PUSHBUTTON) != 0)</span>
         {
-<span class="nc" id="L124">            return new PDPushButton(form, field, parent);</span>
+<span class="fc" id="L124">            return new PDPushButton(form, field, parent);</span>
         }
         else
         {
-<span class="nc" id="L128">            return new PDCheckBox(form, field, parent);</span>
+<span class="fc" id="L128">            return new PDCheckBox(form, field, parent);</span>
         }
     }
 
     private static String findFieldType(COSDictionary dic, Set&lt;COSDictionary&gt; seen)
     {
-<span class="nc bnc" id="L134" title="All 2 branches missed.">        if (!seen.add(dic))</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">        if (!seen.add(dic))</span>
         {
             // PDFBOX-5896: avoid endless recursion
 <span class="nc" id="L137">            return null;</span>
         }
-<span class="nc" id="L139">        String retval = dic.getNameAsString(COSName.FT);</span>
-<span class="nc bnc" id="L140" title="All 2 branches missed.">        if (retval == null)</span>
+<span class="fc" id="L139">        String retval = dic.getNameAsString(COSName.FT);</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">        if (retval == null)</span>
         {
 <span class="nc" id="L142">            COSDictionary base = dic.getCOSDictionary(COSName.PARENT, COSName.P);</span>
 <span class="nc bnc" id="L143" title="All 2 branches missed.">            return base != null ? findFieldType(base, seen) : null;</span>
         }
-<span class="nc" id="L145">        seen.remove(dic);</span>
-<span class="nc" id="L146">        return retval;</span>
+<span class="fc" id="L145">        seen.remove(dic);</span>
+<span class="fc" id="L146">        return retval;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

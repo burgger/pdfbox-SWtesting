@@ -48,15 +48,15 @@ public final class Predictor
      */
     static void decodePredictorRow(int predictor, int colors, int bitsPerComponent, int columns, byte[] actline, byte[] lastline)
     {
-<span class="nc bnc" id="L51" title="All 2 branches missed.">        if (predictor == 1)</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">        if (predictor == 1)</span>
         {
             // no prediction
 <span class="nc" id="L54">            return;</span>
         }
-<span class="nc" id="L56">        final int bitsPerPixel = colors * bitsPerComponent;</span>
-<span class="nc" id="L57">        final int bytesPerPixel = (bitsPerPixel + 7) / 8;</span>
-<span class="nc" id="L58">        final int rowlength = actline.length;</span>
-<span class="nc bnc" id="L59" title="All 7 branches missed.">        switch (predictor)</span>
+<span class="fc" id="L56">        final int bitsPerPixel = colors * bitsPerComponent;</span>
+<span class="fc" id="L57">        final int bytesPerPixel = (bitsPerPixel + 7) / 8;</span>
+<span class="fc" id="L58">        final int rowlength = actline.length;</span>
+<span class="pc bpc" id="L59" title="2 of 7 branches missed.">        switch (predictor)</span>
         {
             case 2:
                 // PRED TIFF SUB
@@ -140,87 +140,87 @@ public final class Predictor
             case 10:
                 // PRED NONE
                 // do nothing
-<span class="nc" id="L143">                break;</span>
+<span class="fc" id="L143">                break;</span>
             case 11:
                 // PRED SUB
-<span class="nc bnc" id="L146" title="All 2 branches missed.">                for (int p = bytesPerPixel; p &lt; rowlength; p++)</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">                for (int p = bytesPerPixel; p &lt; rowlength; p++)</span>
                 {
-<span class="nc" id="L148">                    int sub = actline[p];</span>
-<span class="nc" id="L149">                    int left = actline[p - bytesPerPixel];</span>
-<span class="nc" id="L150">                    actline[p] = (byte) (sub + left);</span>
+<span class="fc" id="L148">                    int sub = actline[p];</span>
+<span class="fc" id="L149">                    int left = actline[p - bytesPerPixel];</span>
+<span class="fc" id="L150">                    actline[p] = (byte) (sub + left);</span>
                 }
-<span class="nc" id="L152">                break;</span>
+<span class="fc" id="L152">                break;</span>
             case 12:
                 // PRED UP
-<span class="nc bnc" id="L155" title="All 2 branches missed.">                for (int p = 0; p &lt; rowlength; p++)</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">                for (int p = 0; p &lt; rowlength; p++)</span>
                 {
-<span class="nc" id="L157">                    int up = actline[p] &amp; 0xff;</span>
-<span class="nc" id="L158">                    int prior = lastline[p] &amp; 0xff;</span>
-<span class="nc" id="L159">                    actline[p] = (byte) ((up + prior) &amp; 0xff);</span>
+<span class="fc" id="L157">                    int up = actline[p] &amp; 0xff;</span>
+<span class="fc" id="L158">                    int prior = lastline[p] &amp; 0xff;</span>
+<span class="fc" id="L159">                    actline[p] = (byte) ((up + prior) &amp; 0xff);</span>
                 }
-<span class="nc" id="L161">                break;</span>
+<span class="fc" id="L161">                break;</span>
             case 13:
                 // PRED AVG
-<span class="nc bnc" id="L164" title="All 2 branches missed.">                for (int p = 0; p &lt; rowlength; p++)</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">                for (int p = 0; p &lt; rowlength; p++)</span>
                 {
-<span class="nc" id="L166">                    int avg = actline[p] &amp; 0xff;</span>
-<span class="nc bnc" id="L167" title="All 2 branches missed.">                    int left = p - bytesPerPixel &gt;= 0 ? actline[p - bytesPerPixel] &amp; 0xff : 0;</span>
-<span class="nc" id="L168">                    int up = lastline[p] &amp; 0xff;</span>
-<span class="nc" id="L169">                    actline[p] = (byte) ((avg + (left + up) / 2) &amp; 0xff);</span>
+<span class="fc" id="L166">                    int avg = actline[p] &amp; 0xff;</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">                    int left = p - bytesPerPixel &gt;= 0 ? actline[p - bytesPerPixel] &amp; 0xff : 0;</span>
+<span class="fc" id="L168">                    int up = lastline[p] &amp; 0xff;</span>
+<span class="fc" id="L169">                    actline[p] = (byte) ((avg + (left + up) / 2) &amp; 0xff);</span>
                 }
-<span class="nc" id="L171">                break;</span>
+<span class="fc" id="L171">                break;</span>
             case 14:
                 // PRED PAETH
-<span class="nc bnc" id="L174" title="All 2 branches missed.">                for (int p = 0; p &lt; rowlength; p++)</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">                for (int p = 0; p &lt; rowlength; p++)</span>
                 {
-<span class="nc" id="L176">                    int paeth = actline[p] &amp; 0xff;</span>
-<span class="nc bnc" id="L177" title="All 2 branches missed.">                    int a = p - bytesPerPixel &gt;= 0 ? actline[p - bytesPerPixel] &amp; 0xff : 0;// left</span>
-<span class="nc" id="L178">                    int b = lastline[p] &amp; 0xff;// upper</span>
-<span class="nc bnc" id="L179" title="All 2 branches missed.">                    int c = p - bytesPerPixel &gt;= 0 ? lastline[p - bytesPerPixel] &amp; 0xff : 0;// upperleft</span>
-<span class="nc" id="L180">                    int value = a + b - c;</span>
-<span class="nc" id="L181">                    int absa = Math.abs(value - a);</span>
-<span class="nc" id="L182">                    int absb = Math.abs(value - b);</span>
-<span class="nc" id="L183">                    int absc = Math.abs(value - c);</span>
+<span class="fc" id="L176">                    int paeth = actline[p] &amp; 0xff;</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">                    int a = p - bytesPerPixel &gt;= 0 ? actline[p - bytesPerPixel] &amp; 0xff : 0;// left</span>
+<span class="fc" id="L178">                    int b = lastline[p] &amp; 0xff;// upper</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">                    int c = p - bytesPerPixel &gt;= 0 ? lastline[p - bytesPerPixel] &amp; 0xff : 0;// upperleft</span>
+<span class="fc" id="L180">                    int value = a + b - c;</span>
+<span class="fc" id="L181">                    int absa = Math.abs(value - a);</span>
+<span class="fc" id="L182">                    int absb = Math.abs(value - b);</span>
+<span class="fc" id="L183">                    int absc = Math.abs(value - c);</span>
 
-<span class="nc bnc" id="L185" title="All 4 branches missed.">                    if (absa &lt;= absb &amp;&amp; absa &lt;= absc)</span>
+<span class="fc bfc" id="L185" title="All 4 branches covered.">                    if (absa &lt;= absb &amp;&amp; absa &lt;= absc)</span>
                     {
-<span class="nc" id="L187">                        actline[p] = (byte) ((paeth + a) &amp; 0xff);</span>
+<span class="fc" id="L187">                        actline[p] = (byte) ((paeth + a) &amp; 0xff);</span>
                     }
-<span class="nc bnc" id="L189" title="All 2 branches missed.">                    else if (absb &lt;= absc)</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">                    else if (absb &lt;= absc)</span>
                     {
-<span class="nc" id="L191">                        actline[p] = (byte) ((paeth + b) &amp; 0xff);</span>
+<span class="fc" id="L191">                        actline[p] = (byte) ((paeth + b) &amp; 0xff);</span>
                     }
                     else
                     {
-<span class="nc" id="L195">                        actline[p] = (byte) ((paeth + c) &amp; 0xff);</span>
+<span class="fc" id="L195">                        actline[p] = (byte) ((paeth + c) &amp; 0xff);</span>
                     }
                 }
-<span class="nc" id="L198">                break;</span>
+<span class="fc" id="L198">                break;</span>
             default:
                 break;
         }
-<span class="nc" id="L202">    }</span>
+<span class="fc" id="L202">    }</span>
 
     static int calculateRowLength(int colors, int bitsPerComponent, int columns)
     {
-<span class="nc" id="L206">        final int bitsPerPixel = colors * bitsPerComponent;</span>
-<span class="nc" id="L207">        return  (columns * bitsPerPixel + 7) / 8;</span>
+<span class="fc" id="L206">        final int bitsPerPixel = colors * bitsPerComponent;</span>
+<span class="fc" id="L207">        return  (columns * bitsPerPixel + 7) / 8;</span>
     }
     
     // get value from bit interval from a byte
     static int getBitSeq(int by, int startBit, int bitSize)
     {
-<span class="nc" id="L213">        int mask = ((1 &lt;&lt; bitSize) - 1);</span>
-<span class="nc" id="L214">        return (by &gt;&gt;&gt; startBit) &amp; mask;</span>
+<span class="fc" id="L213">        int mask = ((1 &lt;&lt; bitSize) - 1);</span>
+<span class="fc" id="L214">        return (by &gt;&gt;&gt; startBit) &amp; mask;</span>
     }
 
     // set value in a bit interval and return that value
     static int calcSetBitSeq(int by, int startBit, int bitSize, int val)
     {
-<span class="nc" id="L220">        int mask = ((1 &lt;&lt; bitSize) - 1);</span>
-<span class="nc" id="L221">        int truncatedVal = val &amp; mask;</span>
-<span class="nc" id="L222">        mask = ~(mask &lt;&lt; startBit);</span>
-<span class="nc" id="L223">        return (by &amp; mask) | (truncatedVal &lt;&lt; startBit);</span>
+<span class="fc" id="L220">        int mask = ((1 &lt;&lt; bitSize) - 1);</span>
+<span class="fc" id="L221">        int truncatedVal = val &amp; mask;</span>
+<span class="fc" id="L222">        mask = ~(mask &lt;&lt; startBit);</span>
+<span class="fc" id="L223">        return (by &amp; mask) | (truncatedVal &lt;&lt; startBit);</span>
     }
 
     /**
@@ -235,18 +235,18 @@ public final class Predictor
      */
     static OutputStream wrapPredictor(OutputStream out, COSDictionary decodeParams) throws IOException
     {
-<span class="nc" id="L238">        int predictor = decodeParams.getInt(COSName.PREDICTOR);</span>
-<span class="nc bnc" id="L239" title="All 2 branches missed.">        if (predictor &gt; 1)</span>
+<span class="fc" id="L238">        int predictor = decodeParams.getInt(COSName.PREDICTOR);</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">        if (predictor &gt; 1)</span>
         {
-<span class="nc" id="L241">            int colors = Math.min(decodeParams.getInt(COSName.COLORS, 1), 32);</span>
-<span class="nc" id="L242">            int bitsPerPixel = decodeParams.getInt(COSName.BITS_PER_COMPONENT, 8);</span>
-<span class="nc" id="L243">            int columns = decodeParams.getInt(COSName.COLUMNS, 1);</span>
+<span class="fc" id="L241">            int colors = Math.min(decodeParams.getInt(COSName.COLORS, 1), 32);</span>
+<span class="fc" id="L242">            int bitsPerPixel = decodeParams.getInt(COSName.BITS_PER_COMPONENT, 8);</span>
+<span class="fc" id="L243">            int columns = decodeParams.getInt(COSName.COLUMNS, 1);</span>
 
-<span class="nc" id="L245">            return new PredictorOutputStream(out, predictor, colors, bitsPerPixel, columns);</span>
+<span class="fc" id="L245">            return new PredictorOutputStream(out, predictor, colors, bitsPerPixel, columns);</span>
         }
         else
         {
-<span class="nc" id="L249">            return out;</span>
+<span class="fc" id="L249">            return out;</span>
         }
     }
 
@@ -272,27 +272,27 @@ public final class Predictor
         private byte[] currentRow;
         private byte[] lastRow;
         // amount of data in the current row
-<span class="nc" id="L275">        private int currentRowData = 0;</span>
+<span class="fc" id="L275">        private int currentRowData = 0;</span>
         // was the per-row predictor value read for the current row being processed
-<span class="nc" id="L277">        private boolean predictorRead = false;</span>
+<span class="fc" id="L277">        private boolean predictorRead = false;</span>
 
         PredictorOutputStream(OutputStream out, int predictor, int colors, int bitsPerComponent, int columns)
                 throws IOException
         {
-<span class="nc" id="L282">            super(out);</span>
-<span class="nc" id="L283">            this.predictor = predictor;</span>
-<span class="nc" id="L284">            this.colors = colors;</span>
-<span class="nc" id="L285">            this.bitsPerComponent = bitsPerComponent;</span>
-<span class="nc" id="L286">            this.columns = columns;</span>
-<span class="nc" id="L287">            this.rowLength = calculateRowLength(colors, bitsPerComponent, columns);</span>
-<span class="nc bnc" id="L288" title="All 2 branches missed.">            if (rowLength &lt; 0)</span>
+<span class="fc" id="L282">            super(out);</span>
+<span class="fc" id="L283">            this.predictor = predictor;</span>
+<span class="fc" id="L284">            this.colors = colors;</span>
+<span class="fc" id="L285">            this.bitsPerComponent = bitsPerComponent;</span>
+<span class="fc" id="L286">            this.columns = columns;</span>
+<span class="fc" id="L287">            this.rowLength = calculateRowLength(colors, bitsPerComponent, columns);</span>
+<span class="pc bpc" id="L288" title="1 of 2 branches missed.">            if (rowLength &lt; 0)</span>
             {
 <span class="nc" id="L290">                throw new IOException(&quot;Calculated row length is negative: &quot; + rowLength);</span>
             }
-<span class="nc bnc" id="L292" title="All 2 branches missed.">            this.predictorPerRow = predictor &gt;= 10;</span>
-<span class="nc" id="L293">            currentRow = new byte[rowLength];</span>
-<span class="nc" id="L294">            lastRow = new byte[rowLength];</span>
-<span class="nc" id="L295">        }</span>
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">            this.predictorPerRow = predictor &gt;= 10;</span>
+<span class="fc" id="L293">            currentRow = new byte[rowLength];</span>
+<span class="fc" id="L294">            lastRow = new byte[rowLength];</span>
+<span class="fc" id="L295">        }</span>
 
         @Override
         public void write(byte[] bytes) throws IOException
@@ -303,41 +303,41 @@ public final class Predictor
         @Override
         public void write(byte[] bytes, int off, int len) throws IOException
         {
-<span class="nc" id="L306">            int currentOffset = off;</span>
-<span class="nc" id="L307">            int maxOffset = currentOffset + len;</span>
-<span class="nc bnc" id="L308" title="All 2 branches missed.">            while (currentOffset &lt; maxOffset)</span>
+<span class="fc" id="L306">            int currentOffset = off;</span>
+<span class="fc" id="L307">            int maxOffset = currentOffset + len;</span>
+<span class="fc bfc" id="L308" title="All 2 branches covered.">            while (currentOffset &lt; maxOffset)</span>
             {
-<span class="nc bnc" id="L310" title="All 6 branches missed.">                if (predictorPerRow &amp;&amp; currentRowData == 0 &amp;&amp; !predictorRead)</span>
+<span class="pc bpc" id="L310" title="1 of 6 branches missed.">                if (predictorPerRow &amp;&amp; currentRowData == 0 &amp;&amp; !predictorRead)</span>
                 {
                     // PNG predictor; each row starts with predictor type (0, 1, 2, 3, 4)
                     // read per line predictor, add 10 to tread value 0 as 10, 1 as 11, ...
-<span class="nc" id="L314">                    predictor = bytes[currentOffset] + 10;</span>
-<span class="nc" id="L315">                    currentOffset++;</span>
-<span class="nc" id="L316">                    predictorRead = true;</span>
+<span class="fc" id="L314">                    predictor = bytes[currentOffset] + 10;</span>
+<span class="fc" id="L315">                    currentOffset++;</span>
+<span class="fc" id="L316">                    predictorRead = true;</span>
                 }
                 else
                 {
-<span class="nc" id="L320">                    int toRead = Math.min(rowLength - currentRowData, maxOffset - currentOffset);</span>
-<span class="nc" id="L321">                    System.arraycopy(bytes, currentOffset, currentRow, currentRowData, toRead);</span>
-<span class="nc" id="L322">                    currentRowData += toRead;</span>
-<span class="nc" id="L323">                    currentOffset += toRead;</span>
+<span class="fc" id="L320">                    int toRead = Math.min(rowLength - currentRowData, maxOffset - currentOffset);</span>
+<span class="fc" id="L321">                    System.arraycopy(bytes, currentOffset, currentRow, currentRowData, toRead);</span>
+<span class="fc" id="L322">                    currentRowData += toRead;</span>
+<span class="fc" id="L323">                    currentOffset += toRead;</span>
 
                     // current row is filled, decode it, write it to underlying stream,
                     // and reset the state.
-<span class="nc bnc" id="L327" title="All 2 branches missed.">                    if (currentRowData == currentRow.length)</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">                    if (currentRowData == currentRow.length)</span>
                     {
-<span class="nc" id="L329">                        decodeAndWriteRow();</span>
+<span class="fc" id="L329">                        decodeAndWriteRow();</span>
                     }
-<span class="nc" id="L331">                }</span>
+<span class="fc" id="L331">                }</span>
             }
-<span class="nc" id="L333">        }</span>
+<span class="fc" id="L333">        }</span>
 
         private void decodeAndWriteRow() throws IOException
         {
-<span class="nc" id="L337">            decodePredictorRow(predictor, colors, bitsPerComponent, columns, currentRow, lastRow);</span>
-<span class="nc" id="L338">            out.write(currentRow);</span>
-<span class="nc" id="L339">            flipRows();</span>
-<span class="nc" id="L340">        }</span>
+<span class="fc" id="L337">            decodePredictorRow(predictor, colors, bitsPerComponent, columns, currentRow, lastRow);</span>
+<span class="fc" id="L338">            out.write(currentRow);</span>
+<span class="fc" id="L339">            flipRows();</span>
+<span class="fc" id="L340">        }</span>
 
         /**
          * Flips the row buffers (to avoid copying), and resets the current-row index
@@ -345,24 +345,24 @@ public final class Predictor
          */
         private void flipRows()
         {
-<span class="nc" id="L348">            byte[] temp = lastRow;</span>
-<span class="nc" id="L349">            lastRow = currentRow;</span>
-<span class="nc" id="L350">            currentRow = temp;</span>
-<span class="nc" id="L351">            currentRowData = 0;</span>
-<span class="nc" id="L352">            predictorRead = false;</span>
-<span class="nc" id="L353">        }</span>
+<span class="fc" id="L348">            byte[] temp = lastRow;</span>
+<span class="fc" id="L349">            lastRow = currentRow;</span>
+<span class="fc" id="L350">            currentRow = temp;</span>
+<span class="fc" id="L351">            currentRowData = 0;</span>
+<span class="fc" id="L352">            predictorRead = false;</span>
+<span class="fc" id="L353">        }</span>
 
         @Override
         public void flush() throws IOException
         {
             // The last row is allowed to be incomplete, and should be completed with zeros.
-<span class="nc bnc" id="L359" title="All 2 branches missed.">            if (currentRowData &gt; 0)</span>
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">            if (currentRowData &gt; 0)</span>
             {
 <span class="nc" id="L361">                Arrays.fill(currentRow, currentRowData, rowLength, (byte)0);</span>
 <span class="nc" id="L362">                decodeAndWriteRow();</span>
             }
-<span class="nc" id="L364">            super.flush();</span>
-<span class="nc" id="L365">        }</span>
+<span class="fc" id="L364">            super.flush();</span>
+<span class="fc" id="L365">        }</span>
 
         @Override
         public void write(int i) throws IOException

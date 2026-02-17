@@ -65,12 +65,12 @@ import org.apache.pdfbox.util.Matrix;
  */
 class AppearanceGeneratorHelper
 {
-<span class="nc" id="L68">    private static final Logger LOG = LogManager.getLogger(AppearanceGeneratorHelper.class);</span>
+<span class="fc" id="L68">    private static final Logger LOG = LogManager.getLogger(AppearanceGeneratorHelper.class);</span>
 
-<span class="nc" id="L70">    private static final Operator BMC = Operator.getOperator(&quot;BMC&quot;);</span>
-<span class="nc" id="L71">    private static final Operator EMC = Operator.getOperator(&quot;EMC&quot;);</span>
+<span class="fc" id="L70">    private static final Operator BMC = Operator.getOperator(&quot;BMC&quot;);</span>
+<span class="fc" id="L71">    private static final Operator EMC = Operator.getOperator(&quot;EMC&quot;);</span>
 
-<span class="nc" id="L73">    private static final Pattern PATTERN = Pattern.compile(&quot;\\u000D\\u000A|[\\u000A\\u000B\\u000C\\u000D\\u0085\\u2028\\u2029]&quot;);</span>
+<span class="fc" id="L73">    private static final Pattern PATTERN = Pattern.compile(&quot;\\u000D\\u000A|[\\u000A\\u000B\\u000C\\u000D\\u0085\\u2028\\u2029]&quot;);</span>
  
     private final PDVariableText field;
     
@@ -84,7 +84,7 @@ class AppearanceGeneratorHelper
      *
      * Regardless of other settings in an existing appearance stream Adobe will always use this value.
      */
-<span class="nc" id="L87">    private static final float[] HIGHLIGHT_COLOR = {153/255f, 193/255f, 215/255f};</span>
+<span class="fc" id="L87">    private static final float[] HIGHLIGHT_COLOR = {153/255f, 193/255f, 215/255f};</span>
  
     /**
      * The scaling factor for font units to PDF units
@@ -113,21 +113,21 @@ class AppearanceGeneratorHelper
      * @throws IOException 
      */
     AppearanceGeneratorHelper(PDVariableText field) throws IOException
-<span class="nc" id="L116">    {</span>
-<span class="nc" id="L117">        this.field = field;</span>
-<span class="nc" id="L118">        validateAndEnsureAcroFormResources();</span>
+<span class="fc" id="L116">    {</span>
+<span class="fc" id="L117">        this.field = field;</span>
+<span class="fc" id="L118">        validateAndEnsureAcroFormResources();</span>
         
         try
         {
-<span class="nc" id="L122">            this.defaultAppearance = field.getDefaultAppearanceString();</span>
+<span class="fc" id="L122">            this.defaultAppearance = field.getDefaultAppearanceString();</span>
         }
-<span class="nc" id="L124">        catch (IOException ex)</span>
+<span class="fc" id="L124">        catch (IOException ex)</span>
         {
-<span class="nc" id="L126">            throw new IOException(&quot;Could not process default appearance string '&quot; +</span>
-<span class="nc" id="L127">                                   field.getDefaultAppearance() + &quot;' for field '&quot; +</span>
-<span class="nc" id="L128">                                   field.getFullyQualifiedName() + &quot;': &quot; + ex.getMessage(), ex);</span>
-<span class="nc" id="L129">        }</span>
-<span class="nc" id="L130">    }</span>
+<span class="fc" id="L126">            throw new IOException(&quot;Could not process default appearance string '&quot; +</span>
+<span class="fc" id="L127">                                   field.getDefaultAppearance() + &quot;' for field '&quot; +</span>
+<span class="fc" id="L128">                                   field.getFullyQualifiedName() + &quot;': &quot; + ex.getMessage(), ex);</span>
+<span class="fc" id="L129">        }</span>
+<span class="fc" id="L130">    }</span>
     
     /*
      * Adobe Reader/Acrobat are adding resources which are at the field/widget level
@@ -138,48 +138,48 @@ class AppearanceGeneratorHelper
         // add font resources which might be available at the field 
         // level but are not at the AcroForm level to the AcroForm
         // to match Adobe Reader/Acrobat behavior        
-<span class="nc" id="L141">        PDResources acroFormResources = field.getAcroForm().getDefaultResources();</span>
-<span class="nc bnc" id="L142" title="All 2 branches missed.">        if (acroFormResources == null)</span>
+<span class="fc" id="L141">        PDResources acroFormResources = field.getAcroForm().getDefaultResources();</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">        if (acroFormResources == null)</span>
         {
 <span class="nc" id="L144">            return;</span>
         }
         
-<span class="nc bnc" id="L147" title="All 2 branches missed.">        for (PDAnnotationWidget widget : field.getWidgets())</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        for (PDAnnotationWidget widget : field.getWidgets())</span>
         {
-<span class="nc" id="L149">            PDAppearanceStream stream = widget.getNormalAppearanceStream();</span>
-<span class="nc bnc" id="L150" title="All 2 branches missed.">            if (stream == null)</span>
+<span class="fc" id="L149">            PDAppearanceStream stream = widget.getNormalAppearanceStream();</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">            if (stream == null)</span>
             {
-<span class="nc" id="L152">                continue;</span>
+<span class="fc" id="L152">                continue;</span>
             }
-<span class="nc" id="L154">            PDResources widgetResources = stream.getResources();</span>
-<span class="nc bnc" id="L155" title="All 2 branches missed.">            if (widgetResources == null)</span>
+<span class="fc" id="L154">            PDResources widgetResources = stream.getResources();</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">            if (widgetResources == null)</span>
             {
 <span class="nc" id="L157">                continue;</span>
             }
-<span class="nc" id="L159">            COSDictionary widgetFontDict = widgetResources.getCOSObject()</span>
-<span class="nc" id="L160">                    .getCOSDictionary(COSName.FONT);</span>
-<span class="nc" id="L161">            COSDictionary acroFormFontDict = acroFormResources.getCOSObject()</span>
-<span class="nc" id="L162">                    .getCOSDictionary(COSName.FONT);</span>
-<span class="nc bnc" id="L163" title="All 2 branches missed.">            for (COSName fontResourceName : widgetResources.getFontNames())</span>
+<span class="fc" id="L159">            COSDictionary widgetFontDict = widgetResources.getCOSObject()</span>
+<span class="fc" id="L160">                    .getCOSDictionary(COSName.FONT);</span>
+<span class="fc" id="L161">            COSDictionary acroFormFontDict = acroFormResources.getCOSObject()</span>
+<span class="fc" id="L162">                    .getCOSDictionary(COSName.FONT);</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">            for (COSName fontResourceName : widgetResources.getFontNames())</span>
             {
                 try
                 {
-<span class="nc bnc" id="L167" title="All 2 branches missed.">                    if (acroFormResources.getFont(fontResourceName) == null)</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">                    if (acroFormResources.getFont(fontResourceName) == null)</span>
                     {
-<span class="nc" id="L169">                        LOG.debug(&quot;Adding font resource {} from widget to AcroForm&quot;,</span>
+<span class="fc" id="L169">                        LOG.debug(&quot;Adding font resource {} from widget to AcroForm&quot;,</span>
                                 fontResourceName);
                         // use the COS-object to preserve a possible indirect object reference
-<span class="nc" id="L172">                        acroFormFontDict.setItem(fontResourceName,</span>
-<span class="nc" id="L173">                                widgetFontDict.getItem(fontResourceName));</span>
+<span class="fc" id="L172">                        acroFormFontDict.setItem(fontResourceName,</span>
+<span class="fc" id="L173">                                widgetFontDict.getItem(fontResourceName));</span>
                     }
                 }
 <span class="nc" id="L176">                catch (IOException e)</span>
                 {
 <span class="nc" id="L178">                    LOG.warn(&quot;Unable to match field level font with AcroForm font&quot;, e);</span>
-<span class="nc" id="L179">                }</span>
-<span class="nc" id="L180">            }</span>
-<span class="nc" id="L181">        }</span>
-<span class="nc" id="L182">    }</span>
+<span class="fc" id="L179">                }</span>
+<span class="fc" id="L180">            }</span>
+<span class="fc" id="L181">        }</span>
+<span class="fc" id="L182">    }</span>
     
     /**
      * This is the public method for setting the appearance stream.
@@ -189,7 +189,7 @@ class AppearanceGeneratorHelper
      */
     public void setAppearanceValue(String apValue) throws IOException
     {
-<span class="nc" id="L192">        value = getFormattedValue(apValue);</span>
+<span class="fc" id="L192">        value = getFormattedValue(apValue);</span>
 
         // Treat multiline field values in single lines as single lime values.
         // This is in line with how Adobe Reader behaves when entering text
@@ -197,62 +197,62 @@ class AppearanceGeneratorHelper
         // set programmatically and Reader is forced to generate the appearance
         // using PDAcroForm.setNeedAppearances
         // see PDFBOX-3911
-<span class="nc bnc" id="L200" title="All 4 branches missed.">        if (field instanceof PDTextField &amp;&amp; !((PDTextField) field).isMultiline())</span>
+<span class="fc bfc" id="L200" title="All 4 branches covered.">        if (field instanceof PDTextField &amp;&amp; !((PDTextField) field).isMultiline())</span>
         {
-<span class="nc" id="L202">            value = PATTERN.matcher(value).replaceAll(&quot; &quot;);</span>
+<span class="fc" id="L202">            value = PATTERN.matcher(value).replaceAll(&quot; &quot;);</span>
         }
 
-<span class="nc bnc" id="L205" title="All 2 branches missed.">        for (PDAnnotationWidget widget : field.getWidgets())</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">        for (PDAnnotationWidget widget : field.getWidgets())</span>
         {
-<span class="nc bnc" id="L207" title="All 2 branches missed.">            if (widget.getCOSObject().containsKey(&quot;PMD&quot;))</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">            if (widget.getCOSObject().containsKey(&quot;PMD&quot;))</span>
             {
-<span class="nc" id="L209">                LOG.warn(</span>
+<span class="fc" id="L209">                LOG.warn(</span>
                         &quot;widget of field {} is a PaperMetaData widget, no appearance stream created&quot;,
-<span class="nc" id="L211">                        field.getFullyQualifiedName());</span>
-<span class="nc" id="L212">                continue;</span>
+<span class="fc" id="L211">                        field.getFullyQualifiedName());</span>
+<span class="fc" id="L212">                continue;</span>
             }
 
             // some fields have the /Da at the widget level if the 
             // widgets differ in layout.
-<span class="nc" id="L217">            PDDefaultAppearanceString acroFormAppearance = defaultAppearance;</span>
+<span class="fc" id="L217">            PDDefaultAppearanceString acroFormAppearance = defaultAppearance;</span>
             
-<span class="nc bnc" id="L219" title="All 2 branches missed.">            if (widget.getCOSObject().getDictionaryObject(COSName.DA) != null)</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">            if (widget.getCOSObject().getDictionaryObject(COSName.DA) != null)</span>
             {
-<span class="nc" id="L221">                defaultAppearance = getWidgetDefaultAppearanceString(widget);</span>
+<span class="fc" id="L221">                defaultAppearance = getWidgetDefaultAppearanceString(widget);</span>
             }
 
-<span class="nc" id="L224">            PDRectangle rect = widget.getRectangle();</span>
-<span class="nc bnc" id="L225" title="All 2 branches missed.">            if (rect == null)</span>
+<span class="fc" id="L224">            PDRectangle rect = widget.getRectangle();</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">            if (rect == null)</span>
             {
-<span class="nc" id="L227">                widget.getCOSObject().removeItem(COSName.AP);</span>
-<span class="nc" id="L228">                LOG.warn(&quot;widget of field {} has no rectangle, no appearance stream created&quot;,</span>
-<span class="nc" id="L229">                        field.getFullyQualifiedName());</span>
-<span class="nc" id="L230">                continue;</span>
+<span class="fc" id="L227">                widget.getCOSObject().removeItem(COSName.AP);</span>
+<span class="fc" id="L228">                LOG.warn(&quot;widget of field {} has no rectangle, no appearance stream created&quot;,</span>
+<span class="fc" id="L229">                        field.getFullyQualifiedName());</span>
+<span class="fc" id="L230">                continue;</span>
             }
 
-<span class="nc" id="L233">            PDAppearanceDictionary appearanceDict = widget.getAppearance();</span>
-<span class="nc bnc" id="L234" title="All 2 branches missed.">            if (appearanceDict == null)</span>
+<span class="fc" id="L233">            PDAppearanceDictionary appearanceDict = widget.getAppearance();</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">            if (appearanceDict == null)</span>
             {
-<span class="nc" id="L236">                appearanceDict = new PDAppearanceDictionary();</span>
-<span class="nc" id="L237">                widget.setAppearance(appearanceDict);</span>
+<span class="fc" id="L236">                appearanceDict = new PDAppearanceDictionary();</span>
+<span class="fc" id="L237">                widget.setAppearance(appearanceDict);</span>
             }
 
-<span class="nc" id="L240">            PDAppearanceEntry appearance = appearanceDict.getNormalAppearance();</span>
+<span class="fc" id="L240">            PDAppearanceEntry appearance = appearanceDict.getNormalAppearance();</span>
             // TODO support appearances other than &quot;normal&quot;
                 
             PDAppearanceStream appearanceStream;
-<span class="nc bnc" id="L244" title="All 2 branches missed.">            if (isValidAppearanceStream(appearance))</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">            if (isValidAppearanceStream(appearance))</span>
             {
-<span class="nc" id="L246">                appearanceStream = appearance.getAppearanceStream();</span>
+<span class="fc" id="L246">                appearanceStream = appearance.getAppearanceStream();</span>
             }
             else
             {
-<span class="nc" id="L250">                appearanceStream = prepareNormalAppearanceStream(widget);</span>
-<span class="nc" id="L251">                appearanceDict.setNormalAppearance(appearanceStream);</span>
+<span class="fc" id="L250">                appearanceStream = prepareNormalAppearanceStream(widget);</span>
+<span class="fc" id="L251">                appearanceDict.setNormalAppearance(appearanceStream);</span>
                 // TODO support appearances other than &quot;normal&quot;
             }
-<span class="nc" id="L254">            PDAppearanceCharacteristicsDictionary appearanceCharacteristics =</span>
-<span class="nc" id="L255">                    widget.getAppearanceCharacteristics();</span>
+<span class="fc" id="L254">            PDAppearanceCharacteristicsDictionary appearanceCharacteristics =</span>
+<span class="fc" id="L255">                    widget.getAppearanceCharacteristics();</span>
                 
             /*
              * Adobe Acrobat always recreates the complete appearance stream if there is an appearance characteristics
@@ -260,30 +260,30 @@ class AppearanceGeneratorHelper
              * stream from the entries.
              * 
              */
-<span class="nc bnc" id="L263" title="All 4 branches missed.">            if (appearanceCharacteristics != null || appearanceStream.getContentStream().getLength() == 0)</span>
+<span class="fc bfc" id="L263" title="All 4 branches covered.">            if (appearanceCharacteristics != null || appearanceStream.getContentStream().getLength() == 0)</span>
             {
-<span class="nc" id="L265">                initializeAppearanceContent(widget, appearanceCharacteristics, appearanceStream);</span>
+<span class="fc" id="L265">                initializeAppearanceContent(widget, appearanceCharacteristics, appearanceStream);</span>
             }
                 
-<span class="nc" id="L268">            setAppearanceContent(widget, appearanceStream);</span>
+<span class="fc" id="L268">            setAppearanceContent(widget, appearanceStream);</span>
             
             
             // restore the field level appearance
-<span class="nc" id="L272">            defaultAppearance =  acroFormAppearance;</span>
-<span class="nc" id="L273">        }</span>
-<span class="nc" id="L274">    }</span>
+<span class="fc" id="L272">            defaultAppearance =  acroFormAppearance;</span>
+<span class="fc" id="L273">        }</span>
+<span class="fc" id="L274">    }</span>
 
     private String getFormattedValue(String apValue)
     {
         // format the field value for the appearance if there is scripting support and the field
         // has a format event
-<span class="nc" id="L280">        PDFormFieldAdditionalActions actions = field.getActions();</span>
-<span class="nc bnc" id="L281" title="All 2 branches missed.">        if (actions == null)</span>
+<span class="fc" id="L280">        PDFormFieldAdditionalActions actions = field.getActions();</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">        if (actions == null)</span>
         {
-<span class="nc" id="L283">            return apValue;</span>
+<span class="fc" id="L283">            return apValue;</span>
         }
-<span class="nc" id="L285">        PDAction actionF = actions.getF();</span>
-<span class="nc bnc" id="L286" title="All 2 branches missed.">        if (actionF != null)</span>
+<span class="fc" id="L285">        PDAction actionF = actions.getF();</span>
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">        if (actionF != null)</span>
         {
 <span class="nc" id="L288">            ScriptingHandler scriptingHandler = field.getAcroForm().getScriptingHandler();</span>
 <span class="nc bnc" id="L289" title="All 2 branches missed.">            if (scriptingHandler != null)</span>
@@ -293,67 +293,67 @@ class AppearanceGeneratorHelper
 <span class="nc" id="L293">            LOG.info(&quot;Field contains a formatting action but no ScriptingHandler &quot; +</span>
                      &quot;has been supplied - formatted value might be incorrect&quot;);
         }
-<span class="nc" id="L296">        return apValue;</span>
+<span class="fc" id="L296">        return apValue;</span>
     }
 
     private static boolean isValidAppearanceStream(PDAppearanceEntry appearance)
     {
-<span class="nc bnc" id="L301" title="All 2 branches missed.">        if (appearance == null)</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">        if (appearance == null)</span>
         {
 <span class="nc" id="L303">            return false;</span>
         }
-<span class="nc bnc" id="L305" title="All 2 branches missed.">        if (!appearance.isStream())</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">        if (!appearance.isStream())</span>
         {
-<span class="nc" id="L307">            return false;</span>
+<span class="fc" id="L307">            return false;</span>
         }
-<span class="nc" id="L309">        PDRectangle bbox = appearance.getAppearanceStream().getBBox();</span>
-<span class="nc bnc" id="L310" title="All 2 branches missed.">        if (bbox == null)</span>
+<span class="fc" id="L309">        PDRectangle bbox = appearance.getAppearanceStream().getBBox();</span>
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">        if (bbox == null)</span>
         {
 <span class="nc" id="L312">            return false;</span>
         }
-<span class="nc bnc" id="L314" title="All 4 branches missed.">        return Math.abs(bbox.getWidth()) &gt; 0 &amp;&amp; Math.abs(bbox.getHeight()) &gt; 0;</span>
+<span class="pc bpc" id="L314" title="2 of 4 branches missed.">        return Math.abs(bbox.getWidth()) &gt; 0 &amp;&amp; Math.abs(bbox.getHeight()) &gt; 0;</span>
     }
 
     private PDAppearanceStream prepareNormalAppearanceStream(PDAnnotationWidget widget)
     {
-<span class="nc" id="L319">        PDAppearanceStream appearanceStream = new PDAppearanceStream(field.getAcroForm().getDocument());</span>
+<span class="fc" id="L319">        PDAppearanceStream appearanceStream = new PDAppearanceStream(field.getAcroForm().getDocument());</span>
 
         // Calculate the entries for the bounding box and the transformation matrix
         // settings for the appearance stream
-<span class="nc" id="L323">        int rotation = resolveRotation(widget);</span>
-<span class="nc" id="L324">        PDRectangle rect = widget.getRectangle();</span>
-<span class="nc" id="L325">        Matrix matrix = Matrix.getRotateInstance(Math.toRadians(rotation), 0, 0);</span>
-<span class="nc" id="L326">        Point2D.Float point2D = matrix.transformPoint(rect.getWidth(), rect.getHeight());</span>
+<span class="fc" id="L323">        int rotation = resolveRotation(widget);</span>
+<span class="fc" id="L324">        PDRectangle rect = widget.getRectangle();</span>
+<span class="fc" id="L325">        Matrix matrix = Matrix.getRotateInstance(Math.toRadians(rotation), 0, 0);</span>
+<span class="fc" id="L326">        Point2D.Float point2D = matrix.transformPoint(rect.getWidth(), rect.getHeight());</span>
 
-<span class="nc" id="L328">        PDRectangle bbox = new PDRectangle(Math.abs((float) point2D.getX()), Math.abs((float) point2D.getY()));</span>
-<span class="nc" id="L329">        appearanceStream.setBBox(bbox);</span>
+<span class="fc" id="L328">        PDRectangle bbox = new PDRectangle(Math.abs((float) point2D.getX()), Math.abs((float) point2D.getY()));</span>
+<span class="fc" id="L329">        appearanceStream.setBBox(bbox);</span>
 
-<span class="nc" id="L331">        AffineTransform at = calculateMatrix(bbox, rotation);</span>
-<span class="nc bnc" id="L332" title="All 2 branches missed.">        if (!at.isIdentity())</span>
+<span class="fc" id="L331">        AffineTransform at = calculateMatrix(bbox, rotation);</span>
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">        if (!at.isIdentity())</span>
         {
 <span class="nc" id="L334">            appearanceStream.setMatrix(at);</span>
         }
-<span class="nc" id="L336">        appearanceStream.setFormType(1);</span>
-<span class="nc" id="L337">        appearanceStream.setResources(new PDResources());</span>
-<span class="nc" id="L338">        return appearanceStream;</span>
+<span class="fc" id="L336">        appearanceStream.setFormType(1);</span>
+<span class="fc" id="L337">        appearanceStream.setResources(new PDResources());</span>
+<span class="fc" id="L338">        return appearanceStream;</span>
     }
     
     private PDDefaultAppearanceString getWidgetDefaultAppearanceString(PDAnnotationWidget widget) throws IOException
     {
-<span class="nc" id="L343">        COSString da = (COSString) widget.getCOSObject().getDictionaryObject(COSName.DA);</span>
-<span class="nc" id="L344">        PDResources dr = field.getAcroForm().getDefaultResources();</span>
-<span class="nc" id="L345">        return new PDDefaultAppearanceString(da, dr);</span>
+<span class="fc" id="L343">        COSString da = (COSString) widget.getCOSObject().getDictionaryObject(COSName.DA);</span>
+<span class="fc" id="L344">        PDResources dr = field.getAcroForm().getDefaultResources();</span>
+<span class="fc" id="L345">        return new PDDefaultAppearanceString(da, dr);</span>
     }
     
     private int resolveRotation(PDAnnotationWidget widget)
     {
-<span class="nc" id="L350">        PDAppearanceCharacteristicsDictionary  characteristicsDictionary = widget.getAppearanceCharacteristics();</span>
-<span class="nc bnc" id="L351" title="All 2 branches missed.">        if (characteristicsDictionary != null)</span>
+<span class="fc" id="L350">        PDAppearanceCharacteristicsDictionary  characteristicsDictionary = widget.getAppearanceCharacteristics();</span>
+<span class="fc bfc" id="L351" title="All 2 branches covered.">        if (characteristicsDictionary != null)</span>
         {
             // 0 is the default value if the R key doesn't exist
-<span class="nc" id="L354">            return characteristicsDictionary.getRotation();</span>
+<span class="fc" id="L354">            return characteristicsDictionary.getRotation();</span>
         }
-<span class="nc" id="L356">        return 0;</span>
+<span class="fc" id="L356">        return 0;</span>
     }
 
     /**
@@ -372,68 +372,68 @@ class AppearanceGeneratorHelper
             PDAppearanceCharacteristicsDictionary appearanceCharacteristics,
             PDAppearanceStream appearanceStream) throws IOException
     {
-<span class="nc" id="L375">        try (ByteArrayOutputStream output = new ByteArrayOutputStream();</span>
-<span class="nc" id="L376">             PDAppearanceContentStream contents = new PDAppearanceContentStream(appearanceStream, output))</span>
+<span class="fc" id="L375">        try (ByteArrayOutputStream output = new ByteArrayOutputStream();</span>
+<span class="fc" id="L376">             PDAppearanceContentStream contents = new PDAppearanceContentStream(appearanceStream, output))</span>
         {
             // TODO: support more entries like patterns, etc.
-<span class="nc bnc" id="L379" title="All 2 branches missed.">            if (appearanceCharacteristics != null)</span>
+<span class="fc bfc" id="L379" title="All 2 branches covered.">            if (appearanceCharacteristics != null)</span>
             {
-<span class="nc" id="L381">                PDColor backgroundColour = appearanceCharacteristics.getBackground();</span>
-<span class="nc bnc" id="L382" title="All 2 branches missed.">                if (backgroundColour != null)</span>
+<span class="fc" id="L381">                PDColor backgroundColour = appearanceCharacteristics.getBackground();</span>
+<span class="fc bfc" id="L382" title="All 2 branches covered.">                if (backgroundColour != null)</span>
                 {
-<span class="nc" id="L384">                    contents.setNonStrokingColor(backgroundColour);</span>
-<span class="nc" id="L385">                    PDRectangle bbox = resolveBoundingBox(widget, appearanceStream);</span>
-<span class="nc" id="L386">                    contents.addRect(bbox.getLowerLeftX(),bbox.getLowerLeftY(),bbox.getWidth(), bbox.getHeight());</span>
-<span class="nc" id="L387">                    contents.fill();</span>
+<span class="fc" id="L384">                    contents.setNonStrokingColor(backgroundColour);</span>
+<span class="fc" id="L385">                    PDRectangle bbox = resolveBoundingBox(widget, appearanceStream);</span>
+<span class="fc" id="L386">                    contents.addRect(bbox.getLowerLeftX(),bbox.getLowerLeftY(),bbox.getWidth(), bbox.getHeight());</span>
+<span class="fc" id="L387">                    contents.fill();</span>
                 }
     
-<span class="nc" id="L390">                float lineWidth = 0f;</span>
-<span class="nc" id="L391">                PDColor borderColour = appearanceCharacteristics.getBorderColour();</span>
-<span class="nc bnc" id="L392" title="All 2 branches missed.">                if (borderColour != null)</span>
+<span class="fc" id="L390">                float lineWidth = 0f;</span>
+<span class="fc" id="L391">                PDColor borderColour = appearanceCharacteristics.getBorderColour();</span>
+<span class="fc bfc" id="L392" title="All 2 branches covered.">                if (borderColour != null)</span>
                 {
-<span class="nc" id="L394">                    contents.setStrokingColor(borderColour);</span>
-<span class="nc" id="L395">                    lineWidth = 1f;</span>
+<span class="fc" id="L394">                    contents.setStrokingColor(borderColour);</span>
+<span class="fc" id="L395">                    lineWidth = 1f;</span>
                 }
-<span class="nc" id="L397">                PDBorderStyleDictionary borderStyle = widget.getBorderStyle();</span>
-<span class="nc bnc" id="L398" title="All 4 branches missed.">                if (borderStyle != null &amp;&amp; borderStyle.getWidth() &gt; 0)</span>
+<span class="fc" id="L397">                PDBorderStyleDictionary borderStyle = widget.getBorderStyle();</span>
+<span class="pc bpc" id="L398" title="1 of 4 branches missed.">                if (borderStyle != null &amp;&amp; borderStyle.getWidth() &gt; 0)</span>
                 {
-<span class="nc" id="L400">                    lineWidth = borderStyle.getWidth();</span>
+<span class="fc" id="L400">                    lineWidth = borderStyle.getWidth();</span>
                 }
     
-<span class="nc bnc" id="L403" title="All 4 branches missed.">                if (lineWidth &gt; 0 &amp;&amp; borderColour != null)</span>
+<span class="fc bfc" id="L403" title="All 4 branches covered.">                if (lineWidth &gt; 0 &amp;&amp; borderColour != null)</span>
                 {
-<span class="nc bnc" id="L405" title="All 2 branches missed.">                    if (Float.compare(lineWidth, 1) != 0)</span>
+<span class="fc bfc" id="L405" title="All 2 branches covered.">                    if (Float.compare(lineWidth, 1) != 0)</span>
                     {
-<span class="nc" id="L407">                        contents.setLineWidth(lineWidth);</span>
+<span class="fc" id="L407">                        contents.setLineWidth(lineWidth);</span>
                     }
-<span class="nc" id="L409">                    PDRectangle bbox = resolveBoundingBox(widget, appearanceStream);</span>
-<span class="nc" id="L410">                    PDRectangle clipRect = applyPadding(bbox, Math.max(DEFAULT_PADDING, lineWidth/2)); </span>
-<span class="nc" id="L411">                    contents.addRect(clipRect.getLowerLeftX(),clipRect.getLowerLeftY(),clipRect.getWidth(), clipRect.getHeight());</span>
-<span class="nc" id="L412">                    contents.closeAndStroke();</span>
+<span class="fc" id="L409">                    PDRectangle bbox = resolveBoundingBox(widget, appearanceStream);</span>
+<span class="fc" id="L410">                    PDRectangle clipRect = applyPadding(bbox, Math.max(DEFAULT_PADDING, lineWidth/2)); </span>
+<span class="fc" id="L411">                    contents.addRect(clipRect.getLowerLeftX(),clipRect.getLowerLeftY(),clipRect.getWidth(), clipRect.getHeight());</span>
+<span class="fc" id="L412">                    contents.closeAndStroke();</span>
                 }
 
                 // draw the dividers for a comb field
-<span class="nc bnc" id="L416" title="All 4 branches missed.">                if (borderColour != null &amp;&amp; shallComb()) {</span>
-<span class="nc" id="L417">                    int maxLen = ((PDTextField) field).getMaxLen();</span>
-<span class="nc" id="L418">                    PDRectangle bbox = resolveBoundingBox(widget, appearanceStream);</span>
-<span class="nc" id="L419">                    PDRectangle clipRect = applyPadding(bbox, Math.max(DEFAULT_PADDING, lineWidth/2));</span>
-<span class="nc" id="L420">                    float lowerLeft = clipRect.getLowerLeftX();</span>
-<span class="nc" id="L421">                    float height = clipRect.getHeight();</span>
+<span class="fc bfc" id="L416" title="All 4 branches covered.">                if (borderColour != null &amp;&amp; shallComb()) {</span>
+<span class="fc" id="L417">                    int maxLen = ((PDTextField) field).getMaxLen();</span>
+<span class="fc" id="L418">                    PDRectangle bbox = resolveBoundingBox(widget, appearanceStream);</span>
+<span class="fc" id="L419">                    PDRectangle clipRect = applyPadding(bbox, Math.max(DEFAULT_PADDING, lineWidth/2));</span>
+<span class="fc" id="L420">                    float lowerLeft = clipRect.getLowerLeftX();</span>
+<span class="fc" id="L421">                    float height = clipRect.getHeight();</span>
                     
-<span class="nc" id="L423">                    float combWidth = bbox.getWidth() / maxLen;</span>
+<span class="fc" id="L423">                    float combWidth = bbox.getWidth() / maxLen;</span>
 
-<span class="nc bnc" id="L425" title="All 2 branches missed.">                    for (int i= 0; i &lt; maxLen - 1; i++) {</span>
-<span class="nc" id="L426">                        contents.moveTo(combWidth + combWidth * i, height);</span>
-<span class="nc" id="L427">                        contents.lineTo(combWidth + combWidth * i, lowerLeft);</span>
+<span class="fc bfc" id="L425" title="All 2 branches covered.">                    for (int i= 0; i &lt; maxLen - 1; i++) {</span>
+<span class="fc" id="L426">                        contents.moveTo(combWidth + combWidth * i, height);</span>
+<span class="fc" id="L427">                        contents.lineTo(combWidth + combWidth * i, lowerLeft);</span>
                     }
-<span class="nc" id="L429">                    contents.closeAndStroke();</span>
+<span class="fc" id="L429">                    contents.closeAndStroke();</span>
                 }
             }
             
-<span class="nc" id="L433">            writeToStream(output.toByteArray(), appearanceStream);</span>
+<span class="fc" id="L433">            writeToStream(output.toByteArray(), appearanceStream);</span>
 
         }
-<span class="nc" id="L436">    }</span>
+<span class="fc" id="L436">    }</span>
     
     /**
      * Constructs and sets new contents for given appearance stream.
@@ -443,45 +443,45 @@ class AppearanceGeneratorHelper
     {
         // first copy any needed resources from the document’s DR dictionary into
         // the stream’s Resources dictionary
-<span class="nc" id="L446">        defaultAppearance.copyNeededResourcesTo(appearanceStream);</span>
+<span class="fc" id="L446">        defaultAppearance.copyNeededResourcesTo(appearanceStream);</span>
         
         // then replace the existing contents of the appearance stream from /Tx BMC
         // to the matching EMC
-<span class="nc" id="L450">        try (ByteArrayOutputStream output = new ByteArrayOutputStream())</span>
+<span class="fc" id="L450">        try (ByteArrayOutputStream output = new ByteArrayOutputStream())</span>
         {
-<span class="nc" id="L452">            ContentStreamWriter writer = new ContentStreamWriter(output);</span>
+<span class="fc" id="L452">            ContentStreamWriter writer = new ContentStreamWriter(output);</span>
             
-<span class="nc" id="L454">            List&lt;Object&gt; tokens = new PDFStreamParser(appearanceStream).parse();</span>
-<span class="nc" id="L455">            int bmcIndex = tokens.indexOf(BMC);</span>
-<span class="nc bnc" id="L456" title="All 2 branches missed.">            if (bmcIndex == -1)</span>
+<span class="fc" id="L454">            List&lt;Object&gt; tokens = new PDFStreamParser(appearanceStream).parse();</span>
+<span class="fc" id="L455">            int bmcIndex = tokens.indexOf(BMC);</span>
+<span class="fc bfc" id="L456" title="All 2 branches covered.">            if (bmcIndex == -1)</span>
             {
                 // append to existing stream
-<span class="nc" id="L459">                writer.writeTokens(tokens);</span>
-<span class="nc" id="L460">                writer.writeTokens(COSName.TX, BMC);</span>
+<span class="fc" id="L459">                writer.writeTokens(tokens);</span>
+<span class="fc" id="L460">                writer.writeTokens(COSName.TX, BMC);</span>
             }
             else
             {
                 // prepend content before BMC
-<span class="nc" id="L465">                writer.writeTokens(tokens.subList(0, bmcIndex + 1));</span>
+<span class="fc" id="L465">                writer.writeTokens(tokens.subList(0, bmcIndex + 1));</span>
             }
             
             // insert field contents
-<span class="nc" id="L469">            insertGeneratedAppearance(widget, appearanceStream, output);</span>
+<span class="fc" id="L469">            insertGeneratedAppearance(widget, appearanceStream, output);</span>
             
-<span class="nc" id="L471">            int emcIndex = tokens.indexOf(EMC);</span>
-<span class="nc bnc" id="L472" title="All 2 branches missed.">            if (emcIndex == -1)</span>
+<span class="fc" id="L471">            int emcIndex = tokens.indexOf(EMC);</span>
+<span class="fc bfc" id="L472" title="All 2 branches covered.">            if (emcIndex == -1)</span>
             {
                 // append EMC
-<span class="nc" id="L475">                writer.writeTokens(EMC);</span>
+<span class="fc" id="L475">                writer.writeTokens(EMC);</span>
             }
             else
             {
                 // append contents after EMC
-<span class="nc" id="L480">                writer.writeTokens(tokens.subList(emcIndex, tokens.size()));</span>
+<span class="fc" id="L480">                writer.writeTokens(tokens.subList(emcIndex, tokens.size()));</span>
             }
-<span class="nc" id="L482">            writeToStream(output.toByteArray(), appearanceStream);</span>
+<span class="fc" id="L482">            writeToStream(output.toByteArray(), appearanceStream);</span>
         }
-<span class="nc" id="L484">    }</span>
+<span class="fc" id="L484">    }</span>
     
     /**
      * Generate and insert text content and clipping around it.   
@@ -490,39 +490,39 @@ class AppearanceGeneratorHelper
                                            PDAppearanceStream appearanceStream,
                                            OutputStream output) throws IOException
     {
-<span class="nc" id="L493">        try (PDAppearanceContentStream contents = new PDAppearanceContentStream(appearanceStream, output))</span>
+<span class="fc" id="L493">        try (PDAppearanceContentStream contents = new PDAppearanceContentStream(appearanceStream, output))</span>
         {
-<span class="nc" id="L495">            PDRectangle bbox = resolveBoundingBox(widget, appearanceStream);</span>
+<span class="fc" id="L495">            PDRectangle bbox = resolveBoundingBox(widget, appearanceStream);</span>
             
             // Acrobat calculates the left and right padding dependent on the offset of the border edge
             // This calculation works for forms having been generated by Acrobat.
             // The minimum distance is always 1f even if there is no rectangle being drawn around.
-<span class="nc" id="L500">            float borderWidth = 0;</span>
-<span class="nc bnc" id="L501" title="All 2 branches missed.">            if (widget.getBorderStyle() != null)</span>
+<span class="fc" id="L500">            float borderWidth = 0;</span>
+<span class="fc bfc" id="L501" title="All 2 branches covered.">            if (widget.getBorderStyle() != null)</span>
             {
-<span class="nc" id="L503">                borderWidth = widget.getBorderStyle().getWidth();</span>
+<span class="fc" id="L503">                borderWidth = widget.getBorderStyle().getWidth();</span>
             }
-<span class="nc" id="L505">            float padding = Math.max(1f, borderWidth);</span>
-<span class="nc" id="L506">            PDRectangle clipRect = applyPadding(bbox, padding);</span>
-<span class="nc" id="L507">            float clipRectLowerLeftY = clipRect.getLowerLeftY();</span>
-<span class="nc" id="L508">            float clipRectHeight = clipRect.getHeight();</span>
+<span class="fc" id="L505">            float padding = Math.max(1f, borderWidth);</span>
+<span class="fc" id="L506">            PDRectangle clipRect = applyPadding(bbox, padding);</span>
+<span class="fc" id="L507">            float clipRectLowerLeftY = clipRect.getLowerLeftY();</span>
+<span class="fc" id="L508">            float clipRectHeight = clipRect.getHeight();</span>
 
-<span class="nc" id="L510">            PDRectangle contentRect = applyPadding(clipRect, padding);</span>
+<span class="fc" id="L510">            PDRectangle contentRect = applyPadding(clipRect, padding);</span>
             
-<span class="nc" id="L512">            contents.saveGraphicsState();</span>
+<span class="fc" id="L512">            contents.saveGraphicsState();</span>
             
             // Acrobat always adds a clipping path
-<span class="nc" id="L515">            contents.addRect(clipRect.getLowerLeftX(), clipRectLowerLeftY,</span>
-<span class="nc" id="L516">                             clipRect.getWidth(), clipRectHeight);</span>
-<span class="nc" id="L517">            contents.clip();</span>
+<span class="fc" id="L515">            contents.addRect(clipRect.getLowerLeftX(), clipRectLowerLeftY,</span>
+<span class="fc" id="L516">                             clipRect.getWidth(), clipRectHeight);</span>
+<span class="fc" id="L517">            contents.clip();</span>
             
             // get the font
-<span class="nc" id="L520">            PDFont font = defaultAppearance.getFont();</span>
-<span class="nc bnc" id="L521" title="All 2 branches missed.">            if (font == null)</span>
+<span class="fc" id="L520">            PDFont font = defaultAppearance.getFont();</span>
+<span class="fc bfc" id="L521" title="All 2 branches covered.">            if (font == null)</span>
             {
-<span class="nc" id="L523">                throw new IllegalArgumentException(&quot;font is null, check whether /DA entry is incomplete or incorrect&quot;);</span>
+<span class="fc" id="L523">                throw new IllegalArgumentException(&quot;font is null, check whether /DA entry is incomplete or incorrect&quot;);</span>
             }
-<span class="nc bnc" id="L525" title="All 2 branches missed.">            if (font.getName().contains(&quot;+&quot;))</span>
+<span class="pc bpc" id="L525" title="1 of 2 branches missed.">            if (font.getName().contains(&quot;+&quot;))</span>
             {
 <span class="nc" id="L527">                LOG.warn(&quot;Font '{}' of field '{}' contains subsetted font '{}'&quot;,</span>
 <span class="nc" id="L528">                        defaultAppearance.getFontName().getName(), field.getFullyQualifiedName(),</span>
@@ -535,115 +535,115 @@ class AppearanceGeneratorHelper
 <span class="nc" id="L535">                        defaultAppearance.getFontName().getName());</span>
             }
             // calculate the fontSize (because 0 = autosize)
-<span class="nc" id="L538">            float fontSize = defaultAppearance.getFontSize();</span>
+<span class="fc" id="L538">            float fontSize = defaultAppearance.getFontSize();</span>
             
-<span class="nc bnc" id="L540" title="All 2 branches missed.">            if (Float.compare(fontSize, 0) == 0)</span>
+<span class="fc bfc" id="L540" title="All 2 branches covered.">            if (Float.compare(fontSize, 0) == 0)</span>
             {
-<span class="nc" id="L542">                fontSize = calculateFontSize(font, contentRect);</span>
+<span class="fc" id="L542">                fontSize = calculateFontSize(font, contentRect);</span>
             }
             
             // for a listbox generate the highlight rectangle for the selected
             // options
-<span class="nc bnc" id="L547" title="All 2 branches missed.">            if (field instanceof PDListBox)</span>
+<span class="fc bfc" id="L547" title="All 2 branches covered.">            if (field instanceof PDListBox)</span>
             {
-<span class="nc" id="L549">                insertGeneratedListboxSelectionHighlight(contents, appearanceStream, font, fontSize);</span>
+<span class="fc" id="L549">                insertGeneratedListboxSelectionHighlight(contents, appearanceStream, font, fontSize);</span>
             }
             
             // start the text output
-<span class="nc" id="L553">            contents.beginText();</span>
+<span class="fc" id="L553">            contents.beginText();</span>
 
             // write font and color from the /DA string, with the calculated font size
-<span class="nc" id="L556">            defaultAppearance.writeTo(contents, fontSize);</span>
+<span class="fc" id="L556">            defaultAppearance.writeTo(contents, fontSize);</span>
 
             // calculate the y-position of the baseline
             float y;
             
             // calculate font metrics at font size
-<span class="nc" id="L562">            float fontScaleY = fontSize / FONTSCALE;</span>
-<span class="nc" id="L563">            float fontBoundingBoxAtSize = font.getBoundingBox().getHeight() * fontScaleY;</span>
+<span class="fc" id="L562">            float fontScaleY = fontSize / FONTSCALE;</span>
+<span class="fc" id="L563">            float fontBoundingBoxAtSize = font.getBoundingBox().getHeight() * fontScaleY;</span>
 
             float fontCapAtSize;
             float fontDescentAtSize;
     
-<span class="nc bnc" id="L568" title="All 2 branches missed.">            if (font.getFontDescriptor() != null) {</span>
-<span class="nc" id="L569">                fontCapAtSize = font.getFontDescriptor().getCapHeight() * fontScaleY;</span>
-<span class="nc" id="L570">                fontDescentAtSize = font.getFontDescriptor().getDescent() * fontScaleY;</span>
+<span class="fc bfc" id="L568" title="All 2 branches covered.">            if (font.getFontDescriptor() != null) {</span>
+<span class="fc" id="L569">                fontCapAtSize = font.getFontDescriptor().getCapHeight() * fontScaleY;</span>
+<span class="fc" id="L570">                fontDescentAtSize = font.getFontDescriptor().getDescent() * fontScaleY;</span>
             } else {
-<span class="nc" id="L572">                float fontCapHeight = resolveCapHeight(font);</span>
-<span class="nc" id="L573">                float fontDescent = resolveDescent(font);</span>
-<span class="nc" id="L574">                LOG.debug(&quot;missing font descriptor - resolved Cap/Descent to {}/{}&quot;, fontCapHeight,</span>
-<span class="nc" id="L575">                        fontDescent);</span>
-<span class="nc" id="L576">                fontCapAtSize = fontCapHeight * fontScaleY;</span>
-<span class="nc" id="L577">                fontDescentAtSize = fontDescent * fontScaleY;</span>
+<span class="fc" id="L572">                float fontCapHeight = resolveCapHeight(font);</span>
+<span class="fc" id="L573">                float fontDescent = resolveDescent(font);</span>
+<span class="fc" id="L574">                LOG.debug(&quot;missing font descriptor - resolved Cap/Descent to {}/{}&quot;, fontCapHeight,</span>
+<span class="fc" id="L575">                        fontDescent);</span>
+<span class="fc" id="L576">                fontCapAtSize = fontCapHeight * fontScaleY;</span>
+<span class="fc" id="L577">                fontDescentAtSize = fontDescent * fontScaleY;</span>
             }
             
-<span class="nc bnc" id="L580" title="All 4 branches missed.">            if (field instanceof PDTextField &amp;&amp; ((PDTextField) field).isMultiline())</span>
+<span class="fc bfc" id="L580" title="All 4 branches covered.">            if (field instanceof PDTextField &amp;&amp; ((PDTextField) field).isMultiline())</span>
             {
-<span class="nc" id="L582">                y = contentRect.getUpperRightY() - fontBoundingBoxAtSize;</span>
+<span class="fc" id="L582">                y = contentRect.getUpperRightY() - fontBoundingBoxAtSize;</span>
             }
             else
             {
                 // Adobe shows the text 'shifted up' in case the caps don't fit into the clipping area
-<span class="nc bnc" id="L587" title="All 2 branches missed.">                if (fontCapAtSize &gt; clipRectHeight)</span>
+<span class="fc bfc" id="L587" title="All 2 branches covered.">                if (fontCapAtSize &gt; clipRectHeight)</span>
                 {
-<span class="nc" id="L589">                    y = clipRectLowerLeftY + -fontDescentAtSize;</span>
+<span class="fc" id="L589">                    y = clipRectLowerLeftY + -fontDescentAtSize;</span>
                 }
                 else
                 {
                     // calculate the position based on the content rectangle
-<span class="nc" id="L594">                    y = clipRectLowerLeftY + (clipRectHeight - fontCapAtSize) / 2;</span>
+<span class="fc" id="L594">                    y = clipRectLowerLeftY + (clipRectHeight - fontCapAtSize) / 2;</span>
 
                     // check to ensure that ascents and descents fit
-<span class="nc bnc" id="L597" title="All 2 branches missed.">                    if (y - clipRectLowerLeftY &lt; -fontDescentAtSize)</span>
+<span class="fc bfc" id="L597" title="All 2 branches covered.">                    if (y - clipRectLowerLeftY &lt; -fontDescentAtSize)</span>
                     {
-<span class="nc" id="L599">                        float contentRectLowerLeftY = contentRect.getLowerLeftY();</span>
-<span class="nc" id="L600">                        float fontDescentBased = -fontDescentAtSize + contentRectLowerLeftY;</span>
-<span class="nc" id="L601">                        float fontCapBased = contentRect.getHeight() - contentRectLowerLeftY - fontCapAtSize;</span>
+<span class="fc" id="L599">                        float contentRectLowerLeftY = contentRect.getLowerLeftY();</span>
+<span class="fc" id="L600">                        float fontDescentBased = -fontDescentAtSize + contentRectLowerLeftY;</span>
+<span class="fc" id="L601">                        float fontCapBased = contentRect.getHeight() - contentRectLowerLeftY - fontCapAtSize;</span>
 
-<span class="nc" id="L603">                        y = Math.min(fontDescentBased, Math.max(y, fontCapBased));</span>
+<span class="fc" id="L603">                        y = Math.min(fontDescentBased, Math.max(y, fontCapBased));</span>
                     }
                 }
             }
             
             // show the text
-<span class="nc" id="L609">            float x = contentRect.getLowerLeftX();</span>
+<span class="fc" id="L609">            float x = contentRect.getLowerLeftX();</span>
             
             // special handling for comb boxes as these are like table cells with individual
             // chars
-<span class="nc bnc" id="L613" title="All 2 branches missed.">            if (shallComb())</span>
+<span class="fc bfc" id="L613" title="All 2 branches covered.">            if (shallComb())</span>
             {
-<span class="nc" id="L615">                insertGeneratedCombAppearance(contents, appearanceStream, font, fontSize);</span>
+<span class="fc" id="L615">                insertGeneratedCombAppearance(contents, appearanceStream, font, fontSize);</span>
             }
-<span class="nc bnc" id="L617" title="All 2 branches missed.">            else if (field instanceof PDListBox)</span>
+<span class="fc bfc" id="L617" title="All 2 branches covered.">            else if (field instanceof PDListBox)</span>
             {
-<span class="nc" id="L619">                insertGeneratedListboxAppearance(contents, appearanceStream, contentRect, font, fontSize);</span>
+<span class="fc" id="L619">                insertGeneratedListboxAppearance(contents, appearanceStream, contentRect, font, fontSize);</span>
             }
             else
             {
-<span class="nc" id="L623">                PlainText textContent = new PlainText(value);</span>
-<span class="nc" id="L624">                AppearanceStyle appearanceStyle = new AppearanceStyle();</span>
-<span class="nc" id="L625">                appearanceStyle.setFont(font);</span>
-<span class="nc" id="L626">                appearanceStyle.setFontSize(fontSize);</span>
+<span class="fc" id="L623">                PlainText textContent = new PlainText(value);</span>
+<span class="fc" id="L624">                AppearanceStyle appearanceStyle = new AppearanceStyle();</span>
+<span class="fc" id="L625">                appearanceStyle.setFont(font);</span>
+<span class="fc" id="L626">                appearanceStyle.setFontSize(fontSize);</span>
                 
                 // Adobe Acrobat uses the font's bounding box for the leading between the lines
-<span class="nc" id="L629">                appearanceStyle.setLeading(font.getBoundingBox().getHeight() * fontScaleY);</span>
+<span class="fc" id="L629">                appearanceStyle.setLeading(font.getBoundingBox().getHeight() * fontScaleY);</span>
                 
-<span class="nc" id="L631">                PlainTextFormatter formatter = new PlainTextFormatter</span>
+<span class="fc" id="L631">                PlainTextFormatter formatter = new PlainTextFormatter</span>
                         .Builder(contents)
-<span class="nc" id="L633">                        .style(appearanceStyle)</span>
-<span class="nc" id="L634">                        .text(textContent)</span>
-<span class="nc" id="L635">                        .width(contentRect.getWidth())</span>
-<span class="nc" id="L636">                        .wrapLines(isMultiLine())</span>
-<span class="nc" id="L637">                        .initialOffset(x, y)</span>
-<span class="nc" id="L638">                        .textAlign(getTextAlign(widget))</span>
-<span class="nc" id="L639">                        .build();</span>
-<span class="nc" id="L640">                formatter.format();</span>
+<span class="fc" id="L633">                        .style(appearanceStyle)</span>
+<span class="fc" id="L634">                        .text(textContent)</span>
+<span class="fc" id="L635">                        .width(contentRect.getWidth())</span>
+<span class="fc" id="L636">                        .wrapLines(isMultiLine())</span>
+<span class="fc" id="L637">                        .initialOffset(x, y)</span>
+<span class="fc" id="L638">                        .textAlign(getTextAlign(widget))</span>
+<span class="fc" id="L639">                        .build();</span>
+<span class="fc" id="L640">                formatter.format();</span>
             }
             
-<span class="nc" id="L643">            contents.endText();</span>
-<span class="nc" id="L644">            contents.restoreGraphicsState();</span>
+<span class="fc" id="L643">            contents.endText();</span>
+<span class="fc" id="L644">            contents.restoreGraphicsState();</span>
         }
-<span class="nc" id="L646">    }</span>
+<span class="fc" id="L646">    }</span>
     
     /*
      * PDFBox handles a widget with a joined in field dictionary and without
@@ -654,15 +654,15 @@ class AppearanceGeneratorHelper
     private int getTextAlign(PDAnnotationWidget widget)
     {
         // Use quadding value from joined field/widget if set, else use from field.
-<span class="nc" id="L657">        return widget.getCOSObject().getInt(COSName.Q, field.getQ());</span>
+<span class="fc" id="L657">        return widget.getCOSObject().getInt(COSName.Q, field.getQ());</span>
     }
 
 
     private AffineTransform calculateMatrix(PDRectangle bbox, int rotation)
     {
-<span class="nc bnc" id="L663" title="All 2 branches missed.">        if (rotation == 0)</span>
+<span class="pc bpc" id="L663" title="1 of 2 branches missed.">        if (rotation == 0)</span>
         {
-<span class="nc" id="L665">            return new AffineTransform();</span>
+<span class="fc" id="L665">            return new AffineTransform();</span>
         }
 <span class="nc" id="L667">        float tx = 0, ty = 0;</span>
 <span class="nc bnc" id="L668" title="All 4 branches missed.">        switch (rotation)</span>
@@ -686,7 +686,7 @@ class AppearanceGeneratorHelper
 
     private boolean isMultiLine()
     {
-<span class="nc bnc" id="L689" title="All 4 branches missed.">        return field instanceof PDTextField &amp;&amp; ((PDTextField) field).isMultiline();</span>
+<span class="fc bfc" id="L689" title="All 4 branches covered.">        return field instanceof PDTextField &amp;&amp; ((PDTextField) field).isMultiline();</span>
     }
     
     /**
@@ -703,12 +703,12 @@ class AppearanceGeneratorHelper
      */
     private boolean shallComb()
     {
-<span class="nc bnc" id="L706" title="All 2 branches missed.">        return field instanceof PDTextField &amp;&amp;</span>
-<span class="nc bnc" id="L707" title="All 2 branches missed.">                ((PDTextField) field).isComb() &amp;&amp;</span>
-<span class="nc bnc" id="L708" title="All 2 branches missed.">                ((PDTextField) field).getMaxLen() != -1 &amp;&amp;</span>
-<span class="nc bnc" id="L709" title="All 2 branches missed.">                !((PDTextField) field).isMultiline() &amp;&amp;</span>
-<span class="nc bnc" id="L710" title="All 2 branches missed.">                !((PDTextField) field).isPassword() &amp;&amp;</span>
-<span class="nc bnc" id="L711" title="All 2 branches missed.">                !((PDTextField) field).isFileSelect();           </span>
+<span class="fc bfc" id="L706" title="All 2 branches covered.">        return field instanceof PDTextField &amp;&amp;</span>
+<span class="fc bfc" id="L707" title="All 2 branches covered.">                ((PDTextField) field).isComb() &amp;&amp;</span>
+<span class="pc bpc" id="L708" title="1 of 2 branches missed.">                ((PDTextField) field).getMaxLen() != -1 &amp;&amp;</span>
+<span class="pc bpc" id="L709" title="1 of 2 branches missed.">                !((PDTextField) field).isMultiline() &amp;&amp;</span>
+<span class="pc bpc" id="L710" title="1 of 2 branches missed.">                !((PDTextField) field).isPassword() &amp;&amp;</span>
+<span class="pc bpc" id="L711" title="1 of 2 branches missed.">                !((PDTextField) field).isFileSelect();           </span>
     }
     
     /**
@@ -723,108 +723,108 @@ class AppearanceGeneratorHelper
     private void insertGeneratedCombAppearance(PDAppearanceContentStream contents, PDAppearanceStream appearanceStream,
             PDFont font, float fontSize) throws IOException
     {
-<span class="nc bnc" id="L726" title="All 4 branches missed.">        if (value == null || value.isEmpty())</span>
+<span class="pc bpc" id="L726" title="1 of 4 branches missed.">        if (value == null || value.isEmpty())</span>
         {
-<span class="nc" id="L728">            return;</span>
+<span class="fc" id="L728">            return;</span>
         }
-<span class="nc" id="L730">        int maxLen = ((PDTextField) field).getMaxLen();</span>
-<span class="nc" id="L731">        int quadding = field.getQ();</span>
-<span class="nc" id="L732">        int numChars = Math.min(value.length(), maxLen);</span>
+<span class="fc" id="L730">        int maxLen = ((PDTextField) field).getMaxLen();</span>
+<span class="fc" id="L731">        int quadding = field.getQ();</span>
+<span class="fc" id="L732">        int numChars = Math.min(value.length(), maxLen);</span>
 
-<span class="nc" id="L734">        PDRectangle bBox = appearanceStream.getBBox();</span>
-<span class="nc" id="L735">        float combWidth = bBox.getWidth() / maxLen;</span>
-<span class="nc" id="L736">        float ascentAtFontSize = font.getFontDescriptor().getAscent() / FONTSCALE * fontSize;</span>
+<span class="fc" id="L734">        PDRectangle bBox = appearanceStream.getBBox();</span>
+<span class="fc" id="L735">        float combWidth = bBox.getWidth() / maxLen;</span>
+<span class="fc" id="L736">        float ascentAtFontSize = font.getFontDescriptor().getAscent() / FONTSCALE * fontSize;</span>
 
-<span class="nc" id="L738">        float baselineOffset = bBox.getLowerLeftY() + (bBox.getHeight() - ascentAtFontSize) / 2;</span>
+<span class="fc" id="L738">        float baselineOffset = bBox.getLowerLeftY() + (bBox.getHeight() - ascentAtFontSize) / 2;</span>
 
-<span class="nc" id="L740">        float prevCharWidth = 0f;</span>
+<span class="fc" id="L740">        float prevCharWidth = 0f;</span>
 
         // set initial offset based on width of first char.
-<span class="nc" id="L743">        float firstCharWidth = font.getStringWidth(value.substring(0, 1)) / FONTSCALE * fontSize;</span>
-<span class="nc" id="L744">        float initialOffset = (combWidth - firstCharWidth)/2;</span>
+<span class="fc" id="L743">        float firstCharWidth = font.getStringWidth(value.substring(0, 1)) / FONTSCALE * fontSize;</span>
+<span class="fc" id="L744">        float initialOffset = (combWidth - firstCharWidth)/2;</span>
 
         // add to initial offset if right aligned or centered
-<span class="nc bnc" id="L747" title="All 2 branches missed.">        if (quadding == 2)</span>
+<span class="fc bfc" id="L747" title="All 2 branches covered.">        if (quadding == 2)</span>
         {
-<span class="nc" id="L749">            initialOffset = initialOffset + (maxLen - numChars) * combWidth;</span>
+<span class="fc" id="L749">            initialOffset = initialOffset + (maxLen - numChars) * combWidth;</span>
         }
-<span class="nc bnc" id="L751" title="All 2 branches missed.">        else if (quadding == 1)</span>
+<span class="fc bfc" id="L751" title="All 2 branches covered.">        else if (quadding == 1)</span>
         {
-<span class="nc" id="L753">            initialOffset = initialOffset + Math.floorDiv(maxLen - numChars, 2) * combWidth;</span>
+<span class="fc" id="L753">            initialOffset = initialOffset + Math.floorDiv(maxLen - numChars, 2) * combWidth;</span>
         }
 
-<span class="nc" id="L756">        float xOffset = initialOffset;</span>
+<span class="fc" id="L756">        float xOffset = initialOffset;</span>
 
-<span class="nc bnc" id="L758" title="All 2 branches missed.">        for (int i = 0; i &lt; numChars; i++) </span>
+<span class="fc bfc" id="L758" title="All 2 branches covered.">        for (int i = 0; i &lt; numChars; i++) </span>
         {
-<span class="nc" id="L760">            String combString = value.substring(i, i+1);</span>
-<span class="nc" id="L761">            float currCharWidth = font.getStringWidth(combString) / FONTSCALE * fontSize/2;</span>
+<span class="fc" id="L760">            String combString = value.substring(i, i+1);</span>
+<span class="fc" id="L761">            float currCharWidth = font.getStringWidth(combString) / FONTSCALE * fontSize/2;</span>
             
-<span class="nc" id="L763">            xOffset = xOffset + prevCharWidth/2 - currCharWidth/2;</span>
+<span class="fc" id="L763">            xOffset = xOffset + prevCharWidth/2 - currCharWidth/2;</span>
             
-<span class="nc bnc" id="L765" title="All 2 branches missed.">            if (i == 0) {</span>
-<span class="nc" id="L766">                contents.newLineAtOffset(initialOffset, baselineOffset);</span>
+<span class="fc bfc" id="L765" title="All 2 branches covered.">            if (i == 0) {</span>
+<span class="fc" id="L766">                contents.newLineAtOffset(initialOffset, baselineOffset);</span>
             } else {
-<span class="nc" id="L768">                contents.newLineAtOffset(xOffset, baselineOffset);</span>
+<span class="fc" id="L768">                contents.newLineAtOffset(xOffset, baselineOffset);</span>
             }
-<span class="nc" id="L770">            contents.showText(combString);</span>
+<span class="fc" id="L770">            contents.showText(combString);</span>
             
-<span class="nc" id="L772">            baselineOffset = 0;</span>
-<span class="nc" id="L773">            prevCharWidth = currCharWidth;</span>
-<span class="nc" id="L774">            xOffset = combWidth;</span>
+<span class="fc" id="L772">            baselineOffset = 0;</span>
+<span class="fc" id="L773">            prevCharWidth = currCharWidth;</span>
+<span class="fc" id="L774">            xOffset = combWidth;</span>
         }
-<span class="nc" id="L776">    }</span>
+<span class="fc" id="L776">    }</span>
     
     private void insertGeneratedListboxSelectionHighlight(PDAppearanceContentStream contents, PDAppearanceStream appearanceStream,
             PDFont font, float fontSize) throws IOException
     {
-<span class="nc" id="L781">        PDListBox listBox = (PDListBox) field;</span>
-<span class="nc" id="L782">        List&lt;Integer&gt; indexEntries = listBox.getSelectedOptionsIndex();</span>
-<span class="nc" id="L783">        List&lt;String&gt; values = listBox.getValue();</span>
-<span class="nc" id="L784">        List&lt;String&gt; options = listBox.getOptionsExportValues();</span>
+<span class="fc" id="L781">        PDListBox listBox = (PDListBox) field;</span>
+<span class="fc" id="L782">        List&lt;Integer&gt; indexEntries = listBox.getSelectedOptionsIndex();</span>
+<span class="fc" id="L783">        List&lt;String&gt; values = listBox.getValue();</span>
+<span class="fc" id="L784">        List&lt;String&gt; options = listBox.getOptionsExportValues();</span>
 
-<span class="nc bnc" id="L786" title="All 6 branches missed.">        if (!values.isEmpty() &amp;&amp; !options.isEmpty() &amp;&amp; indexEntries.isEmpty())</span>
+<span class="pc bpc" id="L786" title="2 of 6 branches missed.">        if (!values.isEmpty() &amp;&amp; !options.isEmpty() &amp;&amp; indexEntries.isEmpty())</span>
         {
             // create indexEntries from options
-<span class="nc" id="L789">            indexEntries = new ArrayList&lt;&gt;(values.size());</span>
-<span class="nc bnc" id="L790" title="All 2 branches missed.">            for (String v : values)</span>
+<span class="fc" id="L789">            indexEntries = new ArrayList&lt;&gt;(values.size());</span>
+<span class="fc bfc" id="L790" title="All 2 branches covered.">            for (String v : values)</span>
             {
-<span class="nc" id="L792">                indexEntries.add(options.indexOf(v));</span>
-<span class="nc" id="L793">            }</span>
+<span class="fc" id="L792">                indexEntries.add(options.indexOf(v));</span>
+<span class="fc" id="L793">            }</span>
         }
 
         // The first entry which shall be presented might be adjusted by the optional TI key
         // If this entry is present, the first entry to be displayed is the keys value,
         // otherwise display starts with the first entry in Opt.
-<span class="nc" id="L799">        int topIndex = listBox.getTopIndex();</span>
+<span class="fc" id="L799">        int topIndex = listBox.getTopIndex();</span>
         
-<span class="nc" id="L801">        float highlightBoxHeight = font.getBoundingBox().getHeight() * fontSize / FONTSCALE;       </span>
+<span class="fc" id="L801">        float highlightBoxHeight = font.getBoundingBox().getHeight() * fontSize / FONTSCALE;       </span>
 
         // the padding area 
-<span class="nc" id="L804">        PDRectangle paddingEdge = applyPadding(appearanceStream.getBBox(), 1);</span>
+<span class="fc" id="L804">        PDRectangle paddingEdge = applyPadding(appearanceStream.getBBox(), 1);</span>
 
-<span class="nc bnc" id="L806" title="All 2 branches missed.">        for (int selectedIndex : indexEntries)</span>
+<span class="fc bfc" id="L806" title="All 2 branches covered.">        for (int selectedIndex : indexEntries)</span>
         {
-<span class="nc" id="L808">            contents.setNonStrokingColor(HIGHLIGHT_COLOR[0], HIGHLIGHT_COLOR[1], HIGHLIGHT_COLOR[2]);</span>
+<span class="fc" id="L808">            contents.setNonStrokingColor(HIGHLIGHT_COLOR[0], HIGHLIGHT_COLOR[1], HIGHLIGHT_COLOR[2]);</span>
 
-<span class="nc" id="L810">            contents.addRect(paddingEdge.getLowerLeftX(),</span>
-<span class="nc" id="L811">                    paddingEdge.getUpperRightY() - highlightBoxHeight * (selectedIndex - topIndex + 1) + 2,</span>
-<span class="nc" id="L812">                    paddingEdge.getWidth(),</span>
+<span class="fc" id="L810">            contents.addRect(paddingEdge.getLowerLeftX(),</span>
+<span class="fc" id="L811">                    paddingEdge.getUpperRightY() - highlightBoxHeight * (selectedIndex - topIndex + 1) + 2,</span>
+<span class="fc" id="L812">                    paddingEdge.getWidth(),</span>
                     highlightBoxHeight);
-<span class="nc" id="L814">            contents.fill();</span>
-<span class="nc" id="L815">        }</span>
-<span class="nc" id="L816">        contents.setNonStrokingColor(0f);</span>
-<span class="nc" id="L817">    }</span>
+<span class="fc" id="L814">            contents.fill();</span>
+<span class="fc" id="L815">        }</span>
+<span class="fc" id="L816">        contents.setNonStrokingColor(0f);</span>
+<span class="fc" id="L817">    }</span>
     
     
     private void insertGeneratedListboxAppearance(PDAppearanceContentStream contents, PDAppearanceStream appearanceStream,
             PDRectangle contentRect, PDFont font, float fontSize) throws IOException
     {
-<span class="nc" id="L823">        contents.setNonStrokingColor(0f);</span>
+<span class="fc" id="L823">        contents.setNonStrokingColor(0f);</span>
         
-<span class="nc" id="L825">        int q = field.getQ();</span>
+<span class="fc" id="L825">        int q = field.getQ();</span>
 
-<span class="nc bnc" id="L827" title="All 4 branches missed.">        if (q == PDVariableText.QUADDING_CENTERED || q == PDVariableText.QUADDING_RIGHT)</span>
+<span class="pc bpc" id="L827" title="2 of 4 branches missed.">        if (q == PDVariableText.QUADDING_CENTERED || q == PDVariableText.QUADDING_RIGHT)</span>
         {
 <span class="nc" id="L829">            float fieldWidth = appearanceStream.getBBox().getWidth();</span>
 <span class="nc" id="L830">            float stringWidth = (font.getStringWidth(value) / FONTSCALE) * fontSize;</span>
@@ -837,41 +837,41 @@ class AppearanceGeneratorHelper
 
 <span class="nc" id="L838">            contents.newLineAtOffset(adjustAmount, 0);</span>
 <span class="nc" id="L839">        }</span>
-<span class="nc bnc" id="L840" title="All 2 branches missed.">        else if (q != PDVariableText.QUADDING_LEFT)</span>
+<span class="pc bpc" id="L840" title="1 of 2 branches missed.">        else if (q != PDVariableText.QUADDING_LEFT)</span>
         {
 <span class="nc" id="L842">            throw new IOException(&quot;Error: Unknown justification value:&quot; + q);</span>
         }
 
-<span class="nc" id="L845">        List&lt;String&gt; options = ((PDListBox) field).getOptionsDisplayValues();</span>
-<span class="nc" id="L846">        int numOptions = options.size();</span>
+<span class="fc" id="L845">        List&lt;String&gt; options = ((PDListBox) field).getOptionsDisplayValues();</span>
+<span class="fc" id="L846">        int numOptions = options.size();</span>
 
-<span class="nc" id="L848">        float yTextPos = contentRect.getUpperRightY();</span>
+<span class="fc" id="L848">        float yTextPos = contentRect.getUpperRightY();</span>
 
-<span class="nc" id="L850">        int topIndex = ((PDListBox) field).getTopIndex();</span>
-<span class="nc" id="L851">        float ascent = font.getFontDescriptor().getAscent();</span>
-<span class="nc" id="L852">        float height = font.getBoundingBox().getHeight();</span>
+<span class="fc" id="L850">        int topIndex = ((PDListBox) field).getTopIndex();</span>
+<span class="fc" id="L851">        float ascent = font.getFontDescriptor().getAscent();</span>
+<span class="fc" id="L852">        float height = font.getBoundingBox().getHeight();</span>
         
-<span class="nc bnc" id="L854" title="All 2 branches missed.">        for (int i = topIndex; i &lt; numOptions; i++)</span>
+<span class="fc bfc" id="L854" title="All 2 branches covered.">        for (int i = topIndex; i &lt; numOptions; i++)</span>
         {
-<span class="nc bnc" id="L856" title="All 2 branches missed.">            if (i == topIndex)</span>
+<span class="fc bfc" id="L856" title="All 2 branches covered.">            if (i == topIndex)</span>
             {
-<span class="nc" id="L858">                yTextPos = yTextPos - ascent / FONTSCALE * fontSize;</span>
+<span class="fc" id="L858">                yTextPos = yTextPos - ascent / FONTSCALE * fontSize;</span>
             }
             else
             {
-<span class="nc" id="L862">                yTextPos = yTextPos - height / FONTSCALE * fontSize;</span>
-<span class="nc" id="L863">                contents.beginText();</span>
+<span class="fc" id="L862">                yTextPos = yTextPos - height / FONTSCALE * fontSize;</span>
+<span class="fc" id="L863">                contents.beginText();</span>
             }
 
-<span class="nc" id="L866">            contents.newLineAtOffset(contentRect.getLowerLeftX(), yTextPos);</span>
-<span class="nc" id="L867">            contents.showText(options.get(i));</span>
+<span class="fc" id="L866">            contents.newLineAtOffset(contentRect.getLowerLeftX(), yTextPos);</span>
+<span class="fc" id="L867">            contents.showText(options.get(i));</span>
 
-<span class="nc bnc" id="L869" title="All 2 branches missed.">            if (i != (numOptions - 1))</span>
+<span class="fc bfc" id="L869" title="All 2 branches covered.">            if (i != (numOptions - 1))</span>
             {
-<span class="nc" id="L871">                contents.endText();</span>
+<span class="fc" id="L871">                contents.endText();</span>
             }
         }
-<span class="nc" id="L874">    }</span>
+<span class="fc" id="L874">    }</span>
     
     /**
      * Writes the stream to the actual stream in the COSStream.
@@ -880,11 +880,11 @@ class AppearanceGeneratorHelper
      */
     private void writeToStream(byte[] data, PDAppearanceStream appearanceStream) throws IOException
     {
-<span class="nc" id="L883">        try (OutputStream out = appearanceStream.getCOSObject().createOutputStream())</span>
+<span class="fc" id="L883">        try (OutputStream out = appearanceStream.getCOSObject().createOutputStream())</span>
         {
-<span class="nc" id="L885">            out.write(data);</span>
+<span class="fc" id="L885">            out.write(data);</span>
         }
-<span class="nc" id="L887">    }</span>
+<span class="fc" id="L887">    }</span>
 
     /**
      * My &quot;not so great&quot; method for calculating the fontsize. It does not work superb, but it
@@ -895,39 +895,39 @@ class AppearanceGeneratorHelper
      */
     private float calculateFontSize(PDFont font, PDRectangle contentRect) throws IOException
     {
-<span class="nc" id="L898">        float fontSize = defaultAppearance.getFontSize();</span>
+<span class="fc" id="L898">        float fontSize = defaultAppearance.getFontSize();</span>
         
         // zero is special, it means the text is auto-sized
-<span class="nc bnc" id="L901" title="All 2 branches missed.">        if (Float.compare(fontSize, 0) == 0)</span>
+<span class="pc bpc" id="L901" title="1 of 2 branches missed.">        if (Float.compare(fontSize, 0) == 0)</span>
         {
-<span class="nc bnc" id="L903" title="All 2 branches missed.">            if (isMultiLine())</span>
+<span class="fc bfc" id="L903" title="All 2 branches covered.">            if (isMultiLine())</span>
             {
-<span class="nc" id="L905">                PlainText textContent = new PlainText(value);</span>
-<span class="nc bnc" id="L906" title="All 2 branches missed.">                if (textContent.getParagraphs() != null)</span>
+<span class="fc" id="L905">                PlainText textContent = new PlainText(value);</span>
+<span class="pc bpc" id="L906" title="1 of 2 branches missed.">                if (textContent.getParagraphs() != null)</span>
                 {
-<span class="nc" id="L908">                    float width = contentRect.getWidth() - contentRect.getLowerLeftX();</span>
-<span class="nc" id="L909">                    float fs = MINIMUM_FONT_SIZE;</span>
-<span class="nc bnc" id="L910" title="All 2 branches missed.">                    while (fs &lt;= DEFAULT_FONT_SIZE)</span>
+<span class="fc" id="L908">                    float width = contentRect.getWidth() - contentRect.getLowerLeftX();</span>
+<span class="fc" id="L909">                    float fs = MINIMUM_FONT_SIZE;</span>
+<span class="fc bfc" id="L910" title="All 2 branches covered.">                    while (fs &lt;= DEFAULT_FONT_SIZE)</span>
                     {
                         // determine the number of lines needed for this font and contentRect
-<span class="nc" id="L913">                        int numLines = 0;</span>
-<span class="nc bnc" id="L914" title="All 2 branches missed.">                        for (PlainText.Paragraph paragraph : textContent.getParagraphs())</span>
+<span class="fc" id="L913">                        int numLines = 0;</span>
+<span class="fc bfc" id="L914" title="All 2 branches covered.">                        for (PlainText.Paragraph paragraph : textContent.getParagraphs())</span>
                         {
-<span class="nc" id="L916">                            numLines += paragraph.getLines(font, fs, width).size();</span>
-<span class="nc" id="L917">                        }</span>
+<span class="fc" id="L916">                            numLines += paragraph.getLines(font, fs, width).size();</span>
+<span class="fc" id="L917">                        }</span>
                         // calculate the height required for this font size
-<span class="nc" id="L919">                        float fontScaleY = fs / FONTSCALE;</span>
-<span class="nc" id="L920">                        float leading = font.getBoundingBox().getHeight() * fontScaleY;</span>
-<span class="nc" id="L921">                        float height = leading * numLines;</span>
+<span class="fc" id="L919">                        float fontScaleY = fs / FONTSCALE;</span>
+<span class="fc" id="L920">                        float leading = font.getBoundingBox().getHeight() * fontScaleY;</span>
+<span class="fc" id="L921">                        float height = leading * numLines;</span>
 
                         // if this font size didn't fit, use the prior size that did fit
-<span class="nc bnc" id="L924" title="All 2 branches missed.">                        if (height &gt; contentRect.getHeight())</span>
+<span class="pc bpc" id="L924" title="1 of 2 branches missed.">                        if (height &gt; contentRect.getHeight())</span>
                         {
 <span class="nc" id="L926">                            return Math.max(fs - 1, MINIMUM_FONT_SIZE);</span>
                         }
-<span class="nc" id="L928">                        fs++;</span>
-<span class="nc" id="L929">                    }</span>
-<span class="nc" id="L930">                    return Math.min(fs, DEFAULT_FONT_SIZE);</span>
+<span class="fc" id="L928">                        fs++;</span>
+<span class="fc" id="L929">                    }</span>
+<span class="fc" id="L930">                    return Math.min(fs, DEFAULT_FONT_SIZE);</span>
                 }
                 
                 // Acrobat defaults to 12 for multiline text with size 0
@@ -935,30 +935,30 @@ class AppearanceGeneratorHelper
             }
             else
             {
-<span class="nc" id="L938">                Matrix fontMatrix = font.getFontMatrix();</span>
-<span class="nc" id="L939">                float yScalingFactor = FONTSCALE * fontMatrix.getScaleY();</span>
-<span class="nc" id="L940">                float xScalingFactor = FONTSCALE * fontMatrix.getScaleX();</span>
+<span class="fc" id="L938">                Matrix fontMatrix = font.getFontMatrix();</span>
+<span class="fc" id="L939">                float yScalingFactor = FONTSCALE * fontMatrix.getScaleY();</span>
+<span class="fc" id="L940">                float xScalingFactor = FONTSCALE * fontMatrix.getScaleX();</span>
                 
                 // fit width
-<span class="nc" id="L943">                float width = font.getStringWidth(value) * fontMatrix.getScaleX();</span>
-<span class="nc" id="L944">                float widthBasedFontSize = contentRect.getWidth() / width * xScalingFactor;</span>
+<span class="fc" id="L943">                float width = font.getStringWidth(value) * fontMatrix.getScaleX();</span>
+<span class="fc" id="L944">                float widthBasedFontSize = contentRect.getWidth() / width * xScalingFactor;</span>
 
                 // fit height
-<span class="nc" id="L947">                float height = (font.getFontDescriptor().getCapHeight() +</span>
-<span class="nc" id="L948">                               -font.getFontDescriptor().getDescent()) * fontMatrix.getScaleY();</span>
-<span class="nc bnc" id="L949" title="All 2 branches missed.">                if (height &lt;= 0)</span>
+<span class="fc" id="L947">                float height = (font.getFontDescriptor().getCapHeight() +</span>
+<span class="fc" id="L948">                               -font.getFontDescriptor().getDescent()) * fontMatrix.getScaleY();</span>
+<span class="pc bpc" id="L949" title="1 of 2 branches missed.">                if (height &lt;= 0)</span>
                 {
 <span class="nc" id="L951">                    height = font.getBoundingBox().getHeight() * fontMatrix.getScaleY();</span>
                 }
 
-<span class="nc" id="L954">                float heightBasedFontSize = contentRect.getHeight() / height * yScalingFactor;</span>
-<span class="nc bnc" id="L955" title="All 2 branches missed.">                if (Float.isInfinite(widthBasedFontSize))</span>
+<span class="fc" id="L954">                float heightBasedFontSize = contentRect.getHeight() / height * yScalingFactor;</span>
+<span class="fc bfc" id="L955" title="All 2 branches covered.">                if (Float.isInfinite(widthBasedFontSize))</span>
                 {
                     // PDFBOX-5763: avoids -Infinity if empty value and tiny rectangle
-<span class="nc" id="L958">                    return heightBasedFontSize;</span>
+<span class="fc" id="L958">                    return heightBasedFontSize;</span>
                 }
                 
-<span class="nc" id="L961">                return Math.min(heightBasedFontSize, widthBasedFontSize);</span>
+<span class="fc" id="L961">                return Math.min(heightBasedFontSize, widthBasedFontSize);</span>
             }
         }
 <span class="nc" id="L964">        return fontSize;</span>
@@ -970,7 +970,7 @@ class AppearanceGeneratorHelper
      * This is a very basic implementation using the height of &quot;H&quot; as reference.
      */
     private float resolveCapHeight(PDFont font) throws IOException {
-<span class="nc" id="L973">        return resolveGlyphHeight(font, &quot;H&quot;.codePointAt(0));</span>
+<span class="fc" id="L973">        return resolveGlyphHeight(font, &quot;H&quot;.codePointAt(0));</span>
     }
 
     /*
@@ -979,13 +979,13 @@ class AppearanceGeneratorHelper
      * This is a very basic implementation using the height of &quot;y&quot; - &quot;a&quot; as reference.
      */
     private float resolveDescent(PDFont font) throws IOException {
-<span class="nc" id="L982">        return resolveGlyphHeight(font, &quot;y&quot;.codePointAt(0)) - resolveGlyphHeight(font, &quot;a&quot;.codePointAt(0));</span>
+<span class="fc" id="L982">        return resolveGlyphHeight(font, &quot;y&quot;.codePointAt(0)) - resolveGlyphHeight(font, &quot;a&quot;.codePointAt(0));</span>
     }
 
     // this calculates the real (except for type 3 fonts) individual glyph bounds
     private float resolveGlyphHeight(PDFont font, int code) throws IOException {
-<span class="nc" id="L987">        GeneralPath path = null;</span>
-<span class="nc bnc" id="L988" title="All 2 branches missed.">        if (font instanceof PDType3Font) {</span>
+<span class="fc" id="L987">        GeneralPath path = null;</span>
+<span class="pc bpc" id="L988" title="1 of 2 branches missed.">        if (font instanceof PDType3Font) {</span>
             // It is difficult to calculate the real individual glyph bounds for type 3
             // fonts
             // because these are not vector fonts, the content stream could contain almost
@@ -1005,10 +1005,10 @@ class AppearanceGeneratorHelper
 <span class="nc" id="L1005">                    path = glyphBBox.toGeneralPath();</span>
                 }
             }
-<span class="nc bnc" id="L1008" title="All 2 branches missed.">        } else if (font instanceof PDVectorFont) {</span>
-<span class="nc" id="L1009">            PDVectorFont vectorFont = (PDVectorFont) font;</span>
-<span class="nc" id="L1010">            path = vectorFont.getPath(code);</span>
-<span class="nc bnc" id="L1011" title="All 2 branches missed.">        } else if (font instanceof PDSimpleFont) {</span>
+<span class="pc bpc" id="L1008" title="1 of 2 branches missed.">        } else if (font instanceof PDVectorFont) {</span>
+<span class="fc" id="L1009">            PDVectorFont vectorFont = (PDVectorFont) font;</span>
+<span class="fc" id="L1010">            path = vectorFont.getPath(code);</span>
+<span class="pc bnc" id="L1011" title="All 2 branches missed.">        } else if (font instanceof PDSimpleFont) {</span>
 <span class="nc" id="L1012">            PDSimpleFont simpleFont = (PDSimpleFont) font;</span>
 
             // these two lines do not always work, e.g. for the TT fonts in file 032431.pdf
@@ -1019,10 +1019,10 @@ class AppearanceGeneratorHelper
             // shouldn't happen, please open issue in JIRA
 <span class="nc" id="L1020">            LOG.warn(&quot;Unknown font class: {}&quot;, font.getClass());</span>
         }
-<span class="nc bnc" id="L1022" title="All 2 branches missed.">        if (path == null) {</span>
+<span class="pc bpc" id="L1022" title="1 of 2 branches missed.">        if (path == null) {</span>
 <span class="nc" id="L1023">            return -1;</span>
         }
-<span class="nc" id="L1025">        return (float) path.getBounds2D().getHeight();</span>
+<span class="fc" id="L1025">        return (float) path.getBounds2D().getHeight();</span>
     }
     
     /**
@@ -1035,12 +1035,12 @@ class AppearanceGeneratorHelper
     private PDRectangle resolveBoundingBox(PDAnnotationWidget fieldWidget,
                                            PDAppearanceStream appearanceStream)
     {
-<span class="nc" id="L1038">        PDRectangle boundingBox = appearanceStream.getBBox();</span>
-<span class="nc bnc" id="L1039" title="All 2 branches missed.">        if (boundingBox == null)</span>
+<span class="fc" id="L1038">        PDRectangle boundingBox = appearanceStream.getBBox();</span>
+<span class="pc bpc" id="L1039" title="1 of 2 branches missed.">        if (boundingBox == null)</span>
         {
 <span class="nc" id="L1041">            boundingBox = fieldWidget.getRectangle().createRetranslatedRectangle();</span>
         }
-<span class="nc" id="L1043">        return boundingBox;</span>
+<span class="fc" id="L1043">        return boundingBox;</span>
     }
     
     /**
@@ -1051,10 +1051,10 @@ class AppearanceGeneratorHelper
      */
     private PDRectangle applyPadding(PDRectangle box, float padding)
     {
-<span class="nc" id="L1054">        return new PDRectangle(box.getLowerLeftX() + padding, </span>
-<span class="nc" id="L1055">                               box.getLowerLeftY() + padding, </span>
-<span class="nc" id="L1056">                               box.getWidth() - 2 * padding,</span>
-<span class="nc" id="L1057">                               box.getHeight() - 2 * padding);</span>
+<span class="fc" id="L1054">        return new PDRectangle(box.getLowerLeftX() + padding, </span>
+<span class="fc" id="L1055">                               box.getLowerLeftY() + padding, </span>
+<span class="fc" id="L1056">                               box.getWidth() - 2 * padding,</span>
+<span class="fc" id="L1057">                               box.getHeight() - 2 * padding);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

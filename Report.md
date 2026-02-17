@@ -413,35 +413,3 @@ behavior alone, but it becomes clear when we look at CFG
 branches and coverage results.
 
 ### 5.2 Baseline Structural Coverage
-
-We measured structural coverage of the current PDFBox test suite using JaCoCo,
-a coverage tool that instruments the program and records which statements and
-branches are executed during test runs.
-
-**Overall coverage**
-
-From the Baseline JaCoCo report (<>), the baseline coverage of
-the existing test suite is very low:
-
-- Line coverage: 4% (missed 36,763 of 39,064 executable lines).
-- Branch coverage: 3% (missed 15,751 of 16,363 branches).
-- Method coverage (additional measure): missed 6,700 of 7,058 methods.
-- Class coverage (additional measure): missed 654 of 697 classes.
-
-These results indicate that only a small portion of the implementation is exercised by the current tests.
-
-**Coverage distribution across packages**
-
-Some of the packages show non-trivial coverage, while many packages remain completely uncovered:
-
-- `org.apache.pdfbox.pdfwriter`: 48% line coverage and 40% branch coverage.
-- `org.apache.pdfbox.cos`: 45% line coverage and 20% branch coverage.
-- `org.apache.pdfbox.pdfparser`: 30% line coverage and 20% branch coverage.
-- `org.apache.pdfbox.pdmodel`: 5% line coverage and 2% branch coverage.
-
-### 5.3 Structural Testing on pdfparser
-
-We choose `org.apache.pdfbox.pdfparser`(<>) as the target feature for coverage improvement
-because it represents core PDF parsing behavior and contains many control-flow branches.
-Its current coverage is moderate (30% line, 20% branch), so adding focused tests can
-meaningfully exercise currently missed branches and increase overall coverage.

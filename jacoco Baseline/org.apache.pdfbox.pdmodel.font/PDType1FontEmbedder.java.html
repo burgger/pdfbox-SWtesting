@@ -55,52 +55,52 @@ class PDType1FontEmbedder
      */
     PDType1FontEmbedder(PDDocument doc, COSDictionary dict, InputStream pfbStream,
                         Encoding encoding) throws IOException
-<span class="nc" id="L58">    {</span>
-<span class="nc" id="L59">        dict.setItem(COSName.SUBTYPE, COSName.TYPE1);</span>
+<span class="fc" id="L58">    {</span>
+<span class="fc" id="L59">        dict.setItem(COSName.SUBTYPE, COSName.TYPE1);</span>
 
         // read the pfb
-<span class="nc" id="L62">        byte[] pfbBytes = pfbStream.readAllBytes();</span>
-<span class="nc" id="L63">        PfbParser pfbParser = new PfbParser(pfbBytes);</span>
-<span class="nc" id="L64">        type1 = Type1Font.createWithPFB(pfbBytes);</span>
+<span class="fc" id="L62">        byte[] pfbBytes = pfbStream.readAllBytes();</span>
+<span class="fc" id="L63">        PfbParser pfbParser = new PfbParser(pfbBytes);</span>
+<span class="fc" id="L64">        type1 = Type1Font.createWithPFB(pfbBytes);</span>
         
-<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (encoding == null)</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (encoding == null)</span>
         {
 <span class="nc" id="L68">            fontEncoding = Type1Encoding.fromFontBox(type1.getEncoding());</span>
         }
         else
         {
-<span class="nc" id="L72">            fontEncoding = encoding;</span>
+<span class="fc" id="L72">            fontEncoding = encoding;</span>
         }
 
         // build font descriptor
-<span class="nc" id="L76">        PDFontDescriptor fd = buildFontDescriptor(type1);</span>
+<span class="fc" id="L76">        PDFontDescriptor fd = buildFontDescriptor(type1);</span>
 
-<span class="nc" id="L78">        PDStream fontStream = new PDStream(doc, pfbParser.getInputStream(), COSName.FLATE_DECODE);</span>
-<span class="nc" id="L79">        fontStream.getCOSObject().setInt(&quot;Length&quot;, pfbParser.size());</span>
-<span class="nc bnc" id="L80" title="All 2 branches missed.">        for (int i = 0; i &lt; pfbParser.getLengths().length; i++)</span>
+<span class="fc" id="L78">        PDStream fontStream = new PDStream(doc, pfbParser.getInputStream(), COSName.FLATE_DECODE);</span>
+<span class="fc" id="L79">        fontStream.getCOSObject().setInt(&quot;Length&quot;, pfbParser.size());</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (int i = 0; i &lt; pfbParser.getLengths().length; i++)</span>
         {
-<span class="nc" id="L82">            fontStream.getCOSObject().setInt(&quot;Length&quot; + (i + 1), pfbParser.getLengths()[i]);</span>
+<span class="fc" id="L82">            fontStream.getCOSObject().setInt(&quot;Length&quot; + (i + 1), pfbParser.getLengths()[i]);</span>
         }
-<span class="nc" id="L84">        fd.setFontFile(fontStream);</span>
+<span class="fc" id="L84">        fd.setFontFile(fontStream);</span>
 
         // set the values
-<span class="nc" id="L87">        dict.setItem(COSName.FONT_DESC, fd);</span>
-<span class="nc" id="L88">        dict.setName(COSName.BASE_FONT, type1.getName());</span>
+<span class="fc" id="L87">        dict.setItem(COSName.FONT_DESC, fd);</span>
+<span class="fc" id="L88">        dict.setName(COSName.BASE_FONT, type1.getName());</span>
 
         // widths
-<span class="nc" id="L91">        List&lt;Integer&gt; widths = new ArrayList&lt;&gt;(256);</span>
-<span class="nc bnc" id="L92" title="All 2 branches missed.">        for (int code = 0; code &lt;= 255; code++)</span>
+<span class="fc" id="L91">        List&lt;Integer&gt; widths = new ArrayList&lt;&gt;(256);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        for (int code = 0; code &lt;= 255; code++)</span>
         {
-<span class="nc" id="L94">            String name = fontEncoding.getName(code);</span>
-<span class="nc" id="L95">            int width = Math.round(type1.getWidth(name));</span>
-<span class="nc" id="L96">            widths.add(width);</span>
+<span class="fc" id="L94">            String name = fontEncoding.getName(code);</span>
+<span class="fc" id="L95">            int width = Math.round(type1.getWidth(name));</span>
+<span class="fc" id="L96">            widths.add(width);</span>
         }
         
-<span class="nc" id="L99">        dict.setInt(COSName.FIRST_CHAR, 0);</span>
-<span class="nc" id="L100">        dict.setInt(COSName.LAST_CHAR, 255);</span>
-<span class="nc" id="L101">        dict.setItem(COSName.WIDTHS, COSArray.ofCOSIntegers(widths));</span>
-<span class="nc" id="L102">        dict.setItem(COSName.ENCODING, encoding);</span>
-<span class="nc" id="L103">    }</span>
+<span class="fc" id="L99">        dict.setInt(COSName.FIRST_CHAR, 0);</span>
+<span class="fc" id="L100">        dict.setInt(COSName.LAST_CHAR, 255);</span>
+<span class="fc" id="L101">        dict.setItem(COSName.WIDTHS, COSArray.ofCOSIntegers(widths));</span>
+<span class="fc" id="L102">        dict.setItem(COSName.ENCODING, encoding);</span>
+<span class="fc" id="L103">    }</span>
 
     /**
      * Returns a PDFontDescriptor for the given PFB.
@@ -109,21 +109,21 @@ class PDType1FontEmbedder
      */
     static PDFontDescriptor buildFontDescriptor(Type1Font type1) throws IOException
     {
-<span class="nc" id="L112">        boolean isSymbolic = type1.getEncoding() instanceof BuiltInEncoding;</span>
-<span class="nc" id="L113">        BoundingBox bbox = type1.getFontBBox();</span>
-<span class="nc" id="L114">        PDFontDescriptor fd = new PDFontDescriptor();</span>
+<span class="fc" id="L112">        boolean isSymbolic = type1.getEncoding() instanceof BuiltInEncoding;</span>
+<span class="fc" id="L113">        BoundingBox bbox = type1.getFontBBox();</span>
+<span class="fc" id="L114">        PDFontDescriptor fd = new PDFontDescriptor();</span>
 
-<span class="nc" id="L116">        fd.setFontName(type1.getName());</span>
-<span class="nc" id="L117">        fd.setFontFamily(type1.getFamilyName());</span>
-<span class="nc bnc" id="L118" title="All 2 branches missed.">        fd.setNonSymbolic(!isSymbolic);</span>
-<span class="nc" id="L119">        fd.setSymbolic(isSymbolic);</span>
-<span class="nc" id="L120">        fd.setFontBoundingBox(new PDRectangle(bbox));</span>
-<span class="nc" id="L121">        fd.setItalicAngle(type1.getItalicAngle());</span>
-<span class="nc" id="L122">        fd.setAscent(bbox.getUpperRightY());</span>
-<span class="nc" id="L123">        fd.setDescent(bbox.getLowerLeftY());</span>
-<span class="nc" id="L124">        fd.setCapHeight(type1.getBlueValues().get(2).floatValue());</span>
-<span class="nc" id="L125">        fd.setStemV(0); // for PDF/A</span>
-<span class="nc" id="L126">        return fd;</span>
+<span class="fc" id="L116">        fd.setFontName(type1.getName());</span>
+<span class="fc" id="L117">        fd.setFontFamily(type1.getFamilyName());</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">        fd.setNonSymbolic(!isSymbolic);</span>
+<span class="fc" id="L119">        fd.setSymbolic(isSymbolic);</span>
+<span class="fc" id="L120">        fd.setFontBoundingBox(new PDRectangle(bbox));</span>
+<span class="fc" id="L121">        fd.setItalicAngle(type1.getItalicAngle());</span>
+<span class="fc" id="L122">        fd.setAscent(bbox.getUpperRightY());</span>
+<span class="fc" id="L123">        fd.setDescent(bbox.getLowerLeftY());</span>
+<span class="fc" id="L124">        fd.setCapHeight(type1.getBlueValues().get(2).floatValue());</span>
+<span class="fc" id="L125">        fd.setStemV(0); // for PDF/A</span>
+<span class="fc" id="L126">        return fd;</span>
     }
 
     /**
@@ -133,23 +133,23 @@ class PDType1FontEmbedder
      */
     static PDFontDescriptor buildFontDescriptor(FontMetrics metrics)
     {
-<span class="nc" id="L136">        boolean isSymbolic = metrics.getEncodingScheme().equals(&quot;FontSpecific&quot;);</span>
+<span class="fc" id="L136">        boolean isSymbolic = metrics.getEncodingScheme().equals(&quot;FontSpecific&quot;);</span>
 
-<span class="nc" id="L138">        PDFontDescriptor fd = new PDFontDescriptor();</span>
-<span class="nc" id="L139">        fd.setFontName(metrics.getFontName());</span>
-<span class="nc" id="L140">        fd.setFontFamily(metrics.getFamilyName());</span>
-<span class="nc bnc" id="L141" title="All 2 branches missed.">        fd.setNonSymbolic(!isSymbolic);</span>
-<span class="nc" id="L142">        fd.setSymbolic(isSymbolic);</span>
-<span class="nc" id="L143">        fd.setFontBoundingBox(new PDRectangle(metrics.getFontBBox()));</span>
-<span class="nc" id="L144">        fd.setItalicAngle(metrics.getItalicAngle());</span>
-<span class="nc" id="L145">        fd.setAscent(metrics.getAscender());</span>
-<span class="nc" id="L146">        fd.setDescent(metrics.getDescender());</span>
-<span class="nc" id="L147">        fd.setCapHeight(metrics.getCapHeight());</span>
-<span class="nc" id="L148">        fd.setXHeight(metrics.getXHeight());</span>
-<span class="nc" id="L149">        fd.setAverageWidth(metrics.getAverageCharacterWidth());</span>
-<span class="nc" id="L150">        fd.setCharacterSet(metrics.getCharacterSet());</span>
-<span class="nc" id="L151">        fd.setStemV(0); // for PDF/A</span>
-<span class="nc" id="L152">        return fd;</span>
+<span class="fc" id="L138">        PDFontDescriptor fd = new PDFontDescriptor();</span>
+<span class="fc" id="L139">        fd.setFontName(metrics.getFontName());</span>
+<span class="fc" id="L140">        fd.setFontFamily(metrics.getFamilyName());</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">        fd.setNonSymbolic(!isSymbolic);</span>
+<span class="fc" id="L142">        fd.setSymbolic(isSymbolic);</span>
+<span class="fc" id="L143">        fd.setFontBoundingBox(new PDRectangle(metrics.getFontBBox()));</span>
+<span class="fc" id="L144">        fd.setItalicAngle(metrics.getItalicAngle());</span>
+<span class="fc" id="L145">        fd.setAscent(metrics.getAscender());</span>
+<span class="fc" id="L146">        fd.setDescent(metrics.getDescender());</span>
+<span class="fc" id="L147">        fd.setCapHeight(metrics.getCapHeight());</span>
+<span class="fc" id="L148">        fd.setXHeight(metrics.getXHeight());</span>
+<span class="fc" id="L149">        fd.setAverageWidth(metrics.getAverageCharacterWidth());</span>
+<span class="fc" id="L150">        fd.setCharacterSet(metrics.getCharacterSet());</span>
+<span class="fc" id="L151">        fd.setStemV(0); // for PDF/A</span>
+<span class="fc" id="L152">        return fd;</span>
     }
     
     /**
@@ -165,7 +165,7 @@ class PDType1FontEmbedder
      */
     public GlyphList getGlyphList()
     {
-<span class="nc" id="L168">        return GlyphList.getAdobeGlyphList();</span>
+<span class="fc" id="L168">        return GlyphList.getAdobeGlyphList();</span>
     }
 
     /**
@@ -173,7 +173,7 @@ class PDType1FontEmbedder
      */
     public Type1Font getType1Font()
     {
-<span class="nc" id="L176">        return type1;</span>
+<span class="fc" id="L176">        return type1;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

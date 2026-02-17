@@ -34,23 +34,23 @@ import java.util.Map;
 public final class SecurityHandlerFactory
 {
     /** Singleton instance */
-<span class="nc" id="L37">    public static final SecurityHandlerFactory INSTANCE = new SecurityHandlerFactory();</span>
+<span class="fc" id="L37">    public static final SecurityHandlerFactory INSTANCE = new SecurityHandlerFactory();</span>
 
-<span class="nc" id="L39">    private final Map&lt;String, Class&lt;? extends SecurityHandler&gt;&gt; nameToHandler = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L39">    private final Map&lt;String, Class&lt;? extends SecurityHandler&gt;&gt; nameToHandler = new HashMap&lt;&gt;();</span>
 
-<span class="nc" id="L41">    private final Map&lt;Class&lt;? extends ProtectionPolicy&gt;,</span>
+<span class="fc" id="L41">    private final Map&lt;Class&lt;? extends ProtectionPolicy&gt;,</span>
                       Class&lt;? extends SecurityHandler&gt;&gt; policyToHandler = new HashMap&lt;&gt;();
 
     private SecurityHandlerFactory()
-<span class="nc" id="L45">    {</span>
-<span class="nc" id="L46">        registerHandler(StandardSecurityHandler.FILTER,</span>
+<span class="fc" id="L45">    {</span>
+<span class="fc" id="L46">        registerHandler(StandardSecurityHandler.FILTER,</span>
                         StandardSecurityHandler.class,
                         StandardProtectionPolicy.class);
 
-<span class="nc" id="L50">        registerHandler(PublicKeySecurityHandler.FILTER,</span>
+<span class="fc" id="L50">        registerHandler(PublicKeySecurityHandler.FILTER,</span>
                         PublicKeySecurityHandler.class,
                         PublicKeyProtectionPolicy.class);
-<span class="nc" id="L53">    }</span>
+<span class="fc" id="L53">    }</span>
 
     /**
      * Registers a security handler.
@@ -67,14 +67,14 @@ public final class SecurityHandlerFactory
                                 Class&lt;? extends SecurityHandler&gt; securityHandler,
                                 Class&lt;? extends ProtectionPolicy&gt; protectionPolicy)
     {
-<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (nameToHandler.containsKey(name))</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (nameToHandler.containsKey(name))</span>
         {
 <span class="nc" id="L72">            throw new IllegalStateException(&quot;The security handler name is already registered&quot;);</span>
         }
 
-<span class="nc" id="L75">        nameToHandler.put(name, securityHandler);</span>
-<span class="nc" id="L76">        policyToHandler.put(protectionPolicy, securityHandler);</span>
-<span class="nc" id="L77">    }</span>
+<span class="fc" id="L75">        nameToHandler.put(name, securityHandler);</span>
+<span class="fc" id="L76">        policyToHandler.put(protectionPolicy, securityHandler);</span>
+<span class="fc" id="L77">    }</span>
 
     /**
      * Returns a new security handler for the given protection policy, or null none is available.
@@ -83,15 +83,15 @@ public final class SecurityHandlerFactory
      */
     public SecurityHandler&lt;ProtectionPolicy&gt; newSecurityHandlerForPolicy(ProtectionPolicy policy)
     {
-<span class="nc" id="L86">        Class&lt;? extends SecurityHandler&gt; handlerClass = policyToHandler.get(policy.getClass());</span>
-<span class="nc bnc" id="L87" title="All 2 branches missed.">        if (handlerClass == null)</span>
+<span class="fc" id="L86">        Class&lt;? extends SecurityHandler&gt; handlerClass = policyToHandler.get(policy.getClass());</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        if (handlerClass == null)</span>
         {
 <span class="nc" id="L89">            return null;</span>
         }
 
-<span class="nc" id="L92">        Class&lt;?&gt;[] argsClasses = { policy.getClass() };</span>
-<span class="nc" id="L93">        Object[] args = { policy };</span>
-<span class="nc" id="L94">        return newSecurityHandler(handlerClass, argsClasses, args);</span>
+<span class="fc" id="L92">        Class&lt;?&gt;[] argsClasses = { policy.getClass() };</span>
+<span class="fc" id="L93">        Object[] args = { policy };</span>
+<span class="fc" id="L94">        return newSecurityHandler(handlerClass, argsClasses, args);</span>
     }
 
     /**
@@ -101,15 +101,15 @@ public final class SecurityHandlerFactory
      */
     public SecurityHandler&lt;ProtectionPolicy&gt; newSecurityHandlerForFilter(String name)
     {
-<span class="nc" id="L104">        Class&lt;? extends SecurityHandler&gt; handlerClass = nameToHandler.get(name);</span>
-<span class="nc bnc" id="L105" title="All 2 branches missed.">        if (handlerClass == null)</span>
+<span class="fc" id="L104">        Class&lt;? extends SecurityHandler&gt; handlerClass = nameToHandler.get(name);</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        if (handlerClass == null)</span>
         {
 <span class="nc" id="L107">            return null;</span>
         }
 
-<span class="nc" id="L110">        Class&lt;?&gt;[] argsClasses = { };</span>
-<span class="nc" id="L111">        Object[] args = { };</span>
-<span class="nc" id="L112">        return newSecurityHandler(handlerClass, argsClasses, args);</span>
+<span class="fc" id="L110">        Class&lt;?&gt;[] argsClasses = { };</span>
+<span class="fc" id="L111">        Object[] args = { };</span>
+<span class="fc" id="L112">        return newSecurityHandler(handlerClass, argsClasses, args);</span>
     }
 
     /* Returns a new security handler for the given parameters, or null none is available.
@@ -124,9 +124,9 @@ public final class SecurityHandlerFactory
     {
         try
         {
-<span class="nc" id="L127">            Constructor&lt;? extends SecurityHandler&gt; ctor =</span>
-<span class="nc" id="L128">                    handlerClass.getDeclaredConstructor(argsClasses);</span>
-<span class="nc" id="L129">            return ctor.newInstance(args);</span>
+<span class="fc" id="L127">            Constructor&lt;? extends SecurityHandler&gt; ctor =</span>
+<span class="fc" id="L128">                    handlerClass.getDeclaredConstructor(argsClasses);</span>
+<span class="fc" id="L129">            return ctor.newInstance(args);</span>
         }
 <span class="nc" id="L131">        catch(NoSuchMethodException | IllegalAccessException | InstantiationException |</span>
                 InvocationTargetException e)

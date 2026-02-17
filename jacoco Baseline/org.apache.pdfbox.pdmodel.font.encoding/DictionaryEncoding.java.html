@@ -33,11 +33,11 @@ import org.apache.pdfbox.cos.COSNumber;
  */
 public class DictionaryEncoding extends Encoding
 {
-<span class="nc" id="L36">    private static final Logger LOG = LogManager.getLogger(DictionaryEncoding.class);</span>
+<span class="fc" id="L36">    private static final Logger LOG = LogManager.getLogger(DictionaryEncoding.class);</span>
 
     private final COSDictionary encoding;
     private final Encoding baseEncoding;
-<span class="nc" id="L40">    private final Map&lt;Integer, String&gt; differences = new HashMap&lt;&gt;();</span>
+<span class="pc" id="L40">    private final Map&lt;Integer, String&gt; differences = new HashMap&lt;&gt;();</span>
 
     /**
      * Creates a new DictionaryEncoding for embedding.
@@ -76,10 +76,10 @@ public class DictionaryEncoding extends Encoding
      * @param fontEncoding The Type 3 encoding dictionary.
      */
     public DictionaryEncoding(COSDictionary fontEncoding)
-<span class="nc" id="L79">    {</span>
-<span class="nc" id="L80">        encoding = fontEncoding;</span>
-<span class="nc" id="L81">        COSName name = encoding.getCOSName(COSName.BASE_ENCODING);</span>
-<span class="nc bnc" id="L82" title="All 2 branches missed.">        if (name != null)</span>
+<span class="fc" id="L79">    {</span>
+<span class="fc" id="L80">        encoding = fontEncoding;</span>
+<span class="fc" id="L81">        COSName name = encoding.getCOSName(COSName.BASE_ENCODING);</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        if (name != null)</span>
         {
 <span class="nc" id="L84">            baseEncoding = Encoding.getInstance(name); // null when the name is invalid</span>
 <span class="nc bnc" id="L85" title="All 2 branches missed.">            if (baseEncoding != null)</span>
@@ -94,10 +94,10 @@ public class DictionaryEncoding extends Encoding
         }
         else
         {
-<span class="nc" id="L97">            baseEncoding = null;</span>
+<span class="fc" id="L97">            baseEncoding = null;</span>
         }
-<span class="nc" id="L99">        applyDifferences();</span>
-<span class="nc" id="L100">    }</span>
+<span class="fc" id="L99">        applyDifferences();</span>
+<span class="fc" id="L100">    }</span>
     
     /**
      * Creates a new DictionaryEncoding from a PDF.
@@ -107,30 +107,30 @@ public class DictionaryEncoding extends Encoding
      * @param builtIn The font's built-in encoding. Null for Type 3 fonts.
      */
     public DictionaryEncoding(COSDictionary fontEncoding, boolean isNonSymbolic, Encoding builtIn)
-<span class="nc" id="L110">    {</span>
-<span class="nc" id="L111">        encoding = fontEncoding;</span>
+<span class="fc" id="L110">    {</span>
+<span class="fc" id="L111">        encoding = fontEncoding;</span>
 
-<span class="nc" id="L113">        Encoding base = null;</span>
-<span class="nc" id="L114">        boolean hasBaseEncoding = encoding.containsKey(COSName.BASE_ENCODING);</span>
-<span class="nc bnc" id="L115" title="All 2 branches missed.">        if (hasBaseEncoding)</span>
+<span class="fc" id="L113">        Encoding base = null;</span>
+<span class="fc" id="L114">        boolean hasBaseEncoding = encoding.containsKey(COSName.BASE_ENCODING);</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (hasBaseEncoding)</span>
         {
-<span class="nc" id="L117">            COSName name = encoding.getCOSName(COSName.BASE_ENCODING);</span>
-<span class="nc" id="L118">            base = Encoding.getInstance(name); // null when the name is invalid</span>
+<span class="fc" id="L117">            COSName name = encoding.getCOSName(COSName.BASE_ENCODING);</span>
+<span class="fc" id="L118">            base = Encoding.getInstance(name); // null when the name is invalid</span>
         }
 
-<span class="nc bnc" id="L121" title="All 2 branches missed.">        if (base == null)</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        if (base == null)</span>
         {
-<span class="nc bnc" id="L123" title="All 2 branches missed.">            if (isNonSymbolic)</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            if (isNonSymbolic)</span>
             {
                 // Otherwise, for a nonsymbolic font, it is StandardEncoding
-<span class="nc" id="L126">                base = StandardEncoding.INSTANCE;</span>
+<span class="fc" id="L126">                base = StandardEncoding.INSTANCE;</span>
             }
             else
             {
                 // and for a symbolic font, it is the font's built-in encoding.
-<span class="nc bnc" id="L131" title="All 2 branches missed.">                if (builtIn != null)</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">                if (builtIn != null)</span>
                 {
-<span class="nc" id="L133">                    base = builtIn;</span>
+<span class="fc" id="L133">                    base = builtIn;</span>
                 }
                 else
                 {
@@ -141,38 +141,38 @@ public class DictionaryEncoding extends Encoding
                 }
             }
         }
-<span class="nc" id="L144">        baseEncoding = base;</span>
+<span class="fc" id="L144">        baseEncoding = base;</span>
 
-<span class="nc" id="L146">        codeToName.putAll(baseEncoding.codeToName);</span>
-<span class="nc" id="L147">        inverted.putAll(baseEncoding.inverted);</span>
-<span class="nc" id="L148">        applyDifferences();</span>
-<span class="nc" id="L149">    }</span>
+<span class="fc" id="L146">        codeToName.putAll(baseEncoding.codeToName);</span>
+<span class="fc" id="L147">        inverted.putAll(baseEncoding.inverted);</span>
+<span class="fc" id="L148">        applyDifferences();</span>
+<span class="fc" id="L149">    }</span>
 
     private void applyDifferences()
     {
         // now replace with the differences
-<span class="nc" id="L154">        COSArray diffArray = encoding.getCOSArray(COSName.DIFFERENCES);</span>
-<span class="nc bnc" id="L155" title="All 2 branches missed.">        if (diffArray == null)</span>
+<span class="fc" id="L154">        COSArray diffArray = encoding.getCOSArray(COSName.DIFFERENCES);</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">        if (diffArray == null)</span>
         {
 <span class="nc" id="L157">            return;</span>
         }
-<span class="nc" id="L159">        int currentIndex = -1;</span>
-<span class="nc bnc" id="L160" title="All 2 branches missed.">        for (int i = 0; i &lt; diffArray.size(); i++)</span>
+<span class="fc" id="L159">        int currentIndex = -1;</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        for (int i = 0; i &lt; diffArray.size(); i++)</span>
         {
-<span class="nc" id="L162">            COSBase next = diffArray.getObject(i);</span>
-<span class="nc bnc" id="L163" title="All 2 branches missed.">            if( next instanceof COSNumber)</span>
+<span class="fc" id="L162">            COSBase next = diffArray.getObject(i);</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">            if( next instanceof COSNumber)</span>
             {
-<span class="nc" id="L165">                currentIndex = ((COSNumber)next).intValue();</span>
+<span class="fc" id="L165">                currentIndex = ((COSNumber)next).intValue();</span>
             }
-<span class="nc bnc" id="L167" title="All 2 branches missed.">            else if( next instanceof COSName )</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">            else if( next instanceof COSName )</span>
             {
-<span class="nc" id="L169">                COSName name = (COSName)next;</span>
-<span class="nc" id="L170">                overwrite(currentIndex, name.getName());</span>
-<span class="nc" id="L171">                this.differences.put(currentIndex, name.getName());</span>
-<span class="nc" id="L172">                currentIndex++;</span>
+<span class="fc" id="L169">                COSName name = (COSName)next;</span>
+<span class="fc" id="L170">                overwrite(currentIndex, name.getName());</span>
+<span class="fc" id="L171">                this.differences.put(currentIndex, name.getName());</span>
+<span class="fc" id="L172">                currentIndex++;</span>
             }
         }
-<span class="nc" id="L175">    }</span>
+<span class="fc" id="L175">    }</span>
 
     /**
      * Returns the base encoding. Will be null for Type 3 fonts.
@@ -181,7 +181,7 @@ public class DictionaryEncoding extends Encoding
      */
     public Encoding getBaseEncoding()
     {
-<span class="nc" id="L184">        return baseEncoding;</span>
+<span class="fc" id="L184">        return baseEncoding;</span>
     }
 
     /**
@@ -191,7 +191,7 @@ public class DictionaryEncoding extends Encoding
      */
     public Map&lt;Integer, String&gt; getDifferences()
     {
-<span class="nc" id="L194">        return differences;</span>
+<span class="fc" id="L194">        return differences;</span>
     }
 
     @Override
@@ -203,12 +203,12 @@ public class DictionaryEncoding extends Encoding
     @Override
     public String getEncodingName()
     {
-<span class="nc bnc" id="L206" title="All 2 branches missed.">        if (baseEncoding == null)</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">        if (baseEncoding == null)</span>
         {
             // In type 3 the /Differences array shall specify the complete character encoding
 <span class="nc" id="L209">            return &quot;differences&quot;;</span>
         }
-<span class="nc" id="L211">        return baseEncoding.getEncodingName() + &quot; with differences&quot;;</span>
+<span class="fc" id="L211">        return baseEncoding.getEncodingName() + &quot; with differences&quot;;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

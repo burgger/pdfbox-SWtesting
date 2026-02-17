@@ -47,7 +47,7 @@ class SaslPrep
      */
     static String saslPrepQuery(String str)
     {
-<span class="nc" id="L50">        return saslPrep(str, true);</span>
+<span class="fc" id="L50">        return saslPrep(str, true);</span>
     }
 
     /**
@@ -65,76 +65,76 @@ class SaslPrep
      */
     static String saslPrepStored(String str)
     {
-<span class="nc" id="L68">        return saslPrep(str, false);</span>
+<span class="fc" id="L68">        return saslPrep(str, false);</span>
     }
 
     private static String saslPrep(String str, boolean allowUnassigned)
     {
-<span class="nc" id="L73">        char[] chars = str.toCharArray();</span>
+<span class="fc" id="L73">        char[] chars = str.toCharArray();</span>
 
         // 1. Map
         // non-ASCII space chars mapped to space
-<span class="nc bnc" id="L77" title="All 2 branches missed.">        for (int i = 0; i &lt; str.length(); i++)</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        for (int i = 0; i &lt; str.length(); i++)</span>
         {
-<span class="nc" id="L79">            char ch = str.charAt(i);</span>
-<span class="nc bnc" id="L80" title="All 2 branches missed.">            if (nonAsciiSpace(ch))</span>
+<span class="fc" id="L79">            char ch = str.charAt(i);</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">            if (nonAsciiSpace(ch))</span>
             {
 <span class="nc" id="L82">                chars[i] = ' ';</span>
             }
         }
 
-<span class="nc" id="L86">        int length = 0;</span>
-<span class="nc bnc" id="L87" title="All 2 branches missed.">        for (int i = 0; i &lt; str.length(); i++)</span>
+<span class="fc" id="L86">        int length = 0;</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        for (int i = 0; i &lt; str.length(); i++)</span>
         {
-<span class="nc" id="L89">            char ch = chars[i];</span>
-<span class="nc bnc" id="L90" title="All 2 branches missed.">            if (!mappedToNothing(ch))</span>
+<span class="fc" id="L89">            char ch = chars[i];</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">            if (!mappedToNothing(ch))</span>
             {
-<span class="nc" id="L92">                chars[length++] = ch;</span>
+<span class="fc" id="L92">                chars[length++] = ch;</span>
             }
         }
 
         // 2. Normalize
-<span class="nc" id="L97">        String normalized = Normalizer.normalize(CharBuffer.wrap(chars, 0, length), Normalizer.Form.NFKC);</span>
+<span class="fc" id="L97">        String normalized = Normalizer.normalize(CharBuffer.wrap(chars, 0, length), Normalizer.Form.NFKC);</span>
 
-<span class="nc" id="L99">        boolean containsRandALCat = false;</span>
-<span class="nc" id="L100">        boolean containsLCat = false;</span>
-<span class="nc" id="L101">        boolean initialRandALCat = false;</span>
-<span class="nc" id="L102">        int i = 0;</span>
-<span class="nc bnc" id="L103" title="All 2 branches missed.">        while (i &lt; normalized.length())</span>
+<span class="fc" id="L99">        boolean containsRandALCat = false;</span>
+<span class="fc" id="L100">        boolean containsLCat = false;</span>
+<span class="fc" id="L101">        boolean initialRandALCat = false;</span>
+<span class="fc" id="L102">        int i = 0;</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        while (i &lt; normalized.length())</span>
         {
-<span class="nc" id="L105">            final int codepoint = normalized.codePointAt(i);</span>
+<span class="fc" id="L105">            final int codepoint = normalized.codePointAt(i);</span>
             // 3. Prohibit
-<span class="nc bnc" id="L107" title="All 2 branches missed.">            if (prohibited(codepoint))</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">            if (prohibited(codepoint))</span>
             {
 <span class="nc" id="L109">                throw new IllegalArgumentException(&quot;Prohibited character '&quot; +</span>
 <span class="nc" id="L110">                        Character.getName(codepoint) + &quot;' at position &quot; + i);</span>
             }
 
             // 4. Check bidi
-<span class="nc" id="L114">            final byte directionality = Character.getDirectionality(codepoint);</span>
-<span class="nc bnc" id="L115" title="All 4 branches missed.">            final boolean isRandALcat = directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT</span>
+<span class="fc" id="L114">            final byte directionality = Character.getDirectionality(codepoint);</span>
+<span class="pc bpc" id="L115" title="2 of 4 branches missed.">            final boolean isRandALcat = directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT</span>
                     || directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC;
-<span class="nc" id="L117">            containsRandALCat |= isRandALcat;</span>
-<span class="nc bnc" id="L118" title="All 2 branches missed.">            containsLCat |= directionality == Character.DIRECTIONALITY_LEFT_TO_RIGHT;</span>
+<span class="fc" id="L117">            containsRandALCat |= isRandALcat;</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">            containsLCat |= directionality == Character.DIRECTIONALITY_LEFT_TO_RIGHT;</span>
 
-<span class="nc bnc" id="L120" title="All 4 branches missed.">            initialRandALCat |= i == 0 &amp;&amp; isRandALcat;</span>
-<span class="nc bnc" id="L121" title="All 4 branches missed.">            if (!allowUnassigned &amp;&amp; !Character.isDefined(codepoint))</span>
+<span class="pc bpc" id="L120" title="1 of 4 branches missed.">            initialRandALCat |= i == 0 &amp;&amp; isRandALcat;</span>
+<span class="pc bpc" id="L121" title="1 of 4 branches missed.">            if (!allowUnassigned &amp;&amp; !Character.isDefined(codepoint))</span>
             {
 <span class="nc" id="L123">                throw new IllegalArgumentException(&quot;Character at position &quot; + i + &quot; is unassigned&quot;);</span>
             }
 
-<span class="nc" id="L126">            i += Character.charCount(codepoint);</span>
+<span class="fc" id="L126">            i += Character.charCount(codepoint);</span>
 
-<span class="nc bnc" id="L128" title="All 6 branches missed.">            if (initialRandALCat &amp;&amp; i &gt;= normalized.length() &amp;&amp; !isRandALcat)</span>
+<span class="pc bpc" id="L128" title="5 of 6 branches missed.">            if (initialRandALCat &amp;&amp; i &gt;= normalized.length() &amp;&amp; !isRandALcat)</span>
             {
 <span class="nc" id="L130">                throw new IllegalArgumentException(&quot;First character is RandALCat, but last character is not&quot;);</span>
             }
-<span class="nc" id="L132">        }</span>
-<span class="nc bnc" id="L133" title="All 4 branches missed.">        if (containsRandALCat &amp;&amp; containsLCat)</span>
+<span class="fc" id="L132">        }</span>
+<span class="pc bpc" id="L133" title="3 of 4 branches missed.">        if (containsRandALCat &amp;&amp; containsLCat)</span>
         {
 <span class="nc" id="L135">            throw new IllegalArgumentException(&quot;Contains both RandALCat characters and LCat characters&quot;);</span>
         }
-<span class="nc" id="L137">        return normalized;</span>
+<span class="fc" id="L137">        return normalized;</span>
     }
 
     /**
@@ -145,16 +145,16 @@ class SaslPrep
      */
     static boolean prohibited(int codepoint)
     {
-<span class="nc bnc" id="L148" title="All 2 branches missed.">        return nonAsciiSpace((char)codepoint)</span>
-<span class="nc bnc" id="L149" title="All 2 branches missed.">                || asciiControl((char)codepoint)</span>
-<span class="nc bnc" id="L150" title="All 2 branches missed.">                || nonAsciiControl(codepoint)</span>
-<span class="nc bnc" id="L151" title="All 2 branches missed.">                || privateUse(codepoint)</span>
-<span class="nc bnc" id="L152" title="All 2 branches missed.">                || nonCharacterCodePoint(codepoint)</span>
-<span class="nc bnc" id="L153" title="All 2 branches missed.">                || surrogateCodePoint(codepoint)</span>
-<span class="nc bnc" id="L154" title="All 2 branches missed.">                || inappropriateForPlainText(codepoint)</span>
-<span class="nc bnc" id="L155" title="All 2 branches missed.">                || inappropriateForCanonical(codepoint)</span>
-<span class="nc bnc" id="L156" title="All 2 branches missed.">                || changeDisplayProperties(codepoint)</span>
-<span class="nc bnc" id="L157" title="All 2 branches missed.">                || tagging(codepoint);</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">        return nonAsciiSpace((char)codepoint)</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">                || asciiControl((char)codepoint)</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">                || nonAsciiControl(codepoint)</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">                || privateUse(codepoint)</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">                || nonCharacterCodePoint(codepoint)</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">                || surrogateCodePoint(codepoint)</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">                || inappropriateForPlainText(codepoint)</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">                || inappropriateForCanonical(codepoint)</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">                || changeDisplayProperties(codepoint)</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">                || tagging(codepoint);</span>
     }
 
     /**
@@ -165,7 +165,7 @@ class SaslPrep
      */
     private static boolean tagging(int codepoint)
     {
-<span class="nc bnc" id="L168" title="All 6 branches missed.">        return codepoint == 0xE0001</span>
+<span class="pc bpc" id="L168" title="4 of 6 branches missed.">        return codepoint == 0xE0001</span>
                 || 0xE0020 &lt;= codepoint &amp;&amp; codepoint &lt;= 0xE007F;
     }
 
@@ -177,7 +177,7 @@ class SaslPrep
      */
     private static boolean changeDisplayProperties(int codepoint)
     {
-<span class="nc bnc" id="L180" title="All 30 branches missed.">        return codepoint == 0x0340</span>
+<span class="pc bpc" id="L180" title="15 of 30 branches missed.">        return codepoint == 0x0340</span>
                 || codepoint == 0x0341
                 || codepoint == 0x200E
                 || codepoint == 0x200F
@@ -203,7 +203,7 @@ class SaslPrep
      */
     private static boolean inappropriateForCanonical(int codepoint)
     {
-<span class="nc bnc" id="L206" title="All 4 branches missed.">        return 0x2FF0 &lt;= codepoint &amp;&amp; codepoint &lt;= 0x2FFB;</span>
+<span class="pc bpc" id="L206" title="3 of 4 branches missed.">        return 0x2FF0 &lt;= codepoint &amp;&amp; codepoint &lt;= 0x2FFB;</span>
     }
 
     /**
@@ -214,7 +214,7 @@ class SaslPrep
      */
     private static boolean inappropriateForPlainText(int codepoint)
     {
-<span class="nc bnc" id="L217" title="All 10 branches missed.">        return codepoint == 0xFFF9</span>
+<span class="pc bpc" id="L217" title="5 of 10 branches missed.">        return codepoint == 0xFFF9</span>
                 || codepoint == 0xFFFA
                 || codepoint == 0xFFFB
                 || codepoint == 0xFFFC
@@ -230,7 +230,7 @@ class SaslPrep
      */
     private static boolean surrogateCodePoint(int codepoint)
     {
-<span class="nc bnc" id="L233" title="All 4 branches missed.">        return 0xD800 &lt;= codepoint &amp;&amp; codepoint &lt;= 0xDFFF;</span>
+<span class="pc bpc" id="L233" title="3 of 4 branches missed.">        return 0xD800 &lt;= codepoint &amp;&amp; codepoint &lt;= 0xDFFF;</span>
     }
 
     /**
@@ -241,7 +241,7 @@ class SaslPrep
      */
     private static boolean nonCharacterCodePoint(int codepoint)
     {
-<span class="nc bnc" id="L244" title="All 72 branches missed.">        return 0xFDD0 &lt;= codepoint &amp;&amp; codepoint &lt;= 0xFDEF</span>
+<span class="pc bpc" id="L244" title="54 of 72 branches missed.">        return 0xFDD0 &lt;= codepoint &amp;&amp; codepoint &lt;= 0xFDEF</span>
                 || 0xFFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0xFFFF
                 || 0x1FFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0x1FFFF
                 || 0x2FFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0x2FFFF
@@ -269,7 +269,7 @@ class SaslPrep
      */
     private static boolean privateUse(int codepoint)
     {
-<span class="nc bnc" id="L272" title="All 12 branches missed.">        return 0xE000 &lt;= codepoint &amp;&amp; codepoint &lt;= 0xF8FF</span>
+<span class="pc bpc" id="L272" title="9 of 12 branches missed.">        return 0xE000 &lt;= codepoint &amp;&amp; codepoint &lt;= 0xF8FF</span>
                 || 0xF0000 &lt;= codepoint &amp;&amp; codepoint &lt;= 0xFFFFD
                 || 0x100000 &lt;= codepoint &amp;&amp; codepoint &lt;= 0x10FFFD;
     }
@@ -281,7 +281,7 @@ class SaslPrep
      */
     private static boolean nonAsciiControl(int codepoint)
     {
-<span class="nc bnc" id="L284" title="All 40 branches missed.">        return 0x0080 &lt;= codepoint &amp;&amp; codepoint &lt;= 0x009F</span>
+<span class="pc bpc" id="L284" title="24 of 40 branches missed.">        return 0x0080 &lt;= codepoint &amp;&amp; codepoint &lt;= 0x009F</span>
                 || codepoint == 0x06DD
                 || codepoint == 0x070F
                 || codepoint == 0x180E
@@ -306,7 +306,7 @@ class SaslPrep
      */
     private static boolean asciiControl(char ch)
     {
-<span class="nc bnc" id="L309" title="All 6 branches missed.">        return '\u0000' &lt;= ch &amp;&amp; ch &lt;= '\u001F' || ch == '\u007F';</span>
+<span class="pc bpc" id="L309" title="3 of 6 branches missed.">        return '\u0000' &lt;= ch &amp;&amp; ch &lt;= '\u001F' || ch == '\u007F';</span>
     }
 
     /**
@@ -316,7 +316,7 @@ class SaslPrep
      */
     private static boolean nonAsciiSpace(char ch)
     {
-<span class="nc bnc" id="L319" title="All 14 branches missed.">        return ch == '\u00A0'</span>
+<span class="pc bpc" id="L319" title="8 of 14 branches missed.">        return ch == '\u00A0'</span>
                 || ch == '\u1680'
                 || '\u2000' &lt;= ch &amp;&amp; ch &lt;= '\u200B'
                 || ch == '\u202F'
@@ -331,7 +331,7 @@ class SaslPrep
      */
     private static boolean mappedToNothing(char ch)
     {
-<span class="nc bnc" id="L334" title="All 26 branches missed.">        return ch == '\u00AD'</span>
+<span class="pc bpc" id="L334" title="14 of 26 branches missed.">        return ch == '\u00AD'</span>
                 || ch == '\u034F'
                 || ch == '\u1806'
                 || ch == '\u180B'

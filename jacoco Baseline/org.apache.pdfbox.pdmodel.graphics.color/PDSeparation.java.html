@@ -44,7 +44,7 @@ import org.apache.pdfbox.pdmodel.common.function.PDFunction;
  */
 public class PDSeparation extends PDSpecialColorSpace
 {
-<span class="nc" id="L47">    private final PDColor initialColor = new PDColor(new float[] { 1 }, this);</span>
+<span class="pc" id="L47">    private final PDColor initialColor = new PDColor(new float[] { 1 }, this);</span>
 
     // array indexes
     private static final int COLORANT_NAMES = 1;
@@ -52,8 +52,8 @@ public class PDSeparation extends PDSpecialColorSpace
     private static final int TINT_TRANSFORM = 3;
 
     // fields
-<span class="nc" id="L55">    private PDColorSpace alternateColorSpace = null;</span>
-<span class="nc" id="L56">    private PDFunction tintTransform = null;</span>
+<span class="pc" id="L55">    private PDColorSpace alternateColorSpace = null;</span>
+<span class="pc" id="L56">    private PDFunction tintTransform = null;</span>
 
     /**
      * Map used to speed up {@link #toRGB(float[])}. Note that this class contains three maps (this
@@ -61,7 +61,7 @@ public class PDSeparation extends PDSpecialColorSpace
      * }. The maps use different key intervals. This map here is needed for shading, which produce
      * more than 256 different float values, which we cast to int so that the map can work.
      */
-<span class="nc" id="L64">    private Map&lt;Integer, float[]&gt; toRGBMap = null;</span>
+<span class="pc" id="L64">    private Map&lt;Integer, float[]&gt; toRGBMap = null;</span>
 
     /**
      * Creates a new Separation color space.
@@ -83,19 +83,19 @@ public class PDSeparation extends PDSpecialColorSpace
      * @throws IOException if the color space or the function could not be created.
      */
     public PDSeparation(COSArray separation, PDResources resources) throws IOException
-<span class="nc" id="L86">    {</span>
-<span class="nc" id="L87">        array = separation;</span>
-<span class="nc" id="L88">        alternateColorSpace = PDColorSpace.create(array.getObject(ALTERNATE_CS), resources);</span>
-<span class="nc" id="L89">        tintTransform = PDFunction.create(array.getObject(TINT_TRANSFORM));</span>
-<span class="nc" id="L90">        int numberOfOutputParameters = tintTransform.getNumberOfOutputParameters();</span>
-<span class="nc bnc" id="L91" title="All 2 branches missed.">        if (numberOfOutputParameters &gt; 0 &amp;&amp;</span>
-<span class="nc bnc" id="L92" title="All 2 branches missed.">                numberOfOutputParameters &lt; alternateColorSpace.getNumberOfComponents())</span>
+<span class="fc" id="L86">    {</span>
+<span class="fc" id="L87">        array = separation;</span>
+<span class="fc" id="L88">        alternateColorSpace = PDColorSpace.create(array.getObject(ALTERNATE_CS), resources);</span>
+<span class="fc" id="L89">        tintTransform = PDFunction.create(array.getObject(TINT_TRANSFORM));</span>
+<span class="fc" id="L90">        int numberOfOutputParameters = tintTransform.getNumberOfOutputParameters();</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (numberOfOutputParameters &gt; 0 &amp;&amp;</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">                numberOfOutputParameters &lt; alternateColorSpace.getNumberOfComponents())</span>
         {
 <span class="nc" id="L94">            throw new IOException(&quot;The tint transform function has less output parameters (&quot; +</span>
 <span class="nc" id="L95">                    tintTransform.getNumberOfOutputParameters() + &quot;) than the alternate colorspace &quot; +</span>
 <span class="nc" id="L96">                    alternateColorSpace + &quot; (&quot; + alternateColorSpace.getNumberOfComponents() + &quot;)&quot;);</span>
         }
-<span class="nc" id="L98">    }</span>
+<span class="fc" id="L98">    }</span>
 
     @Override
     public String getName()
@@ -106,7 +106,7 @@ public class PDSeparation extends PDSpecialColorSpace
     @Override
     public int getNumberOfComponents()
     {
-<span class="nc" id="L109">        return 1;</span>
+<span class="fc" id="L109">        return 1;</span>
     }
 
     @Override
@@ -118,26 +118,26 @@ public class PDSeparation extends PDSpecialColorSpace
     @Override
     public PDColor getInitialColor()
     {
-<span class="nc" id="L121">        return initialColor;</span>
+<span class="fc" id="L121">        return initialColor;</span>
     }
 
     @Override
     public float[] toRGB(float[] value) throws IOException
     {
-<span class="nc bnc" id="L127" title="All 2 branches missed.">        if (toRGBMap == null)</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        if (toRGBMap == null)</span>
         {
-<span class="nc" id="L129">            toRGBMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L129">            toRGBMap = new HashMap&lt;&gt;();</span>
         }
-<span class="nc" id="L131">        int key = (int) (value[0] * 255);</span>
-<span class="nc" id="L132">        float[] retval = toRGBMap.get(key);</span>
-<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (retval != null)</span>
+<span class="fc" id="L131">        int key = (int) (value[0] * 255);</span>
+<span class="fc" id="L132">        float[] retval = toRGBMap.get(key);</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        if (retval != null)</span>
         {
-<span class="nc" id="L135">            return retval;</span>
+<span class="fc" id="L135">            return retval;</span>
         }
-<span class="nc" id="L137">        float[] altColor = tintTransform.eval(value);</span>
-<span class="nc" id="L138">        retval = alternateColorSpace.toRGB(altColor);</span>
-<span class="nc" id="L139">        toRGBMap.put(key, retval);</span>
-<span class="nc" id="L140">        return retval;</span>
+<span class="fc" id="L137">        float[] altColor = tintTransform.eval(value);</span>
+<span class="fc" id="L138">        retval = alternateColorSpace.toRGB(altColor);</span>
+<span class="fc" id="L139">        toRGBMap.put(key, retval);</span>
+<span class="fc" id="L140">        return retval;</span>
     }
 
     //
@@ -263,8 +263,8 @@ public class PDSeparation extends PDSpecialColorSpace
      */
     public String getColorantName()
     {
-<span class="nc" id="L266">        COSName name = (COSName)array.getObject(COLORANT_NAMES);</span>
-<span class="nc" id="L267">        return name.getName();</span>
+<span class="fc" id="L266">        COSName name = (COSName)array.getObject(COLORANT_NAMES);</span>
+<span class="fc" id="L267">        return name.getName();</span>
     }
 
     /**

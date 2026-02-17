@@ -77,57 +77,57 @@ import org.apache.pdfbox.pdmodel.font.PDFontDescriptor;
  */
 class LegacyPDFStreamEngine extends PDFStreamEngine
 {
-<span class="nc" id="L80">    private static final Logger LOG = LogManager.getLogger(LegacyPDFStreamEngine.class);</span>
+<span class="fc" id="L80">    private static final Logger LOG = LogManager.getLogger(LegacyPDFStreamEngine.class);</span>
 
     private int pageRotation;
     private PDRectangle pageSize;
     private Matrix translateMatrix;
     private static final GlyphList GLYPHLIST;
-<span class="nc" id="L86">    private final Map&lt;COSDictionary, Float&gt; fontHeightMap = new WeakHashMap&lt;&gt;();</span>
+<span class="fc" id="L86">    private final Map&lt;COSDictionary, Float&gt; fontHeightMap = new WeakHashMap&lt;&gt;();</span>
 
     static
     {
         // load additional glyph list for Unicode mapping
-<span class="nc" id="L91">        String path = &quot;/org/apache/pdfbox/resources/glyphlist/additional.txt&quot;;</span>
+<span class="fc" id="L91">        String path = &quot;/org/apache/pdfbox/resources/glyphlist/additional.txt&quot;;</span>
         //no need to use a BufferedInputSteam here, as GlyphList uses a BufferedReader
-<span class="nc" id="L93">        try (InputStream input = GlyphList.class.getResourceAsStream(path))</span>
+<span class="fc" id="L93">        try (InputStream input = GlyphList.class.getResourceAsStream(path))</span>
         {
-<span class="nc" id="L95">            GLYPHLIST = new GlyphList(GlyphList.getAdobeGlyphList(), input);</span>
+<span class="fc" id="L95">            GLYPHLIST = new GlyphList(GlyphList.getAdobeGlyphList(), input);</span>
         }
 <span class="nc" id="L97">        catch (IOException ex)</span>
         {
 <span class="nc" id="L99">            throw new RuntimeException(ex);</span>
-<span class="nc" id="L100">        }</span>
-<span class="nc" id="L101">    }</span>
+<span class="fc" id="L100">        }</span>
+<span class="fc" id="L101">    }</span>
 
     /**
      * Constructor.
      */
     LegacyPDFStreamEngine()
-<span class="nc" id="L107">    {</span>
-<span class="nc" id="L108">        addOperator(new BeginText(this));</span>
-<span class="nc" id="L109">        addOperator(new Concatenate(this));</span>
-<span class="nc" id="L110">        addOperator(new DrawObject(this)); // special text version</span>
-<span class="nc" id="L111">        addOperator(new EndText(this));</span>
-<span class="nc" id="L112">        addOperator(new SetGraphicsStateParameters(this));</span>
-<span class="nc" id="L113">        addOperator(new Save(this));</span>
-<span class="nc" id="L114">        addOperator(new Restore(this));</span>
-<span class="nc" id="L115">        addOperator(new NextLine(this));</span>
-<span class="nc" id="L116">        addOperator(new SetCharSpacing(this));</span>
-<span class="nc" id="L117">        addOperator(new MoveText(this));</span>
-<span class="nc" id="L118">        addOperator(new MoveTextSetLeading(this));</span>
-<span class="nc" id="L119">        addOperator(new SetFontAndSize(this));</span>
-<span class="nc" id="L120">        addOperator(new ShowText(this));</span>
-<span class="nc" id="L121">        addOperator(new ShowTextAdjusted(this));</span>
-<span class="nc" id="L122">        addOperator(new SetTextLeading(this));</span>
-<span class="nc" id="L123">        addOperator(new SetMatrix(this));</span>
-<span class="nc" id="L124">        addOperator(new SetTextRenderingMode(this));</span>
-<span class="nc" id="L125">        addOperator(new SetTextRise(this));</span>
-<span class="nc" id="L126">        addOperator(new SetWordSpacing(this));</span>
-<span class="nc" id="L127">        addOperator(new SetTextHorizontalScaling(this));</span>
-<span class="nc" id="L128">        addOperator(new ShowTextLine(this));</span>
-<span class="nc" id="L129">        addOperator(new ShowTextLineAndSpace(this));</span>
-<span class="nc" id="L130">    }</span>
+<span class="fc" id="L107">    {</span>
+<span class="fc" id="L108">        addOperator(new BeginText(this));</span>
+<span class="fc" id="L109">        addOperator(new Concatenate(this));</span>
+<span class="fc" id="L110">        addOperator(new DrawObject(this)); // special text version</span>
+<span class="fc" id="L111">        addOperator(new EndText(this));</span>
+<span class="fc" id="L112">        addOperator(new SetGraphicsStateParameters(this));</span>
+<span class="fc" id="L113">        addOperator(new Save(this));</span>
+<span class="fc" id="L114">        addOperator(new Restore(this));</span>
+<span class="fc" id="L115">        addOperator(new NextLine(this));</span>
+<span class="fc" id="L116">        addOperator(new SetCharSpacing(this));</span>
+<span class="fc" id="L117">        addOperator(new MoveText(this));</span>
+<span class="fc" id="L118">        addOperator(new MoveTextSetLeading(this));</span>
+<span class="fc" id="L119">        addOperator(new SetFontAndSize(this));</span>
+<span class="fc" id="L120">        addOperator(new ShowText(this));</span>
+<span class="fc" id="L121">        addOperator(new ShowTextAdjusted(this));</span>
+<span class="fc" id="L122">        addOperator(new SetTextLeading(this));</span>
+<span class="fc" id="L123">        addOperator(new SetMatrix(this));</span>
+<span class="fc" id="L124">        addOperator(new SetTextRenderingMode(this));</span>
+<span class="fc" id="L125">        addOperator(new SetTextRise(this));</span>
+<span class="fc" id="L126">        addOperator(new SetWordSpacing(this));</span>
+<span class="fc" id="L127">        addOperator(new SetTextHorizontalScaling(this));</span>
+<span class="fc" id="L128">        addOperator(new ShowTextLine(this));</span>
+<span class="fc" id="L129">        addOperator(new ShowTextLineAndSpace(this));</span>
+<span class="fc" id="L130">    }</span>
 
     /**
      * This will initialize and process the contents of the stream.
@@ -138,20 +138,20 @@ class LegacyPDFStreamEngine extends PDFStreamEngine
     @Override
     public void processPage(PDPage page) throws IOException
     {
-<span class="nc" id="L141">        this.pageRotation = page.getRotation();</span>
-<span class="nc" id="L142">        this.pageSize = page.getCropBox();</span>
+<span class="fc" id="L141">        this.pageRotation = page.getRotation();</span>
+<span class="fc" id="L142">        this.pageSize = page.getCropBox();</span>
         
-<span class="nc bnc" id="L144" title="All 4 branches missed.">        if (Float.compare(pageSize.getLowerLeftX(), 0) == 0 &amp;&amp; Float.compare(pageSize.getLowerLeftY(), 0) == 0)</span>
+<span class="pc bpc" id="L144" title="1 of 4 branches missed.">        if (Float.compare(pageSize.getLowerLeftX(), 0) == 0 &amp;&amp; Float.compare(pageSize.getLowerLeftY(), 0) == 0)</span>
         {
-<span class="nc" id="L146">            translateMatrix = null;</span>
+<span class="fc" id="L146">            translateMatrix = null;</span>
         }
         else
         {
             // translation matrix for cropbox
-<span class="nc" id="L151">            translateMatrix = Matrix.getTranslateInstance(-pageSize.getLowerLeftX(), -pageSize.getLowerLeftY());</span>
+<span class="fc" id="L151">            translateMatrix = Matrix.getTranslateInstance(-pageSize.getLowerLeftX(), -pageSize.getLowerLeftY());</span>
         }            
-<span class="nc" id="L153">        super.processPage(page);</span>
-<span class="nc" id="L154">    }</span>
+<span class="fc" id="L153">        super.processPage(page);</span>
+<span class="fc" id="L154">    }</span>
 
     /**
      * Called when a glyph is to be processed. The heuristic calculations here were originally
@@ -168,36 +168,36 @@ class LegacyPDFStreamEngine extends PDFStreamEngine
         //  THIS CODE IS DELIBERATELY INCORRECT
         //
 
-<span class="nc" id="L171">        PDGraphicsState state = getGraphicsState();</span>
-<span class="nc" id="L172">        Matrix ctm = state.getCurrentTransformationMatrix();</span>
-<span class="nc" id="L173">        float fontSize = state.getTextState().getFontSize();</span>
-<span class="nc" id="L174">        float horizontalScaling = state.getTextState().getHorizontalScaling() / 100f;</span>
-<span class="nc" id="L175">        Matrix textMatrix = getTextMatrix();</span>
+<span class="fc" id="L171">        PDGraphicsState state = getGraphicsState();</span>
+<span class="fc" id="L172">        Matrix ctm = state.getCurrentTransformationMatrix();</span>
+<span class="fc" id="L173">        float fontSize = state.getTextState().getFontSize();</span>
+<span class="fc" id="L174">        float horizontalScaling = state.getTextState().getHorizontalScaling() / 100f;</span>
+<span class="fc" id="L175">        Matrix textMatrix = getTextMatrix();</span>
 
-<span class="nc" id="L177">        float displacementX = displacement.getX();</span>
+<span class="fc" id="L177">        float displacementX = displacement.getX();</span>
         // the sorting algorithm is based on the width of the character. As the displacement
         // for vertical characters doesn't provide any suitable value for it, we have to 
         // calculate our own
-<span class="nc bnc" id="L181" title="All 2 branches missed.">        if (font.isVertical())</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        if (font.isVertical())</span>
         {
-<span class="nc" id="L183">            displacementX = font.getWidth(code) / 1000;</span>
+<span class="fc" id="L183">            displacementX = font.getWidth(code) / 1000;</span>
             // there may be an additional scaling factor for true type fonts
-<span class="nc" id="L185">            TrueTypeFont ttf = null;</span>
-<span class="nc bnc" id="L186" title="All 2 branches missed.">            if (font instanceof PDTrueTypeFont)</span>
+<span class="fc" id="L185">            TrueTypeFont ttf = null;</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">            if (font instanceof PDTrueTypeFont)</span>
             {
 <span class="nc" id="L188">                 ttf = ((PDTrueTypeFont)font).getTrueTypeFont();</span>
             }
-<span class="nc bnc" id="L190" title="All 2 branches missed.">            else if (font instanceof PDType0Font)</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">            else if (font instanceof PDType0Font)</span>
             {
-<span class="nc" id="L192">                PDCIDFont cidFont = ((PDType0Font)font).getDescendantFont();</span>
-<span class="nc bnc" id="L193" title="All 2 branches missed.">                if (cidFont instanceof PDCIDFontType2)</span>
+<span class="fc" id="L192">                PDCIDFont cidFont = ((PDType0Font)font).getDescendantFont();</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">                if (cidFont instanceof PDCIDFontType2)</span>
                 {
-<span class="nc" id="L195">                    ttf = ((PDCIDFontType2)cidFont).getTrueTypeFont();</span>
+<span class="fc" id="L195">                    ttf = ((PDCIDFontType2)cidFont).getTrueTypeFont();</span>
                 }
             }
-<span class="nc bnc" id="L198" title="All 4 branches missed.">            if (ttf != null &amp;&amp; ttf.getUnitsPerEm() != 1000)</span>
+<span class="pc bpc" id="L198" title="2 of 4 branches missed.">            if (ttf != null &amp;&amp; ttf.getUnitsPerEm() != 1000)</span>
             {
-<span class="nc" id="L200">                displacementX *= 1000f / ttf.getUnitsPerEm();</span>
+<span class="fc" id="L200">                displacementX *= 1000f / ttf.getUnitsPerEm();</span>
             }
         }
 
@@ -210,26 +210,26 @@ class LegacyPDFStreamEngine extends PDFStreamEngine
         
         // (modified) combined displacement, this is calculated *without* taking the character
         // spacing and word spacing into account, due to legacy code in TextStripper
-<span class="nc" id="L213">        float tx = displacementX * fontSize * horizontalScaling;</span>
-<span class="nc" id="L214">        float ty = displacement.getY() * fontSize;</span>
+<span class="fc" id="L213">        float tx = displacementX * fontSize * horizontalScaling;</span>
+<span class="fc" id="L214">        float ty = displacement.getY() * fontSize;</span>
 
         // (modified) combined displacement matrix
-<span class="nc" id="L217">        Matrix td = Matrix.getTranslateInstance(tx, ty);</span>
+<span class="fc" id="L217">        Matrix td = Matrix.getTranslateInstance(tx, ty);</span>
 
         // (modified) text rendering matrix
-<span class="nc" id="L220">        Matrix nextTextRenderingMatrix = td.multiply(textMatrix).multiply(ctm); // text space -&gt; device space</span>
-<span class="nc" id="L221">        float nextX = nextTextRenderingMatrix.getTranslateX();</span>
-<span class="nc" id="L222">        float nextY = nextTextRenderingMatrix.getTranslateY();</span>
+<span class="fc" id="L220">        Matrix nextTextRenderingMatrix = td.multiply(textMatrix).multiply(ctm); // text space -&gt; device space</span>
+<span class="fc" id="L221">        float nextX = nextTextRenderingMatrix.getTranslateX();</span>
+<span class="fc" id="L222">        float nextY = nextTextRenderingMatrix.getTranslateY();</span>
 
         // (modified) width and height calculations
-<span class="nc" id="L225">        float dxDisplay = nextX - textRenderingMatrix.getTranslateX();</span>
-<span class="nc" id="L226">        Float fontHeight = fontHeightMap.get(font.getCOSObject());</span>
-<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (fontHeight == null)</span>
+<span class="fc" id="L225">        float dxDisplay = nextX - textRenderingMatrix.getTranslateX();</span>
+<span class="fc" id="L226">        Float fontHeight = fontHeightMap.get(font.getCOSObject());</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">        if (fontHeight == null)</span>
         {
-<span class="nc" id="L229">            fontHeight = computeFontHeight(font);</span>
-<span class="nc" id="L230">            fontHeightMap.put(font.getCOSObject(), fontHeight);</span>
+<span class="fc" id="L229">            fontHeight = computeFontHeight(font);</span>
+<span class="fc" id="L230">            fontHeightMap.put(font.getCOSObject(), fontHeight);</span>
         }
-<span class="nc" id="L232">        float dyDisplay = fontHeight * textRenderingMatrix.getScalingFactorY();</span>
+<span class="fc" id="L232">        float dyDisplay = fontHeight * textRenderingMatrix.getScalingFactorY();</span>
 
         //
         // start of the original method
@@ -241,77 +241,77 @@ class LegacyPDFStreamEngine extends PDFStreamEngine
         // Text or Disp to represent if the values are in text or disp units (no glyph units are
         // saved).
 
-<span class="nc" id="L244">        float glyphSpaceToTextSpaceFactor = 1 / 1000f;</span>
-<span class="nc bnc" id="L245" title="All 2 branches missed.">        if (font instanceof PDType3Font)</span>
+<span class="fc" id="L244">        float glyphSpaceToTextSpaceFactor = 1 / 1000f;</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">        if (font instanceof PDType3Font)</span>
         {
-<span class="nc" id="L247">            glyphSpaceToTextSpaceFactor = font.getFontMatrix().getScaleX();</span>
+<span class="fc" id="L247">            glyphSpaceToTextSpaceFactor = font.getFontMatrix().getScaleX();</span>
         }
 
-<span class="nc" id="L250">        float spaceWidthText = 0;</span>
+<span class="fc" id="L250">        float spaceWidthText = 0;</span>
         try
         {
             // to avoid crash as described in PDFBOX-614, see what the space displacement should be
-<span class="nc" id="L254">            spaceWidthText = font.getSpaceWidth() * glyphSpaceToTextSpaceFactor;</span>
+<span class="fc" id="L254">            spaceWidthText = font.getSpaceWidth() * glyphSpaceToTextSpaceFactor;</span>
         }
 <span class="nc" id="L256">        catch (Exception exception)</span>
         {
 <span class="nc" id="L258">            LOG.warn(exception, exception);</span>
-<span class="nc" id="L259">        }</span>
+<span class="fc" id="L259">        }</span>
 
-<span class="nc bnc" id="L261" title="All 2 branches missed.">        if (Float.compare(spaceWidthText, 0) == 0)</span>
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">        if (Float.compare(spaceWidthText, 0) == 0)</span>
         {
 <span class="nc" id="L263">            spaceWidthText = font.getAverageFontWidth() * glyphSpaceToTextSpaceFactor;</span>
             // the average space width appears to be higher than necessary so make it smaller
 <span class="nc" id="L265">            spaceWidthText *= .80f;</span>
         }
-<span class="nc bnc" id="L267" title="All 2 branches missed.">        if (Float.compare(spaceWidthText, 0) == 0)</span>
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">        if (Float.compare(spaceWidthText, 0) == 0)</span>
         {
 <span class="nc" id="L269">            spaceWidthText = 1.0f; // if could not find font, use a generic value</span>
         }
 
         // the space width has to be transformed into display units
-<span class="nc" id="L273">        float spaceWidthDisplay = spaceWidthText * textRenderingMatrix.getScalingFactorX();</span>
+<span class="fc" id="L273">        float spaceWidthDisplay = spaceWidthText * textRenderingMatrix.getScalingFactorX();</span>
 
         // use our additional glyph list for Unicode mapping
-<span class="nc" id="L276">        String unicode = font.toUnicode(code, GLYPHLIST);</span>
+<span class="fc" id="L276">        String unicode = font.toUnicode(code, GLYPHLIST);</span>
 
         // when there is no Unicode mapping available, Acrobat simply coerces the character code
         // into Unicode, so we do the same. Subclasses of PDFStreamEngine don't necessarily want
         // this, which is why we leave it until this point in PDFTextStreamEngine.
-<span class="nc bnc" id="L281" title="All 2 branches missed.">        if (unicode == null)</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">        if (unicode == null)</span>
         {
-<span class="nc bnc" id="L283" title="All 2 branches missed.">            if (font instanceof PDSimpleFont)</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">            if (font instanceof PDSimpleFont)</span>
             {
-<span class="nc" id="L285">                char c = (char) code;</span>
-<span class="nc" id="L286">                unicode = String.valueOf(c);</span>
-<span class="nc" id="L287">            }</span>
+<span class="fc" id="L285">                char c = (char) code;</span>
+<span class="fc" id="L286">                unicode = String.valueOf(c);</span>
+<span class="fc" id="L287">            }</span>
             else
             {
                 // Acrobat doesn't seem to coerce composite font's character codes, instead it
                 // skips them. See the &quot;allah2.pdf&quot; TestTextStripper file.
-<span class="nc" id="L292">                return;</span>
+<span class="fc" id="L292">                return;</span>
             }
         }
 
         // adjust for cropbox if needed
         Matrix translatedTextRenderingMatrix;
-<span class="nc bnc" id="L298" title="All 2 branches missed.">        if (translateMatrix == null)</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">        if (translateMatrix == null)</span>
         {
-<span class="nc" id="L300">            translatedTextRenderingMatrix = textRenderingMatrix;</span>
+<span class="fc" id="L300">            translatedTextRenderingMatrix = textRenderingMatrix;</span>
         }
         else
         {
-<span class="nc" id="L304">            translatedTextRenderingMatrix = Matrix.concatenate(translateMatrix, textRenderingMatrix);</span>
-<span class="nc" id="L305">            nextX -= pageSize.getLowerLeftX();</span>
-<span class="nc" id="L306">            nextY -= pageSize.getLowerLeftY();</span>
+<span class="fc" id="L304">            translatedTextRenderingMatrix = Matrix.concatenate(translateMatrix, textRenderingMatrix);</span>
+<span class="fc" id="L305">            nextX -= pageSize.getLowerLeftX();</span>
+<span class="fc" id="L306">            nextY -= pageSize.getLowerLeftY();</span>
         }
 
-<span class="nc" id="L309">        processTextPosition(new TextPosition(pageRotation, pageSize.getWidth(),</span>
-<span class="nc" id="L310">                pageSize.getHeight(), translatedTextRenderingMatrix, nextX, nextY,</span>
-<span class="nc" id="L311">                Math.abs(dyDisplay), dxDisplay,</span>
-<span class="nc" id="L312">                Math.abs(spaceWidthDisplay), unicode, new int[] { code } , font, fontSize,</span>
-<span class="nc" id="L313">                (int)(fontSize * textMatrix.getScalingFactorX())));</span>
-<span class="nc" id="L314">    }</span>
+<span class="fc" id="L309">        processTextPosition(new TextPosition(pageRotation, pageSize.getWidth(),</span>
+<span class="fc" id="L310">                pageSize.getHeight(), translatedTextRenderingMatrix, nextX, nextY,</span>
+<span class="fc" id="L311">                Math.abs(dyDisplay), dxDisplay,</span>
+<span class="fc" id="L312">                Math.abs(spaceWidthDisplay), unicode, new int[] { code } , font, fontSize,</span>
+<span class="fc" id="L313">                (int)(fontSize * textMatrix.getScalingFactorX())));</span>
+<span class="fc" id="L314">    }</span>
 
     /**
      * Compute the font height. Override this if you want to use own calculations.
@@ -323,49 +323,49 @@ class LegacyPDFStreamEngine extends PDFStreamEngine
      */
     protected float computeFontHeight(PDFont font) throws IOException
     {
-<span class="nc" id="L326">        BoundingBox bbox = font.getBoundingBox();</span>
-<span class="nc bnc" id="L327" title="All 2 branches missed.">        if (bbox.getLowerLeftY() &lt; Short.MIN_VALUE)</span>
+<span class="fc" id="L326">        BoundingBox bbox = font.getBoundingBox();</span>
+<span class="pc bpc" id="L327" title="1 of 2 branches missed.">        if (bbox.getLowerLeftY() &lt; Short.MIN_VALUE)</span>
         {
             // PDFBOX-2158 and PDFBOX-3130
             // files by Salmat eSolutions / ClibPDF Library
 <span class="nc" id="L331">            bbox.setLowerLeftY(- (bbox.getLowerLeftY() + 65536));</span>
         }
         // 1/2 the bbox is used as the height todo: why?
-<span class="nc" id="L334">        float glyphHeight = bbox.getHeight() / 2;</span>
+<span class="fc" id="L334">        float glyphHeight = bbox.getHeight() / 2;</span>
 
         // sometimes the bbox has very high values, but CapHeight is OK
-<span class="nc" id="L337">        PDFontDescriptor fontDescriptor = font.getFontDescriptor();</span>
-<span class="nc bnc" id="L338" title="All 2 branches missed.">        if (fontDescriptor != null)</span>
+<span class="fc" id="L337">        PDFontDescriptor fontDescriptor = font.getFontDescriptor();</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">        if (fontDescriptor != null)</span>
         {
-<span class="nc" id="L340">            float capHeight = fontDescriptor.getCapHeight();</span>
-<span class="nc bnc" id="L341" title="All 4 branches missed.">            if (Float.compare(capHeight, 0) != 0 &amp;&amp;</span>
-<span class="nc bnc" id="L342" title="All 2 branches missed.">                    (capHeight &lt; glyphHeight || Float.compare(glyphHeight, 0) == 0))</span>
+<span class="fc" id="L340">            float capHeight = fontDescriptor.getCapHeight();</span>
+<span class="fc bfc" id="L341" title="All 4 branches covered.">            if (Float.compare(capHeight, 0) != 0 &amp;&amp;</span>
+<span class="pc bpc" id="L342" title="1 of 2 branches missed.">                    (capHeight &lt; glyphHeight || Float.compare(glyphHeight, 0) == 0))</span>
             {
-<span class="nc" id="L344">                glyphHeight = capHeight;</span>
+<span class="fc" id="L344">                glyphHeight = capHeight;</span>
             }
             // PDFBOX-3464, PDFBOX-4480, PDFBOX-4553:
             // sometimes even CapHeight has very high value, but Ascent and Descent are ok
-<span class="nc" id="L348">            float ascent = fontDescriptor.getAscent();</span>
-<span class="nc" id="L349">            float descent = fontDescriptor.getDescent();</span>
-<span class="nc bnc" id="L350" title="All 8 branches missed.">            if (capHeight &gt; ascent &amp;&amp; ascent &gt; 0 &amp;&amp; descent &lt; 0 &amp;&amp;</span>
+<span class="fc" id="L348">            float ascent = fontDescriptor.getAscent();</span>
+<span class="fc" id="L349">            float descent = fontDescriptor.getDescent();</span>
+<span class="pc bpc" id="L350" title="2 of 8 branches missed.">            if (capHeight &gt; ascent &amp;&amp; ascent &gt; 0 &amp;&amp; descent &lt; 0 &amp;&amp;</span>
 <span class="nc bnc" id="L351" title="All 2 branches missed.">                    ((ascent - descent) / 2 &lt; glyphHeight || Float.compare(glyphHeight, 0) == 0))</span>
             {
-<span class="nc" id="L353">                glyphHeight = (ascent - descent) / 2;</span>
+<span class="fc" id="L353">                glyphHeight = (ascent - descent) / 2;</span>
             }
         }
 
         // transformPoint from glyph space -&gt; text space
         float height;
-<span class="nc bnc" id="L359" title="All 2 branches missed.">        if (font instanceof PDType3Font)</span>
+<span class="fc bfc" id="L359" title="All 2 branches covered.">        if (font instanceof PDType3Font)</span>
         {
-<span class="nc" id="L361">            height = font.getFontMatrix().transformPoint(0, glyphHeight).y;</span>
+<span class="fc" id="L361">            height = font.getFontMatrix().transformPoint(0, glyphHeight).y;</span>
         }
         else
         {
-<span class="nc" id="L365">            height = glyphHeight / 1000;</span>
+<span class="fc" id="L365">            height = glyphHeight / 1000;</span>
         }
 
-<span class="nc" id="L368">        return height;</span>
+<span class="fc" id="L368">        return height;</span>
     }
 
     /**
