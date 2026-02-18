@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDTargetDirectory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.action</a> &gt; <span class="el_source">PDTargetDirectory.java</span></div><h1>PDTargetDirectory.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2018 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.interactive.action;
+
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDNamedDestination;
+
+/**
+ * A target dictionary specifying path information to the target document. Each target dictionary
+ * specifies one element in the full path to the target and may have nested target dictionaries
+ * specifying additional elements.
+ *
+ * @author Tilman Hausherr
+ */
+public class PDTargetDirectory implements COSObjectable
+{
+    private final COSDictionary dict;
+
+    /**
+     * Default constructor, creates target directory.
+     */
+    public PDTargetDirectory()
+<span class="nc" id="L41">    {</span>
+<span class="nc" id="L42">        dict = new COSDictionary();</span>
+<span class="nc" id="L43">    }</span>
+
+    /**
+     * Create a target directory from an existing dictionary.
+     *
+     * @param dictionary The existing graphics state.
+     */
+    public PDTargetDirectory(COSDictionary dictionary)
+<span class="nc" id="L51">    {</span>
+<span class="nc" id="L52">        dict = dictionary;</span>
+<span class="nc" id="L53">    }</span>
+
+    /**
+     * This will get the underlying dictionary that this class acts on.
+     *
+     * @return The underlying dictionary for this class.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L63">        return dict;</span>
+    }
+
+    /**
+     * Get the relationship between the current document and the target (which may be an
+     * intermediate target).
+     *
+     * @return the relationship as a name. Valid values are P (the target is the parent of the
+     * current document) and C (the target is a child of the current document). Invalid values or
+     * null are also returned.
+     */
+    public COSName getRelationship()
+    {
+<span class="nc" id="L76">        return dict.getCOSName(COSName.R);</span>
+    }
+
+    /**
+     * Set the relationship between the current document and the target (which may be an
+     * intermediate target).
+     *
+     * @param relationship Valid values are P (the target is the parent of the current document) and
+     * C (the target is a child of the current document).
+     *
+     * throws IllegalArgumentException if the parameter is not P or C.
+     */
+    public void setRelationship(COSName relationship)
+    {
+<span class="nc bnc" id="L90" title="All 4 branches missed.">        if (!COSName.P.equals(relationship) &amp;&amp; !COSName.C.equals(relationship))</span>
+        {
+<span class="nc" id="L92">            throw new IllegalArgumentException(&quot;The only valid are P or C, not &quot; + relationship.getName());</span>
+        }
+<span class="nc" id="L94">        dict.setItem(COSName.R, relationship);</span>
+<span class="nc" id="L95">    }</span>
+
+    /**
+     * Get the name of the file as found in the EmbeddedFiles name tree. This is only to be used if
+     * the target is a child of the current document.
+     *
+     * @return a filename or null if there is none.
+     */
+    public String getFilename()
+    {
+<span class="nc" id="L105">        return dict.getString(COSName.N);</span>
+    }
+
+    /**
+     * Sets the name of the file as found in the EmbeddedFiles name tree. This is only to be used if
+     * the target is a child of the current document.
+     *
+     * @param filename a filename or null if the entry is to be deleted.
+     */
+    public void setFilename(String filename)
+    {
+<span class="nc" id="L116">        dict.setString(COSName.N, filename);</span>
+<span class="nc" id="L117">    }</span>
+
+    /**
+     * Get the target directory. If this entry is absent, the current document is the target file
+     * containing the destination.
+     *
+     * @return the target directory or null if the current document is the target file containing
+     * the destination.
+     */
+    public PDTargetDirectory getTargetDirectory()
+    {
+<span class="nc" id="L128">        COSDictionary targetDict = dict.getCOSDictionary(COSName.T);</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">        return targetDict != null ? new PDTargetDirectory(targetDict) : null;</span>
+    }
+
+    /**
+     * Sets the target directory.
+     *
+     * @param targetDirectory the target directory or null if the current document is the target
+     * file containing the destination.
+     */
+    public void setTargetDirectory(PDTargetDirectory targetDirectory)
+    {
+<span class="nc" id="L140">        dict.setItem(COSName.T, targetDirectory);</span>
+<span class="nc" id="L141">    }</span>
+
+    /**
+     * If the value in the /P entry is an integer, this will get the page number (zero-based) in the
+     * current document containing the file attachment annotation.
+     *
+     * @return the zero based page number or -1 if the /P entry value is missing or not a number.
+     */
+    public int getPageNumber()
+    {
+<span class="nc" id="L151">        return dict.getInt(COSName.P, -1);</span>
+    }
+
+    /**
+     * Set the page number (zero-based) in the current document containing the file attachment
+     * annotation.
+     *
+     * @param pageNumber the zero based page number. If this is &amp;lt; 0 then the entry is removed.
+     */
+    public void setPageNumber(int pageNumber)
+    {
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        if (pageNumber &lt; 0)</span>
+        {
+<span class="nc" id="L164">            dict.removeItem(COSName.P);</span>
+        }
+        else
+        {
+<span class="nc" id="L168">            dict.setInt(COSName.P, pageNumber);</span>
+        }
+<span class="nc" id="L170">    }</span>
+
+    /**
+     * If the value in the /P entry is a string, this will get a named destination in the current
+     * document that provides the page number of the file attachment annotation.
+     *
+     * @return a named destination or null if the /P entry value is missing or not a string.
+     */
+    public PDNamedDestination getNamedDestination()
+    {
+<span class="nc" id="L180">        COSBase base = dict.getDictionaryObject(COSName.P);</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">        if (base instanceof COSString)</span>
+        {
+<span class="nc" id="L183">            return new PDNamedDestination((COSString) base);</span>
+        }
+<span class="nc" id="L185">        return null;</span>
+    }
+
+    /**
+     * This will set a named destination in the current document that provides the page number of
+     * the file attachment annotation.
+     *
+     * @param dest a named destination or null if the entry is to be removed.
+     */
+    public void setNamedDestination(PDNamedDestination dest)
+    {
+<span class="nc bnc" id="L196" title="All 2 branches missed.">        if (dest == null)</span>
+        {
+<span class="nc" id="L198">            dict.removeItem(COSName.P);</span>
+        }
+        else
+        {
+<span class="nc" id="L202">            dict.setItem(COSName.P, dest);</span>
+        }
+<span class="nc" id="L204">    }</span>
+
+    /**
+     * If the value in the /A entry is an integer, this will get the index (zero-based) of the
+     * annotation in the /Annots array of the page specified by the /P entry.
+     *
+     * @return the zero based page number or -1 if the /P entry value is missing or not a number.
+     */
+    public int getAnnotationIndex()
+    {
+<span class="nc" id="L214">        return dict.getInt(COSName.A, -1);</span>
+    }
+    
+    /**
+     * This will set the index (zero-based) of the annotation in the /Annots array of the page
+     * specified by the /P entry.
+     *
+     * @param index the zero based index. If this is &amp;lt; 0 then the entry is removed.
+     */
+    public void setAnnotationIndex(int index)
+    {
+<span class="nc bnc" id="L225" title="All 2 branches missed.">        if (index &lt; 0)</span>
+        {
+<span class="nc" id="L227">            dict.removeItem(COSName.A);</span>
+        }
+        else
+        {
+<span class="nc" id="L231">            dict.setInt(COSName.A, index);</span>
+        }
+<span class="nc" id="L233">    }</span>
+
+    /**
+     * If the value in the /A entry is a string, this will get the value of the /NM entry in the
+     * annotation dictionary.
+     *
+     * @return the /NM value of an annotation dictionary or null if the /A entry value is missing or
+     * not a string.
+     */
+    public String getAnnotationName()
+    {
+<span class="nc" id="L244">        return dict.getString(COSName.A);</span>
+    }
+
+    /**
+     * This will get the value of the /NM entry in the annotation dictionary.
+     *
+     * @param name the /NM value of an annotation dictionary or null if the entry is to be removed.
+     */
+    public void setAnnotationName(String name)
+    {
+<span class="nc" id="L254">        dict.setString(COSName.A, name);</span>
+<span class="nc" id="L255">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

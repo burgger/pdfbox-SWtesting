@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDObjectReference.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure</a> &gt; <span class="el_source">PDObjectReference.java</span></div><h1>PDObjectReference.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure;
+
+import java.io.IOException;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.graphics.PDXObject;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationUnknown;
+
+/**
+ * An object reference.
+ * &lt;p&gt;
+ * This is described as &quot;Entries in an object reference dictionary&quot; in the PDF specification.
+ * 
+ * @author Johannes Koch
+ */
+public class PDObjectReference implements COSObjectable
+{
+    /**
+     * Log instance.
+     */
+<span class="fc" id="L45">    private static final Logger LOG = LogManager.getLogger(PDObjectReference.class);</span>
+
+    /**
+     * TYPE of this object.
+     */
+    public static final String TYPE = &quot;OBJR&quot;;
+
+    private final COSDictionary dictionary;
+
+    /**
+     * Default Constructor.
+     *
+     */
+    public PDObjectReference()
+<span class="nc" id="L59">    {</span>
+<span class="nc" id="L60">        this.dictionary = new COSDictionary();</span>
+<span class="nc" id="L61">        this.dictionary.setName(COSName.TYPE, TYPE);</span>
+<span class="nc" id="L62">    }</span>
+
+    /**
+     * Constructor for an existing object reference.
+     *
+     * @param theDictionary The existing dictionary.
+     */
+    public PDObjectReference(COSDictionary theDictionary)
+<span class="fc" id="L70">    {</span>
+<span class="fc" id="L71">        dictionary = theDictionary;</span>
+<span class="fc" id="L72">    }</span>
+
+    /**
+     * Returns the underlying dictionary.
+     * 
+     * @return the dictionary
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L82">        return this.dictionary;</span>
+    }
+
+    /**
+     * Gets a higher-level object for the referenced object.
+     * Currently this method may return a {@link PDAnnotation},
+     * a {@link PDXObject} or &lt;code&gt;null&lt;/code&gt;.
+     * 
+     * @return a higher-level object for the referenced object
+     */
+    public COSObjectable getReferencedObject()
+    {
+<span class="nc" id="L94">        COSDictionary objDictionary = getCOSObject().getCOSDictionary(COSName.OBJ);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (objDictionary == null)</span>
+        {
+<span class="nc" id="L97">            return null;</span>
+        }
+        try
+        {
+<span class="nc bnc" id="L101" title="All 2 branches missed.">            if (objDictionary instanceof COSStream)</span>
+            {
+<span class="nc" id="L103">                PDXObject xobject = PDXObject.createXObject(objDictionary, null); // &lt;-- TODO: valid?</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">                if (xobject != null)</span>
+                {
+<span class="nc" id="L106">                    return xobject;</span>
+                }
+            }
+<span class="nc" id="L109">            PDAnnotation annotation = PDAnnotation.createAnnotation(objDictionary);</span>
+            /*
+             * COSName.TYPE is optional, so if annotation is of type unknown and
+             * COSName.TYPE is not COSName.ANNOT it still may be an annotation.
+             * TODO shall we return the annotation object instead of null?
+             * what else can be the target of the object reference?
+             */
+<span class="nc bnc" id="L116" title="All 2 branches missed.">            if (!(annotation instanceof PDAnnotationUnknown) </span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">                    || COSName.ANNOT.equals(objDictionary.getCOSName(COSName.TYPE)))</span>
+            {
+<span class="nc" id="L119">                return annotation;</span>
+            }
+        }
+<span class="nc" id="L122">        catch (IOException exception)</span>
+        {
+<span class="nc" id="L124">            LOG.debug(&quot;Couldn't get the referenced object - returning null instead&quot;, exception);</span>
+            // this can only happen if the target is an XObject.
+<span class="nc" id="L126">        }</span>
+<span class="nc" id="L127">        return null;</span>
+    }
+
+    /**
+     * Sets the referenced annotation.
+     * 
+     * @param annotation the referenced annotation
+     */
+    public void setReferencedObject(PDAnnotation annotation)
+    {
+<span class="nc" id="L137">        this.getCOSObject().setItem(COSName.OBJ, annotation);</span>
+<span class="nc" id="L138">    }</span>
+
+    /**
+     * Sets the referenced XObject.
+     * 
+     * @param xobject the referenced XObject
+     */
+    public void setReferencedObject(PDXObject xobject)
+    {
+<span class="nc" id="L147">        this.getCOSObject().setItem(COSName.OBJ, xobject);</span>
+<span class="nc" id="L148">    }</span>
+
+    /**
+     * Get the page on which the object shall be rendered.
+     *
+     * @return the referenced page or null.
+     */
+    public PDPage getPage()
+    {
+<span class="nc" id="L157">        COSDictionary pageDict = this.getCOSObject().getCOSDictionary(COSName.PG);</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">        if (pageDict != null)</span>
+        {
+<span class="nc" id="L160">            return new PDPage(pageDict);</span>
+        }
+<span class="nc" id="L162">        return null;</span>
+    }
+
+    /**
+     * Sets the page on which the object shall be rendered. This is optional and overrides the /PG
+     * entry in the structure element containing the object reference; shall be used if the
+     * structure element contained no such entry.
+     *
+     * @param page
+     */
+    public void setPage(PDPage page)
+    {
+<span class="nc" id="L174">        this.getCOSObject().setItem(COSName.PG, page);</span>
+<span class="nc" id="L175">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

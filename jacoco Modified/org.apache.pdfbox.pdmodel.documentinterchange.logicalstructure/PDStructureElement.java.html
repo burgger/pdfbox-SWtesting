@@ -1,0 +1,762 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDStructureElement.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure</a> &gt; <span class="el_source">PDStructureElement.java</span></div><h1>PDStructureElement.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.documentinterchange.markedcontent.PDMarkedContent;
+import org.apache.pdfbox.pdmodel.documentinterchange.taggedpdf.StandardStructureTypes;
+
+/**
+ * A structure element.
+ *
+ * @author Ben Litchfield
+ * @author Johannes Koch
+ */
+public class PDStructureElement extends PDStructureNode
+{
+    
+    public static final String TYPE = &quot;StructElem&quot;;
+
+    /**
+     * Constructor with required values.
+     *
+     * @param structureType The structure type. Constants are available in the
+     * {@link StandardStructureTypes} class.
+     * @param parent The parent structure node.
+     */
+    public PDStructureElement(String structureType, PDStructureNode parent)
+    {
+<span class="fc" id="L54">        super(TYPE);</span>
+<span class="fc" id="L55">        this.setStructureType(structureType);</span>
+<span class="fc" id="L56">        this.setParent(parent);</span>
+<span class="fc" id="L57">    }</span>
+
+    /**
+     * Constructor for an existing structure element.
+     *
+     * @param dic The existing dictionary.
+     */
+    public PDStructureElement( COSDictionary dic )
+    {
+<span class="fc" id="L66">        super(dic);</span>
+<span class="fc" id="L67">    }</span>
+
+
+    /**
+     * Returns the structure type (S).
+     * 
+     * @return the structure type
+     */
+    public String getStructureType()
+    {
+<span class="fc" id="L77">        return this.getCOSObject().getNameAsString(COSName.S);</span>
+    }
+
+    /**
+     * Sets the structure type (S).
+     * 
+     * @param structureType the structure type
+     */
+    public final void setStructureType(String structureType)
+    {
+<span class="fc" id="L87">        this.getCOSObject().setName(COSName.S, structureType);</span>
+<span class="fc" id="L88">    }</span>
+
+    /**
+     * Returns the parent in the structure hierarchy (P).
+     * 
+     * @return the parent in the structure hierarchy
+     */
+    public PDStructureNode getParent()
+    {
+<span class="fc" id="L97">        COSDictionary parent = getCOSObject().getCOSDictionary(COSName.P);</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        return parent != null ? PDStructureNode.create(parent) : null;</span>
+    }
+
+    /**
+     * Sets the parent in the structure hierarchy (P).
+     * 
+     * @param structureNode the parent in the structure hierarchy
+     */
+    public final void setParent(PDStructureNode structureNode)
+    {
+<span class="fc" id="L108">        this.getCOSObject().setItem(COSName.P, structureNode);</span>
+<span class="fc" id="L109">    }</span>
+
+    /**
+     * Returns the element identifier (ID).
+     * 
+     * @return the element identifier
+     */
+    public String getElementIdentifier()
+    {
+<span class="fc" id="L118">        return this.getCOSObject().getString(COSName.ID);</span>
+    }
+
+    /**
+     * Sets the element identifier (ID).
+     * 
+     * @param id the element identifier
+     */
+    public void setElementIdentifier(String id)
+    {
+<span class="fc" id="L128">        this.getCOSObject().setString(COSName.ID, id);</span>
+<span class="fc" id="L129">    }</span>
+
+    /**
+     * Returns the page on which some or all of the content items designated by
+     *  the K entry shall be rendered (Pg).
+     * 
+     * @return the page on which some or all of the content items designated by
+     *  the K entry shall be rendered
+     */
+    public PDPage getPage()
+    {
+<span class="fc" id="L140">        COSDictionary page = getCOSObject().getCOSDictionary(COSName.PG);</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">        return page != null ? new PDPage(page) : null;</span>
+    }
+
+    /**
+     * Sets the page on which some or all of the content items designated by
+     *  the K entry shall be rendered (Pg).
+     * @param page the page on which some or all of the content items designated
+     *  by the K entry shall be rendered.
+     */
+    public void setPage(PDPage page)
+    {
+<span class="nc" id="L152">        this.getCOSObject().setItem(COSName.PG, page);</span>
+<span class="nc" id="L153">    }</span>
+
+    /**
+     * Returns the attributes together with their revision numbers (A).
+     * 
+     * @return the attributes as a list, never null.
+     */
+    public Revisions&lt;PDAttributeObject&gt; getAttributes()
+    {
+<span class="fc" id="L162">        Revisions&lt;PDAttributeObject&gt; attributes = new Revisions&lt;&gt;();</span>
+<span class="fc" id="L163">        COSBase a = this.getCOSObject().getDictionaryObject(COSName.A);</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        if (a instanceof COSArray)</span>
+        {
+<span class="fc" id="L166">            COSArray array = (COSArray) a;</span>
+<span class="fc" id="L167">            PDAttributeObject ao = null;</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">            for (int i = 0; i &lt; array.size(); ++i)</span>
+            {
+<span class="fc" id="L170">                COSBase item = array.getObject(i);</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">                if (item instanceof COSDictionary)</span>
+                {
+<span class="fc" id="L173">                    ao = PDAttributeObject.create((COSDictionary) item);</span>
+<span class="fc" id="L174">                    ao.setStructureElement(this);</span>
+<span class="fc" id="L175">                    attributes.addObject(ao, 0);</span>
+                }
+<span class="nc bnc" id="L177" title="All 2 branches missed.">                else if (item instanceof COSInteger)</span>
+                {
+                    // Read &quot;14.7.5.3 Attribute Revision Numbers&quot;
+                    // This is additional to the /R entry
+<span class="nc" id="L181">                    attributes.setRevisionNumber(ao, ((COSNumber) item).intValue());</span>
+                }
+            }
+        }
+<span class="fc bfc" id="L185" title="All 2 branches covered.">        if (a instanceof COSDictionary)</span>
+        {
+<span class="fc" id="L187">            PDAttributeObject ao = PDAttributeObject.create((COSDictionary) a);</span>
+<span class="fc" id="L188">            ao.setStructureElement(this);</span>
+<span class="fc" id="L189">            attributes.addObject(ao, 0);</span>
+        }
+<span class="fc" id="L191">        return attributes;</span>
+    }
+
+    /**
+     * Sets the attributes together with their revision numbers (A).
+     * 
+     * @param attributes the attributes
+     */
+    public void setAttributes(Revisions&lt;PDAttributeObject&gt; attributes)
+    {
+<span class="nc" id="L201">        COSName key = COSName.A;</span>
+<span class="nc bnc" id="L202" title="All 4 branches missed.">        if ((attributes.size() == 1) &amp;&amp; (attributes.getRevisionNumber(0) == 0))</span>
+        {
+<span class="nc" id="L204">            PDAttributeObject attributeObject = attributes.getObject(0);</span>
+<span class="nc" id="L205">            attributeObject.setStructureElement(this);</span>
+<span class="nc" id="L206">            this.getCOSObject().setItem(key, attributeObject);</span>
+<span class="nc" id="L207">            return;</span>
+        }
+<span class="nc" id="L209">        COSArray array = new COSArray();</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">        for (int i = 0; i &lt; attributes.size(); i++)</span>
+        {
+<span class="nc" id="L212">            PDAttributeObject attributeObject = attributes.getObject(i);</span>
+<span class="nc" id="L213">            attributeObject.setStructureElement(this);</span>
+<span class="nc" id="L214">            int revisionNumber = attributes.getRevisionNumber(i);</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">            if (revisionNumber &lt; 0)</span>
+            {
+<span class="nc" id="L217">                throw new IllegalArgumentException(&quot;The revision number shall be &gt; -1&quot;);</span>
+            }
+<span class="nc" id="L219">            array.add(attributeObject);</span>
+<span class="nc" id="L220">            array.add(COSInteger.get(revisionNumber));</span>
+        }
+<span class="nc" id="L222">        this.getCOSObject().setItem(key, array);</span>
+<span class="nc" id="L223">    }</span>
+
+    /**
+     * Adds an attribute object.
+     * 
+     * @param attributeObject the attribute object
+     */
+    public void addAttribute(PDAttributeObject attributeObject)
+    {
+<span class="nc" id="L232">        COSName key = COSName.A;</span>
+<span class="nc" id="L233">        attributeObject.setStructureElement(this);</span>
+<span class="nc" id="L234">        COSBase a = this.getCOSObject().getDictionaryObject(key);</span>
+        COSArray array;
+<span class="nc bnc" id="L236" title="All 2 branches missed.">        if (a instanceof COSArray)</span>
+        {
+<span class="nc" id="L238">            array = (COSArray) a;</span>
+        }
+        else
+        {
+<span class="nc" id="L242">            array = new COSArray();</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">            if (a != null)</span>
+            {
+<span class="nc" id="L245">                array.add(a);</span>
+<span class="nc" id="L246">                array.add(COSInteger.get(0));</span>
+            }
+        }
+<span class="nc" id="L249">        this.getCOSObject().setItem(key, array);</span>
+<span class="nc" id="L250">        array.add(attributeObject);</span>
+<span class="nc" id="L251">        array.add(COSInteger.get(this.getRevisionNumber()));</span>
+<span class="nc" id="L252">    }</span>
+
+    /**
+     * Removes an attribute object.
+     * 
+     * @param attributeObject the attribute object
+     */
+    public void removeAttribute(PDAttributeObject attributeObject)
+    {
+<span class="nc" id="L261">        COSName key = COSName.A;</span>
+<span class="nc" id="L262">        COSBase a = this.getCOSObject().getDictionaryObject(key);</span>
+<span class="nc bnc" id="L263" title="All 2 branches missed.">        if (a instanceof COSArray)</span>
+        {
+<span class="nc" id="L265">            COSArray array = (COSArray) a;</span>
+<span class="nc" id="L266">            array.remove(attributeObject.getCOSObject());</span>
+<span class="nc bnc" id="L267" title="All 4 branches missed.">            if ((array.size() == 2) &amp;&amp; (array.getInt(1) == 0))</span>
+            {
+<span class="nc" id="L269">                this.getCOSObject().setItem(key, array.getObject(0));</span>
+            }
+<span class="nc" id="L271">        }</span>
+        else
+        {
+<span class="nc" id="L274">            COSBase directA = a;</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">            if (a instanceof COSObject)</span>
+            {
+<span class="nc" id="L277">                directA = ((COSObject) a).getObject();</span>
+            }
+<span class="nc bnc" id="L279" title="All 2 branches missed.">            if (attributeObject.getCOSObject().equals(directA))</span>
+            {
+<span class="nc" id="L281">                this.getCOSObject().setItem(key, null);</span>
+            }
+        }
+<span class="nc" id="L284">        attributeObject.setStructureElement(null);</span>
+<span class="nc" id="L285">    }</span>
+
+    /**
+     * Updates the revision number for the given attribute object.
+     * 
+     * @param attributeObject the attribute object
+     */
+    public void attributeChanged(PDAttributeObject attributeObject)
+    {
+<span class="nc" id="L294">        COSName key = COSName.A;</span>
+<span class="nc" id="L295">        COSBase a = this.getCOSObject().getDictionaryObject(key);</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">        if (a instanceof COSArray)</span>
+        {
+<span class="nc" id="L298">            COSArray array = (COSArray) a;</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">            for (int i = 0; i &lt; array.size(); i++)</span>
+            {
+<span class="nc" id="L301">                COSBase entry = array.getObject(i);</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">                if (entry.equals(attributeObject.getCOSObject()))</span>
+                {
+<span class="nc" id="L304">                    COSBase next = array.get(i + 1);</span>
+<span class="nc bnc" id="L305" title="All 2 branches missed.">                    if (next instanceof COSInteger)</span>
+                    {
+<span class="nc" id="L307">                        array.set(i + 1, COSInteger.get(this.getRevisionNumber()));</span>
+                    }
+                }
+            }
+<span class="nc" id="L311">        }</span>
+        else
+        {
+<span class="nc" id="L314">            COSArray array = new COSArray(Arrays.asList(a, COSInteger.get(this.getRevisionNumber())));</span>
+<span class="nc" id="L315">            this.getCOSObject().setItem(key, array);</span>
+        }
+<span class="nc" id="L317">    }</span>
+
+    /**
+     * Returns the class names together with their revision numbers (C).
+     * 
+     * @return the class names as a list, never null.
+     */
+    public Revisions&lt;String&gt; getClassNames()
+    {
+<span class="fc" id="L326">        COSName key = COSName.C;</span>
+<span class="fc" id="L327">        Revisions&lt;String&gt; classNames = new Revisions&lt;&gt;();</span>
+<span class="fc" id="L328">        COSBase c = this.getCOSObject().getDictionaryObject(key);</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">        if (c instanceof COSName)</span>
+        {
+<span class="fc" id="L331">            classNames.addObject(((COSName) c).getName(), 0);</span>
+        }
+<span class="fc bfc" id="L333" title="All 2 branches covered.">        if (c instanceof COSArray)</span>
+        {
+<span class="fc" id="L335">            COSArray array = (COSArray) c;</span>
+<span class="fc" id="L336">            String className = null;</span>
+<span class="fc bfc" id="L337" title="All 2 branches covered.">            for (int i = 0; i &lt; array.size(); ++i)</span>
+            {
+<span class="fc" id="L339">                COSBase item = array.getObject(i);</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">                if (item instanceof COSName)</span>
+                {
+<span class="fc" id="L342">                    className = ((COSName) item).getName();</span>
+<span class="fc" id="L343">                    classNames.addObject(className, 0);</span>
+                }
+<span class="nc bnc" id="L345" title="All 2 branches missed.">                else if (item instanceof COSInteger)</span>
+                {
+                    // Read &quot;14.7.5.3 Attribute Revision Numbers&quot;
+                    // This is additional to the /R entry
+<span class="nc" id="L349">                    classNames.setRevisionNumber(className, ((COSNumber) item).intValue());</span>
+                }
+            }
+        }
+<span class="fc" id="L353">        return classNames;</span>
+    }
+
+    /**
+     * Sets the class names together with their revision numbers (C).
+     * 
+     * @param classNames the class names
+     */
+    public void setClassNames(Revisions&lt;String&gt; classNames)
+    {
+<span class="nc bnc" id="L363" title="All 2 branches missed.">        if (classNames == null)</span>
+        {
+<span class="nc" id="L365">            return;</span>
+        }
+<span class="nc" id="L367">        COSName key = COSName.C;</span>
+<span class="nc bnc" id="L368" title="All 4 branches missed.">        if ((classNames.size() == 1) &amp;&amp; (classNames.getRevisionNumber(0) == 0))</span>
+        {
+<span class="nc" id="L370">            String className = classNames.getObject(0);</span>
+<span class="nc" id="L371">            this.getCOSObject().setName(key, className);</span>
+<span class="nc" id="L372">            return;</span>
+        }
+<span class="nc" id="L374">        COSArray array = new COSArray();</span>
+<span class="nc bnc" id="L375" title="All 2 branches missed.">        for (int i = 0; i &lt; classNames.size(); i++)</span>
+        {
+<span class="nc" id="L377">            String className = classNames.getObject(i);</span>
+<span class="nc" id="L378">            int revisionNumber = classNames.getRevisionNumber(i);</span>
+<span class="nc bnc" id="L379" title="All 2 branches missed.">            if (revisionNumber &lt; 0)</span>
+            {
+<span class="nc" id="L381">                throw new IllegalArgumentException(&quot;The revision number shall be &gt; -1&quot;);</span>
+            }
+<span class="nc" id="L383">            array.add(COSName.getPDFName(className));</span>
+<span class="nc" id="L384">            array.add(COSInteger.get(revisionNumber));</span>
+        }
+<span class="nc" id="L386">        this.getCOSObject().setItem(key, array);</span>
+<span class="nc" id="L387">    }</span>
+
+    /**
+     * Adds a class name.
+     * 
+     * @param className the class name
+     */
+    public void addClassName(String className)
+    {
+<span class="nc bnc" id="L396" title="All 2 branches missed.">        if (className == null)</span>
+        {
+<span class="nc" id="L398">            return;</span>
+        }
+<span class="nc" id="L400">        COSName key = COSName.C;</span>
+<span class="nc" id="L401">        COSBase c = this.getCOSObject().getDictionaryObject(key);</span>
+        COSArray array;
+<span class="nc bnc" id="L403" title="All 2 branches missed.">        if (c instanceof COSArray)</span>
+        {
+<span class="nc" id="L405">            array = (COSArray) c;</span>
+        }
+        else
+        {
+<span class="nc" id="L409">            array = new COSArray();</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">            if (c != null)</span>
+            {
+<span class="nc" id="L412">                array.add(c);</span>
+<span class="nc" id="L413">                array.add(COSInteger.get(0));</span>
+            }
+        }
+<span class="nc" id="L416">        this.getCOSObject().setItem(key, array);</span>
+<span class="nc" id="L417">        array.add(COSName.getPDFName(className));</span>
+<span class="nc" id="L418">        array.add(COSInteger.get(this.getRevisionNumber()));</span>
+<span class="nc" id="L419">    }</span>
+
+    /**
+     * Removes a class name.
+     * 
+     * @param className the class name
+     */
+    public void removeClassName(String className)
+    {
+<span class="nc bnc" id="L428" title="All 2 branches missed.">        if (className == null)</span>
+        {
+<span class="nc" id="L430">            return;</span>
+        }
+<span class="nc" id="L432">        COSName key = COSName.C;</span>
+<span class="nc" id="L433">        COSBase c = this.getCOSObject().getDictionaryObject(key);</span>
+<span class="nc" id="L434">        COSName name = COSName.getPDFName(className);</span>
+<span class="nc bnc" id="L435" title="All 2 branches missed.">        if (c instanceof COSArray)</span>
+        {
+<span class="nc" id="L437">            COSArray array = (COSArray) c;</span>
+<span class="nc" id="L438">            array.remove(name);</span>
+<span class="nc bnc" id="L439" title="All 4 branches missed.">            if ((array.size() == 2) &amp;&amp; (array.getInt(1) == 0))</span>
+            {
+<span class="nc" id="L441">                this.getCOSObject().setItem(key, array.getObject(0));</span>
+            }
+<span class="nc" id="L443">        }</span>
+        else
+        {
+<span class="nc" id="L446">            COSBase directC = c;</span>
+<span class="nc bnc" id="L447" title="All 2 branches missed.">            if (c instanceof COSObject)</span>
+            {
+<span class="nc" id="L449">                directC = ((COSObject) c).getObject();</span>
+            }
+<span class="nc bnc" id="L451" title="All 2 branches missed.">            if (name.equals(directC))</span>
+            {
+<span class="nc" id="L453">                this.getCOSObject().setItem(key, null);</span>
+            }
+        }
+<span class="nc" id="L456">    }</span>
+
+    /**
+     * Returns the revision number (R).
+     * 
+     * @return the revision number
+     */
+    public int getRevisionNumber()
+    {
+<span class="fc" id="L465">        return this.getCOSObject().getInt(COSName.R, 0);</span>
+    }
+
+    /**
+     * Sets the revision number (R).
+     * 
+     * @param revisionNumber the revision number
+     */
+    public void setRevisionNumber(int revisionNumber)
+    {
+<span class="fc bfc" id="L475" title="All 2 branches covered.">        if (revisionNumber &lt; 0)</span>
+        {
+<span class="fc" id="L477">            throw new IllegalArgumentException(&quot;The revision number shall be &gt; -1&quot;);</span>
+        }
+<span class="fc" id="L479">        this.getCOSObject().setInt(COSName.R, revisionNumber);</span>
+<span class="fc" id="L480">    }</span>
+
+    /**
+     * Increments th revision number.
+     */
+    public void incrementRevisionNumber()
+    {
+<span class="fc" id="L487">        this.setRevisionNumber(this.getRevisionNumber() + 1);</span>
+<span class="fc" id="L488">    }</span>
+
+    /**
+     * Returns the title (T).
+     * 
+     * @return the title
+     */
+    public String getTitle()
+    {
+<span class="fc" id="L497">        return this.getCOSObject().getString(COSName.T);</span>
+    }
+
+    /**
+     * Sets the title (T).
+     * 
+     * @param title the title
+     */
+    public void setTitle(String title)
+    {
+<span class="fc" id="L507">        this.getCOSObject().setString(COSName.T, title);</span>
+<span class="fc" id="L508">    }</span>
+
+    /**
+     * Returns the language (Lang).
+     * 
+     * @return the language
+     */
+    public String getLanguage()
+    {
+<span class="fc" id="L517">        return this.getCOSObject().getString(COSName.LANG);</span>
+    }
+
+    /**
+     * Sets the language (Lang).
+     * 
+     * @param language the language
+     */
+    public void setLanguage(String language)
+    {
+<span class="fc" id="L527">        this.getCOSObject().setString(COSName.LANG, language);</span>
+<span class="fc" id="L528">    }</span>
+
+    /**
+     * Returns the alternate description (Alt).
+     * 
+     * @return the alternate description
+     */
+    public String getAlternateDescription()
+    {
+<span class="fc" id="L537">        return this.getCOSObject().getString(COSName.ALT);</span>
+    }
+
+    /**
+     * Sets the alternate description (Alt).
+     * 
+     * @param alternateDescription the alternate description
+     */
+    public void setAlternateDescription(String alternateDescription)
+    {
+<span class="fc" id="L547">        this.getCOSObject().setString(COSName.ALT, alternateDescription);</span>
+<span class="fc" id="L548">    }</span>
+
+    /**
+     * Returns the expanded form (E).
+     * 
+     * @return the expanded form
+     */
+    public String getExpandedForm()
+    {
+<span class="fc" id="L557">        return this.getCOSObject().getString(COSName.E);</span>
+    }
+
+    /**
+     * Sets the expanded form (E).
+     * 
+     * @param expandedForm the expanded form
+     */
+    public void setExpandedForm(String expandedForm)
+    {
+<span class="fc" id="L567">        this.getCOSObject().setString(COSName.E, expandedForm);</span>
+<span class="fc" id="L568">    }</span>
+
+    /**
+     * Returns the actual text (ActualText).
+     * 
+     * @return the actual text
+     */
+    public String getActualText()
+    {
+<span class="fc" id="L577">        return this.getCOSObject().getString(COSName.ACTUAL_TEXT);</span>
+    }
+
+    /**
+     * Sets the actual text (ActualText).
+     * 
+     * @param actualText the actual text
+     */
+    public void setActualText(String actualText)
+    {
+<span class="fc" id="L587">        this.getCOSObject().setString(COSName.ACTUAL_TEXT, actualText);</span>
+<span class="fc" id="L588">    }</span>
+
+    /**
+     * Returns the standard structure type, the actual structure type is mapped
+     * to in the role map.
+     * 
+     * @return the standard structure type
+     */
+    public String getStandardStructureType()
+    {
+<span class="nc" id="L598">        String type = this.getStructureType();</span>
+<span class="nc" id="L599">        Object mappedValue = getRoleMap().get(type);</span>
+<span class="nc bnc" id="L600" title="All 2 branches missed.">        if (mappedValue instanceof String)</span>
+        {
+<span class="nc" id="L602">            type = (String) mappedValue;</span>
+        }
+<span class="nc" id="L604">        return type;</span>
+    }
+
+    /**
+     * Appends a marked-content sequence kid.
+     * 
+     * @param mcid the marked-content id (MCID).
+     * @throws IllegalArgumentException if the mcid is negative.
+     */
+    public void appendKid(int mcid)
+    {
+<span class="fc bfc" id="L615" title="All 2 branches covered.">        if (mcid &lt; 0)</span>
+        {
+<span class="fc" id="L617">            throw new IllegalArgumentException(&quot;MCID should not be negative&quot;);</span>
+        }
+<span class="fc" id="L619">        this.appendKid(COSInteger.get(mcid));</span>
+<span class="fc" id="L620">    }</span>
+
+    /**
+     * Appends a marked-content sequence kid.
+     * 
+     * @param markedContent the marked-content sequence with the MCID.
+     * @throws IllegalArgumentException if the mcid is negative or doesn't exist.
+     */
+    public void appendKid(PDMarkedContent markedContent)
+    {
+<span class="pc bpc" id="L630" title="1 of 2 branches missed.">        if (markedContent == null)</span>
+        {
+<span class="nc" id="L632">            return;</span>
+        }
+<span class="fc" id="L634">        int mcid = markedContent.getMCID();</span>
+<span class="fc bfc" id="L635" title="All 2 branches covered.">        if (mcid &lt; 0)</span>
+        {
+<span class="fc" id="L637">            throw new IllegalArgumentException(&quot;MCID is negative or doesn't exist&quot;);</span>
+        }
+<span class="fc" id="L639">        this.appendKid(COSInteger.get(mcid));</span>
+<span class="fc" id="L640">    }</span>
+
+    /**
+     * Appends a marked-content reference kid.
+     * 
+     * @param markedContentReference the marked-content reference
+     */
+    public void appendKid(PDMarkedContentReference markedContentReference)
+    {
+<span class="fc" id="L649">        this.appendObjectableKid(markedContentReference);</span>
+<span class="fc" id="L650">    }</span>
+
+    /**
+     * Appends an object reference kid.
+     * 
+     * @param objectReference the object reference
+     */
+    public void appendKid(PDObjectReference objectReference)
+    {
+<span class="nc" id="L659">        this.appendObjectableKid(objectReference);</span>
+<span class="nc" id="L660">    }</span>
+
+    /**
+     * Inserts a marked-content identifier kid before a reference kid.
+     * 
+     * @param markedContentIdentifier the marked-content identifier
+     * @param refKid the reference kid
+     */
+    public void insertBefore(COSInteger markedContentIdentifier, Object refKid)
+    {
+<span class="nc" id="L670">        this.insertBefore((COSBase) markedContentIdentifier, refKid);</span>
+<span class="nc" id="L671">    }</span>
+
+    /**
+     * Inserts a marked-content reference kid before a reference kid.
+     * 
+     * @param markedContentReference the marked-content reference
+     * @param refKid the reference kid
+     */
+    public void insertBefore(PDMarkedContentReference markedContentReference,
+        Object refKid)
+    {
+<span class="nc" id="L682">        this.insertObjectableBefore(markedContentReference, refKid);</span>
+<span class="nc" id="L683">    }</span>
+
+    /**
+     * Inserts an object reference kid before a reference kid.
+     * 
+     * @param objectReference the object reference
+     * @param refKid the reference kid
+     */
+    public void insertBefore(PDObjectReference objectReference, Object refKid)
+    {
+<span class="nc" id="L693">        this.insertObjectableBefore(objectReference, refKid);</span>
+<span class="nc" id="L694">    }</span>
+
+    /**
+     * Removes a marked-content identifier kid.
+     * 
+     * @param markedContentIdentifier the marked-content identifier
+     */
+    public void removeKid(COSInteger markedContentIdentifier)
+    {
+<span class="nc" id="L703">        this.removeKid((COSBase) markedContentIdentifier);</span>
+<span class="nc" id="L704">    }</span>
+
+    /**
+     * Removes a marked-content reference kid.
+     * 
+     * @param markedContentReference the marked-content reference
+     */
+    public void removeKid(PDMarkedContentReference markedContentReference)
+    {
+<span class="nc" id="L713">        this.removeObjectableKid(markedContentReference);</span>
+<span class="nc" id="L714">    }</span>
+
+    /**
+     * Removes an object reference kid.
+     * 
+     * @param objectReference the object reference
+     */
+    public void removeKid(PDObjectReference objectReference)
+    {
+<span class="nc" id="L723">        this.removeObjectableKid(objectReference);</span>
+<span class="nc" id="L724">    }</span>
+
+
+    /**
+     * Returns the structure tree root.
+     * 
+     * @return the structure tree root
+     */
+    private PDStructureTreeRoot getStructureTreeRoot()
+    {
+<span class="nc" id="L734">        PDStructureNode parent = this.getParent();</span>
+<span class="nc bnc" id="L735" title="All 2 branches missed.">        while (parent instanceof PDStructureElement)</span>
+        {
+<span class="nc" id="L737">            parent = ((PDStructureElement) parent).getParent();</span>
+        }
+<span class="nc bnc" id="L739" title="All 2 branches missed.">        if (parent instanceof PDStructureTreeRoot)</span>
+        {
+<span class="nc" id="L741">            return (PDStructureTreeRoot) parent;</span>
+        }
+<span class="nc" id="L743">        return null;</span>
+    }
+
+    /**
+     * Returns the role map.
+     * 
+     * @return the role map
+     */
+    private Map&lt;String, Object&gt; getRoleMap()
+    {
+<span class="nc" id="L753">        PDStructureTreeRoot root = this.getStructureTreeRoot();</span>
+<span class="nc bnc" id="L754" title="All 2 branches missed.">        if (root != null)</span>
+        {
+<span class="nc" id="L756">            return root.getRoleMap();</span>
+        }
+<span class="nc" id="L758">        return Collections.emptyMap();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

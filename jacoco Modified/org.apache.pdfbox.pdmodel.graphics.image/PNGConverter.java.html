@@ -1,0 +1,939 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PNGConverter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.image</a> &gt; <span class="el_source">PNGConverter.java</span></div><h1>PNGConverter.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.image;
+
+import java.awt.color.ColorSpace;
+import java.awt.color.ICC_Profile;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.filter.Filter;
+import org.apache.pdfbox.filter.FilterFactory;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceGray;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
+import org.apache.pdfbox.pdmodel.graphics.color.PDICCBased;
+import org.apache.pdfbox.pdmodel.graphics.color.PDIndexed;
+
+/**
+ * This factory tries to encode a PNG given as byte array into a PDImageXObject
+ * by directly coping the image data into the PDF streams without
+ * decoding/encoding and re-compressing the PNG data.
+ * &lt;p&gt;
+ * If this is for any reason not possible, the factory will return null. You
+ * must then encode the image by loading it and using the LosslessFactory.
+ * &lt;p&gt;
+ * &lt;a href=&quot;https://www.w3.org/TR/2003/REC-PNG-20031110&quot;&gt;The W3C PNG spec&lt;/a&gt; was used to implement
+ * this class.
+ *
+ * @author Emmeran Seehuber
+ */
+final class PNGConverter
+{
+<span class="fc" id="L64">    private static final Logger LOG = LogManager.getLogger(PNGConverter.class);</span>
+
+    // Chunk Type definitions. The bytes in the comments are the bytes in the spec.
+    private static final int CHUNK_IHDR = 0x49484452; // IHDR: 73 72 68 82
+    private static final int CHUNK_IDAT = 0x49444154; // IDAT: 73 68 65 84
+    private static final int CHUNK_PLTE = 0x504C5445; // PLTE: 80 76 84 69
+    private static final int CHUNK_IEND = 0x49454E44; // IEND: 73 69 78 68
+    private static final int CHUNK_TRNS = 0x74524E53; // tRNS: 116 82 78 83
+    private static final int CHUNK_CHRM = 0x6348524D; // cHRM: 99 72 82 77
+    private static final int CHUNK_GAMA = 0x67414D41; // gAMA: 103 65 77 65
+    private static final int CHUNK_ICCP = 0x69434350; // iCCP: 105 67 67 80
+    private static final int CHUNK_SBIT = 0x73424954; // sBIT: 115 66 73 84
+    private static final int CHUNK_SRGB = 0x73524742; // sRGB: 115 82 71 66
+    private static final int CHUNK_TEXT = 0x74455874; // tEXt: 116 69 88 116
+    private static final int CHUNK_ZTXT = 0x7A545874; // zTXt: 122 84 88 116
+    private static final int CHUNK_ITXT = 0x69545874; // iTXt: 105 84 88 116
+    private static final int CHUNK_KBKG = 0x6B424B47; // kBKG: 107 66 75 71
+    private static final int CHUNK_HIST = 0x68495354; // hIST: 104 73 83 84
+    private static final int CHUNK_PHYS = 0x70485973; // pHYs: 112 72 89 115
+    private static final int CHUNK_SPLT = 0x73504C54; // sPLT: 115 80 76 84
+    private static final int CHUNK_TIME = 0x74494D45; // tIME: 116 73 77 69
+
+    // CRC Reference Implementation, see
+    // https://www.w3.org/TR/2003/REC-PNG-20031110/#D-CRCAppendix
+    // for details
+
+    /* Table of CRCs of all 8-bit messages. */
+<span class="fc" id="L91">    private static final int[] CRC_TABLE = new int[256];</span>
+
+    static
+    {
+<span class="fc" id="L95">        makeCrcTable();</span>
+<span class="fc" id="L96">    }</span>
+
+    private PNGConverter()
+    {
+    }
+
+    /**
+     * Try to convert a PNG into a PDImageXObject. If for any reason the PNG can not
+     * be converted, null is returned.
+     * &lt;p&gt;
+     * This usually means the PNG structure is damaged (CRC error, etc.) or it uses
+     * some features which can not be mapped to PDF.
+     *
+     * @param doc       the document to put the image in
+     * @param imageData the byte data of the PNG
+     * @return null or the PDImageXObject built from the png
+     */
+    static PDImageXObject convertPNGImage(PDDocument doc, byte[] imageData) throws IOException
+    {
+<span class="fc" id="L115">        PNGConverterState state = parsePNGChunks(imageData);</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (!checkConverterState(state))</span>
+        {
+            // There is something wrong, we can't convert this PNG
+<span class="nc" id="L119">            return null;</span>
+        }
+
+<span class="fc" id="L122">        return convertPng(doc, state);</span>
+    }
+
+    /**
+     * Convert the image using the state.
+     *
+     * @param doc   the document to put the image in
+     * @param state the parser state containing the PNG chunks.
+     * @return null or the converted image
+     */
+    private static PDImageXObject convertPng(PDDocument doc, PNGConverterState state)
+            throws IOException
+    {
+<span class="fc" id="L135">        Chunk ihdr = state.IHDR;</span>
+<span class="fc" id="L136">        int ihdrStart = ihdr.start;</span>
+<span class="fc" id="L137">        int width = readInt(ihdr.bytes, ihdrStart);</span>
+<span class="fc" id="L138">        int height = readInt(ihdr.bytes, ihdrStart + 4);</span>
+<span class="fc" id="L139">        int bitDepth = ihdr.bytes[ihdrStart + 8] &amp; 0xFF;</span>
+<span class="fc" id="L140">        int colorType = ihdr.bytes[ihdrStart + 9] &amp; 0xFF;</span>
+<span class="fc" id="L141">        int compressionMethod = ihdr.bytes[ihdrStart + 10] &amp; 0xFF;</span>
+<span class="fc" id="L142">        int filterMethod = ihdr.bytes[ihdrStart + 11] &amp; 0xFF;</span>
+<span class="fc" id="L143">        int interlaceMethod = ihdr.bytes[ihdrStart + 12] &amp; 0xFF;</span>
+
+<span class="pc bpc" id="L145" title="1 of 10 branches missed.">        if (bitDepth != 1 &amp;&amp; bitDepth != 2 &amp;&amp; bitDepth != 4 &amp;&amp; bitDepth != 8 &amp;&amp; bitDepth != 16)</span>
+        {
+<span class="nc" id="L147">            LOG.error(String.format(&quot;Invalid bit depth %d.&quot;, bitDepth));</span>
+<span class="nc" id="L148">            return null;</span>
+        }
+<span class="pc bpc" id="L150" title="2 of 4 branches missed.">        if (width &lt;= 0 || height &lt;= 0)</span>
+        {
+<span class="nc" id="L152">            LOG.error(String.format(&quot;Invalid image size %d x %d&quot;, width, height));</span>
+<span class="nc" id="L153">            return null;</span>
+        }
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">        if (compressionMethod != 0)</span>
+        {
+<span class="nc" id="L157">            LOG.error(String.format(&quot;Unknown PNG compression method %d.&quot;, compressionMethod));</span>
+<span class="nc" id="L158">            return null;</span>
+        }
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if (filterMethod != 0)</span>
+        {
+<span class="nc" id="L162">            LOG.error(String.format(&quot;Unknown PNG filtering method %d.&quot;, compressionMethod));</span>
+<span class="nc" id="L163">            return null;</span>
+        }
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">        if (interlaceMethod != 0)</span>
+        {
+<span class="nc" id="L167">            LOG.debug(String.format(&quot;Can't handle interlace method %d.&quot;, interlaceMethod));</span>
+<span class="nc" id="L168">            return null;</span>
+        }
+
+<span class="fc" id="L171">        state.width = width;</span>
+<span class="fc" id="L172">        state.height = height;</span>
+<span class="fc" id="L173">        state.bitsPerComponent = bitDepth;</span>
+
+<span class="pc bpc" id="L175" title="1 of 6 branches missed.">        switch (colorType)</span>
+        {
+        case 0:
+            // Grayscale
+<span class="fc" id="L179">            LOG.debug(&quot;Can't handle grayscale yet.&quot;);</span>
+<span class="fc" id="L180">            return null;</span>
+        case 2:
+            // Truecolor
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">            if (state.tRNS != null)</span>
+            {
+<span class="nc" id="L185">                LOG.debug(&quot;Can't handle images with transparent colors.&quot;);</span>
+<span class="nc" id="L186">                return null;</span>
+            }
+<span class="fc" id="L188">            return buildImageObject(doc, state);</span>
+        case 3:
+            // Indexed image
+<span class="fc" id="L191">            return buildIndexImage(doc, state);</span>
+        case 4:
+            // Grayscale with alpha.
+<span class="fc" id="L194">            LOG.debug(</span>
+                    &quot;Can't handle grayscale with alpha, would need to separate alpha from image data&quot;);
+<span class="fc" id="L196">            return null;</span>
+        case 6:
+            // Truecolor with alpha.
+<span class="fc" id="L199">            LOG.debug(</span>
+                    &quot;Can't handle truecolor with alpha, would need to separate alpha from image data&quot;);
+<span class="fc" id="L201">            return null;</span>
+        default:
+<span class="nc" id="L203">            LOG.error(&quot;Unknown PNG color type {}&quot;, colorType);</span>
+<span class="nc" id="L204">            return null;</span>
+        }
+    }
+
+    /**
+     * Build a indexed image
+     */
+    private static PDImageXObject buildIndexImage(PDDocument doc, PNGConverterState state)
+            throws IOException
+    {
+<span class="fc" id="L214">        Chunk plte = state.PLTE;</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">        if (plte == null)</span>
+        {
+<span class="nc" id="L217">            LOG.error(&quot;Indexed image without PLTE chunk.&quot;);</span>
+<span class="nc" id="L218">            return null;</span>
+        }
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">        if (plte.length % 3 != 0)</span>
+        {
+<span class="nc" id="L222">            LOG.error(&quot;PLTE table corrupted, last (r,g,b) tuple is not complete.&quot;);</span>
+<span class="nc" id="L223">            return null;</span>
+        }
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">        if (state.bitsPerComponent &gt; 8)</span>
+        {
+<span class="nc" id="L227">            LOG.debug(String.format(&quot;Can only convert indexed images with bit depth &lt;= 8, not %d.&quot;,</span>
+<span class="nc" id="L228">                    state.bitsPerComponent));</span>
+<span class="nc" id="L229">            return null;</span>
+        }
+
+<span class="fc" id="L232">        PDImageXObject image = buildImageObject(doc, state);</span>
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">        if (image == null)</span>
+        {
+<span class="nc" id="L235">            return null;</span>
+        }
+
+<span class="fc" id="L238">        int highVal = (plte.length / 3) - 1;</span>
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">        if (highVal &gt; 255)</span>
+        {
+<span class="nc" id="L241">            LOG.error(String.format(&quot;Too much colors in PLTE, only 256 allowed, found %d colors.&quot;,</span>
+<span class="nc" id="L242">                    highVal + 1));</span>
+<span class="nc" id="L243">            return null;</span>
+        }
+
+<span class="fc" id="L246">        setupIndexedColorSpace(doc, plte, image, highVal);</span>
+
+<span class="fc bfc" id="L248" title="All 2 branches covered.">        if (state.tRNS != null)</span>
+        {
+<span class="fc" id="L250">            image.getCOSObject().setItem(COSName.SMASK,</span>
+<span class="fc" id="L251">                    buildTransparencyMaskFromIndexedData(doc, image, state));</span>
+        }
+
+<span class="fc" id="L254">        return image;</span>
+    }
+
+    private static PDImageXObject buildTransparencyMaskFromIndexedData(PDDocument doc,
+            PDImageXObject image, PNGConverterState state) throws IOException
+    {
+<span class="fc" id="L260">        Filter flateDecode = FilterFactory.INSTANCE.getFilter(COSName.FLATE_DECODE);</span>
+<span class="fc" id="L261">        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();</span>
+<span class="fc" id="L262">        COSDictionary decodeParams = buildDecodeParams(state, PDDeviceGray.INSTANCE);</span>
+<span class="fc" id="L263">        COSDictionary imageDict = new COSDictionary();</span>
+<span class="fc" id="L264">        imageDict.setItem(COSName.FILTER, COSName.FLATE_DECODE);</span>
+<span class="fc" id="L265">        imageDict.setItem(COSName.DECODE_PARMS, decodeParams);</span>
+<span class="fc" id="L266">        flateDecode.decode(getIDATInputStream(state), outputStream, imageDict, 0);</span>
+<span class="fc" id="L267">        int length = image.getWidth() * image.getHeight();</span>
+<span class="fc" id="L268">        byte[] bytes = new byte[length];</span>
+<span class="fc" id="L269">        byte[] transparencyTable = state.tRNS.getData();</span>
+<span class="fc" id="L270">        byte[] decodedIDAT = outputStream.toByteArray();</span>
+<span class="fc" id="L271">        try (ImageInputStream iis = new MemoryCacheImageInputStream(</span>
+                new ByteArrayInputStream(decodedIDAT)))
+        {
+<span class="fc" id="L274">            int bitsPerComponent = state.bitsPerComponent;</span>
+<span class="fc" id="L275">            int w = 0;</span>
+<span class="fc" id="L276">            int neededBits = bitsPerComponent * state.width;</span>
+<span class="fc" id="L277">            int bitPadding = neededBits % 8;</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">            for (int i = 0; i &lt; bytes.length; i++)</span>
+            {
+<span class="fc" id="L280">                int idx = (int) iis.readBits(bitsPerComponent);</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">                if (idx &lt; transparencyTable.length)</span>
+                {
+                    // Inside the table, use the transparency value
+<span class="fc" id="L284">                    bytes[i] = transparencyTable[idx];</span>
+                }
+                else
+                {
+                    // Outside the table -&gt; transparent value is 0xFF here.
+<span class="fc" id="L289">                    bytes[i] = (byte) 0xFF;</span>
+                }
+<span class="fc" id="L291">                w++;</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">                if (w == state.width)</span>
+                {
+<span class="fc" id="L294">                    w = 0;</span>
+<span class="fc" id="L295">                    iis.readBits(bitPadding);</span>
+                }
+            }
+        }
+<span class="fc" id="L299">        return LosslessFactory</span>
+<span class="fc" id="L300">                .prepareImageXObject(doc, bytes, image.getWidth(), image.getHeight(), 8,</span>
+                        PDDeviceGray.INSTANCE);
+    }
+
+    private static void setupIndexedColorSpace(PDDocument doc, Chunk lookupTable,
+            PDImageXObject image, int highVal) throws IOException
+    {
+<span class="fc" id="L307">        COSArray indexedArray = new COSArray();</span>
+<span class="fc" id="L308">        indexedArray.add(COSName.INDEXED);</span>
+<span class="fc" id="L309">        indexedArray.add(image.getColorSpace());</span>
+<span class="fc" id="L310">        ((COSDictionary) image.getCOSObject().getItem(COSName.DECODE_PARMS))</span>
+<span class="fc" id="L311">                .setItem(COSName.COLORS, COSInteger.ONE);</span>
+
+<span class="fc" id="L313">        indexedArray.add(COSInteger.get(highVal));</span>
+
+<span class="fc" id="L315">        PDStream colorTable = new PDStream(doc);</span>
+<span class="fc" id="L316">        try (OutputStream colorTableStream = colorTable.createOutputStream(COSName.FLATE_DECODE))</span>
+        {
+<span class="fc" id="L318">            colorTableStream.write(lookupTable.bytes, lookupTable.start, lookupTable.length);</span>
+        }
+<span class="fc" id="L320">        indexedArray.add(colorTable);</span>
+
+<span class="fc" id="L322">        PDIndexed indexed = new PDIndexed(indexedArray);</span>
+<span class="fc" id="L323">        image.setColorSpace(indexed);</span>
+<span class="fc" id="L324">    }</span>
+
+    /**
+     * Build the base image object from the IDATs and profile information
+     */
+    private static PDImageXObject buildImageObject(PDDocument document, PNGConverterState state)
+            throws IOException
+    {
+<span class="fc" id="L332">        InputStream encodedByteStream = getIDATInputStream(state);</span>
+
+<span class="fc" id="L334">        PDColorSpace colorSpace = PDDeviceRGB.INSTANCE;</span>
+
+<span class="fc" id="L336">        PDImageXObject imageXObject = new PDImageXObject(document, encodedByteStream,</span>
+                COSName.FLATE_DECODE, state.width, state.height, state.bitsPerComponent,
+                colorSpace);
+
+<span class="fc" id="L340">        COSDictionary decodeParams = buildDecodeParams(state, colorSpace);</span>
+<span class="fc" id="L341">        imageXObject.getCOSObject().setItem(COSName.DECODE_PARMS, decodeParams);</span>
+
+        // We ignore gAMA and cHRM chunks if we have a ICC profile, as the ICC profile
+        // takes preference
+<span class="fc bfc" id="L345" title="All 4 branches covered.">        boolean hasICCColorProfile = state.sRGB != null || state.iCCP != null;</span>
+
+<span class="fc bfc" id="L347" title="All 4 branches covered.">        if (state.gAMA != null &amp;&amp; !hasICCColorProfile)</span>
+        {
+<span class="pc bpc" id="L349" title="1 of 2 branches missed.">            if (state.gAMA.length != 4)</span>
+            {
+<span class="nc" id="L351">                LOG.error(&quot;Invalid gAMA chunk length {}&quot;, state.gAMA.length);</span>
+<span class="nc" id="L352">                return null;</span>
+            }
+<span class="fc" id="L354">            float gamma = readPNGFloat(state.gAMA.bytes, state.gAMA.start);</span>
+            // If the gamma is 2.2 for sRGB everything is fine. Otherwise bail out.
+            // The gamma is stored as 1 / gamma.
+<span class="pc bpc" id="L357" title="1 of 2 branches missed.">            if (Math.abs(gamma - (1 / 2.2f)) &gt; 0.00001)</span>
+            {
+<span class="nc" id="L359">                LOG.debug(String.format(&quot;We can't handle gamma of %f yet.&quot;, gamma));</span>
+<span class="nc" id="L360">                return null;</span>
+            }
+        }
+
+<span class="fc bfc" id="L364" title="All 2 branches covered.">        if (state.sRGB != null)</span>
+        {
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">            if (state.sRGB.length != 1)</span>
+            {
+<span class="nc" id="L368">                LOG.error(</span>
+<span class="nc" id="L369">                        String.format(&quot;sRGB chunk has an invalid length of %d&quot;, state.sRGB.length));</span>
+<span class="nc" id="L370">                return null;</span>
+            }
+
+            // Store the specified rendering intent
+<span class="fc" id="L374">            int renderIntent = state.sRGB.bytes[state.sRGB.start];</span>
+<span class="fc" id="L375">            COSName value = mapPNGRenderIntent(renderIntent);</span>
+<span class="fc" id="L376">            imageXObject.getCOSObject().setItem(COSName.INTENT, value);</span>
+        }
+
+<span class="pc bpc" id="L379" title="1 of 4 branches missed.">        if (state.cHRM != null &amp;&amp; !hasICCColorProfile)</span>
+        {
+<span class="nc bnc" id="L381" title="All 2 branches missed.">            if (state.cHRM.length != 32)</span>
+            {
+<span class="nc" id="L383">                LOG.error(&quot;Invalid cHRM chunk length {}&quot;, state.cHRM.length);</span>
+<span class="nc" id="L384">                return null;</span>
+            }
+<span class="nc" id="L386">            LOG.debug(&quot;We can not handle cHRM chunks yet.&quot;);</span>
+<span class="nc" id="L387">            return null;</span>
+        }
+
+        // If possible we prefer a ICCBased color profile, just because its way faster
+        // to decode ...
+<span class="fc bfc" id="L392" title="All 4 branches covered.">        if (state.iCCP != null || state.sRGB != null)</span>
+        {
+            // We have got a color profile, which we must attach
+<span class="fc" id="L395">            COSStream cosStream = createCOSStreamwithIccProfile(document, colorSpace, state);</span>
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">            if (cosStream == null)</span>
+            {
+<span class="nc" id="L398">                return null;</span>
+            }
+<span class="fc" id="L400">            COSArray array = new COSArray();</span>
+<span class="fc" id="L401">            array.add(COSName.ICCBASED);</span>
+<span class="fc" id="L402">            array.add(cosStream);</span>
+<span class="fc" id="L403">            PDICCBased profile = PDICCBased.create(array, null);</span>
+<span class="fc" id="L404">            imageXObject.setColorSpace(profile);</span>
+        }
+<span class="fc" id="L406">        return imageXObject;</span>
+    }
+
+    private static COSStream createCOSStreamwithIccProfile
+        (PDDocument document, PDColorSpace colorSpace, PNGConverterState state) throws IOException
+    {
+<span class="fc" id="L412">        int numberOfComponents = colorSpace.getNumberOfComponents();</span>
+<span class="fc" id="L413">        COSStream cosStream = document.getDocument().createCOSStream();</span>
+<span class="fc" id="L414">        cosStream.setInt(COSName.N, numberOfComponents);</span>
+<span class="fc" id="L415">        cosStream.setItem(COSName.ALTERNATE, </span>
+<span class="pc bpc" id="L416" title="1 of 2 branches missed.">                numberOfComponents == 1 ? COSName.DEVICEGRAY : COSName.DEVICERGB);</span>
+<span class="fc" id="L417">        cosStream.setItem(COSName.FILTER, COSName.FLATE_DECODE);</span>
+<span class="fc bfc" id="L418" title="All 2 branches covered.">        if (state.iCCP != null)</span>
+        {
+            // We need to skip over the name
+<span class="fc" id="L421">            int iccProfileDataStart = 0;</span>
+<span class="pc bpc" id="L422" title="2 of 4 branches missed.">            while (iccProfileDataStart &lt; 80 &amp;&amp; iccProfileDataStart &lt; state.iCCP.length)</span>
+            {
+<span class="fc bfc" id="L424" title="All 2 branches covered.">                if (state.iCCP.bytes[state.iCCP.start + iccProfileDataStart] == 0)</span>
+                {
+<span class="fc" id="L426">                    break;</span>
+                }
+<span class="fc" id="L428">                iccProfileDataStart++;</span>
+            }
+<span class="fc" id="L430">            iccProfileDataStart++;</span>
+<span class="pc bpc" id="L431" title="1 of 2 branches missed.">            if (iccProfileDataStart &gt;= state.iCCP.length)</span>
+            {
+<span class="nc" id="L433">                LOG.error(&quot;Invalid iCCP chunk, to few bytes&quot;);</span>
+<span class="nc" id="L434">                return null;</span>
+            }
+<span class="fc" id="L436">            byte compressionMethod = state.iCCP.bytes[state.iCCP.start + iccProfileDataStart];</span>
+<span class="pc bpc" id="L437" title="1 of 2 branches missed.">            if (compressionMethod != 0)</span>
+            {
+<span class="nc" id="L439">                LOG.error(String.format(&quot;iCCP chunk: invalid compression method %d&quot;,</span>
+<span class="nc" id="L440">                        compressionMethod));</span>
+<span class="nc" id="L441">                return null;</span>
+            }
+            // Skip over the compression method
+<span class="fc" id="L444">            iccProfileDataStart++;</span>
+<span class="fc" id="L445">            try (OutputStream rawOutputStream = cosStream.createRawOutputStream())</span>
+            {
+<span class="fc" id="L447">                rawOutputStream.write(state.iCCP.bytes, state.iCCP.start + iccProfileDataStart,</span>
+                        state.iCCP.length - iccProfileDataStart);
+            }
+<span class="fc" id="L450">        }</span>
+        else
+        {
+            // We tag the image with the sRGB profile
+<span class="fc" id="L454">            ICC_Profile rgbProfile = ICC_Profile.getInstance(ColorSpace.CS_sRGB);</span>
+<span class="fc" id="L455">            try (OutputStream outputStream = cosStream.createOutputStream())</span>
+            {
+<span class="fc" id="L457">                outputStream.write(rgbProfile.getData());</span>
+            }
+        }
+<span class="fc" id="L460">        return cosStream;</span>
+    }
+
+    private static COSDictionary buildDecodeParams(PNGConverterState state, PDColorSpace colorSpace)
+    {
+<span class="fc" id="L465">        COSDictionary decodeParms = new COSDictionary();</span>
+<span class="fc" id="L466">        decodeParms.setItem(COSName.BITS_PER_COMPONENT, COSInteger.get(state.bitsPerComponent));</span>
+<span class="fc" id="L467">        decodeParms.setItem(COSName.PREDICTOR, COSInteger.get(15));</span>
+<span class="fc" id="L468">        decodeParms.setItem(COSName.COLUMNS, COSInteger.get(state.width));</span>
+<span class="fc" id="L469">        decodeParms.setItem(COSName.COLORS, COSInteger.get(colorSpace.getNumberOfComponents()));</span>
+<span class="fc" id="L470">        return decodeParms;</span>
+    }
+
+    /**
+     * Build an input stream for the IDAT data. May need to concat multiple IDAT
+     * chunks.
+     *
+     * @param state the converter state.
+     * @return a input stream with the IDAT data.
+     */
+    private static InputStream getIDATInputStream(PNGConverterState state)
+    {
+<span class="fc" id="L482">        MultipleInputStream inputStream = new MultipleInputStream();</span>
+<span class="fc bfc" id="L483" title="All 2 branches covered.">        for (Chunk idat : state.IDATs)</span>
+        {
+<span class="fc" id="L485">            inputStream.inputStreams</span>
+<span class="fc" id="L486">                    .add(new ByteArrayInputStream(idat.bytes, idat.start, idat.length));</span>
+<span class="fc" id="L487">        }</span>
+<span class="fc" id="L488">        return inputStream;</span>
+    }
+
+<span class="fc" id="L491">    private static class MultipleInputStream extends InputStream</span>
+    {
+
+<span class="fc" id="L494">        final List&lt;InputStream&gt; inputStreams = new ArrayList&lt;&gt;();</span>
+        int currentStreamIdx;
+        InputStream currentStream;
+
+        private boolean ensureStream()
+        {
+<span class="fc bfc" id="L500" title="All 2 branches covered.">            if (currentStream == null)</span>
+            {
+<span class="fc bfc" id="L502" title="All 2 branches covered.">                if (currentStreamIdx &gt;= inputStreams.size())</span>
+                {
+<span class="fc" id="L504">                    return false;</span>
+                }
+<span class="fc" id="L506">                currentStream = inputStreams.get(currentStreamIdx++);</span>
+            }
+<span class="fc" id="L508">            return true;</span>
+        }
+
+        @Override
+        public int read() throws IOException
+        {
+<span class="pc bpc" id="L514" title="1 of 2 branches missed.">            if (!ensureStream())</span>
+            {
+<span class="nc" id="L516">                return -1;</span>
+            }
+<span class="fc" id="L518">            int ret = currentStream.read();</span>
+<span class="pc bpc" id="L519" title="1 of 2 branches missed.">            if (ret == -1)</span>
+            {
+<span class="nc" id="L521">                currentStream = null;</span>
+<span class="nc" id="L522">                return read();</span>
+            }
+<span class="fc" id="L524">            return ret;</span>
+        }
+
+        @Override
+        public int available() throws IOException
+        {
+<span class="nc bnc" id="L530" title="All 2 branches missed.">            if (!ensureStream())</span>
+            {
+<span class="nc" id="L532">                return 0;</span>
+            }
+<span class="nc" id="L534">            return 1;</span>
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException
+        {
+<span class="fc bfc" id="L540" title="All 2 branches covered.">            if (!ensureStream())</span>
+            {
+<span class="fc" id="L542">                return -1;</span>
+            }
+<span class="fc" id="L544">            int ret = currentStream.read(b, off, len);</span>
+<span class="fc bfc" id="L545" title="All 2 branches covered.">            if (ret == -1)</span>
+            {
+<span class="fc" id="L547">                currentStream = null;</span>
+<span class="fc" id="L548">                return read(b, off, len);</span>
+            }
+<span class="fc" id="L550">            return ret;</span>
+        }
+    }
+
+    /**
+     * Map the renderIntent int to a PDF render intent. See also
+     * &lt;a href=&quot;https://www.w3.org/TR/2003/REC-PNG-20031110/#11sRGB&quot;&gt;sRGB Standard RGB colour
+     * space&lt;/a&gt;.
+     *
+     * @param renderIntent the PNG render intent
+     * @return the matching PDF Render Intent or null
+     */
+    static COSName mapPNGRenderIntent(int renderIntent)
+    {
+        COSName value;
+<span class="fc bfc" id="L565" title="All 5 branches covered.">        switch (renderIntent)</span>
+        {
+        case 0:
+<span class="fc" id="L568">            value = COSName.PERCEPTUAL;</span>
+<span class="fc" id="L569">            break;</span>
+        case 1:
+<span class="fc" id="L571">            value = COSName.RELATIVE_COLORIMETRIC;</span>
+<span class="fc" id="L572">            break;</span>
+        case 2:
+<span class="fc" id="L574">            value = COSName.SATURATION;</span>
+<span class="fc" id="L575">            break;</span>
+        case 3:
+<span class="fc" id="L577">            value = COSName.ABSOLUTE_COLORIMETRIC;</span>
+<span class="fc" id="L578">            break;</span>
+        default:
+<span class="fc" id="L580">            value = null;</span>
+            break;
+        }
+<span class="fc" id="L583">        return value;</span>
+    }
+
+    /**
+     * Check if the converter state is sane.
+     *
+     * @param state the parsed converter state
+     * @return true if the state seems plausible
+     */
+    static boolean checkConverterState(PNGConverterState state)
+    {
+<span class="fc bfc" id="L594" title="All 2 branches covered.">        if (state == null)</span>
+        {
+<span class="fc" id="L596">            return false;</span>
+        }
+<span class="fc bfc" id="L598" title="All 4 branches covered.">        if (state.IHDR == null || !checkChunkSane(state.IHDR))</span>
+        {
+<span class="fc" id="L600">            LOG.error(&quot;Invalid IHDR chunk.&quot;);</span>
+<span class="fc" id="L601">            return false;</span>
+        }
+<span class="fc bfc" id="L603" title="All 2 branches covered.">        if (!checkChunkSane(state.PLTE))</span>
+        {
+<span class="fc" id="L605">            LOG.error(&quot;Invalid PLTE chunk.&quot;);</span>
+<span class="fc" id="L606">            return false;</span>
+        }
+<span class="fc bfc" id="L608" title="All 2 branches covered.">        if (!checkChunkSane(state.iCCP))</span>
+        {
+<span class="fc" id="L610">            LOG.error(&quot;Invalid iCCP chunk.&quot;);</span>
+<span class="fc" id="L611">            return false;</span>
+        }
+<span class="fc bfc" id="L613" title="All 2 branches covered.">        if (!checkChunkSane(state.tRNS))</span>
+        {
+<span class="fc" id="L615">            LOG.error(&quot;Invalid tRNS chunk.&quot;);</span>
+<span class="fc" id="L616">            return false;</span>
+        }
+<span class="fc bfc" id="L618" title="All 2 branches covered.">        if (!checkChunkSane(state.sRGB))</span>
+        {
+<span class="fc" id="L620">            LOG.error(&quot;Invalid sRGB chunk.&quot;);</span>
+<span class="fc" id="L621">            return false;</span>
+        }
+<span class="fc bfc" id="L623" title="All 2 branches covered.">        if (!checkChunkSane(state.cHRM))</span>
+        {
+<span class="fc" id="L625">            LOG.error(&quot;Invalid cHRM chunk.&quot;);</span>
+<span class="fc" id="L626">            return false;</span>
+        }
+<span class="fc bfc" id="L628" title="All 2 branches covered.">        if (!checkChunkSane(state.gAMA))</span>
+        {
+<span class="fc" id="L630">            LOG.error(&quot;Invalid gAMA chunk.&quot;);</span>
+<span class="fc" id="L631">            return false;</span>
+        }
+
+        // Check the IDATs
+<span class="fc bfc" id="L635" title="All 2 branches covered.">        if (state.IDATs.isEmpty())</span>
+        {
+<span class="fc" id="L637">            LOG.error(&quot;No IDAT chunks.&quot;);</span>
+<span class="fc" id="L638">            return false;</span>
+        }
+<span class="fc bfc" id="L640" title="All 2 branches covered.">        for (Chunk idat : state.IDATs)</span>
+        {
+<span class="fc bfc" id="L642" title="All 2 branches covered.">            if (!checkChunkSane(idat))</span>
+            {
+<span class="fc" id="L644">                LOG.error(&quot;Invalid IDAT chunk.&quot;);</span>
+<span class="fc" id="L645">                return false;</span>
+            }
+<span class="fc" id="L647">        }</span>
+<span class="fc" id="L648">        return true;</span>
+    }
+
+    /**
+     * Check if the chunk is sane, i.e. CRC matches and offsets and lengths in the
+     * byte array
+     */
+    static boolean checkChunkSane(Chunk chunk)
+    {
+<span class="fc bfc" id="L657" title="All 2 branches covered.">        if (chunk == null)</span>
+        {
+            // If the chunk does not exist, it can not be wrong...
+<span class="fc" id="L660">            return true;</span>
+        }
+
+<span class="fc bfc" id="L663" title="All 2 branches covered.">        if (chunk.start + chunk.length &gt; chunk.bytes.length)</span>
+        {
+<span class="fc" id="L665">            return false;</span>
+        }
+
+<span class="fc bfc" id="L668" title="All 2 branches covered.">        if (chunk.start &lt; 4)</span>
+        {
+<span class="fc" id="L670">            return false;</span>
+        }
+
+        // We must include the chunk type in the CRC calculation
+<span class="fc" id="L674">        int ourCRC = crc(chunk.bytes, chunk.start - 4, chunk.length + 4);</span>
+<span class="fc bfc" id="L675" title="All 2 branches covered.">        if (ourCRC != chunk.crc)</span>
+        {
+<span class="fc" id="L677">            LOG.error(String.format(&quot;Invalid CRC %08X on chunk %08X, expected %08X.&quot;, ourCRC,</span>
+<span class="fc" id="L678">                    chunk.chunkType, chunk.crc));</span>
+<span class="fc" id="L679">            return false;</span>
+        }
+<span class="fc" id="L681">        return true;</span>
+    }
+
+    /**
+     * Holds the information about a chunks
+     */
+<span class="fc" id="L687">    static final class Chunk</span>
+    {
+        /**
+         * This field holds the whole byte array; In that it's redundant, as all chunks
+         * will have the same byte array. But have this byte array per chunk makes it
+         * easier to validate and pass around. And we won't have that many chunks, so
+         * those 8 bytes for the pointer (on 64-bit systems) don't matter.
+         */
+        byte[] bytes;
+        /**
+         * The chunk type, see the CHUNK_??? constants.
+         */
+        int chunkType;
+        /**
+         * The crc of the chunk data, as stored in the PNG stream.
+         */
+        int crc;
+        /**
+         * The start index of the chunk data within bytes.
+         */
+        int start;
+        /**
+         * The length of the data within the byte array.
+         */
+        int length;
+
+        /**
+         * Get the data of this chunk as a byte array
+         *
+         * @return a byte-array with only the data of the chunk
+         */
+        byte[] getData()
+        {
+<span class="fc" id="L720">            return Arrays.copyOfRange(bytes, start, start + length);</span>
+        }
+    }
+
+    /**
+     * Holds all relevant chunks of the PNG
+     */
+<span class="fc" id="L727">    static final class PNGConverterState</span>
+    {
+<span class="fc" id="L729">        List&lt;Chunk&gt; IDATs = new ArrayList&lt;&gt;();</span>
+        @SuppressWarnings(&quot;SpellCheckingInspection&quot;) Chunk IHDR;
+        @SuppressWarnings(&quot;SpellCheckingInspection&quot;) Chunk PLTE;
+        Chunk iCCP;
+        Chunk tRNS;
+        Chunk sRGB;
+        Chunk gAMA;
+        Chunk cHRM;
+
+        // Parsed header fields
+        int width;
+        int height;
+        int bitsPerComponent;
+    }
+
+    private static int readInt(byte[] data, int offset)
+    {
+<span class="fc" id="L746">        int b1 = (data[offset] &amp; 0xFF) &lt;&lt; 24;</span>
+<span class="fc" id="L747">        int b2 = (data[offset + 1] &amp; 0xFF) &lt;&lt; 16;</span>
+<span class="fc" id="L748">        int b3 = (data[offset + 2] &amp; 0xFF) &lt;&lt; 8;</span>
+<span class="fc" id="L749">        int b4 = (data[offset + 3] &amp; 0xFF);</span>
+<span class="fc" id="L750">        return b1 | b2 | b3 | b4;</span>
+    }
+
+    private static float readPNGFloat(byte[] bytes, int offset)
+    {
+<span class="fc" id="L755">        int v = readInt(bytes, offset);</span>
+<span class="fc" id="L756">        return v / 100000f;</span>
+    }
+
+    /**
+     * Parse the PNG structure into the PNGConverterState. If we can't handle
+     * something, this method will return null.
+     *
+     * @param imageData the byte array with the PNG data
+     * @return null or the converter state with all relevant chunks
+     */
+    private static PNGConverterState parsePNGChunks(byte[] imageData)
+    {
+<span class="pc bpc" id="L768" title="1 of 2 branches missed.">        if (imageData.length &lt; 20)</span>
+        {
+<span class="nc" id="L770">            LOG.error(&quot;ByteArray way to small: {}&quot;, imageData.length);</span>
+<span class="nc" id="L771">            return null;</span>
+        }
+
+<span class="fc" id="L774">        PNGConverterState state = new PNGConverterState();</span>
+<span class="fc" id="L775">        int ptr = 8;</span>
+<span class="fc" id="L776">        int firstChunkType = readInt(imageData, ptr + 4);</span>
+
+<span class="pc bpc" id="L778" title="1 of 2 branches missed.">        if (firstChunkType != CHUNK_IHDR)</span>
+        {
+<span class="nc" id="L780">            LOG.error(String.format(&quot;First Chunktype was %08X, not IHDR&quot;, firstChunkType));</span>
+<span class="nc" id="L781">            return null;</span>
+        }
+
+<span class="pc bpc" id="L784" title="1 of 2 branches missed.">        while (ptr + 12 &lt;= imageData.length)</span>
+        {
+<span class="fc" id="L786">            int chunkLength = readInt(imageData, ptr);</span>
+<span class="fc" id="L787">            int chunkType = readInt(imageData, ptr + 4);</span>
+<span class="fc" id="L788">            ptr += 8;</span>
+
+<span class="pc bpc" id="L790" title="1 of 2 branches missed.">            if (ptr + chunkLength + 4 &gt; imageData.length)</span>
+            {
+<span class="nc" id="L792">                LOG.error(</span>
+                        &quot;Not enough bytes. At offset {} are {} bytes expected. Overall length is {}&quot;,
+<span class="nc" id="L794">                        ptr, chunkLength, imageData.length);</span>
+<span class="nc" id="L795">                return null;</span>
+            }
+
+<span class="fc" id="L798">            Chunk chunk = new Chunk();</span>
+<span class="fc" id="L799">            chunk.chunkType = chunkType;</span>
+<span class="fc" id="L800">            chunk.bytes = imageData;</span>
+<span class="fc" id="L801">            chunk.start = ptr;</span>
+<span class="fc" id="L802">            chunk.length = chunkLength;</span>
+
+<span class="pc bpc" id="L804" title="4 of 17 branches missed.">            switch (chunkType)</span>
+            {
+            case CHUNK_IHDR:
+<span class="pc bpc" id="L807" title="1 of 2 branches missed.">                if (state.IHDR != null)</span>
+                {
+<span class="nc" id="L809">                    LOG.error(&quot;Two IHDR chunks? There is something wrong.&quot;);</span>
+<span class="nc" id="L810">                    return null;</span>
+                }
+<span class="fc" id="L812">                state.IHDR = chunk;</span>
+<span class="fc" id="L813">                break;</span>
+            case CHUNK_IDAT:
+                // The image data itself
+<span class="fc" id="L816">                state.IDATs.add(chunk);</span>
+<span class="fc" id="L817">                break;</span>
+            case CHUNK_PLTE:
+                // For indexed images the palette table
+<span class="pc bpc" id="L820" title="1 of 2 branches missed.">                if (state.PLTE != null)</span>
+                {
+<span class="nc" id="L822">                    LOG.error(&quot;Two PLTE chunks? There is something wrong.&quot;);</span>
+<span class="nc" id="L823">                    return null;</span>
+                }
+<span class="fc" id="L825">                state.PLTE = chunk;</span>
+<span class="fc" id="L826">                break;</span>
+            case CHUNK_IEND:
+                // We are done, return the state
+<span class="fc" id="L829">                return state;</span>
+            case CHUNK_TRNS:
+                // For indexed images the alpha transparency table
+<span class="pc bpc" id="L832" title="1 of 2 branches missed.">                if (state.tRNS != null)</span>
+                {
+<span class="nc" id="L834">                    LOG.error(&quot;Two tRNS chunks? There is something wrong.&quot;);</span>
+<span class="nc" id="L835">                    return null;</span>
+                }
+<span class="fc" id="L837">                state.tRNS = chunk;</span>
+<span class="fc" id="L838">                break;</span>
+            case CHUNK_GAMA:
+                // Gama
+<span class="fc" id="L841">                state.gAMA = chunk;</span>
+<span class="fc" id="L842">                break;</span>
+            case CHUNK_CHRM:
+                // Chroma
+<span class="fc" id="L845">                state.cHRM = chunk;</span>
+<span class="fc" id="L846">                break;</span>
+            case CHUNK_ICCP:
+                // ICC Profile
+<span class="fc" id="L849">                state.iCCP = chunk;</span>
+<span class="fc" id="L850">                break;</span>
+            case CHUNK_SBIT:
+<span class="nc" id="L852">                LOG.debug(&quot;Can't convert PNGs with sBIT chunk.&quot;);</span>
+<span class="nc" id="L853">                break;</span>
+            case CHUNK_SRGB:
+                // We use the rendering intent from the chunk
+<span class="fc" id="L856">                state.sRGB = chunk;</span>
+<span class="fc" id="L857">                break;</span>
+            case CHUNK_TEXT:
+            case CHUNK_ZTXT:
+            case CHUNK_ITXT:
+                // We don't care about this text infos / metadata
+<span class="fc" id="L862">                break;</span>
+            case CHUNK_KBKG:
+                // As we can handle transparency we don't need the background color information.
+<span class="nc" id="L865">                break;</span>
+            case CHUNK_HIST:
+                // We don't need the color histogram
+<span class="nc" id="L868">                break;</span>
+            case CHUNK_PHYS:
+                // The PDImageXObject will be placed by the user however he wants,
+                // so we can not enforce the physical dpi information stored here.
+                // We just ignore it.
+<span class="fc" id="L873">                break;</span>
+            case CHUNK_SPLT:
+                // This palette stuff seems editor related, we don't need it.
+<span class="nc" id="L876">                break;</span>
+            case CHUNK_TIME:
+                // We don't need the last image change time either
+<span class="fc" id="L879">                break;</span>
+            default:
+<span class="fc" id="L881">                LOG.debug(String.format(&quot;Unknown chunk type %08X, skipping.&quot;, chunkType));</span>
+                break;
+            }
+<span class="fc" id="L884">            ptr += chunkLength;</span>
+
+            // Read the CRC
+<span class="fc" id="L887">            chunk.crc = readInt(imageData, ptr);</span>
+<span class="fc" id="L888">            ptr += 4;</span>
+<span class="fc" id="L889">        }</span>
+<span class="nc" id="L890">        LOG.error(&quot;No IEND chunk found.&quot;);</span>
+<span class="nc" id="L891">        return null;</span>
+    }
+
+    /* Make the table for a fast CRC. */
+    private static void makeCrcTable()
+    {
+        int c;
+
+<span class="fc bfc" id="L899" title="All 2 branches covered.">        for (int n = 0; n &lt; 256; n++)</span>
+        {
+<span class="fc" id="L901">            c = n;</span>
+<span class="fc bfc" id="L902" title="All 2 branches covered.">            for (int k = 0; k &lt; 8; k++)</span>
+            {
+<span class="fc bfc" id="L904" title="All 2 branches covered.">                if ((c &amp; 1) != 0)</span>
+                {
+<span class="fc" id="L906">                    c = 0xEDB88320 ^ (c &gt;&gt;&gt; 1);</span>
+                }
+                else
+                {
+<span class="fc" id="L910">                    c = c &gt;&gt;&gt; 1;</span>
+                }
+            }
+<span class="fc" id="L913">            CRC_TABLE[n] = c;</span>
+        }
+<span class="fc" id="L915">    }</span>
+
+    /*
+     * Update a running CRC with the bytes buf[0..len-1]--the CRC should be
+     * initialized to all 1's, and the transmitted value is the 1's complement of
+     * the final running CRC (see the crc() routine below).
+     */
+    private static int updateCrc(byte[] buf, int offset, int len)
+    {
+<span class="fc" id="L924">        int c = -1;</span>
+<span class="fc" id="L925">        int end = offset + len;</span>
+<span class="fc bfc" id="L926" title="All 2 branches covered.">        for (int n = offset; n &lt; end; n++)</span>
+        {
+<span class="fc" id="L928">            c = CRC_TABLE[(c ^ buf[n]) &amp; 0xff] ^ (c &gt;&gt;&gt; 8);</span>
+        }
+<span class="fc" id="L930">        return c;</span>
+    }
+
+    /* Return the CRC of the bytes buf[offset..(offset+len-1)]. */
+    static int crc(byte[] buf, int offset, int len)
+    {
+<span class="fc" id="L936">        return ~updateCrc(buf, offset, len);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

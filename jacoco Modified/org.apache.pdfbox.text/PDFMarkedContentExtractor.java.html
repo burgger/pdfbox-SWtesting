@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFMarkedContentExtractor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.text</a> &gt; <span class="el_source">PDFMarkedContentExtractor.java</span></div><h1>PDFMarkedContentExtractor.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.text;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Deque;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.documentinterchange.markedcontent.PDMarkedContent;
+import org.apache.pdfbox.pdmodel.graphics.PDXObject;
+import org.apache.pdfbox.contentstream.operator.markedcontent.BeginMarkedContentSequence;
+import org.apache.pdfbox.contentstream.operator.markedcontent.BeginMarkedContentSequenceWithProperties;
+import org.apache.pdfbox.contentstream.operator.markedcontent.DrawObject;
+import org.apache.pdfbox.contentstream.operator.markedcontent.EndMarkedContentSequence;
+import org.apache.pdfbox.contentstream.operator.markedcontent.MarkedContentPoint;
+import org.apache.pdfbox.contentstream.operator.markedcontent.MarkedContentPointWithProperties;
+
+/**
+ * This is an stream engine to extract the marked content of a pdf.
+ *
+ * @author Johannes Koch
+ */
+public class PDFMarkedContentExtractor extends LegacyPDFStreamEngine
+{
+<span class="fc" id="L44">    private boolean suppressDuplicateOverlappingText = true;</span>
+<span class="fc" id="L45">    private final List&lt;PDMarkedContent&gt; markedContents = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L46">    private final Deque&lt;PDMarkedContent&gt; currentMarkedContents = new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L47">    private final Map&lt;String, List&lt;TextPosition&gt;&gt; characterListMapping = new HashMap&lt;&gt;();</span>
+
+    /**
+     * Instantiate a new PDFMarkedContentExtractor object.
+     */
+    public PDFMarkedContentExtractor()
+    {
+<span class="fc" id="L54">        this(null);</span>
+<span class="fc" id="L55">    }</span>
+
+    /**
+     * Constructor. Will apply encoding-specific conversions to the output text.
+     *
+     * @param encoding The encoding that the output will be written in.
+     */
+    public PDFMarkedContentExtractor(String encoding)
+<span class="fc" id="L63">    {</span>
+<span class="fc" id="L64">        addOperator(new BeginMarkedContentSequenceWithProperties(this));</span>
+<span class="fc" id="L65">        addOperator(new BeginMarkedContentSequence(this));</span>
+<span class="fc" id="L66">        addOperator(new EndMarkedContentSequence(this));</span>
+<span class="fc" id="L67">        addOperator(new DrawObject(this));</span>
+<span class="fc" id="L68">        addOperator(new MarkedContentPoint(this));</span>
+<span class="fc" id="L69">        addOperator(new MarkedContentPointWithProperties(this));</span>
+<span class="fc" id="L70">    }</span>
+
+    /**
+     * @return the suppressDuplicateOverlappingText setting.
+     */
+    public boolean isSuppressDuplicateOverlappingText()
+    {
+<span class="nc" id="L77">        return suppressDuplicateOverlappingText;</span>
+    }
+
+    /**
+     * By default the class will attempt to remove text that overlaps each other. Word paints the
+     * same character several times in order to make it look bold. By setting this to false all text
+     * will be extracted, which means that certain sections will be duplicated, but better
+     * performance will be noticed.
+     *
+     * @param suppressDuplicateOverlappingText The suppressDuplicateOverlappingText setting to set.
+     */
+    public void setSuppressDuplicateOverlappingText(boolean suppressDuplicateOverlappingText)
+    {
+<span class="nc" id="L90">        this.suppressDuplicateOverlappingText = suppressDuplicateOverlappingText;</span>
+<span class="nc" id="L91">    }</span>
+
+    /**
+     * This will determine of two floating point numbers are within a specified variance.
+     *
+     * @param first The first number to compare to.
+     * @param second The second number to compare to.
+     * @param variance The allowed variance.
+     */
+    private boolean within( float first, float second, float variance )
+    {
+<span class="fc bfc" id="L102" title="All 4 branches covered.">        return second &gt; first - variance &amp;&amp; second &lt; first + variance;</span>
+    }
+
+    @Override
+    public void beginMarkedContentSequence(COSName tag, COSDictionary properties)
+    {
+<span class="fc" id="L108">        PDMarkedContent markedContent = PDMarkedContent.create(tag, properties);</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        if (this.currentMarkedContents.isEmpty())</span>
+        {
+<span class="fc" id="L111">            this.markedContents.add(markedContent);</span>
+        }
+        else
+        {
+<span class="fc" id="L115">            PDMarkedContent currentMarkedContent =</span>
+<span class="fc" id="L116">                this.currentMarkedContents.peek();</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">            if (currentMarkedContent != null)</span>
+            {
+<span class="fc" id="L119">                currentMarkedContent.addMarkedContent(markedContent);</span>
+            }
+        }
+<span class="fc" id="L122">        this.currentMarkedContents.push(markedContent);</span>
+<span class="fc" id="L123">    }</span>
+
+    @Override
+    public void endMarkedContentSequence()
+    {
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">        if (!this.currentMarkedContents.isEmpty())</span>
+        {
+<span class="fc" id="L130">            this.currentMarkedContents.pop();</span>
+        }
+<span class="fc" id="L132">    }</span>
+
+    @Override
+    public void markedContentPoint(COSName tag, COSDictionary properties)
+    {
+        // Nothing happens here yet. If you know anything useful that should happen, please tell us.
+<span class="nc" id="L138">        super.markedContentPoint(tag, properties);</span>
+<span class="nc" id="L139">    }</span>
+
+    public void xobject(PDXObject xobject)
+    {
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        if (!this.currentMarkedContents.isEmpty())</span>
+        {
+<span class="fc" id="L145">            this.currentMarkedContents.peek().addXObject(xobject);</span>
+        }
+<span class="fc" id="L147">    }</span>
+
+    /**
+     * This will process a TextPosition object and add the
+     * text to the list of characters on a page.  It takes care of
+     * overlapping text.
+     *
+     * @param text The text to process.
+     */
+    @Override
+    protected void processTextPosition( TextPosition text )
+    {
+<span class="fc" id="L159">        boolean showCharacter = true;</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if( this.suppressDuplicateOverlappingText )</span>
+        {
+<span class="fc" id="L162">            showCharacter = false;</span>
+<span class="fc" id="L163">            String textCharacter = text.getUnicode();</span>
+<span class="fc" id="L164">            float textX = text.getX();</span>
+<span class="fc" id="L165">            float textY = text.getY();</span>
+<span class="fc" id="L166">            List&lt;TextPosition&gt; sameTextCharacters =</span>
+<span class="fc" id="L167">                    this.characterListMapping.computeIfAbsent(textCharacter, k -&gt; new ArrayList&lt;&gt;());</span>
+
+            // RDD - Here we compute the value that represents the end of the rendered
+            // text.  This value is used to determine whether subsequent text rendered
+            // on the same line overwrites the current text.
+            //
+            // We subtract any positive padding to handle cases where extreme amounts
+            // of padding are applied, then backed off (not sure why this is done, but there
+            // are cases where the padding is on the order of 10x the character width, and
+            // the TJ just backs up to compensate after each character).  Also, we subtract
+            // an amount to allow for kerning (a percentage of the width of the last
+            // character).
+            //
+<span class="fc" id="L180">            boolean suppressCharacter = false;</span>
+<span class="fc" id="L181">            float tolerance = (text.getWidth()/textCharacter.length())/3.0f;</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">            for (TextPosition sameTextCharacter : sameTextCharacters)</span>
+            {
+<span class="fc" id="L184">                String charCharacter = sameTextCharacter.getUnicode();</span>
+<span class="fc" id="L185">                float charX = sameTextCharacter.getX();</span>
+<span class="fc" id="L186">                float charY = sameTextCharacter.getY();</span>
+                //only want to suppress
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">                if( charCharacter != null &amp;&amp;</span>
+                        //charCharacter.equals( textCharacter ) &amp;&amp;
+<span class="fc bfc" id="L190" title="All 2 branches covered.">                        within( charX, textX, tolerance ) &amp;&amp;</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">                        within( charY,</span>
+                                textY,
+                                tolerance ) )
+                {
+<span class="fc" id="L195">                    suppressCharacter = true;</span>
+<span class="fc" id="L196">                    break;</span>
+                }
+<span class="fc" id="L198">            }</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">            if( !suppressCharacter )</span>
+            {
+<span class="fc" id="L201">                sameTextCharacters.add( text );</span>
+<span class="fc" id="L202">                showCharacter = true;</span>
+            }
+        }
+
+<span class="pc bpc" id="L206" title="1 of 4 branches missed.">        if (showCharacter &amp;&amp; !this.currentMarkedContents.isEmpty())</span>
+        {
+<span class="fc" id="L208">            this.currentMarkedContents.peek().addText(text);</span>
+        }
+<span class="fc" id="L210">    }</span>
+
+    public List&lt;PDMarkedContent&gt; getMarkedContents()
+    {
+<span class="fc" id="L214">        return this.markedContents;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

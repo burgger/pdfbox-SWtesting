@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDAnnotationMarkup.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation</a> &gt; <span class="el_source">PDAnnotationMarkup.java</span></div><h1>PDAnnotationMarkup.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.annotation;
+
+import java.io.IOException;
+import java.util.Calendar;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.cos.COSString;
+
+/**
+ * This class represents the additional fields of a Markup type Annotation. See section 12.5.6 of ISO32000-1:2008
+ * (starting with page 390) for details on annotation types.
+ *
+ * @author Paul King
+ */
+public class PDAnnotationMarkup extends PDAnnotation
+{
+    /*
+     * The various values of the reply type as defined in the PDF 1.7 reference Table 170
+     */
+
+    /**
+     * Constant for an annotation reply type.
+     */
+    public static final String RT_REPLY = &quot;R&quot;;
+
+    /**
+     * Constant for an annotation reply type.
+     */
+    public static final String RT_GROUP = &quot;Group&quot;;
+
+    /**
+     * Constructor.
+     */
+    public PDAnnotationMarkup()
+<span class="fc" id="L53">    {</span>
+<span class="fc" id="L54">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param dict The annotations dictionary.
+     */
+    public PDAnnotationMarkup(COSDictionary dict)
+    {
+<span class="fc" id="L63">        super(dict);</span>
+<span class="fc" id="L64">    }</span>
+
+    /**
+     * Retrieve the string used as the title of the popup window shown when open and active (by convention this
+     * identifies who added the annotation).
+     *
+     * @return The title of the popup.
+     */
+    public String getTitlePopup()
+    {
+<span class="nc" id="L74">        return getCOSObject().getString(COSName.T);</span>
+    }
+
+    /**
+     * Set the string used as the title of the popup window shown when open and active (by convention this identifies
+     * who added the annotation).
+     *
+     * @param t The title of the popup.
+     */
+    public void setTitlePopup(String t)
+    {
+<span class="nc" id="L85">        getCOSObject().setString(COSName.T, t);</span>
+<span class="nc" id="L86">    }</span>
+
+    /**
+     * This will retrieve the popup annotation used for entering/editing the text for this annotation.
+     *
+     * @return the popup annotation.
+     */
+    public PDAnnotationPopup getPopup()
+    {
+<span class="fc" id="L95">        COSDictionary popup = getCOSObject().getCOSDictionary(COSName.POPUP);</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        return popup != null ? new PDAnnotationPopup(popup) : null;</span>
+    }
+
+    /**
+     * This will set the popup annotation used for entering/editing the text for this annotation.
+     *
+     * @param popup the popup annotation.
+     */
+    public void setPopup(PDAnnotationPopup popup)
+    {
+<span class="fc" id="L106">        getCOSObject().setItem(COSName.POPUP, popup);</span>
+<span class="fc" id="L107">    }</span>
+
+    /**
+     * This will retrieve the constant opacity value used when rendering the annotation (excluding any popup).
+     *
+     * @return the constant opacity value.
+     */
+    public float getConstantOpacity()
+    {
+<span class="fc" id="L116">        return getCOSObject().getFloat(COSName.CA, 1);</span>
+    }
+
+    /**
+     * This will set the constant opacity value used when rendering the annotation (excluding any popup).
+     *
+     * @param ca the constant opacity value.
+     */
+    public void setConstantOpacity(float ca)
+    {
+<span class="nc" id="L126">        getCOSObject().setFloat(COSName.CA, ca);</span>
+<span class="nc" id="L127">    }</span>
+
+    /**
+     * This will retrieve the rich text stream which is displayed in the popup window.
+     *
+     * @return the rich text stream.
+     */
+    public String getRichContents()
+    {
+<span class="nc" id="L136">        COSBase base = getCOSObject().getDictionaryObject(COSName.RC);</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">        if (base instanceof COSString)</span>
+        {
+<span class="nc" id="L139">            return ((COSString) base).getString();</span>
+        }
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        else if (base instanceof COSStream)</span>
+        {
+<span class="nc" id="L143">            return ((COSStream) base).toTextString();</span>
+        }
+        else
+        {
+<span class="nc" id="L147">            return null;</span>
+        }
+    }
+
+    /**
+     * This will set the rich text stream which is displayed in the popup window.
+     *
+     * @param rc the rich text stream.
+     */
+    public void setRichContents(String rc)
+    {
+<span class="nc" id="L158">        getCOSObject().setItem(COSName.RC, new COSString(rc));</span>
+<span class="nc" id="L159">    }</span>
+
+    /**
+     * This will retrieve the date and time the annotation was created.
+     *
+     * @return the creation date/time.
+     */
+    public Calendar getCreationDate()
+    {
+<span class="nc" id="L168">        return getCOSObject().getDate(COSName.CREATION_DATE);</span>
+    }
+
+    /**
+     * This will set the date and time the annotation was created.
+     *
+     * @param creationDate the date and time the annotation was created.
+     */
+    public void setCreationDate(Calendar creationDate)
+    {
+<span class="nc" id="L178">        getCOSObject().setDate(COSName.CREATION_DATE, creationDate);</span>
+<span class="nc" id="L179">    }</span>
+
+    /**
+     * This will retrieve the annotation to which this one is &quot;In Reply To&quot; the actual relationship
+     * is specified by the RT entry.
+     *
+     * @return the other annotation or null if there is none.
+     * @throws IOException if there is an error creating the other annotation.
+     */
+    public PDAnnotation getInReplyTo() throws IOException
+    {
+<span class="nc" id="L190">        COSDictionary base = getCOSObject().getCOSDictionary(COSName.IRT);</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">        return base != null ? PDAnnotation.createAnnotation(base) : null;</span>
+    }
+
+    /**
+     * This will set the annotation to which this one is &quot;In Reply To&quot; the actual relationship is specified by the RT
+     * entry.
+     *
+     * @param irt the annotation this one is &quot;In Reply To&quot;.
+     */
+    public void setInReplyTo(PDAnnotation irt)
+    {
+<span class="nc" id="L202">        getCOSObject().setItem(COSName.IRT, irt);</span>
+<span class="nc" id="L203">    }</span>
+
+    /**
+     * This will retrieve the short description of the subject of the annotation.
+     *
+     * @return the subject.
+     */
+    public String getSubject()
+    {
+<span class="nc" id="L212">        return getCOSObject().getString(COSName.SUBJ);</span>
+    }
+
+    /**
+     * This will set the short description of the subject of the annotation.
+     *
+     * @param subj short description of the subject.
+     */
+    public void setSubject(String subj)
+    {
+<span class="nc" id="L222">        getCOSObject().setString(COSName.SUBJ, subj);</span>
+<span class="nc" id="L223">    }</span>
+
+    /**
+     * This will retrieve the Reply Type (relationship) with the annotation in the IRT entry See the RT_* constants for
+     * the available values.
+     *
+     * @return the relationship.
+     */
+    public String getReplyType()
+    {
+<span class="nc" id="L233">        return getCOSObject().getNameAsString(COSName.RT, RT_REPLY);</span>
+    }
+
+    /**
+     * This will set the Reply Type (relationship) with the annotation in the IRT entry See the RT_* constants for the
+     * available values.
+     *
+     * @param rt the reply type.
+     */
+    public void setReplyType(String rt)
+    {
+<span class="nc" id="L244">        getCOSObject().setName(COSName.RT, rt);</span>
+<span class="nc" id="L245">    }</span>
+
+    /**
+     * This will retrieve the intent of the annotation The values and meanings are specific to the actual annotation See
+     * the IT_* constants for the annotation classes.
+     *
+     * @return the intent
+     */
+    public String getIntent()
+    {
+<span class="nc" id="L255">        return getCOSObject().getNameAsString(COSName.IT);</span>
+    }
+
+    /**
+     * This will set the intent of the annotation The values and meanings are specific to the actual annotation See the
+     * IT_* constants for the annotation classes.
+     *
+     * @param it the intent
+     */
+    public void setIntent(String it)
+    {
+<span class="nc" id="L266">        getCOSObject().setName(COSName.IT, it);</span>
+<span class="nc" id="L267">    }</span>
+
+    /**
+     * This will return the external data dictionary.
+     * 
+     * @return the external data dictionary
+     */
+    public PDExternalDataDictionary getExternalData()
+    {
+<span class="nc" id="L276">        COSDictionary exData = getCOSObject().getCOSDictionary(COSName.EX_DATA);</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">        return exData != null ? new PDExternalDataDictionary(exData) : null;</span>
+    }
+
+    /**
+     * This will set the external data dictionary.
+     * 
+     * @param externalData the external data dictionary
+     */
+    public void setExternalData(PDExternalDataDictionary externalData)
+    {
+<span class="nc" id="L287">        this.getCOSObject().setItem(COSName.EX_DATA, externalData);</span>
+<span class="nc" id="L288">    }</span>
+
+    /**
+     * This will set the border style dictionary, specifying the width and dash pattern used in drawing the line.
+     *
+     * @param bs the border style dictionary to set.
+     *
+     */
+    public void setBorderStyle(PDBorderStyleDictionary bs)
+    {
+<span class="fc" id="L298">        this.getCOSObject().setItem(COSName.BS, bs);</span>
+<span class="fc" id="L299">    }</span>
+
+    /**
+     * This will retrieve the border style dictionary, specifying the width and dash pattern used in drawing the line.
+     *
+     * @return the border style dictionary.
+     */
+    public PDBorderStyleDictionary getBorderStyle()
+    {
+<span class="fc" id="L308">        COSDictionary bs = getCOSObject().getCOSDictionary(COSName.BS);</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">        return bs != null ? new PDBorderStyleDictionary(bs) : null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

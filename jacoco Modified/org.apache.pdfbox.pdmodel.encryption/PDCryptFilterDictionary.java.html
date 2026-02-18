@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDCryptFilterDictionary.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.encryption</a> &gt; <span class="el_source">PDCryptFilterDictionary.java</span></div><h1>PDCryptFilterDictionary.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.encryption;
+
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSBoolean;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * This class is a specialized view of the crypt filter dictionary of a PDF document.
+ * It contains a low level dictionary (COSDictionary) and provides the methods to
+ * manage its fields.
+ *
+ */
+public class PDCryptFilterDictionary implements COSObjectable
+{
+
+    /**
+     * COS crypt filter dictionary.
+     */
+<span class="fc" id="L38">    protected COSDictionary cryptFilterDictionary = null;</span>
+
+    /**
+     * creates a new empty crypt filter dictionary.
+     */
+    public PDCryptFilterDictionary()
+<span class="fc" id="L44">    {</span>
+<span class="fc" id="L45">        cryptFilterDictionary = new COSDictionary();</span>
+<span class="fc" id="L46">    }</span>
+
+    /**
+     * creates a new crypt filter dictionary from the low level dictionary provided.
+     * @param d the low level dictionary that will be managed by the newly created object
+     */
+    public PDCryptFilterDictionary(COSDictionary d)
+<span class="fc" id="L53">    {</span>
+<span class="fc" id="L54">        cryptFilterDictionary = d;</span>
+<span class="fc" id="L55">    }</span>
+
+    /**
+     * This will get the dictionary associated with this crypt filter dictionary.
+     *
+     * @return The COS dictionary that this object wraps.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="fc" id="L65">        return cryptFilterDictionary;</span>
+    }
+
+    /**
+     * This will set the number of bits to use for the crypt filter algorithm.
+     *
+     * @param length The new key length.
+     */
+    public void setLength(int length)
+    {
+<span class="fc" id="L75">        cryptFilterDictionary.setInt(COSName.LENGTH, length);</span>
+<span class="fc" id="L76">    }</span>
+
+    /**
+     * This will return the Length entry of the crypt filter dictionary.&lt;br&gt;&lt;br&gt;
+     * The length in &lt;b&gt;bits&lt;/b&gt; for the crypt filter algorithm. This will return a multiple of 8.
+     *
+     * @return The length in bits for the encryption algorithm
+     */
+    public int getLength()
+    {
+<span class="fc" id="L86">        return cryptFilterDictionary.getInt( COSName.LENGTH, 40 );</span>
+    }
+
+     /**
+     * This will set the crypt filter method. 
+     * Allowed values are: NONE, V2, AESV2, AESV3
+     *
+     * @param cfm name of the crypt filter method.
+     *
+     */
+    public void setCryptFilterMethod(COSName cfm)
+    {
+<span class="fc" id="L98">        cryptFilterDictionary.setItem( COSName.CFM, cfm );</span>
+<span class="fc" id="L99">    }</span>
+
+    /**
+     * This will return the crypt filter method. 
+     * Allowed values are: NONE, V2, AESV2, AESV3
+     *
+     * @return the name of the crypt filter method.
+     */
+    public COSName getCryptFilterMethod()
+    {
+<span class="fc" id="L109">        return cryptFilterDictionary.getCOSName(COSName.CFM);</span>
+    }
+
+    /**
+     * Will get the EncryptMetaData dictionary info.
+     *
+     * @return true if EncryptMetaData is explicitly set (the default is true)
+     */
+    public boolean isEncryptMetaData()
+    {
+<span class="fc" id="L119">        COSBase value = getCOSObject().getDictionaryObject(COSName.ENCRYPT_META_DATA);</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        if (value instanceof COSBoolean)</span>
+        {
+<span class="fc" id="L122">            return ((COSBoolean) value).getValue();</span>
+        }
+
+        // default is true (see 7.6.3.2 Standard Encryption Dictionary PDF 32000-1:2008)
+<span class="fc" id="L126">        return true;</span>
+    }
+
+    /**
+     * Set the EncryptMetaData dictionary info.
+     *
+     * @param encryptMetaData true if EncryptMetaData shall be set.
+     */
+    public void setEncryptMetaData(boolean encryptMetaData)
+    {
+<span class="nc" id="L136">        getCOSObject().setBoolean(COSName.ENCRYPT_META_DATA, encryptMetaData);</span>
+<span class="nc" id="L137">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

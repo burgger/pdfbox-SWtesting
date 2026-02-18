@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDAppearanceDictionary.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation</a> &gt; <span class="el_source">PDAppearanceDictionary.java</span></div><h1>PDAppearanceDictionary.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.annotation;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * An appearance dictionary specifying how the annotation shall be presented visually on the page.
+ *
+ * @author Ben Litchfield
+ */
+public class PDAppearanceDictionary implements COSObjectable
+{
+    private final COSDictionary dictionary;
+
+    /**
+     * Constructor for embedding.
+     */
+    public PDAppearanceDictionary()
+<span class="fc" id="L37">    {</span>
+<span class="fc" id="L38">        dictionary = new COSDictionary();</span>
+        // the N entry is required.
+<span class="fc" id="L40">        dictionary.setItem(COSName.N, new COSDictionary());</span>
+<span class="fc" id="L41">    }</span>
+
+    /**
+     * Constructor for reading.
+     *
+     * @param dictionary The annotations dictionary.
+     */
+    public PDAppearanceDictionary(COSDictionary dictionary)
+<span class="fc" id="L49">    {</span>
+<span class="fc" id="L50">        this.dictionary = dictionary;</span>
+<span class="fc" id="L51">    }</span>
+
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="fc" id="L56">        return dictionary;</span>
+    }
+
+    /**
+     * This will return a list of appearances. In the case where there is only one appearance the map will contain one
+     * entry whose key is the string &quot;default&quot;.
+     *
+     * @return A list of key(java.lang.String) value(PDAppearanceStream) pairs
+     */
+    public PDAppearanceEntry getNormalAppearance()
+    {
+<span class="fc" id="L67">        COSDictionary entry = dictionary.getCOSDictionary(COSName.N);</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        return entry != null ? new PDAppearanceEntry(entry) : null;</span>
+    }
+
+    /**
+     * This will set a list of appearances. If you would like to set the single appearance then you should use the key
+     * &quot;default&quot;, and when the PDF is written back to the filesystem then there will only be one stream.
+     *
+     * @param entry appearance stream or subdictionary
+     */
+    public void setNormalAppearance(PDAppearanceEntry entry)
+    {
+<span class="fc" id="L79">        dictionary.setItem(COSName.N, entry);</span>
+<span class="fc" id="L80">    }</span>
+
+    /**
+     * This will set the normal appearance when there is only one appearance to be shown.
+     *
+     * @param ap The appearance stream to show.
+     */
+    public void setNormalAppearance(PDAppearanceStream ap)
+    {
+<span class="fc" id="L89">        dictionary.setItem(COSName.N, ap);</span>
+<span class="fc" id="L90">    }</span>
+
+    /**
+     * This will return a list of appearances. In the case where there is only one appearance the map will contain one
+     * entry whose key is the string &quot;default&quot;. If there is no rollover appearance then the normal appearance will be
+     * returned. Which means that this method will never return null.
+     *
+     * @return A list of key(java.lang.String) value(PDAppearanceStream) pairs
+     */
+    public PDAppearanceEntry getRolloverAppearance()
+    {
+<span class="nc" id="L101">        COSDictionary entry = dictionary.getCOSDictionary(COSName.R);</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        return entry != null ? new PDAppearanceEntry(entry) : getNormalAppearance();</span>
+    }
+
+    /**
+     * This will set a list of appearances. If you would like to set the single appearance then you should use the key
+     * &quot;default&quot;, and when the PDF is written back to the filesystem then there will only be one stream.
+     *
+     * @param entry appearance stream or subdictionary
+     */
+    public void setRolloverAppearance(PDAppearanceEntry entry)
+    {
+<span class="nc" id="L113">        dictionary.setItem(COSName.R, entry);</span>
+<span class="nc" id="L114">    }</span>
+
+    /**
+     * This will set the rollover appearance when there is rollover appearance to be shown.
+     *
+     * @param ap The appearance stream to show.
+     */
+    public void setRolloverAppearance(PDAppearanceStream ap)
+    {
+<span class="nc" id="L123">        dictionary.setItem(COSName.R, ap);</span>
+<span class="nc" id="L124">    }</span>
+
+    /**
+     * This will return a list of appearances. In the case where there is only one appearance the map will contain one
+     * entry whose key is the string &quot;default&quot;. If there is no rollover appearance then the normal appearance will be
+     * returned. Which means that this method will never return null.
+     *
+     * @return A list of key(java.lang.String) value(PDAppearanceStream) pairs
+     */
+    public PDAppearanceEntry getDownAppearance()
+    {
+<span class="nc" id="L135">        COSDictionary entry = dictionary.getCOSDictionary(COSName.D);</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        return entry != null ? new PDAppearanceEntry(entry) : getNormalAppearance();</span>
+    }
+
+    /**
+     * This will set a list of appearances. If you would like to set the single appearance then you should use the key
+     * &quot;default&quot;, and when the PDF is written back to the filesystem then there will only be one stream.
+     *
+     * @param entry appearance stream or subdictionary
+     */
+    public void setDownAppearance(PDAppearanceEntry entry)
+    {
+<span class="nc" id="L147">        dictionary.setItem(COSName.D, entry);</span>
+<span class="nc" id="L148">    }</span>
+
+    /**
+     * This will set the down appearance when there is down appearance to be shown.
+     *
+     * @param ap The appearance stream to show.
+     */
+    public void setDownAppearance(PDAppearanceStream ap)
+    {
+<span class="nc" id="L157">        dictionary.setItem(COSName.D, ap);</span>
+<span class="nc" id="L158">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

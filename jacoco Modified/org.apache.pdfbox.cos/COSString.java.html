@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>COSString.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.cos</a> &gt; <span class="el_source">COSString.java</span></div><h1>COSString.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.cos;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.util.Hex;
+
+/**
+ * A string object, which may be a text string, a PDFDocEncoded string, ASCII string, or byte string.
+ *
+ * &lt;p&gt;Text strings are used for character strings that contain information intended to be
+ * human-readable, such as text annotations, bookmark names, article names, document information,
+ * and so forth.
+ *
+ * &lt;p&gt;PDFDocEncoded strings are used for characters that are represented in a single byte.
+ *
+ * &lt;p&gt;ASCII strings are used for characters that are represented in a single byte using ASCII
+ * encoding.
+ *
+ * &lt;p&gt;Byte strings are used for binary data represented as a series of bytes, but the encoding is
+ * not known. The bytes of the string need not represent characters.
+ * 
+ * @author Ben Litchfield
+ * @author John Hewson
+ */
+public final class COSString extends COSBase
+{
+<span class="fc" id="L48">    private static final Logger LOG = LogManager.getLogger(COSString.class);</span>
+
+    private final byte[] bytes;
+    private final boolean forceHexForm;
+
+    // legacy behaviour for old PDFParser
+<span class="fc" id="L54">    public static final boolean FORCE_PARSING =</span>
+<span class="fc" id="L55">            Boolean.getBoolean(&quot;org.apache.pdfbox.forceParsing&quot;);</span>
+
+    /**
+     * Creates a new PDF string from a byte array. This method can be used to read a string from
+     * an existing PDF file, or to create a new byte string.
+     *
+     * @param bytes The raw bytes of the PDF text string or byte string.
+     */
+    public COSString(byte[] bytes)
+    {
+<span class="fc" id="L65">        this(bytes, false);</span>
+<span class="fc" id="L66">    }</span>
+
+    /**
+     * Creates a new PDF string from a byte array. This method can be used to read a string from an existing PDF file,
+     * or to create a new byte string.
+     *
+     * @param bytes The raw bytes of the PDF text string or byte string.
+     * @param forceHex forces the hexadecimal presentation of the string if set to true
+     * 
+     */
+    public COSString(byte[] bytes, boolean forceHex)
+<span class="fc" id="L77">    {</span>
+<span class="fc" id="L78">        forceHexForm = forceHex;</span>
+<span class="fc" id="L79">        this.bytes = Arrays.copyOf(bytes, bytes.length);</span>
+<span class="fc" id="L80">    }</span>
+
+    /**
+     * Creates a new &lt;i&gt;text string&lt;/i&gt; from a Java String.
+     *
+     * @param text The string value of the object.
+     */
+    public COSString(String text)
+    {
+<span class="fc" id="L89">        this(text, false);</span>
+<span class="fc" id="L90">    }</span>
+
+    /**
+     * Creates a new &lt;i&gt;text string&lt;/i&gt; from a Java String.
+     *
+     * @param text The string value of the object.
+     * @param forceHex forces the hexadecimal presentation of the string if set to true
+     * 
+     */
+    public COSString(String text, boolean forceHex)
+<span class="fc" id="L100">    {</span>
+<span class="fc" id="L101">        forceHexForm = forceHex;</span>
+        // check whether the string uses only characters available in PDFDocEncoding
+<span class="fc" id="L103">        boolean isOnlyPDFDocEncoding = true;</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        for (char c : text.toCharArray())</span>
+        {
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            if (!PDFDocEncoding.containsChar(c))</span>
+            {
+<span class="fc" id="L108">                isOnlyPDFDocEncoding = false;</span>
+<span class="fc" id="L109">                break;</span>
+            }
+        }
+
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        if (isOnlyPDFDocEncoding)</span>
+        {
+            // PDFDocEncoded string
+<span class="fc" id="L116">            bytes = PDFDocEncoding.getBytes(text);</span>
+        }
+        else
+        {
+            // UTF-16BE encoded string with a leading byte order marker
+<span class="fc" id="L121">            byte[] data = text.getBytes(StandardCharsets.UTF_16BE);</span>
+<span class="fc" id="L122">            bytes = new byte[data.length + 2];</span>
+<span class="fc" id="L123">            bytes[0] = (byte) 0xFE;</span>
+<span class="fc" id="L124">            bytes[1] = (byte) 0xFF;</span>
+<span class="fc" id="L125">            System.arraycopy(data, 0, bytes, 2, data.length);</span>
+        }
+<span class="fc" id="L127">    }</span>
+
+    /**
+     * This will create a COS string from a string of hex characters.
+     *
+     * @param hex A hex string.
+     * @return A cos string with the hex characters converted to their actual bytes.
+     * @throws IOException If there is an error with the hex string.
+     */
+    public static COSString parseHex(String hex) throws IOException
+    {
+        // skip leading and trailing whitespace
+<span class="fc" id="L139">        int end = hex.length();</span>
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">        while (end &gt; 0 &amp;&amp; Character.isWhitespace(hex.charAt(end - 1)))</span>
+        {
+<span class="nc" id="L142">            end--;</span>
+        }
+<span class="fc" id="L144">        int start = 0;</span>
+<span class="pc bpc" id="L145" title="2 of 4 branches missed.">        while (start &lt; end &amp;&amp; Character.isWhitespace(hex.charAt(start)))</span>
+        {
+<span class="nc" id="L147">            start++;</span>
+        }
+
+<span class="fc" id="L150">        int length = end - start;</span>
+<span class="fc" id="L151">        ByteArrayOutputStream bytes = new ByteArrayOutputStream((length + 1) / 2);</span>
+
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">        boolean isLengthUneven = length % 2 != 0;</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">        if (isLengthUneven)</span>
+        {
+<span class="nc" id="L156">            length--;</span>
+        }
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        for (int i = 0; i &lt; length; i += 2)</span>
+        {
+<span class="fc" id="L160">            int value = 16 * Hex.getHexValue(hex.charAt(i)) + Hex.getHexValue(hex.charAt(i + 1));</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">            if (value &gt;= 0)</span>
+            {
+<span class="fc" id="L163">                bytes.write(value);</span>
+            }
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">            else if (FORCE_PARSING)</span>
+            {
+<span class="nc" id="L167">                LOG.warn(&quot;Encountered a malformed hex string&quot;);</span>
+<span class="nc" id="L168">                bytes.write('?'); // todo: what does Acrobat do? Any example PDFs?</span>
+            }
+            else
+            {
+<span class="fc" id="L172">                throw new IOException(&quot;Invalid hex string: &quot; + hex);</span>
+            }
+        }
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">        if (isLengthUneven)</span>
+        {
+<span class="nc" id="L177">            int value = 16 * Hex.getHexValue(hex.charAt(length));</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">            if (value &gt;= 0)</span>
+            {
+<span class="nc" id="L180">                bytes.write(value);</span>
+            }
+<span class="nc bnc" id="L182" title="All 2 branches missed.">            else if (FORCE_PARSING)</span>
+            {
+<span class="nc" id="L184">                LOG.warn(&quot;Encountered a malformed hex string&quot;);</span>
+<span class="nc" id="L185">                bytes.write('?'); // todo: what does Acrobat do? Any example PDFs?</span>
+            }
+            else
+            {
+<span class="nc" id="L189">                throw new IOException(&quot;Invalid hex string: &quot; + hex);</span>
+            }
+        }
+<span class="fc" id="L192">        return new COSString(bytes.toByteArray());</span>
+    }
+
+    /**
+     * Returns true if the string is to be written in hex form.
+     * 
+     * @return true if the COSString is written in hex form
+     */
+    public boolean getForceHexForm()
+    {
+<span class="fc" id="L202">        return forceHexForm;</span>
+    }
+
+    /**
+     * Returns the content of this string as a PDF &lt;i&gt;text string&lt;/i&gt;.
+     * 
+     * @return the PDF string representation of the COSString
+     */
+    public String getString()
+    {
+        // text string - BOM indicates Unicode
+<span class="fc bfc" id="L213" title="All 2 branches covered.">        if (bytes.length &gt;= 2)</span>
+        {
+<span class="pc bpc" id="L215" title="1 of 4 branches missed.">            if ((bytes[0] &amp; 0xff) == 0xFE &amp;&amp; (bytes[1] &amp; 0xff) == 0xFF)</span>
+            {
+                // UTF-16BE
+<span class="fc" id="L218">                return new String(bytes, 2, bytes.length - 2, StandardCharsets.UTF_16BE);</span>
+            }
+<span class="pc bpc" id="L220" title="1 of 4 branches missed.">            else if ((bytes[0] &amp; 0xff) == 0xFF &amp;&amp; (bytes[1] &amp; 0xff) == 0xFE)</span>
+            {
+                // UTF-16LE - not in the PDF spec!
+<span class="fc" id="L223">                return new String(bytes, 2, bytes.length - 2, StandardCharsets.UTF_16LE);</span>
+            }
+        }
+
+        // otherwise use PDFDocEncoding
+<span class="fc" id="L228">        return PDFDocEncoding.toString(bytes);</span>
+    }
+
+    /**
+     * Returns the content of this string as a PDF &lt;i&gt;ASCII string&lt;/i&gt;.
+     * 
+     * @return the ASCII string representation of the COSString
+     */
+    public String getASCII()
+    {
+        // ASCII string
+<span class="nc" id="L239">        return new String(bytes, StandardCharsets.US_ASCII);</span>
+    }
+
+    /**
+     * Returns the raw bytes of the string using a new byte array. Best used with a PDF &lt;i&gt;byte string&lt;/i&gt;.
+     * 
+     * @return a clone of the underlying byte[] representation of the COSString
+     */
+    public byte[] getBytes()
+    {
+<span class="fc" id="L249">        return Arrays.copyOf(bytes, bytes.length);</span>
+    }
+
+    /**
+     * This will take this string and create a hex representation of the bytes that make the string.
+     *
+     * @return A hex string representing the bytes in this string.
+     */
+    public String toHexString()
+    {
+<span class="fc" id="L259">        return Hex.getString(bytes);</span>
+    }
+
+    /**
+     * Visitor pattern double dispatch method.
+     * 
+     * @param visitor The object to notify when visiting this object.
+     * @throws IOException If an error occurs while visiting this object.
+     */
+    @Override
+    public void accept(ICOSVisitor visitor) throws IOException
+    {
+<span class="fc" id="L271">        visitor.visitFromString(this);</span>
+<span class="fc" id="L272">    }</span>
+
+    @Override
+    public boolean equals(Object obj)
+    {
+<span class="fc bfc" id="L277" title="All 2 branches covered.">        if (obj instanceof COSString)</span>
+        {
+<span class="fc" id="L279">            COSString strObj = (COSString) obj;</span>
+<span class="fc bfc" id="L280" title="All 4 branches covered.">            return getString().equals(strObj.getString()) &amp;&amp;</span>
+                   forceHexForm == strObj.forceHexForm;
+        }
+<span class="fc" id="L283">        return false;</span>
+    }
+
+    @Override
+    public int hashCode()
+    {
+<span class="fc" id="L289">        int result = Arrays.hashCode(bytes);</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">        return result + (forceHexForm ? 17 : 0);</span>
+    }
+
+    @Override
+    public String toString()
+    {
+<span class="fc" id="L296">        return &quot;COSString{&quot; + getString() + &quot;}&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

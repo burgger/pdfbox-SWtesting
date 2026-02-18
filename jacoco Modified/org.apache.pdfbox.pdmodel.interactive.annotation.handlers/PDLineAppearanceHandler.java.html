@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDLineAppearanceHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation.handlers</a> &gt; <span class="el_source">PDLineAppearanceHandler.java</span></div><h1>PDLineAppearanceHandler.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2018 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.interactive.annotation.handlers;
+
+import java.io.IOException;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationLine;
+import org.apache.pdfbox.pdmodel.PDAppearanceContentStream;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import static org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationLine.LE_NONE;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ *
+ */
+public class PDLineAppearanceHandler extends PDAbstractAppearanceHandler
+{
+<span class="nc" id="L37">    private static final Logger LOG = LogManager.getLogger(PDLineAppearanceHandler.class);</span>
+
+    static final int FONT_SIZE = 9;
+
+    public PDLineAppearanceHandler(PDAnnotation annotation)
+    {
+<span class="nc" id="L43">        super(annotation);</span>
+<span class="nc" id="L44">    }</span>
+
+    public PDLineAppearanceHandler(PDAnnotation annotation, PDDocument document)
+    {
+<span class="nc" id="L48">        super(annotation, document);</span>
+<span class="nc" id="L49">    }</span>
+
+    @Override
+    public void generateNormalAppearance()
+    {
+<span class="nc" id="L54">        PDAnnotationLine annotation = (PDAnnotationLine) getAnnotation();</span>
+<span class="nc" id="L55">        PDRectangle rect = annotation.getRectangle();</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        if (rect == null)</span>
+        {
+<span class="nc" id="L58">            return;</span>
+        }
+<span class="nc" id="L60">        float[] pathsArray = annotation.getLine();</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (pathsArray == null)</span>
+        {
+<span class="nc" id="L63">            return;</span>
+        }
+<span class="nc" id="L65">        AnnotationBorder ab = AnnotationBorder.getAnnotationBorder(annotation, annotation.getBorderStyle());</span>
+<span class="nc" id="L66">        PDColor color = annotation.getColor();</span>
+<span class="nc bnc" id="L67" title="All 4 branches missed.">        if (color == null || color.getComponents().length == 0)</span>
+        {
+<span class="nc" id="L69">            return;</span>
+        }
+<span class="nc" id="L71">        float ll = annotation.getLeaderLineLength();</span>
+<span class="nc" id="L72">        float lle = annotation.getLeaderLineExtensionLength();</span>
+<span class="nc" id="L73">        float llo = annotation.getLeaderLineOffsetLength();</span>
+
+        // Adjust rectangle even if not empty, see PLPDF.com-MarkupAnnotations.pdf
+<span class="nc" id="L76">        float minX = Float.MAX_VALUE;</span>
+<span class="nc" id="L77">        float minY = Float.MAX_VALUE;</span>
+<span class="nc" id="L78">        float maxX = Float.MIN_VALUE;</span>
+<span class="nc" id="L79">        float maxY = Float.MIN_VALUE;</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        for (int i = 0; i &lt; pathsArray.length / 2; ++i)</span>
+        {
+<span class="nc" id="L82">            float x = pathsArray[i * 2];</span>
+<span class="nc" id="L83">            float y = pathsArray[i * 2 + 1];</span>
+<span class="nc" id="L84">            minX = Math.min(minX, x);</span>
+<span class="nc" id="L85">            minY = Math.min(minY, y);</span>
+<span class="nc" id="L86">            maxX = Math.max(maxX, x);</span>
+<span class="nc" id="L87">            maxY = Math.max(maxY, y);</span>
+        }
+
+        // Leader lines
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        if (ll &lt; 0)</span>
+        {
+            // /LLO and /LLE go in the same direction as /LL
+<span class="nc" id="L94">            llo = -llo;</span>
+<span class="nc" id="L95">            lle = -lle;</span>
+        }
+
+        // observed with diagonal line of AnnotationSample.Standard.pdf
+        // for line endings, very small widths must be treated as size 1.
+        // However the border of the line ending shapes is not drawn.
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        float lineEndingSize = (ab.width &lt; 1e-5) ? 1 : ab.width;</span>
+
+        // add/subtract with, font height, and arrows
+        // arrow length is 9 * width at about 30° =&gt; 10 * width seems to be enough
+        // but need to consider /LL, /LLE and /LLO too
+        //TODO find better way to calculate padding
+<span class="nc" id="L107">        float max = Math.max(lineEndingSize * 10, Math.abs(llo+ll+lle));</span>
+<span class="nc" id="L108">        rect.setLowerLeftX(Math.min(minX - max, rect.getLowerLeftX()));</span>
+<span class="nc" id="L109">        rect.setLowerLeftY(Math.min(minY - max, rect.getLowerLeftY()));</span>
+<span class="nc" id="L110">        rect.setUpperRightX(Math.max(maxX + max, rect.getUpperRightX()));</span>
+<span class="nc" id="L111">        rect.setUpperRightY(Math.max(maxY + max, rect.getUpperRightY()));</span>
+
+<span class="nc" id="L113">        annotation.setRectangle(rect);</span>
+
+<span class="nc" id="L115">        try (PDAppearanceContentStream cs = getNormalAppearanceAsContentStream())</span>
+        {
+<span class="nc" id="L117">            setOpacity(cs, annotation.getConstantOpacity());</span>
+
+            // Tested with Adobe Reader:
+            // text is written first (TODO)
+            // width 0 is used by Adobe as such (but results in a visible line in rendering)
+            // empty color array results in an invisible line (&quot;n&quot; operator) but the rest is visible
+            // empty content is like no caption
+
+<span class="nc" id="L125">            boolean hasStroke = cs.setStrokingColorOnDemand(color);</span>
+
+<span class="nc bnc" id="L127" title="All 2 branches missed.">            if (ab.dashArray != null)</span>
+            {
+<span class="nc" id="L129">                cs.setLineDashPattern(ab.dashArray, 0);</span>
+            }
+<span class="nc" id="L131">            cs.setLineWidth(ab.width);</span>
+
+<span class="nc" id="L133">            float x1 = pathsArray[0];</span>
+<span class="nc" id="L134">            float y1 = pathsArray[1];</span>
+<span class="nc" id="L135">            float x2 = pathsArray[2];</span>
+<span class="nc" id="L136">            float y2 = pathsArray[3];</span>
+
+            // if there are leader lines, then the /L coordinates represent
+            // the endpoints of the leader lines rather than the endpoints of the line itself.
+            // so for us, llo + ll is the vertical offset for the line.
+<span class="nc" id="L141">            float y = llo + ll;</span>
+
+<span class="nc" id="L143">            String contents = annotation.getContents();</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            if (contents == null)</span>
+            {
+<span class="nc" id="L146">                contents = &quot;&quot;;</span>
+            }
+
+<span class="nc" id="L149">            cs.saveGraphicsState();</span>
+<span class="nc" id="L150">            double angle = Math.atan2(y2 - y1, x2 - x1);</span>
+<span class="nc" id="L151">            cs.transform(Matrix.getRotateInstance(angle, x1, y1));</span>
+<span class="nc" id="L152">            float lineLength = (float) Math.sqrt(((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)));</span>
+
+            // Leader lines
+<span class="nc" id="L155">            cs.moveTo(0, llo);</span>
+<span class="nc" id="L156">            cs.lineTo(0, llo + ll + lle);</span>
+<span class="nc" id="L157">            cs.moveTo(lineLength, llo);</span>
+<span class="nc" id="L158">            cs.lineTo(lineLength, llo + ll + lle);</span>
+
+<span class="nc" id="L160">            String startPointEndingStyle = annotation.getStartPointEndingStyle();</span>
+<span class="nc" id="L161">            String endPointEndingStyle = annotation.getEndPointEndingStyle();</span>
+<span class="nc bnc" id="L162" title="All 4 branches missed.">            if (annotation.hasCaption() &amp;&amp; !contents.isEmpty())</span>
+            {
+                // Note that Adobe places the text as a caption even if /CP is not set
+                // when the text is so long that it would cross arrows, but we ignore this for now
+                // and stick to the specification.
+
+<span class="nc" id="L168">                PDFont font = getDefaultFont();</span>
+                // TODO: support newlines!!!!!
+                // see https://www.pdfill.com/example/pdf_commenting_new.pdf
+<span class="nc" id="L171">                float contentLength = 0;</span>
+                try
+                {
+<span class="nc" id="L174">                    contentLength = font.getStringWidth(contents) / 1000 * FONT_SIZE;</span>
+
+                    //TODO How to decide the size of the font?
+                    // 9 seems to be standard, but if the text doesn't fit, a scaling is done
+                    // see AnnotationSample.Standard.pdf, diagonal line
+                }
+<span class="nc" id="L180">                catch (IllegalArgumentException ex)</span>
+                {
+                    // Adobe Reader displays placeholders instead
+<span class="nc" id="L183">                    LOG.error(&quot;line text '{}' can't be shown&quot;, contents, ex);</span>
+<span class="nc" id="L184">                }</span>
+<span class="nc" id="L185">                float xOffset = (lineLength - contentLength) / 2;</span>
+                float yOffset;
+
+<span class="nc" id="L188">                String captionPositioning = annotation.getCaptionPositioning();</span>
+
+                // draw the line horizontally, using the rotation CTM to get to correct final position
+                // that's the easiest way to calculate the positions for the line before and after inline caption
+<span class="nc bnc" id="L192" title="All 2 branches missed.">                if (SHORT_STYLES.contains(startPointEndingStyle))</span>
+                {
+<span class="nc" id="L194">                    cs.moveTo(lineEndingSize, y);</span>
+                }
+                else
+                {
+<span class="nc" id="L198">                    cs.moveTo(0, y);</span>
+                }
+<span class="nc bnc" id="L200" title="All 2 branches missed.">                if (&quot;Top&quot;.equals(captionPositioning))</span>
+                {
+                    // this arbitrary number is from Adobe
+<span class="nc" id="L203">                    yOffset = 1.908f;</span>
+                }
+                else
+                {
+                    // Inline
+                    // this arbitrary number is from Adobe
+<span class="nc" id="L209">                    yOffset = -2.6f;</span>
+
+<span class="nc" id="L211">                    cs.lineTo(xOffset - lineEndingSize, y);</span>
+<span class="nc" id="L212">                    cs.moveTo(lineLength - xOffset + lineEndingSize, y);</span>
+                }
+<span class="nc bnc" id="L214" title="All 2 branches missed.">                if (SHORT_STYLES.contains(endPointEndingStyle))</span>
+                {
+<span class="nc" id="L216">                    cs.lineTo(lineLength - lineEndingSize, y);</span>
+                }
+                else
+                {
+<span class="nc" id="L220">                    cs.lineTo(lineLength, y);</span>
+                }
+<span class="nc" id="L222">                cs.drawShape(lineEndingSize, hasStroke, false);</span>
+
+                // /CO entry (caption offset)
+<span class="nc" id="L225">                float captionHorizontalOffset = annotation.getCaptionHorizontalOffset();</span>
+<span class="nc" id="L226">                float captionVerticalOffset = annotation.getCaptionVerticalOffset();</span>
+
+                // check contentLength so we don't show if there was trouble before
+<span class="nc bnc" id="L229" title="All 2 branches missed.">                if (contentLength &gt; 0)</span>
+                {
+<span class="nc" id="L231">                    cs.beginText();</span>
+<span class="nc" id="L232">                    cs.setFont(font, FONT_SIZE);</span>
+<span class="nc" id="L233">                    cs.newLineAtOffset(xOffset + captionHorizontalOffset, </span>
+                                       y + yOffset + captionVerticalOffset);
+<span class="nc" id="L235">                    cs.showText(contents);</span>
+<span class="nc" id="L236">                    cs.endText();</span>
+                }
+
+<span class="nc bnc" id="L239" title="All 2 branches missed.">                if (Float.compare(captionVerticalOffset, 0) != 0)</span>
+                {
+                    // Adobe paints vertical bar to the caption
+<span class="nc" id="L242">                    cs.moveTo(0 + lineLength / 2, y);</span>
+<span class="nc" id="L243">                    cs.lineTo(0 + lineLength / 2, y + captionVerticalOffset);</span>
+<span class="nc" id="L244">                    cs.drawShape(lineEndingSize, hasStroke, false);</span>
+                }
+<span class="nc" id="L246">            }</span>
+            else
+            {
+<span class="nc bnc" id="L249" title="All 2 branches missed.">                if (SHORT_STYLES.contains(startPointEndingStyle))</span>
+                {
+<span class="nc" id="L251">                    cs.moveTo(lineEndingSize, y);</span>
+                }
+                else
+                {
+<span class="nc" id="L255">                    cs.moveTo(0, y);</span>
+                }
+<span class="nc bnc" id="L257" title="All 2 branches missed.">                if (SHORT_STYLES.contains(endPointEndingStyle))</span>
+                {
+<span class="nc" id="L259">                    cs.lineTo(lineLength - lineEndingSize, y);</span>
+                }
+                else
+                {
+<span class="nc" id="L263">                    cs.lineTo(lineLength, y);</span>
+                }
+<span class="nc" id="L265">                cs.drawShape(lineEndingSize, hasStroke, false);</span>
+            }
+<span class="nc" id="L267">            cs.restoreGraphicsState();</span>
+        
+            // paint the styles here and not before showing the text, or the text would appear
+            // with the interior color
+<span class="nc" id="L271">            boolean hasBackground = cs.setNonStrokingColorOnDemand(annotation.getInteriorColor());</span>
+
+            // observed with diagonal line of file AnnotationSample.Standard.pdf
+            // when width is very small, the border of the line ending shapes 
+            // is not drawn.
+<span class="nc bnc" id="L276" title="All 2 branches missed.">            if (ab.width &lt; 1e-5)</span>
+            {
+<span class="nc" id="L278">                hasStroke = false;</span>
+            }
+
+            // check for LE_NONE only needed to avoid q cm Q for that case
+<span class="nc bnc" id="L282" title="All 2 branches missed.">            if (!LE_NONE.equals(startPointEndingStyle))</span>
+            {
+<span class="nc" id="L284">                cs.saveGraphicsState();</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">                if (ANGLED_STYLES.contains(startPointEndingStyle))</span>
+                {
+<span class="nc" id="L287">                    cs.transform(Matrix.getRotateInstance(angle, x1, y1));</span>
+<span class="nc" id="L288">                    drawStyle(startPointEndingStyle, cs, 0, y, lineEndingSize, hasStroke, hasBackground, false);</span>
+                }
+                else
+                {
+                    // Support of non-angled styles is more difficult than in the other handlers
+                    // because the lines do not always go from (x1,y1) to (x2,y2) due to the leader lines
+                    // when the &quot;y&quot; value above is not 0.
+                    // We use the angle we already know and the distance y to translate to the new coordinate.
+<span class="nc" id="L296">                    float xx1 = x1 - (float) (y * Math.sin(angle));</span>
+<span class="nc" id="L297">                    float yy1 = y1 + (float) (y * Math.cos(angle));</span>
+<span class="nc" id="L298">                    drawStyle(startPointEndingStyle, cs, xx1, yy1, lineEndingSize, hasStroke, hasBackground, false);</span>
+                }
+<span class="nc" id="L300">                cs.restoreGraphicsState();</span>
+            }
+
+            // check for LE_NONE only needed to avoid q cm Q for that case
+<span class="nc bnc" id="L304" title="All 2 branches missed.">            if (!LE_NONE.equals(endPointEndingStyle))</span>
+            {
+                // save / restore not needed because it's the last one
+<span class="nc bnc" id="L307" title="All 2 branches missed.">                if (ANGLED_STYLES.contains(endPointEndingStyle))</span>
+                {
+<span class="nc" id="L309">                    cs.transform(Matrix.getRotateInstance(angle, x2, y2));</span>
+<span class="nc" id="L310">                    drawStyle(endPointEndingStyle, cs, 0, y, lineEndingSize, hasStroke, hasBackground, true);</span>
+                }
+                else
+                {
+                    // Support of non-angled styles is more difficult than in the other handlers
+                    // because the lines do not always go from (x1,y1) to (x2,y2) due to the leader lines
+                    // when the &quot;y&quot; value above is not 0.
+                    // We use the angle we already know and the distance y to translate to the new coordinate.
+<span class="nc" id="L318">                    float xx2 = x2 - (float) (y * Math.sin(angle));</span>
+<span class="nc" id="L319">                    float yy2 = y2 + (float) (y * Math.cos(angle));</span>
+<span class="nc" id="L320">                    drawStyle(endPointEndingStyle, cs, xx2, yy2, lineEndingSize, hasStroke, hasBackground, true);</span>
+                }
+            }
+        }
+<span class="nc" id="L324">        catch (IOException ex)</span>
+        {
+<span class="nc" id="L326">            LOG.error(ex);</span>
+<span class="nc" id="L327">        }</span>
+<span class="nc" id="L328">    }</span>
+
+    @Override
+    public void generateRolloverAppearance()
+    {
+        // No rollover appearance generated
+<span class="nc" id="L334">    }</span>
+
+    @Override
+    public void generateDownAppearance()
+    {
+        // No down appearance generated
+<span class="nc" id="L340">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

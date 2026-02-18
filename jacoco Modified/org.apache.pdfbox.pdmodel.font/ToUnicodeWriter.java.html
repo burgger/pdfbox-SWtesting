@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ToUnicodeWriter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font</a> &gt; <span class="el_source">ToUnicodeWriter.java</span></div><h1>ToUnicodeWriter.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.font;
+
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import org.apache.pdfbox.util.Hex;
+
+/**
+ * Writes ToUnicode Mapping Files.
+ *
+ * @author John Hewson
+ */
+final class ToUnicodeWriter
+{
+<span class="fc" id="L38">    private final Map&lt;Integer, String&gt; cidToUnicode = new TreeMap&lt;&gt;();</span>
+    private int wMode;
+
+    /**
+     * To test corner case of PDFBOX-4302.
+     */
+    static final int MAX_ENTRIES_PER_OPERATOR = 100;
+
+    /**
+     * Creates a new ToUnicode CMap writer.
+     */
+    ToUnicodeWriter()
+<span class="fc" id="L50">    {</span>
+<span class="fc" id="L51">        this.wMode = 0;</span>
+<span class="fc" id="L52">    }</span>
+
+    /**
+     * Sets the WMode (writing mode) of this CMap.
+     *
+     * @param wMode 1 for vertical, 0 for horizontal (default)
+     */
+    public void setWMode(int wMode)
+    {
+<span class="nc" id="L61">        this.wMode = wMode;</span>
+<span class="nc" id="L62">    }</span>
+
+    /**
+     * Adds the given CID to Unicode mapping.
+     *
+     * @param cid CID
+     * @param text Unicode text, up to 512 bytes.
+     */
+    public void add(int cid, String text)
+    {
+<span class="pc bpc" id="L72" title="2 of 4 branches missed.">        if (cid &lt; 0 || cid &gt; 0xFFFF)</span>
+        {
+<span class="nc" id="L74">            throw new IllegalArgumentException(&quot;CID is not valid&quot;);</span>
+        }
+
+<span class="pc bpc" id="L77" title="2 of 4 branches missed.">        if (text == null || text.isEmpty())</span>
+        {
+<span class="nc" id="L79">            throw new IllegalArgumentException(&quot;Text is null or empty&quot;);</span>
+        }
+
+<span class="fc" id="L82">        cidToUnicode.put(cid, text);</span>
+<span class="fc" id="L83">    }</span>
+
+    /**
+     * Writes the CMap as ASCII to the given output stream.
+     *
+     * @param out ASCII output stream
+     * @throws IOException if the stream could not be written
+     */
+    public void writeTo(OutputStream out) throws IOException
+    {
+<span class="fc" id="L93">        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.US_ASCII));</span>
+
+<span class="fc" id="L95">        writeLine(writer, &quot;/CIDInit /ProcSet findresource begin&quot;);</span>
+<span class="fc" id="L96">        writeLine(writer, &quot;12 dict begin\n&quot;);</span>
+
+<span class="fc" id="L98">        writeLine(writer, &quot;begincmap&quot;);</span>
+<span class="fc" id="L99">        writeLine(writer, &quot;/CIDSystemInfo&quot;);</span>
+<span class="fc" id="L100">        writeLine(writer, &quot;&lt;&lt; /Registry (Adobe)&quot;);</span>
+<span class="fc" id="L101">        writeLine(writer, &quot;/Ordering (UCS)&quot;);</span>
+<span class="fc" id="L102">        writeLine(writer, &quot;/Supplement 0&quot;);</span>
+<span class="fc" id="L103">        writeLine(writer, &quot;&gt;&gt; def\n&quot;);</span>
+
+<span class="fc" id="L105">        writeLine(writer, &quot;/CMapName /Adobe-Identity-UCS&quot; + &quot; def&quot;);</span>
+<span class="fc" id="L106">        writeLine(writer, &quot;/CMapType 2 def\n&quot;); // 2 = ToUnicode</span>
+
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (wMode != 0)</span>
+        {
+<span class="nc" id="L110">            writeLine(writer, &quot;/WMode /&quot; + wMode + &quot; def&quot;);</span>
+        }
+
+        // ToUnicode always uses 16-bit CIDs
+<span class="fc" id="L114">        writeLine(writer, &quot;1 begincodespacerange&quot;);</span>
+<span class="fc" id="L115">        writeLine(writer, &quot;&lt;0000&gt; &lt;FFFF&gt;&quot;);</span>
+<span class="fc" id="L116">        writeLine(writer, &quot;endcodespacerange\n&quot;);</span>
+
+        // CID -&gt; Unicode mappings, we use ranges to generate a smaller CMap
+<span class="fc" id="L119">        List&lt;Integer&gt; srcFrom = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L120">        List&lt;Integer&gt; srcTo = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L121">        List&lt;String&gt; dstString = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L123">        Map.Entry&lt;Integer, String&gt; prev = null;</span>
+
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, String&gt; next : cidToUnicode.entrySet())</span>
+        {
+<span class="fc bfc" id="L127" title="All 2 branches covered.">            if (allowCIDToUnicodeRange(prev, next))</span>
+            {
+                // extend range
+<span class="fc" id="L130">                srcTo.set(srcTo.size() - 1, next.getKey());</span>
+            }
+            else
+            {
+                // begin range
+<span class="fc" id="L135">                srcFrom.add(next.getKey());</span>
+<span class="fc" id="L136">                srcTo.add(next.getKey());</span>
+<span class="fc" id="L137">                dstString.add(next.getValue());</span>
+            }
+<span class="fc" id="L139">            prev = next;</span>
+<span class="fc" id="L140">        }</span>
+
+        // limit entries per operator
+<span class="fc" id="L143">        int batchCount = (int) Math.ceil(srcFrom.size() /</span>
+                                         (double) MAX_ENTRIES_PER_OPERATOR);
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (int batch = 0; batch &lt; batchCount; batch++)</span>
+        {
+<span class="fc bfc" id="L147" title="All 2 branches covered.">            int count = batch == batchCount - 1 ?</span>
+<span class="fc" id="L148">                            srcFrom.size() - MAX_ENTRIES_PER_OPERATOR * batch :</span>
+<span class="fc" id="L149">                            MAX_ENTRIES_PER_OPERATOR;</span>
+<span class="fc" id="L150">            writer.write(count + &quot; beginbfrange\n&quot;);</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">            for (int j = 0; j &lt; count; j++)</span>
+            {
+<span class="fc" id="L153">                int index = batch * MAX_ENTRIES_PER_OPERATOR + j;</span>
+<span class="fc" id="L154">                writer.write('&lt;');</span>
+<span class="fc" id="L155">                writer.write(Hex.getChars(srcFrom.get(index).shortValue()));</span>
+<span class="fc" id="L156">                writer.write(&quot;&gt; &quot;);</span>
+
+<span class="fc" id="L158">                writer.write('&lt;');</span>
+<span class="fc" id="L159">                writer.write(Hex.getChars(srcTo.get(index).shortValue()));</span>
+<span class="fc" id="L160">                writer.write(&quot;&gt; &quot;);</span>
+
+<span class="fc" id="L162">                writer.write('&lt;');</span>
+<span class="fc" id="L163">                writer.write(Hex.getCharsUTF16BE(dstString.get(index)));</span>
+<span class="fc" id="L164">                writer.write(&quot;&gt;\n&quot;);</span>
+            }
+<span class="fc" id="L166">            writeLine(writer, &quot;endbfrange\n&quot;);</span>
+        }
+
+        // footer
+<span class="fc" id="L170">        writeLine(writer, &quot;endcmap&quot;);</span>
+<span class="fc" id="L171">        writeLine(writer, &quot;CMapName currentdict /CMap defineresource pop&quot;);</span>
+<span class="fc" id="L172">        writeLine(writer, &quot;end&quot;);</span>
+<span class="fc" id="L173">        writeLine(writer, &quot;end&quot;);</span>
+
+<span class="fc" id="L175">        writer.flush();</span>
+<span class="fc" id="L176">    }</span>
+
+    private void writeLine(BufferedWriter writer, String text) throws IOException
+    {
+<span class="fc" id="L180">        writer.write(text);</span>
+<span class="fc" id="L181">        writer.write('\n');</span>
+<span class="fc" id="L182">    }</span>
+
+    // allowCIDToUnicodeRange returns true if the CID and Unicode destination string are allowed to follow one another
+    // according to the Adobe 1.7 specification as described in Section 5.9, Example 5.16.
+    static boolean allowCIDToUnicodeRange(Map.Entry&lt;Integer, String&gt; prev,
+            Map.Entry&lt;Integer, String&gt; next)
+    {
+<span class="fc bfc" id="L189" title="All 4 branches covered.">        if (prev == null || next == null)</span>
+        {
+<span class="fc" id="L191">            return false;</span>
+        }
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        return allowCodeRange(prev.getKey(), next.getKey())</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">                &amp;&amp; allowDestinationRange(prev.getValue(), next.getValue());</span>
+    }
+
+    // allowCodeRange returns true if the 16-bit values are sequential and differ only in the low-order byte.
+    static boolean allowCodeRange(int prev, int next)
+    {
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        if ((prev + 1) != next)</span>
+        {
+<span class="fc" id="L202">            return false;</span>
+        }
+<span class="fc" id="L204">        int prevH = (prev &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="fc" id="L205">        int prevL = prev &amp; 0xFF;</span>
+<span class="fc" id="L206">        int nextH = (next &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="fc" id="L207">        int nextL = next &amp; 0xFF;</span>
+
+<span class="pc bpc" id="L209" title="1 of 4 branches missed.">        return prevH == nextH &amp;&amp; prevL &lt; nextL;</span>
+    }
+
+    // allowDestinationRange returns true if the code points represented by the strings are sequential and differ
+    // only in the low-order byte.
+    static boolean allowDestinationRange(String prev, String next)
+    {
+<span class="fc bfc" id="L216" title="All 4 branches covered.">        if (prev.isEmpty() || next.isEmpty())</span>
+        {
+<span class="fc" id="L218">            return false;</span>
+        }
+<span class="fc" id="L220">        int prevCode = prev.codePointAt(0);</span>
+<span class="fc" id="L221">        int nextCode = next.codePointAt(0);</span>
+
+        // Allow the new destination string if:
+        // 1. It is sequential with the previous one and differs only in the low-order byte
+        // 2. The previous string does not contain any UTF-16 surrogates
+<span class="pc bpc" id="L226" title="1 of 4 branches missed.">        return allowCodeRange(prevCode, nextCode) &amp;&amp; prev.codePointCount(0, prev.length()) == 1;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

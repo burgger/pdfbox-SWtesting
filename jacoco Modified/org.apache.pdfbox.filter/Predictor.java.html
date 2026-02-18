@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Predictor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.filter</a> &gt; <span class="el_source">Predictor.java</span></div><h1>Predictor.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2014 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.filter;
+
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Arrays;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+
+/**
+ * Helper class to contain predictor decoding used by Flate and LZW filter. 
+ * To see the history, look at the FlateFilter class.
+ */
+public final class Predictor
+{
+
+    private Predictor()
+    {
+    }
+
+    /**
+     * Decodes a single line of data in-place.
+     * @param predictor Predictor value for the current line
+     * @param colors Number of color components, from decode parameters.
+     * @param bitsPerComponent Number of bits per components, from decode parameters.
+     * @param columns Number samples in a row, from decode parameters.
+     * @param actline Current (active) line to decode. Data will be decoded in-place,
+     *                i.e. - the contents of this buffer will be modified.
+     * @param lastline The previous decoded line. When decoding the first line, this
+     *                 parameter should be an empty byte array of the same length as
+     *                 &lt;code&gt;actline&lt;/code&gt;.
+     */
+    static void decodePredictorRow(int predictor, int colors, int bitsPerComponent, int columns, byte[] actline, byte[] lastline)
+    {
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">        if (predictor == 1)</span>
+        {
+            // no prediction
+<span class="nc" id="L54">            return;</span>
+        }
+<span class="fc" id="L56">        final int bitsPerPixel = colors * bitsPerComponent;</span>
+<span class="fc" id="L57">        final int bytesPerPixel = (bitsPerPixel + 7) / 8;</span>
+<span class="fc" id="L58">        final int rowlength = actline.length;</span>
+<span class="pc bpc" id="L59" title="2 of 7 branches missed.">        switch (predictor)</span>
+        {
+            case 2:
+                // PRED TIFF SUB
+<span class="nc bnc" id="L63" title="All 2 branches missed.">                if (bitsPerComponent == 8)</span>
+                {
+                    // for 8 bits per component it is the same algorithm as PRED SUB of PNG format
+<span class="nc bnc" id="L66" title="All 2 branches missed.">                    for (int p = bytesPerPixel; p &lt; rowlength; p++)</span>
+                    {
+<span class="nc" id="L68">                        int sub = actline[p] &amp; 0xff;</span>
+<span class="nc" id="L69">                        int left = actline[p - bytesPerPixel] &amp; 0xff;</span>
+<span class="nc" id="L70">                        actline[p] = (byte) (sub + left);</span>
+                    }
+<span class="nc" id="L72">                    break;</span>
+                }
+<span class="nc bnc" id="L74" title="All 2 branches missed.">                if (bitsPerComponent == 16)</span>
+                {
+<span class="nc bnc" id="L76" title="All 2 branches missed.">                    for (int p = bytesPerPixel; p &lt; rowlength - 1; p += 2)</span>
+                    {
+<span class="nc" id="L78">                        int sub = ((actline[p] &amp; 0xff) &lt;&lt; 8) + (actline[p + 1] &amp; 0xff);</span>
+<span class="nc" id="L79">                        int left = (((actline[p - bytesPerPixel] &amp; 0xff) &lt;&lt; 8)</span>
+                                + (actline[p - bytesPerPixel + 1] &amp; 0xff));
+<span class="nc" id="L81">                        actline[p] = (byte) (((sub + left) &gt;&gt; 8) &amp; 0xff);</span>
+<span class="nc" id="L82">                        actline[p + 1] = (byte) ((sub + left) &amp; 0xff);</span>
+                    }
+<span class="nc" id="L84">                    break;</span>
+                }
+<span class="nc bnc" id="L86" title="All 4 branches missed.">                if (bitsPerComponent == 1 &amp;&amp; colors == 1)</span>
+                {
+                    // bytesPerPixel cannot be used:
+                    // &quot;A row shall occupy a whole number of bytes, rounded up if necessary.
+                    // Samples and their components shall be packed into bytes
+                    // from high-order to low-order bits.&quot;
+<span class="nc bnc" id="L92" title="All 2 branches missed.">                    for (int p = 0; p &lt; rowlength; p++)</span>
+                    {
+<span class="nc bnc" id="L94" title="All 2 branches missed.">                        for (int bit = 7; bit &gt;= 0; --bit)</span>
+                        {
+<span class="nc" id="L96">                            int sub = (actline[p] &gt;&gt; bit) &amp; 1;</span>
+<span class="nc bnc" id="L97" title="All 4 branches missed.">                            if (p == 0 &amp;&amp; bit == 7)</span>
+                            {
+<span class="nc" id="L99">                                continue;</span>
+                            }
+                            int left;
+<span class="nc bnc" id="L102" title="All 2 branches missed.">                            if (bit == 7)</span>
+                            {
+                                // use bit #0 from previous byte
+<span class="nc" id="L105">                                left = actline[p - 1] &amp; 1;</span>
+                            }
+                            else
+                            {
+                                // use &quot;previous&quot; bit
+<span class="nc" id="L110">                                left = (actline[p] &gt;&gt; (bit + 1)) &amp; 1;</span>
+                            }
+<span class="nc bnc" id="L112" title="All 2 branches missed.">                            if (((sub + left) &amp; 1) == 0)</span>
+                            {
+                                // reset bit
+<span class="nc" id="L115">                                actline[p] &amp;= ~(1 &lt;&lt; bit);</span>
+                            }
+                            else
+                            {
+                                // set bit
+<span class="nc" id="L120">                                actline[p] |= 1 &lt;&lt; bit;</span>
+                            }
+                        }
+                    }
+<span class="nc" id="L124">                    break;</span>
+                }
+                // everything else, i.e. bpc 2 and 4, but has been tested for bpc 1 and 8 too
+<span class="nc" id="L127">                int elements = columns * colors;</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">                for (int p = colors; p &lt; elements; ++p)</span>
+                {
+<span class="nc" id="L130">                    int bytePosSub = p * bitsPerComponent / 8;</span>
+<span class="nc" id="L131">                    int bitPosSub = 8 - p * bitsPerComponent % 8 - bitsPerComponent;</span>
+<span class="nc" id="L132">                    int bytePosLeft = (p - colors) * bitsPerComponent / 8;</span>
+<span class="nc" id="L133">                    int bitPosLeft = 8 - (p - colors) * bitsPerComponent % 8 - bitsPerComponent;</span>
+
+<span class="nc" id="L135">                    int sub = getBitSeq(actline[bytePosSub], bitPosSub, bitsPerComponent);</span>
+<span class="nc" id="L136">                    int left = getBitSeq(actline[bytePosLeft], bitPosLeft, bitsPerComponent);</span>
+<span class="nc" id="L137">                    actline[bytePosSub] = (byte) calcSetBitSeq(actline[bytePosSub], bitPosSub, bitsPerComponent, sub + left);</span>
+                }
+<span class="nc" id="L139">                break;</span>
+            case 10:
+                // PRED NONE
+                // do nothing
+<span class="fc" id="L143">                break;</span>
+            case 11:
+                // PRED SUB
+<span class="fc bfc" id="L146" title="All 2 branches covered.">                for (int p = bytesPerPixel; p &lt; rowlength; p++)</span>
+                {
+<span class="fc" id="L148">                    int sub = actline[p];</span>
+<span class="fc" id="L149">                    int left = actline[p - bytesPerPixel];</span>
+<span class="fc" id="L150">                    actline[p] = (byte) (sub + left);</span>
+                }
+<span class="fc" id="L152">                break;</span>
+            case 12:
+                // PRED UP
+<span class="fc bfc" id="L155" title="All 2 branches covered.">                for (int p = 0; p &lt; rowlength; p++)</span>
+                {
+<span class="fc" id="L157">                    int up = actline[p] &amp; 0xff;</span>
+<span class="fc" id="L158">                    int prior = lastline[p] &amp; 0xff;</span>
+<span class="fc" id="L159">                    actline[p] = (byte) ((up + prior) &amp; 0xff);</span>
+                }
+<span class="fc" id="L161">                break;</span>
+            case 13:
+                // PRED AVG
+<span class="fc bfc" id="L164" title="All 2 branches covered.">                for (int p = 0; p &lt; rowlength; p++)</span>
+                {
+<span class="fc" id="L166">                    int avg = actline[p] &amp; 0xff;</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">                    int left = p - bytesPerPixel &gt;= 0 ? actline[p - bytesPerPixel] &amp; 0xff : 0;</span>
+<span class="fc" id="L168">                    int up = lastline[p] &amp; 0xff;</span>
+<span class="fc" id="L169">                    actline[p] = (byte) ((avg + (left + up) / 2) &amp; 0xff);</span>
+                }
+<span class="fc" id="L171">                break;</span>
+            case 14:
+                // PRED PAETH
+<span class="fc bfc" id="L174" title="All 2 branches covered.">                for (int p = 0; p &lt; rowlength; p++)</span>
+                {
+<span class="fc" id="L176">                    int paeth = actline[p] &amp; 0xff;</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">                    int a = p - bytesPerPixel &gt;= 0 ? actline[p - bytesPerPixel] &amp; 0xff : 0;// left</span>
+<span class="fc" id="L178">                    int b = lastline[p] &amp; 0xff;// upper</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">                    int c = p - bytesPerPixel &gt;= 0 ? lastline[p - bytesPerPixel] &amp; 0xff : 0;// upperleft</span>
+<span class="fc" id="L180">                    int value = a + b - c;</span>
+<span class="fc" id="L181">                    int absa = Math.abs(value - a);</span>
+<span class="fc" id="L182">                    int absb = Math.abs(value - b);</span>
+<span class="fc" id="L183">                    int absc = Math.abs(value - c);</span>
+
+<span class="fc bfc" id="L185" title="All 4 branches covered.">                    if (absa &lt;= absb &amp;&amp; absa &lt;= absc)</span>
+                    {
+<span class="fc" id="L187">                        actline[p] = (byte) ((paeth + a) &amp; 0xff);</span>
+                    }
+<span class="fc bfc" id="L189" title="All 2 branches covered.">                    else if (absb &lt;= absc)</span>
+                    {
+<span class="fc" id="L191">                        actline[p] = (byte) ((paeth + b) &amp; 0xff);</span>
+                    }
+                    else
+                    {
+<span class="fc" id="L195">                        actline[p] = (byte) ((paeth + c) &amp; 0xff);</span>
+                    }
+                }
+<span class="fc" id="L198">                break;</span>
+            default:
+                break;
+        }
+<span class="fc" id="L202">    }</span>
+
+    static int calculateRowLength(int colors, int bitsPerComponent, int columns)
+    {
+<span class="fc" id="L206">        final int bitsPerPixel = colors * bitsPerComponent;</span>
+<span class="fc" id="L207">        return  (columns * bitsPerPixel + 7) / 8;</span>
+    }
+    
+    // get value from bit interval from a byte
+    static int getBitSeq(int by, int startBit, int bitSize)
+    {
+<span class="fc" id="L213">        int mask = ((1 &lt;&lt; bitSize) - 1);</span>
+<span class="fc" id="L214">        return (by &gt;&gt;&gt; startBit) &amp; mask;</span>
+    }
+
+    // set value in a bit interval and return that value
+    static int calcSetBitSeq(int by, int startBit, int bitSize, int val)
+    {
+<span class="fc" id="L220">        int mask = ((1 &lt;&lt; bitSize) - 1);</span>
+<span class="fc" id="L221">        int truncatedVal = val &amp; mask;</span>
+<span class="fc" id="L222">        mask = ~(mask &lt;&lt; startBit);</span>
+<span class="fc" id="L223">        return (by &amp; mask) | (truncatedVal &lt;&lt; startBit);</span>
+    }
+
+    /**
+     * Wraps and &lt;code&gt;OutputStream&lt;/code&gt; in a predictor decoding stream as necessary.
+     * If no predictor is specified by the parameters, the original stream is returned as is.
+     *
+     * @param out The stream to which decoded data should be written
+     * @param decodeParams Decode parameters for the stream
+     * @return An &lt;code&gt;OutputStream&lt;/code&gt; is returned, which will write decoded data
+     * into the given stream. If no predictor is specified, the original stream is returned.
+     * @throws IOException
+     */
+    static OutputStream wrapPredictor(OutputStream out, COSDictionary decodeParams) throws IOException
+    {
+<span class="fc" id="L238">        int predictor = decodeParams.getInt(COSName.PREDICTOR);</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">        if (predictor &gt; 1)</span>
+        {
+<span class="fc" id="L241">            int colors = Math.min(decodeParams.getInt(COSName.COLORS, 1), 32);</span>
+<span class="fc" id="L242">            int bitsPerPixel = decodeParams.getInt(COSName.BITS_PER_COMPONENT, 8);</span>
+<span class="fc" id="L243">            int columns = decodeParams.getInt(COSName.COLUMNS, 1);</span>
+
+<span class="fc" id="L245">            return new PredictorOutputStream(out, predictor, colors, bitsPerPixel, columns);</span>
+        }
+        else
+        {
+<span class="fc" id="L249">            return out;</span>
+        }
+    }
+
+    /**
+     * Output stream that implements predictor decoding. Data is buffered until a complete
+     * row is available, which is then decoded and written to the underlying stream.
+     * The previous row is retained for decoding the next row.
+     */
+    private static final class PredictorOutputStream extends FilterOutputStream
+    {
+        // current predictor type
+        private int predictor;
+        // image decode parameters
+        private final int colors;
+        private final int bitsPerComponent;
+        private final int columns;
+        private final int rowLength;
+        // PNG predictor (predictor&gt;=10) means every row has a (potentially different)
+        // predictor value
+        private final boolean predictorPerRow;
+
+        // data buffers
+        private byte[] currentRow;
+        private byte[] lastRow;
+        // amount of data in the current row
+<span class="fc" id="L275">        private int currentRowData = 0;</span>
+        // was the per-row predictor value read for the current row being processed
+<span class="fc" id="L277">        private boolean predictorRead = false;</span>
+
+        PredictorOutputStream(OutputStream out, int predictor, int colors, int bitsPerComponent, int columns)
+                throws IOException
+        {
+<span class="fc" id="L282">            super(out);</span>
+<span class="fc" id="L283">            this.predictor = predictor;</span>
+<span class="fc" id="L284">            this.colors = colors;</span>
+<span class="fc" id="L285">            this.bitsPerComponent = bitsPerComponent;</span>
+<span class="fc" id="L286">            this.columns = columns;</span>
+<span class="fc" id="L287">            this.rowLength = calculateRowLength(colors, bitsPerComponent, columns);</span>
+<span class="pc bpc" id="L288" title="1 of 2 branches missed.">            if (rowLength &lt; 0)</span>
+            {
+<span class="nc" id="L290">                throw new IOException(&quot;Calculated row length is negative: &quot; + rowLength);</span>
+            }
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">            this.predictorPerRow = predictor &gt;= 10;</span>
+<span class="fc" id="L293">            currentRow = new byte[rowLength];</span>
+<span class="fc" id="L294">            lastRow = new byte[rowLength];</span>
+<span class="fc" id="L295">        }</span>
+
+        @Override
+        public void write(byte[] bytes) throws IOException
+        {
+<span class="nc" id="L300">            write(bytes, 0, bytes.length);</span>
+<span class="nc" id="L301">        }</span>
+
+        @Override
+        public void write(byte[] bytes, int off, int len) throws IOException
+        {
+<span class="fc" id="L306">            int currentOffset = off;</span>
+<span class="fc" id="L307">            int maxOffset = currentOffset + len;</span>
+<span class="fc bfc" id="L308" title="All 2 branches covered.">            while (currentOffset &lt; maxOffset)</span>
+            {
+<span class="pc bpc" id="L310" title="1 of 6 branches missed.">                if (predictorPerRow &amp;&amp; currentRowData == 0 &amp;&amp; !predictorRead)</span>
+                {
+                    // PNG predictor; each row starts with predictor type (0, 1, 2, 3, 4)
+                    // read per line predictor, add 10 to tread value 0 as 10, 1 as 11, ...
+<span class="fc" id="L314">                    predictor = bytes[currentOffset] + 10;</span>
+<span class="fc" id="L315">                    currentOffset++;</span>
+<span class="fc" id="L316">                    predictorRead = true;</span>
+                }
+                else
+                {
+<span class="fc" id="L320">                    int toRead = Math.min(rowLength - currentRowData, maxOffset - currentOffset);</span>
+<span class="fc" id="L321">                    System.arraycopy(bytes, currentOffset, currentRow, currentRowData, toRead);</span>
+<span class="fc" id="L322">                    currentRowData += toRead;</span>
+<span class="fc" id="L323">                    currentOffset += toRead;</span>
+
+                    // current row is filled, decode it, write it to underlying stream,
+                    // and reset the state.
+<span class="fc bfc" id="L327" title="All 2 branches covered.">                    if (currentRowData == currentRow.length)</span>
+                    {
+<span class="fc" id="L329">                        decodeAndWriteRow();</span>
+                    }
+<span class="fc" id="L331">                }</span>
+            }
+<span class="fc" id="L333">        }</span>
+
+        private void decodeAndWriteRow() throws IOException
+        {
+<span class="fc" id="L337">            decodePredictorRow(predictor, colors, bitsPerComponent, columns, currentRow, lastRow);</span>
+<span class="fc" id="L338">            out.write(currentRow);</span>
+<span class="fc" id="L339">            flipRows();</span>
+<span class="fc" id="L340">        }</span>
+
+        /**
+         * Flips the row buffers (to avoid copying), and resets the current-row index
+         * and predictorRead flag
+         */
+        private void flipRows()
+        {
+<span class="fc" id="L348">            byte[] temp = lastRow;</span>
+<span class="fc" id="L349">            lastRow = currentRow;</span>
+<span class="fc" id="L350">            currentRow = temp;</span>
+<span class="fc" id="L351">            currentRowData = 0;</span>
+<span class="fc" id="L352">            predictorRead = false;</span>
+<span class="fc" id="L353">        }</span>
+
+        @Override
+        public void flush() throws IOException
+        {
+            // The last row is allowed to be incomplete, and should be completed with zeros.
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">            if (currentRowData &gt; 0)</span>
+            {
+<span class="nc" id="L361">                Arrays.fill(currentRow, currentRowData, rowLength, (byte)0);</span>
+<span class="nc" id="L362">                decodeAndWriteRow();</span>
+            }
+<span class="fc" id="L364">            super.flush();</span>
+<span class="fc" id="L365">        }</span>
+
+        @Override
+        public void write(int i) throws IOException
+        {
+<span class="nc" id="L370">            throw new UnsupportedOperationException(&quot;Not supported&quot;);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

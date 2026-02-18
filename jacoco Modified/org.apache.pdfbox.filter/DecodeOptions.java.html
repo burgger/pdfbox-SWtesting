@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DecodeOptions.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.filter</a> &gt; <span class="el_source">DecodeOptions.java</span></div><h1>DecodeOptions.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.filter;
+
+import java.awt.Rectangle;
+
+/**
+ * Options that may be passed to a Filter to request special handling when decoding the stream.
+ * Filters may not honor some or all of the specified options, and so callers should check the
+ * honored flag if further processing relies on the options being used.
+ */
+public class DecodeOptions
+{
+    /**
+     * Default decode options. The honored flag for this instance is always true, as it represents
+     * the default behavior.
+     */
+<span class="fc" id="L32">    public static final DecodeOptions DEFAULT = new FinalDecodeOptions(true);</span>
+
+<span class="pc" id="L34">    private Rectangle sourceRegion = null;</span>
+<span class="pc" id="L35">    private int subsamplingX = 1;</span>
+<span class="pc" id="L36">    private int subsamplingY = 1;</span>
+<span class="pc" id="L37">    private int subsamplingOffsetX = 0;</span>
+<span class="pc" id="L38">    private int subsamplingOffsetY = 0;</span>
+<span class="pc" id="L39">    private boolean filterSubsampled = false;</span>
+
+    /**
+     * Constructs an empty DecodeOptions instance
+     */
+    public DecodeOptions()
+<span class="fc" id="L45">    {</span>
+        // this constructor is intentionally left empty
+<span class="fc" id="L47">    }</span>
+
+    /**
+     * Constructs an instance specifying the region of the image that should be decoded. The actual
+     * region will be clipped to the dimensions of the image.
+     *
+     * @param sourceRegion Region of the source image that should be decoded
+     */
+    public DecodeOptions(Rectangle sourceRegion)
+<span class="nc" id="L56">    {</span>
+<span class="nc" id="L57">        this.sourceRegion = sourceRegion;</span>
+<span class="nc" id="L58">    }</span>
+
+    /**
+     * Constructs an instance specifying the region of the image that should be decoded. The actual
+     * region will be clipped to the dimensions of the image.
+     *
+     * @param x x-coordinate of the top-left corner of the region to be decoded
+     * @param y y-coordinate of the top-left corner of the region to be decoded
+     * @param width Width of the region to be decoded
+     * @param height Height of the region to be decoded
+     */
+    public DecodeOptions(int x, int y, int width, int height)
+    {
+<span class="nc" id="L71">        this(new Rectangle(x, y, width, height));</span>
+<span class="nc" id="L72">    }</span>
+
+    /**
+     * Constructs an instance specifying the image should be decoded using subsampling. The
+     * subsampling will be the same for the X and Y axes.
+     *
+     * @param subsampling The number of rows and columns to advance in the source for each pixel in
+     * the decoded image.
+     */
+    public DecodeOptions(int subsampling)
+<span class="fc" id="L82">    {</span>
+<span class="fc" id="L83">        subsamplingX = subsampling;</span>
+<span class="fc" id="L84">        subsamplingY = subsampling;</span>
+<span class="fc" id="L85">    }</span>
+
+    /**
+     * When decoding an image, the part of the image that should be decoded, or null if the entire
+     * image is needed.
+     *
+     * @return The source region to decode, or null if the entire image should be decoded
+     */
+    public Rectangle getSourceRegion()
+    {
+<span class="fc" id="L95">        return sourceRegion;</span>
+    }
+
+    /**
+     * Sets the region of the source image that should be decoded. The region will be clipped to the
+     * dimensions of the source image. Setting this value to null will result in the entire image
+     * being decoded.
+     *
+     * @param sourceRegion The source region to decode, or null if the entire image should be
+     * decoded.
+     */
+    public void setSourceRegion(Rectangle sourceRegion)
+    {
+<span class="fc" id="L108">        this.sourceRegion = sourceRegion;</span>
+<span class="fc" id="L109">    }</span>
+
+    /**
+     * When decoding an image, the number of columns to advance in the source for every pixel
+     * decoded.
+     *
+     * @return The x-axis subsampling value
+     */
+    public int getSubsamplingX()
+    {
+<span class="fc" id="L119">        return subsamplingX;</span>
+    }
+
+    /**
+     * Sets the number of columns to advance in the source for every pixel decoded
+     *
+     * @param ssX The x-axis subsampling value
+     */
+    public void setSubsamplingX(int ssX)
+    {
+<span class="nc" id="L129">        this.subsamplingX = ssX;</span>
+<span class="nc" id="L130">    }</span>
+
+    /**
+     * When decoding an image, the number of rows to advance in the source for every pixel decoded.
+     *
+     * @return The y-axis subsampling value
+     */
+    public int getSubsamplingY()
+    {
+<span class="fc" id="L139">        return subsamplingY;</span>
+    }
+
+    /**
+     * Sets the number of rows to advance in the source for every pixel decoded
+     *
+     * @param ssY The y-axis subsampling value
+     */
+    public void setSubsamplingY(int ssY)
+    {
+<span class="nc" id="L149">        this.subsamplingY = ssY;</span>
+<span class="nc" id="L150">    }</span>
+
+    /**
+     * When decoding an image, the horizontal offset for subsampling
+     *
+     * @return The x-axis subsampling offset
+     */
+    public int getSubsamplingOffsetX()
+    {
+<span class="fc" id="L159">        return subsamplingOffsetX;</span>
+    }
+
+    /**
+     * Sets the horizontal subsampling offset for decoding images
+     *
+     * @param ssOffsetX The x-axis subsampling offset
+     */
+    public void setSubsamplingOffsetX(int ssOffsetX)
+    {
+<span class="nc" id="L169">        this.subsamplingOffsetX = ssOffsetX;</span>
+<span class="nc" id="L170">    }</span>
+
+    /**
+     * When decoding an image, the vertical offset for subsampling
+     *
+     * @return The y-axis subsampling offset
+     */
+    public int getSubsamplingOffsetY()
+    {
+<span class="fc" id="L179">        return subsamplingOffsetY;</span>
+    }
+
+    /**
+     * Sets the vertical subsampling offset for decoding images
+     *
+     * @param ssOffsetY The y-axis subsampling offset
+     */
+    public void setSubsamplingOffsetY(int ssOffsetY)
+    {
+<span class="nc" id="L189">        this.subsamplingOffsetY = ssOffsetY;</span>
+<span class="nc" id="L190">    }</span>
+
+    /**
+     * Flag used by the filter to specify if it performed subsampling.
+     *
+     * Some filters may be unable or unwilling to apply subsampling, and so the caller must check
+     * this flag &lt;b&gt;after&lt;/b&gt; decoding.
+     *
+     * @return True if the filter applied the options specified by this instance, false otherwise.
+     */
+    public boolean isFilterSubsampled()
+    {
+<span class="fc" id="L202">        return filterSubsampled;</span>
+    }
+
+    /**
+     * Used internally by filters to signal they have applied subsampling as requested by this
+     * options instance.
+     *
+     * @param filterSubsampled Value specifying if the filter could meet the requested options.
+     * Usually a filter will only call this with the value &lt;code&gt;true&lt;/code&gt;, as the default value
+     * for the flag is &lt;code&gt;false&lt;/code&gt;.
+     */
+    void setFilterSubsampled(boolean filterSubsampled)
+    {
+<span class="fc" id="L215">        this.filterSubsampled = filterSubsampled;</span>
+<span class="fc" id="L216">    }</span>
+
+    /**
+     * Helper class for reusable instances which may not be modified.
+     */
+    private static class FinalDecodeOptions extends DecodeOptions
+    {
+        FinalDecodeOptions(boolean filterSubsampled)
+<span class="fc" id="L224">        {</span>
+<span class="fc" id="L225">            super.setFilterSubsampled(filterSubsampled);</span>
+<span class="fc" id="L226">        }</span>
+
+        @Override
+        public void setSourceRegion(Rectangle sourceRegion)
+        {
+<span class="nc" id="L231">            throw new UnsupportedOperationException(&quot;This instance may not be modified.&quot;);</span>
+        }
+
+        @Override
+        public void setSubsamplingX(int ssX)
+        {
+<span class="nc" id="L237">            throw new UnsupportedOperationException(&quot;This instance may not be modified.&quot;);</span>
+        }
+
+        @Override
+        public void setSubsamplingY(int ssY)
+        {
+<span class="nc" id="L243">            throw new UnsupportedOperationException(&quot;This instance may not be modified.&quot;);</span>
+        }
+
+        @Override
+        public void setSubsamplingOffsetX(int ssOffsetX)
+        {
+<span class="nc" id="L249">            throw new UnsupportedOperationException(&quot;This instance may not be modified.&quot;);</span>
+        }
+
+        @Override
+        public void setSubsamplingOffsetY(int ssOffsetY)
+        {
+<span class="nc" id="L255">            throw new UnsupportedOperationException(&quot;This instance may not be modified.&quot;);</span>
+        }
+
+        @Override
+        void setFilterSubsampled(boolean filterSubsampled)
+        {
+            // Silently ignore the request.
+<span class="fc" id="L262">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

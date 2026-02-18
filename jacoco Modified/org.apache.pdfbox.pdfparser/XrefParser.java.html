@@ -1,0 +1,696 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>XrefParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdfparser</a> &gt; <span class="el_source">XrefParser.java</span></div><h1>XrefParser.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdfparser;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSDocument;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSObjectKey;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.pdfparser.XrefTrailerResolver.XRefType;
+
+/**
+ * Parser to be used to read the cross reference table of a pdf. It is either a simple table or a stream.
+ */
+public class XrefParser
+{
+<span class="fc" id="L43">    private static final Logger LOG = LogManager.getLogger(XrefParser.class);</span>
+
+    private static final int X = 'x';
+<span class="fc" id="L46">    private static final char[] XREF_TABLE = { 'x', 'r', 'e', 'f' };</span>
+<span class="fc" id="L47">    private static final char[] STARTXREF = { 's', 't', 'a', 'r', 't', 'x', 'r', 'e', 'f' };</span>
+
+    private static final long MINIMUM_SEARCH_OFFSET = 6;
+
+    /** 
+     * Collects all Xref/trailer objects and resolves them into single
+     * object using startxref reference. 
+     */
+<span class="fc" id="L55">    private XrefTrailerResolver xrefTrailerResolver = new XrefTrailerResolver();</span>
+
+    private final COSParser parser;
+    private final RandomAccessRead source;
+
+    /**
+     * Default constructor.
+     *
+     * @param cosParser the parser to be used to read the pdf.
+     * 
+     */
+    public XrefParser(COSParser cosParser)
+<span class="fc" id="L67">    {</span>
+<span class="fc" id="L68">        parser = cosParser;</span>
+<span class="fc" id="L69">        source = parser.source;</span>
+<span class="fc" id="L70">    }</span>
+
+    /**
+     * Returns the resulting cross reference table.
+     * 
+     * @return
+     */
+    public Map&lt;COSObjectKey, Long&gt; getXrefTable()
+    {
+<span class="fc" id="L79">        return xrefTrailerResolver.getXrefTable();</span>
+    }
+
+    /**
+     * Parses cross reference tables.
+     * 
+     * @param document the corresponding COS document of the pdf.
+     * @param startXRefOffset start offset of the first table
+     * 
+     * @return the trailer dictionary
+     * 
+     * @throws IOException if something went wrong
+     */
+    public COSDictionary parseXref(COSDocument document, long startXRefOffset) throws IOException
+    {
+<span class="fc" id="L94">        source.seek(startXRefOffset);</span>
+<span class="fc" id="L95">        long startXrefOffset = Math.max(0, parseStartXref());</span>
+        // check the startxref offset
+<span class="fc" id="L97">        long fixedOffset = checkXRefOffset(startXrefOffset);</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        if (fixedOffset &gt; -1)</span>
+        {
+<span class="fc" id="L100">            startXrefOffset = fixedOffset;</span>
+        }
+<span class="fc" id="L102">        document.setStartXref(startXrefOffset);</span>
+<span class="fc" id="L103">        long prev = startXrefOffset;</span>
+        // ---- parse whole chain of xref tables/object streams using PREV reference
+<span class="fc" id="L105">        Set&lt;Long&gt; prevSet = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L106">        COSDictionary trailer = null;</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        while (prev &gt; 0)</span>
+        {
+            // save expected position for loop detection
+<span class="fc" id="L110">            prevSet.add(prev);</span>
+            // seek to xref table
+<span class="fc" id="L112">            source.seek(prev);</span>
+            // skip white spaces
+<span class="fc" id="L114">            parser.skipSpaces();</span>
+            // save current position as well due to skipped spaces
+<span class="fc" id="L116">            prevSet.add(source.getPosition());</span>
+            // -- parse xref
+<span class="fc bfc" id="L118" title="All 2 branches covered.">            if (source.peek() == X)</span>
+            {
+                // xref table and trailer
+                // use existing parser to parse xref table
+<span class="pc bpc" id="L122" title="2 of 4 branches missed.">                if (!parseXrefTable(prev) || !parseTrailer())</span>
+                {
+<span class="nc" id="L124">                    throw new IOException(&quot;Expected trailer object at offset &quot;</span>
+<span class="nc" id="L125">                            + source.getPosition());</span>
+                }
+<span class="fc" id="L127">                trailer = xrefTrailerResolver.getCurrentTrailer();</span>
+                // check for a XRef stream, it may contain some object ids of compressed objects 
+<span class="fc bfc" id="L129" title="All 2 branches covered.">                if(trailer.containsKey(COSName.XREF_STM))</span>
+                {
+<span class="fc" id="L131">                    int streamOffset = trailer.getInt(COSName.XREF_STM);</span>
+                    // check the xref stream reference
+<span class="fc" id="L133">                    fixedOffset = checkXRefOffset(streamOffset);</span>
+<span class="pc bpc" id="L134" title="2 of 4 branches missed.">                    if (fixedOffset &gt; -1 &amp;&amp; fixedOffset != streamOffset)</span>
+                    {
+<span class="nc" id="L136">                        LOG.warn(&quot;/XRefStm offset {} is incorrect, corrected to {}&quot;, streamOffset,</span>
+<span class="nc" id="L137">                                fixedOffset);</span>
+<span class="nc" id="L138">                        streamOffset = (int)fixedOffset;</span>
+<span class="nc" id="L139">                        trailer.setInt(COSName.XREF_STM, streamOffset);</span>
+                    }
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">                    if (streamOffset &gt; 0)</span>
+                    {
+<span class="fc" id="L143">                        source.seek(streamOffset);</span>
+<span class="fc" id="L144">                        parser.skipSpaces();</span>
+                        try
+                        {
+<span class="fc" id="L147">                            parseXrefObjStream(prev, false);</span>
+<span class="fc" id="L148">                            document.setHasHybridXRef();</span>
+                        }
+<span class="nc" id="L150">                        catch (IOException ex)</span>
+                        {
+<span class="nc" id="L152">                            LOG.error(&quot;Failed to parse /XRefStm at offset &quot; + streamOffset, ex);</span>
+<span class="pc" id="L153">                        }</span>
+                    }
+                    else
+                    {
+<span class="nc" id="L157">                        LOG.error(&quot;Skipped XRef stream due to a corrupt offset: {}&quot;, streamOffset);</span>
+                    }
+                }
+<span class="fc" id="L160">                prev = trailer.getLong(COSName.PREV);</span>
+            }
+            else
+            {
+                // parse xref stream
+<span class="fc" id="L165">                prev = parseXrefObjStream(prev, true);</span>
+<span class="fc" id="L166">                trailer = xrefTrailerResolver.getCurrentTrailer();</span>
+            }
+<span class="fc bfc" id="L168" title="All 2 branches covered.">            if (prev &gt; 0)</span>
+            {
+                // check the xref table reference
+<span class="fc" id="L171">                fixedOffset = checkXRefOffset(prev);</span>
+<span class="pc bpc" id="L172" title="2 of 4 branches missed.">                if (fixedOffset &gt; -1 &amp;&amp; fixedOffset != prev)</span>
+                {
+<span class="nc" id="L174">                    prev = fixedOffset;</span>
+<span class="nc" id="L175">                    trailer.setLong(COSName.PREV, prev);</span>
+                }
+            }
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">            if (prevSet.contains(prev))</span>
+            {
+<span class="nc" id="L180">                throw new IOException(&quot;/Prev loop at offset &quot; + prev);</span>
+            }
+        }
+        // ---- build valid xrefs out of the xref chain
+<span class="fc" id="L184">        xrefTrailerResolver.setStartxref(startXrefOffset);</span>
+<span class="fc" id="L185">        trailer = xrefTrailerResolver.getTrailer();</span>
+<span class="fc" id="L186">        document.setTrailer(trailer);</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        document.setIsXRefStream(XRefType.STREAM == xrefTrailerResolver.getXrefType());</span>
+        // check the offsets of all referenced objects
+<span class="fc" id="L189">        checkXrefOffsets();</span>
+        // copy xref table
+<span class="fc" id="L191">        document.addXRefTable(xrefTrailerResolver.getXrefTable());</span>
+
+        // remember the highest XRef object number to avoid it being reused in incremental saving
+<span class="fc" id="L194">        Optional&lt;Long&gt; maxValue = document.getXrefTable().keySet().stream() //</span>
+<span class="fc" id="L195">                .map(COSObjectKey::getNumber) //</span>
+<span class="fc" id="L196">                .reduce(Long::max);</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        document.setHighestXRefObjectNumber(maxValue.isPresent() ? maxValue.get() : 0);</span>
+
+<span class="fc" id="L199">        return trailer;</span>
+    }
+
+    /**
+     * This will parse the trailer from the stream and add it to the state.
+     *
+     * @return false on parsing error
+     * @throws IOException If an IO error occurs.
+     */
+    private boolean parseTrailer() throws IOException
+    {
+        // parse the last trailer.
+<span class="fc" id="L211">        long trailerOffset = source.getPosition();</span>
+        // PDFBOX-1739 skip extra xref entries in RegisSTAR documents
+<span class="fc" id="L213">        int nextCharacter = source.peek();</span>
+<span class="pc bpc" id="L214" title="3 of 4 branches missed.">        while (nextCharacter != 't' &amp;&amp; BaseParser.isDigit(nextCharacter))</span>
+        {
+<span class="nc bnc" id="L216" title="All 2 branches missed.">            if (source.getPosition() == trailerOffset)</span>
+            {
+                // warn only the first time
+<span class="nc" id="L219">                LOG.warn(&quot;Expected trailer object at offset {}, keep trying&quot;, trailerOffset);</span>
+            }
+<span class="nc" id="L221">            parser.readLine();</span>
+<span class="nc" id="L222">            nextCharacter = source.peek();</span>
+        }
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">        if (source.peek() != 't')</span>
+        {
+<span class="nc" id="L226">            return false;</span>
+        }
+        // read &quot;trailer&quot;
+<span class="fc" id="L229">        long currentOffset = source.getPosition();</span>
+<span class="fc" id="L230">        String nextLine = parser.readLine();</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">        if (!nextLine.trim().equals(&quot;trailer&quot;))</span>
+        {
+            // in some cases the EOL is missing and the trailer immediately
+            // continues with &quot;&lt;&lt;&quot; or with a blank character
+            // even if this does not comply with PDF reference we want to support as many PDFs as possible
+            // Acrobat reader can also deal with this.
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">            if (nextLine.startsWith(&quot;trailer&quot;))</span>
+            {
+                // we can't just unread a portion of the read data as we don't know if the EOL consist of 1 or 2 bytes
+<span class="fc" id="L240">                int len = &quot;trailer&quot;.length();</span>
+                // jump back right after &quot;trailer&quot;
+<span class="fc" id="L242">                source.seek(currentOffset + len);</span>
+<span class="fc" id="L243">            }</span>
+            else
+            {
+<span class="nc" id="L246">                return false;</span>
+            }
+        }
+
+        // in some cases the EOL is missing and the trailer continues with &quot; &lt;&lt;&quot;
+        // even if this does not comply with PDF reference we want to support as many PDFs as possible
+        // Acrobat reader can also deal with this.
+<span class="fc" id="L253">        parser.skipSpaces();</span>
+
+<span class="fc" id="L255">        COSDictionary parsedTrailer = parser.parseCOSDictionary(true);</span>
+<span class="fc" id="L256">        xrefTrailerResolver.setTrailer(parsedTrailer);</span>
+
+<span class="fc" id="L258">        parser.skipSpaces();</span>
+<span class="fc" id="L259">        return true;</span>
+    }
+
+    /**
+     * Parses an xref object stream starting with indirect object id.
+     * 
+     * @return value of PREV item in dictionary or &lt;code&gt;-1&lt;/code&gt; if no such item exists
+     */
+    private long parseXrefObjStream(long objByteOffset, boolean isStandalone) throws IOException
+    {
+        // ---- parse indirect object head
+<span class="fc" id="L270">        parser.readObjectNumber();</span>
+<span class="fc" id="L271">        parser.readGenerationNumber();</span>
+<span class="fc" id="L272">        parser.readObjectMarker();</span>
+
+<span class="fc" id="L274">        COSDictionary dict = parser.parseCOSDictionary(false);</span>
+<span class="fc" id="L275">        try (COSStream xrefStream = parser.parseCOSStream(dict))</span>
+        {
+            // the cross reference stream of a hybrid xref table will be added to the existing one
+            // and we must not override the offset and the trailer
+<span class="fc bfc" id="L279" title="All 2 branches covered.">            if ( isStandalone )</span>
+            {
+<span class="fc" id="L281">                xrefTrailerResolver.nextXrefObj( objByteOffset, XRefType.STREAM );</span>
+<span class="fc" id="L282">                xrefTrailerResolver.setTrailer(xrefStream);</span>
+            }
+<span class="fc" id="L284">            new PDFXrefStreamParser(xrefStream).parse(xrefTrailerResolver);</span>
+        }
+
+<span class="fc" id="L287">        return dict.getLong(COSName.PREV);</span>
+    }
+    
+    /**
+     * Check if the cross reference table/stream can be found at the current offset.
+     * 
+     * @param startXRefOffset
+     * @return the revised offset
+     * @throws IOException
+     */
+    private long checkXRefOffset(long startXRefOffset) throws IOException
+    {
+<span class="fc" id="L299">        source.seek(startXRefOffset);</span>
+<span class="fc" id="L300">        parser.skipSpaces();</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">        if (parser.isString(XREF_TABLE))</span>
+        {
+<span class="fc" id="L303">            return startXRefOffset;</span>
+        }
+<span class="fc bfc" id="L305" title="All 2 branches covered.">        if (startXRefOffset &gt; 0)</span>
+        {
+<span class="fc bfc" id="L307" title="All 2 branches covered.">            if (checkXRefStreamOffset(startXRefOffset))</span>
+            {
+<span class="fc" id="L309">                return startXRefOffset;</span>
+            }
+            else
+            {
+<span class="fc" id="L313">                return calculateXRefFixedOffset(startXRefOffset);</span>
+            }
+        }
+        // can't find a valid offset
+<span class="fc" id="L317">        return -1;</span>
+    }
+
+    /**
+     * Try to find a fixed offset for the given xref table/stream.
+     * 
+     * @param objectOffset the given offset where to look at
+     * @return the fixed offset
+     * 
+     * @throws IOException if something went wrong
+     */
+    private long calculateXRefFixedOffset(long objectOffset) throws IOException
+    {
+<span class="pc bpc" id="L330" title="1 of 2 branches missed.">        if (objectOffset &lt; 0)</span>
+        {
+<span class="nc" id="L332">            LOG.error(&quot;Invalid object offset {} when searching for a xref table/stream&quot;,</span>
+<span class="nc" id="L333">                    objectOffset);</span>
+<span class="nc" id="L334">            return 0;</span>
+        }
+        // search for the offset of the given xref table/stream among those found by a brute force search.
+<span class="fc" id="L337">        long newOffset = parser.getBruteForceParser().bfSearchForXRef(objectOffset);</span>
+<span class="pc bpc" id="L338" title="1 of 2 branches missed.">        if (newOffset &gt; -1)</span>
+        {
+<span class="fc" id="L340">            LOG.debug(&quot;Fixed reference for xref table/stream {} -&gt; {}&quot;, objectOffset, newOffset);</span>
+<span class="fc" id="L341">            return newOffset;</span>
+        }
+<span class="nc" id="L343">        LOG.error(&quot;Can't find the object xref table/stream at offset {}&quot;, objectOffset);</span>
+<span class="nc" id="L344">        return 0;</span>
+    }
+
+    /**
+     * Check if the cross reference stream can be found at the current offset.
+     * 
+     * @param startXRefOffset the expected start offset of the XRef stream
+     * @return the revised offset
+     * @throws IOException if something went wrong
+     */
+    private boolean checkXRefStreamOffset(long startXRefOffset) throws IOException
+    {
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">        if (startXRefOffset == 0)</span>
+        {
+<span class="nc" id="L358">            return true;</span>
+        }
+        // seek to offset-1 
+<span class="fc" id="L361">        source.seek(startXRefOffset - 1);</span>
+<span class="fc" id="L362">        int nextValue = source.read();</span>
+        // the first character has to be a whitespace, and then a digit
+<span class="fc bfc" id="L364" title="All 2 branches covered.">        if (BaseParser.isWhitespace(nextValue))</span>
+        {
+<span class="fc" id="L366">            parser.skipSpaces();</span>
+<span class="pc bpc" id="L367" title="1 of 2 branches missed.">            if (parser.isDigit())</span>
+            {
+                try
+                {
+                    // it's a XRef stream
+<span class="fc" id="L372">                    parser.readObjectNumber();</span>
+<span class="fc" id="L373">                    parser.readGenerationNumber();</span>
+<span class="fc" id="L374">                    parser.readObjectMarker();</span>
+                    // check the dictionary to avoid false positives
+<span class="fc" id="L376">                    COSDictionary dict = parser.parseCOSDictionary(false);</span>
+<span class="fc" id="L377">                    source.seek(startXRefOffset);</span>
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">                    if (&quot;XRef&quot;.equals(dict.getNameAsString(COSName.TYPE)))</span>
+                    {
+<span class="fc" id="L380">                        return true;</span>
+                    }
+                }
+<span class="nc" id="L383">                catch (IOException exception)</span>
+                {
+                    // there wasn't an object of a xref stream
+<span class="nc" id="L386">                    LOG.debug(&quot;No Xref stream at given location {}&quot;, startXRefOffset, exception);</span>
+<span class="nc" id="L387">                    source.seek(startXRefOffset);</span>
+<span class="nc" id="L388">                }</span>
+            }
+        }
+<span class="fc" id="L391">        return false;</span>
+    }
+    
+    private boolean validateXrefOffsets(Map&lt;COSObjectKey, Long&gt; xrefOffset) throws IOException
+    {
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">        if (xrefOffset == null)</span>
+        {
+<span class="nc" id="L398">            return true;</span>
+        }
+<span class="fc" id="L400">        Map&lt;COSObjectKey, COSObjectKey&gt; correctedKeys = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L401">        HashSet&lt;COSObjectKey&gt; validKeys = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L402" title="All 2 branches covered.">        for (Entry&lt;COSObjectKey, Long&gt; objectEntry : xrefOffset.entrySet())</span>
+        {
+<span class="fc" id="L404">            COSObjectKey objectKey = objectEntry.getKey();</span>
+<span class="fc" id="L405">            Long objectOffset = objectEntry.getValue();</span>
+            // a negative offset number represents an object number itself
+            // see type 2 entry in xref stream
+<span class="pc bpc" id="L408" title="1 of 4 branches missed.">            if (objectOffset != null &amp;&amp; objectOffset &gt;= 0)</span>
+            {
+<span class="fc" id="L410">                COSObjectKey foundObjectKey = findObjectKey(objectKey, objectOffset, xrefOffset);</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">                if (foundObjectKey == null)</span>
+                {
+<span class="fc" id="L413">                    LOG.debug(</span>
+                            &quot;Stop checking xref offsets as at least one ({}) couldn't be dereferenced&quot;,
+                            objectKey);
+<span class="fc" id="L416">                    return false;</span>
+                }
+<span class="fc bfc" id="L418" title="All 2 branches covered.">                else if (foundObjectKey != objectKey)</span>
+                {
+                    // Generation was fixed - need to update map later, after iteration
+<span class="fc" id="L421">                    correctedKeys.put(objectKey, foundObjectKey);</span>
+                }
+                else
+                {
+<span class="fc" id="L425">                    validKeys.add(objectKey);</span>
+                }
+            }
+<span class="fc" id="L428">        }</span>
+<span class="fc" id="L429">        Map&lt;COSObjectKey, Long&gt; correctedPointers = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L430" title="All 2 branches covered.">        for (Entry&lt;COSObjectKey, COSObjectKey&gt; correctedKeyEntry : correctedKeys.entrySet())</span>
+        {
+<span class="fc bfc" id="L432" title="All 2 branches covered.">            if (!validKeys.contains(correctedKeyEntry.getValue()))</span>
+            {
+                // Only replace entries, if the original entry does not point to a valid object
+<span class="fc" id="L435">                correctedPointers.put(correctedKeyEntry.getValue(),</span>
+<span class="fc" id="L436">                        xrefOffset.get(correctedKeyEntry.getKey()));</span>
+            }
+<span class="fc" id="L438">        }</span>
+        // remove old invalid, as some might not be replaced
+<span class="fc" id="L440">        correctedKeys.forEach((key, value) -&gt; xrefOffset.remove(key));</span>
+<span class="fc" id="L441">        xrefOffset.putAll(correctedPointers);</span>
+<span class="fc" id="L442">        return true;</span>
+    }
+
+    /**
+     * Check the XRef table by dereferencing all objects and fixing the offset if necessary.
+     * 
+     * @throws IOException if something went wrong.
+     */
+    private void checkXrefOffsets() throws IOException
+    {
+<span class="fc" id="L452">        Map&lt;COSObjectKey, Long&gt; xrefOffset = xrefTrailerResolver.getXrefTable();</span>
+<span class="fc bfc" id="L453" title="All 2 branches covered.">        if (!validateXrefOffsets(xrefOffset))</span>
+        {
+<span class="fc" id="L455">            Map&lt;COSObjectKey, Long&gt; bfCOSObjectKeyOffsets = parser.getBruteForceParser()</span>
+<span class="fc" id="L456">                    .getBFCOSObjectOffsets();</span>
+<span class="pc bpc" id="L457" title="1 of 2 branches missed.">            if (!bfCOSObjectKeyOffsets.isEmpty())</span>
+            {
+<span class="fc" id="L459">                LOG.debug(&quot;Replaced read xref table with the results of a brute force search&quot;);</span>
+<span class="fc" id="L460">                xrefOffset.clear();</span>
+<span class="fc" id="L461">                xrefOffset.putAll(bfCOSObjectKeyOffsets);</span>
+            }
+        }
+<span class="fc" id="L464">    }</span>
+
+    /**
+     * Check if the given object can be found at the given offset. Returns the provided object key if everything is ok.
+     * If the generation number differs it will be fixed and a new object key is returned.
+     * 
+     * @param objectKey the key of object we are looking for
+     * @param offset the offset where to look
+     * @param xrefOffset a map with with all known xref entries
+     * @return returns the found/fixed object key
+     * 
+     * @throws IOException if something went wrong
+     */
+    private COSObjectKey findObjectKey(COSObjectKey objectKey, long offset,
+            Map&lt;COSObjectKey, Long&gt; xrefOffset) throws IOException
+    {
+        // there can't be any object at the very beginning of a pdf
+<span class="pc bpc" id="L481" title="1 of 2 branches missed.">        if (offset &lt; MINIMUM_SEARCH_OFFSET)</span>
+        {
+<span class="nc" id="L483">            return null;</span>
+        }
+        try 
+        {
+<span class="fc" id="L487">            source.seek(offset);</span>
+<span class="fc" id="L488">            parser.skipWhiteSpaces();</span>
+<span class="fc bfc" id="L489" title="All 2 branches covered.">            if (source.getPosition() == offset)</span>
+            {
+                // ensure that at least one whitespace is skipped in front of the object number
+<span class="fc" id="L492">                source.seek(offset - 1);</span>
+<span class="pc bpc" id="L493" title="1 of 2 branches missed.">                if (source.getPosition() &lt; offset)</span>
+                {
+<span class="pc bpc" id="L495" title="1 of 2 branches missed.">                    if (!parser.isDigit())</span>
+                    {
+                        // anything else but a digit may be some garbage of the previous object -&gt; just ignore it
+<span class="fc" id="L498">                        source.read();</span>
+                    }
+                    else
+                    {
+<span class="nc" id="L502">                        long current = source.getPosition();</span>
+<span class="nc" id="L503">                        source.seek(--current);</span>
+<span class="nc bnc" id="L504" title="All 2 branches missed.">                        while (parser.isDigit())</span>
+<span class="nc" id="L505">                            source.seek(--current);</span>
+<span class="nc" id="L506">                        long newObjNr = parser.readObjectNumber();</span>
+<span class="nc" id="L507">                        int newGenNr = parser.readGenerationNumber();</span>
+<span class="nc" id="L508">                        COSObjectKey newObjKey = new COSObjectKey(newObjNr, newGenNr);</span>
+<span class="nc" id="L509">                        Long existingOffset = xrefOffset.get(newObjKey);</span>
+                        // the found object number belongs to another uncompressed object at the same or nearby offset
+                        // something has to be wrong
+<span class="nc bnc" id="L512" title="All 4 branches missed.">                        if (existingOffset != null &amp;&amp; existingOffset &gt; 0</span>
+<span class="nc bnc" id="L513" title="All 2 branches missed.">                                &amp;&amp; Math.abs(offset - existingOffset) &lt; 10)</span>
+                        {
+<span class="nc" id="L515">                            LOG.debug(&quot;Found the object {} instead of {} at offset {} - ignoring&quot;,</span>
+<span class="nc" id="L516">                                    newObjKey, objectKey, offset);</span>
+<span class="nc" id="L517">                            return null;</span>
+                        }
+                        // something seems to be wrong but it's hard to determine what exactly -&gt; simply continue
+<span class="nc" id="L520">                        source.seek(offset);</span>
+                    }
+                }
+            }
+            // try to read the given object/generation number
+<span class="fc" id="L525">            long foundObjectNumber = parser.readObjectNumber();</span>
+<span class="fc bfc" id="L526" title="All 2 branches covered.">            if (objectKey.getNumber() != foundObjectNumber)</span>
+            {
+<span class="fc" id="L528">                LOG.warn(&quot;found wrong object number. expected [{}] found [{}]&quot;,</span>
+<span class="fc" id="L529">                        objectKey.getNumber(), foundObjectNumber);</span>
+<span class="fc" id="L530">                objectKey = new COSObjectKey(foundObjectNumber, objectKey.getGeneration());</span>
+            }
+
+<span class="fc" id="L533">            int genNumber = parser.readGenerationNumber();</span>
+            // finally try to read the object marker
+<span class="fc" id="L535">            parser.readObjectMarker();</span>
+<span class="fc bfc" id="L536" title="All 2 branches covered.">            if (genNumber == objectKey.getGeneration())</span>
+            {
+<span class="fc" id="L538">                return objectKey;</span>
+            }
+<span class="pc bpc" id="L540" title="1 of 2 branches missed.">            else if (genNumber &gt; objectKey.getGeneration())</span>
+            {
+<span class="fc" id="L542">                return new COSObjectKey(objectKey.getNumber(), genNumber);</span>
+            }
+        }
+<span class="fc" id="L545">        catch (IOException exception)</span>
+        {
+            // Swallow the exception, obviously there isn't any valid object number
+<span class="fc" id="L548">            LOG.debug(&quot;No valid object at given location {} - ignoring&quot;, offset, exception);</span>
+<span class="nc" id="L549">        }</span>
+<span class="fc" id="L550">        return null;</span>
+    }
+
+    /**
+     * This will parse the startxref section from the stream. The startxref value is ignored.
+     *
+     * @return the startxref value or -1 on parsing error
+     * @throws IOException If an IO error occurs.
+     */
+    private long parseStartXref() throws IOException
+    {
+<span class="fc" id="L561">        long startXref = -1;</span>
+<span class="pc bpc" id="L562" title="1 of 2 branches missed.">        if (parser.isString(STARTXREF))</span>
+        {
+<span class="fc" id="L564">            parser.readString();</span>
+<span class="fc" id="L565">            parser.skipSpaces();</span>
+            // This integer is the byte offset of the first object referenced by the xref or xref stream
+<span class="fc" id="L567">            startXref = parser.readLong();</span>
+        }
+<span class="fc" id="L569">        return startXref;</span>
+    }
+    
+    /**
+     * This will parse the xref table from the stream and add it to the state
+     * The XrefTable contents are ignored.
+     * @param startByteOffset the offset to start at
+     * @return false on parsing error
+     * @throws IOException If an IO error occurs.
+     */
+    private boolean parseXrefTable(long startByteOffset) throws IOException
+    {
+<span class="pc bpc" id="L581" title="1 of 2 branches missed.">        if (source.peek() != 'x')</span>
+        {
+<span class="nc" id="L583">            return false;</span>
+        }
+<span class="fc" id="L585">        String xref = parser.readString();</span>
+<span class="pc bpc" id="L586" title="1 of 2 branches missed.">        if( !xref.trim().equals( &quot;xref&quot; ) )</span>
+        {
+<span class="nc" id="L588">            return false;</span>
+        }
+        
+        // check for trailer after xref
+<span class="fc" id="L592">        String str = parser.readString();</span>
+<span class="fc" id="L593">        byte[] b = str.getBytes(StandardCharsets.ISO_8859_1);</span>
+<span class="fc" id="L594">        source.seek(source.getPosition() - b.length);</span>
+        
+        // signal start of new XRef
+<span class="fc" id="L597">        xrefTrailerResolver.nextXrefObj( startByteOffset, XRefType.TABLE );</span>
+    
+<span class="pc bpc" id="L599" title="1 of 2 branches missed.">        if (str.startsWith(&quot;trailer&quot;))</span>
+        {
+<span class="nc" id="L601">            LOG.warn(&quot;skipping empty xref table&quot;);</span>
+<span class="nc" id="L602">            return false;</span>
+        }
+        
+        // Xref tables can have multiple sections. Each starts with a starting object id and a count.
+        while(true)
+        {
+<span class="fc" id="L608">            String currentLine = parser.readLine();</span>
+<span class="fc" id="L609">            String[] splitString = currentLine.split(&quot;\\s&quot;);</span>
+<span class="pc bpc" id="L610" title="1 of 2 branches missed.">            if (splitString.length != 2)</span>
+            {
+<span class="nc" id="L612">                LOG.warn(&quot;Unexpected XRefTable Entry: {}&quot;, currentLine);</span>
+<span class="nc" id="L613">                return false;</span>
+            }
+            // first obj id
+            long currObjID;
+            try
+            {
+<span class="fc" id="L619">                currObjID = Long.parseLong(splitString[0]);</span>
+            }
+<span class="nc" id="L621">            catch (NumberFormatException exception)</span>
+            {
+<span class="nc" id="L623">                LOG.warn(&quot;XRefTable: invalid ID for the first object: {}&quot;, currentLine);</span>
+<span class="nc" id="L624">                return false;</span>
+<span class="fc" id="L625">            }</span>
+
+            // the number of objects in the xref table
+<span class="fc" id="L628">            int count = 0;</span>
+            try
+            {
+<span class="fc" id="L631">                count = Integer.parseInt(splitString[1]);</span>
+            }
+<span class="nc" id="L633">            catch (NumberFormatException exception)</span>
+            {
+<span class="nc" id="L635">                LOG.warn(&quot;XRefTable: invalid number of objects: {}&quot;, currentLine);</span>
+<span class="nc" id="L636">                return false;</span>
+<span class="fc" id="L637">            }</span>
+            
+<span class="fc" id="L639">            parser.skipSpaces();</span>
+<span class="fc bfc" id="L640" title="All 2 branches covered.">            for(int i = 0; i &lt; count; i++)</span>
+            {
+<span class="pc bpc" id="L642" title="1 of 2 branches missed.">                if (parser.isEOF() )</span>
+                {
+<span class="nc" id="L644">                    break;</span>
+                }
+<span class="fc" id="L646">                int nextChar = source.peek();</span>
+<span class="pc bpc" id="L647" title="2 of 4 branches missed.">                if (nextChar == 't' || BaseParser.isEndOfName(nextChar))</span>
+                {
+<span class="nc" id="L649">                    break;</span>
+                }
+                //Ignore table contents
+<span class="fc" id="L652">                currentLine = parser.readLine();</span>
+<span class="fc" id="L653">                splitString = currentLine.split(&quot;\\s&quot;);</span>
+<span class="pc bpc" id="L654" title="1 of 2 branches missed.">                if (splitString.length &lt; 3)</span>
+                {
+<span class="nc" id="L656">                    LOG.warn(&quot;invalid xref line: {}&quot;, currentLine);</span>
+<span class="nc" id="L657">                    break;</span>
+                }
+                /* This supports the corrupt table as reported in
+                 * PDFBOX-474 (XXXX XXX XX n) */
+<span class="fc bfc" id="L661" title="All 2 branches covered.">                if(splitString[splitString.length-1].equals(&quot;n&quot;))</span>
+                {
+                    try
+                    {
+<span class="fc" id="L665">                        long currOffset = Long.parseLong(splitString[0]);</span>
+                        // skip 0 offsets
+<span class="fc bfc" id="L667" title="All 2 branches covered.">                        if (currOffset &gt; 0)</span>
+                        {
+<span class="fc" id="L669">                            int currGenID = Integer.parseInt(splitString[1]);</span>
+<span class="fc" id="L670">                            COSObjectKey objKey = new COSObjectKey(currObjID, currGenID);</span>
+<span class="fc" id="L671">                            xrefTrailerResolver.setXRef(objKey, currOffset);</span>
+                        }
+                    }
+<span class="nc" id="L674">                    catch (IllegalArgumentException e)</span>
+                    {
+<span class="nc" id="L676">                        throw new IOException(e);</span>
+<span class="fc" id="L677">                    }</span>
+                }
+<span class="fc bfc" id="L679" title="All 2 branches covered.">                else if(!splitString[2].equals(&quot;f&quot;))</span>
+                {
+<span class="fc" id="L681">                    throw new IOException(&quot;Corrupt XRefTable Entry - ObjID:&quot; + currObjID);</span>
+                }
+<span class="fc" id="L683">                currObjID++;</span>
+<span class="fc" id="L684">                parser.skipSpaces();</span>
+            }
+<span class="fc" id="L686">            parser.skipSpaces();</span>
+<span class="fc bfc" id="L687" title="All 2 branches covered.">            if (!parser.isDigit())</span>
+            {
+<span class="fc" id="L689">                break;</span>
+            }
+<span class="fc" id="L691">        }</span>
+<span class="fc" id="L692">        return true;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

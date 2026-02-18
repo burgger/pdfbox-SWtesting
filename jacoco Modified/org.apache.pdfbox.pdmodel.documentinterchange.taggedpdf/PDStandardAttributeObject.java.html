@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDStandardAttributeObject.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.documentinterchange.taggedpdf</a> &gt; <span class="el_source">PDStandardAttributeObject.java</span></div><h1>PDStandardAttributeObject.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.documentinterchange.taggedpdf;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure.PDAttributeObject;
+import org.apache.pdfbox.pdmodel.graphics.color.PDGamma;
+
+/**
+ * A standard attribute object.
+ * 
+ * @author Johannes Koch
+ */
+public abstract class PDStandardAttributeObject extends PDAttributeObject
+{
+    /**
+     * An &quot;unspecified&quot; default float value.
+     */
+    protected static final float UNSPECIFIED = -1.f;
+
+    /**
+     * Default constructor.
+     */
+    protected PDStandardAttributeObject()
+<span class="nc" id="L45">    {</span>
+<span class="nc" id="L46">    }</span>
+
+    /**
+     * Creates a new standard attribute object with a given dictionary.
+     * 
+     * @param dictionary the dictionary
+     */
+    protected PDStandardAttributeObject(COSDictionary dictionary)
+    {
+<span class="fc" id="L55">        super(dictionary);</span>
+<span class="fc" id="L56">    }</span>
+
+
+    /**
+     * Is the attribute with the given name specified in this attribute object?
+     * 
+     * @param name the attribute name
+     * @return &lt;code&gt;true&lt;/code&gt; if the attribute is specified,
+     * &lt;code&gt;false&lt;/code&gt; otherwise
+     */
+    public boolean isSpecified(String name)
+    {
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        return this.getCOSObject().getDictionaryObject(name) != null;</span>
+    }
+
+
+    /**
+     * Gets a string attribute value.
+     * 
+     * @param name the attribute name
+     * @return the string attribute value
+     */
+    protected String getString(String name)
+    {
+<span class="nc" id="L80">        return this.getCOSObject().getString(name);</span>
+    }
+
+    /**
+     * Sets a string attribute value.
+     * 
+     * @param name the attribute name
+     * @param value the string attribute value
+     */
+    protected void setString(String name, String value)
+    {
+<span class="nc" id="L91">        COSBase oldBase = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L92">        this.getCOSObject().setString(name, value);</span>
+<span class="nc" id="L93">        COSBase newBase = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L94">        this.potentiallyNotifyChanged(oldBase, newBase);</span>
+<span class="nc" id="L95">    }</span>
+
+    /**
+     * Gets an array of strings.
+     * 
+     * @param name the attribute name
+     * @return the array of strings
+     */
+    protected String[] getArrayOfString(String name)
+    {
+<span class="nc" id="L105">        COSBase v = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        if (v instanceof COSArray)</span>
+        {
+<span class="nc" id="L108">            COSArray array = (COSArray) v;</span>
+<span class="nc" id="L109">            String[] strings = new String[array.size()];</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">            for (int i = 0; i &lt; array.size(); i++)</span>
+            {
+<span class="nc" id="L112">                strings[i] = ((COSName) array.getObject(i)).getName();</span>
+            }
+<span class="nc" id="L114">            return strings;</span>
+        }
+<span class="nc" id="L116">        return null;</span>
+    }
+
+    /**
+     * Sets an array of strings.
+     * 
+     * @param name the attribute name
+     * @param values the array of strings
+     */
+    protected void setArrayOfString(String name, String[] values)
+    {
+<span class="nc" id="L127">        COSBase oldBase = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L128">        COSArray array = new COSArray();</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">        for (String value : values)</span>
+        {
+<span class="nc" id="L131">            array.add(new COSString(value));</span>
+        }
+<span class="nc" id="L133">        this.getCOSObject().setItem(name, array);</span>
+<span class="nc" id="L134">        COSBase newBase = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L135">        this.potentiallyNotifyChanged(oldBase, newBase);</span>
+<span class="nc" id="L136">    }</span>
+
+    /**
+     * Gets a name value.
+     * 
+     * @param name the attribute name
+     * @return the name value
+     */
+    protected String getName(String name)
+    {
+<span class="nc" id="L146">        return this.getCOSObject().getNameAsString(name);</span>
+    }
+
+    /**
+     * Gets a name value.
+     * 
+     * @param name the attribute name
+     * @param defaultValue the default value
+     * @return the name value
+     */
+    protected String getName(String name, String defaultValue)
+    {
+<span class="fc" id="L158">        return this.getCOSObject().getNameAsString(name, defaultValue);</span>
+    }
+
+    /**
+     * Gets a name value or array of name values.
+     * 
+     * @param name the attribute name
+     * @param defaultValue the default value
+     * @return a String or array of Strings
+     */
+    protected Object getNameOrArrayOfName(String name, String defaultValue)
+    {
+<span class="nc" id="L170">        COSBase v = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">        if (v instanceof COSArray)</span>
+        {
+<span class="nc" id="L173">            COSArray array = (COSArray) v;</span>
+<span class="nc" id="L174">            String[] names = new String[array.size()];</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">            for (int i = 0; i &lt; array.size(); i++)</span>
+            {
+<span class="nc" id="L177">                COSBase item = array.getObject(i);</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">                if (item instanceof COSName)</span>
+                {
+<span class="nc" id="L180">                    names[i] = ((COSName) item).getName();</span>
+                }
+            }
+<span class="nc" id="L183">            return names;</span>
+        }
+<span class="nc bnc" id="L185" title="All 2 branches missed.">        if (v instanceof COSName)</span>
+        {
+<span class="nc" id="L187">            return ((COSName) v).getName();</span>
+        }
+<span class="nc" id="L189">        return defaultValue;</span>
+    }
+
+    /**
+     * Sets a name value.
+     * 
+     * @param name the attribute name
+     * @param value the name value
+     */
+    protected void setName(String name, String value)
+    {
+<span class="nc" id="L200">        COSBase oldBase = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L201">        this.getCOSObject().setName(name, value);</span>
+<span class="nc" id="L202">        COSBase newBase = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L203">        this.potentiallyNotifyChanged(oldBase, newBase);</span>
+<span class="nc" id="L204">    }</span>
+
+    /**
+     * Sets an array of name values.
+     * 
+     * @param name the attribute name
+     * @param values the array of name values
+     */
+    protected void setArrayOfName(String name, String[] values)
+    {
+<span class="nc" id="L214">        COSBase oldBase = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L215">        COSArray array = new COSArray();</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">        for (String value : values)</span>
+        {
+<span class="nc" id="L218">            array.add(COSName.getPDFName(value));</span>
+        }
+<span class="nc" id="L220">        this.getCOSObject().setItem(name, array);</span>
+<span class="nc" id="L221">        COSBase newBase = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L222">        this.potentiallyNotifyChanged(oldBase, newBase);</span>
+<span class="nc" id="L223">    }</span>
+
+    /**
+     * Gets a number or a name value.
+     * 
+     * @param name the attribute name
+     * @param defaultValue the default name
+     * @return a Float or a String
+     */
+    protected Object getNumberOrName(String name, String defaultValue)
+    {
+<span class="fc" id="L234">        COSBase value = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">        if (value instanceof COSNumber)</span>
+        {
+<span class="fc" id="L237">            return ((COSNumber) value).floatValue();</span>
+        }
+<span class="nc bnc" id="L239" title="All 2 branches missed.">        if (value instanceof COSName)</span>
+        {
+<span class="nc" id="L241">            return ((COSName) value).getName();</span>
+        }
+<span class="nc" id="L243">        return defaultValue;</span>
+    }
+
+    /**
+     * Gets an integer.
+     * 
+     * @param name the attribute name
+     * @param defaultValue the default value
+     * @return the integer
+     */
+    protected int getInteger(String name, int defaultValue)
+    {
+<span class="fc" id="L255">        return this.getCOSObject().getInt(name, defaultValue);</span>
+    }
+
+    /**
+     * Sets an integer.
+     * 
+     * @param name the attribute name
+     * @param value the integer
+     */
+    protected void setInteger(String name, int value)
+    {
+<span class="nc" id="L266">        COSBase oldBase = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L267">        this.getCOSObject().setInt(name, value);</span>
+<span class="nc" id="L268">        COSBase newBase = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L269">        this.potentiallyNotifyChanged(oldBase, newBase);</span>
+<span class="nc" id="L270">    }</span>
+
+    /**
+     * Gets a number value.
+     * 
+     * @param name the attribute name
+     * @param defaultValue the default value
+     * @return the number value
+     */
+    protected float getNumber(String name, float defaultValue)
+    {
+<span class="fc" id="L281">        return this.getCOSObject().getFloat(name, defaultValue);</span>
+    }
+
+    /**
+     * Gets a number value.
+     * 
+     * @param name the attribute name
+     * @return the number value
+     */
+    protected float getNumber(String name)
+    {
+<span class="nc" id="L292">        return this.getCOSObject().getFloat(name);</span>
+    }
+
+    /**
+     * Gets a number or an array of numbers.
+     * 
+     * @param name the attribute name
+     * @param defaultValue the default value
+     * @return a Float or an array of floats
+     */
+    protected Object getNumberOrArrayOfNumber(String name, float defaultValue)
+    {
+<span class="nc" id="L304">        COSBase v = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc bnc" id="L305" title="All 2 branches missed.">        if (v instanceof COSArray)</span>
+        {
+<span class="nc" id="L307">            COSArray array = (COSArray) v;</span>
+<span class="nc" id="L308">            float[] values = new float[array.size()];</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">            for (int i = 0; i &lt; array.size(); i++)</span>
+            {
+<span class="nc" id="L311">                COSBase item = array.getObject(i);</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">                if (item instanceof COSNumber)</span>
+                {
+<span class="nc" id="L314">                    values[i] = ((COSNumber) item).floatValue();</span>
+                }
+            }
+<span class="nc" id="L317">            return values;</span>
+        }
+<span class="nc bnc" id="L319" title="All 2 branches missed.">        if (v instanceof COSNumber)</span>
+        {
+<span class="nc" id="L321">            return ((COSNumber) v).floatValue();</span>
+        }
+<span class="nc bnc" id="L323" title="All 2 branches missed.">        if (Float.compare(defaultValue, UNSPECIFIED) == 0)</span>
+        {
+<span class="nc" id="L325">            return null;</span>
+        }
+<span class="nc" id="L327">        return defaultValue;</span>
+    }
+
+    /**
+     * Sets a float number.
+     * 
+     * @param name the attribute name
+     * @param value the float number
+     */
+    protected void setNumber(String name, float value)
+    {
+<span class="nc" id="L338">        COSBase oldBase = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L339">        this.getCOSObject().setFloat(name, value);</span>
+<span class="nc" id="L340">        COSBase newBase = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L341">        this.potentiallyNotifyChanged(oldBase, newBase);</span>
+<span class="nc" id="L342">    }</span>
+
+    /**
+     * Sets an integer number.
+     * 
+     * @param name the attribute name
+     * @param value the integer number
+     */
+    protected void setNumber(String name, int value)
+    {
+<span class="nc" id="L352">        COSBase oldBase = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L353">        this.getCOSObject().setInt(name, value);</span>
+<span class="nc" id="L354">        COSBase newBase = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L355">        this.potentiallyNotifyChanged(oldBase, newBase);</span>
+<span class="nc" id="L356">    }</span>
+
+    /**
+     * Sets an array of float numbers.
+     * 
+     * @param name the attribute name
+     * @param values the float numbers
+     */
+    protected void setArrayOfNumber(String name, float[] values)
+    {
+<span class="nc" id="L366">        COSArray array = new COSArray();</span>
+<span class="nc bnc" id="L367" title="All 2 branches missed.">        for (float value : values)</span>
+        {
+<span class="nc" id="L369">            array.add(new COSFloat(value));</span>
+        }
+<span class="nc" id="L371">        COSBase oldBase = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L372">        this.getCOSObject().setItem(name, array);</span>
+<span class="nc" id="L373">        COSBase newBase = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L374">        this.potentiallyNotifyChanged(oldBase, newBase);</span>
+<span class="nc" id="L375">    }</span>
+
+    /**
+     * Gets a colour.
+     * 
+     * @param name the attribute name
+     * @return the colour
+     */
+    protected PDGamma getColor(String name)
+    {
+<span class="nc" id="L385">        COSArray c = (COSArray) this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">        if (c != null)</span>
+        {
+<span class="nc" id="L388">            return new PDGamma(c);</span>
+        }
+<span class="nc" id="L390">        return null;</span>
+    }
+
+    /**
+     * Gets a single colour or four colours.
+     * 
+     * @param name the attribute name
+     * @return the single ({@link PDGamma}) or a ({@link PDFourColours})
+     */
+    protected Object getColorOrFourColors(String name)
+    {
+<span class="nc" id="L401">        COSArray array =</span>
+<span class="nc" id="L402">            (COSArray) this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc bnc" id="L403" title="All 2 branches missed.">        if (array == null)</span>
+        {
+<span class="nc" id="L405">            return null;</span>
+        }
+<span class="nc bnc" id="L407" title="All 2 branches missed.">        if (array.size() == 3)</span>
+        {
+            // only one colour
+<span class="nc" id="L410">            return new PDGamma(array);</span>
+        }
+<span class="nc bnc" id="L412" title="All 2 branches missed.">        else if (array.size() == 4)</span>
+        {
+<span class="nc" id="L414">            return new PDFourColours(array);</span>
+        }
+<span class="nc" id="L416">        return null;</span>
+    }
+
+    /**
+     * Sets a colour.
+     * 
+     * @param name the attribute name
+     * @param value the colour
+     */
+    protected void setColor(String name, PDGamma value)
+    {
+<span class="nc" id="L427">        COSBase oldValue = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L428">        this.getCOSObject().setItem(name, value);</span>
+<span class="nc bnc" id="L429" title="All 2 branches missed.">        COSBase newValue = value == null ? null : value.getCOSObject();</span>
+<span class="nc" id="L430">        this.potentiallyNotifyChanged(oldValue, newValue);</span>
+<span class="nc" id="L431">    }</span>
+
+    /**
+     * Sets four colours.
+     * 
+     * @param name the attribute name
+     * @param value the four colours
+     */
+    protected void setFourColors(String name, PDFourColours value)
+    {
+<span class="nc" id="L441">        COSBase oldValue = this.getCOSObject().getDictionaryObject(name);</span>
+<span class="nc" id="L442">        this.getCOSObject().setItem(name, value);</span>
+<span class="nc bnc" id="L443" title="All 2 branches missed.">        COSBase newValue = value == null ? null : value.getCOSObject();</span>
+<span class="nc" id="L444">        this.potentiallyNotifyChanged(oldValue, newValue);</span>
+<span class="nc" id="L445">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDAnnotationWidget.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation</a> &gt; <span class="el_source">PDAnnotationWidget.java</span></div><h1>PDAnnotationWidget.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.annotation;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.interactive.action.PDActionFactory;
+import org.apache.pdfbox.pdmodel.interactive.action.PDAnnotationAdditionalActions;
+import org.apache.pdfbox.pdmodel.interactive.action.PDAction;
+import org.apache.pdfbox.pdmodel.interactive.form.PDTerminalField;
+
+/**
+ * This is the class that represents a widget annotation. This represents the
+ * appearance of a field and manages user interactions. A field may have several
+ * widget annotations, which may be on several pages.
+ *
+ * @author Ben Litchfield
+ */
+public class PDAnnotationWidget extends PDAnnotation
+{
+    /**
+     * The type of annotation.
+     */
+    public static final String SUB_TYPE = &quot;Widget&quot;;
+
+    /**
+     * Constructor.
+     */
+    public PDAnnotationWidget()
+<span class="fc" id="L44">    {</span>
+<span class="fc" id="L45">        getCOSObject().setName(COSName.SUBTYPE, SUB_TYPE);</span>
+<span class="fc" id="L46">    }</span>
+
+    /**
+     * Creates a PDWidget from a COSDictionary, expected to be a correct object definition for a field in PDF.
+     *
+     * @param field the PDF object to represent as a field.
+     */
+    public PDAnnotationWidget(COSDictionary field)
+    {
+<span class="fc" id="L55">        super(field);</span>
+<span class="fc" id="L56">        getCOSObject().setName(COSName.SUBTYPE, SUB_TYPE);</span>
+<span class="fc" id="L57">    }</span>
+
+    /**
+     * Returns the highlighting mode. Default value: &lt;code&gt;I&lt;/code&gt;
+     * &lt;dl&gt;
+     * &lt;dt&gt;&lt;code&gt;N&lt;/code&gt;&lt;/dt&gt;
+     * &lt;dd&gt;(None) No highlighting.&lt;/dd&gt;
+     * &lt;dt&gt;&lt;code&gt;I&lt;/code&gt;&lt;/dt&gt;
+     * &lt;dd&gt;(Invert) Invert the contents of the annotation rectangle.&lt;/dd&gt;
+     * &lt;dt&gt;&lt;code&gt;O&lt;/code&gt;&lt;/dt&gt;
+     * &lt;dd&gt;(Outline) Invert the annotation's border.&lt;/dd&gt;
+     * &lt;dt&gt;&lt;code&gt;P&lt;/code&gt;&lt;/dt&gt;
+     * &lt;dd&gt;(Push) Display the annotation's down appearance, if any. If no down appearance is defined, the contents of
+     * the annotation rectangle shall be offset to appear as if it were pushed below the surface of the page&lt;/dd&gt;
+     * &lt;dt&gt;&lt;code&gt;T&lt;/code&gt;&lt;/dt&gt;
+     * &lt;dd&gt;(Toggle) Same as &lt;code&gt;P&lt;/code&gt; (which is preferred).&lt;/dd&gt;
+     * &lt;/dl&gt;
+     * 
+     * @return the highlighting mode
+     */
+    public String getHighlightingMode()
+    {
+<span class="nc" id="L79">        return getCOSObject().getNameAsString(COSName.H, &quot;I&quot;);</span>
+    }
+
+    /**
+     * Sets the highlighting mode.
+     * &lt;dl&gt;
+     * &lt;dt&gt;&lt;code&gt;N&lt;/code&gt;&lt;/dt&gt;
+     * &lt;dd&gt;(None) No highlighting.&lt;/dd&gt;
+     * &lt;dt&gt;&lt;code&gt;I&lt;/code&gt;&lt;/dt&gt;
+     * &lt;dd&gt;(Invert) Invert the contents of the annotation rectangle.&lt;/dd&gt;
+     * &lt;dt&gt;&lt;code&gt;O&lt;/code&gt;&lt;/dt&gt;
+     * &lt;dd&gt;(Outline) Invert the annotation's border.&lt;/dd&gt;
+     * &lt;dt&gt;&lt;code&gt;P&lt;/code&gt;&lt;/dt&gt;
+     * &lt;dd&gt;(Push) Display the annotation's down appearance, if any. If no down appearance is defined, the contents of
+     * the annotation rectangle shall be offset to appear as if it were pushed below the surface of the page&lt;/dd&gt;
+     * &lt;dt&gt;&lt;code&gt;T&lt;/code&gt;&lt;/dt&gt;
+     * &lt;dd&gt;(Toggle) Same as &lt;code&gt;P&lt;/code&gt; (which is preferred).&lt;/dd&gt;
+     * &lt;/dl&gt;
+     * 
+     * @param highlightingMode the highlighting mode the defined values
+     */
+    public void setHighlightingMode(String highlightingMode)
+    {
+<span class="nc bnc" id="L102" title="All 4 branches missed.">        if ((highlightingMode == null) || &quot;N&quot;.equals(highlightingMode)</span>
+<span class="nc bnc" id="L103" title="All 4 branches missed.">                || &quot;I&quot;.equals(highlightingMode) || &quot;O&quot;.equals(highlightingMode)</span>
+<span class="nc bnc" id="L104" title="All 4 branches missed.">                || &quot;P&quot;.equals(highlightingMode) || &quot;T&quot;.equals(highlightingMode))</span>
+        {
+<span class="nc" id="L106">            this.getCOSObject().setName(COSName.H, highlightingMode);</span>
+        }
+        else
+        {
+<span class="nc" id="L110">            throw new IllegalArgumentException(&quot;Valid values for highlighting mode are &quot;</span>
+                    + &quot;'N', 'N', 'O', 'P' or 'T'&quot;);
+        }
+<span class="nc" id="L113">    }</span>
+
+    /**
+     * Returns the appearance characteristics dictionary.
+     * 
+     * @return the appearance characteristics dictionary
+     */
+    public PDAppearanceCharacteristicsDictionary getAppearanceCharacteristics()
+    {
+<span class="fc" id="L122">        COSDictionary mk = getCOSObject().getCOSDictionary(COSName.MK);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        return mk != null ? new PDAppearanceCharacteristicsDictionary(mk) : null;</span>
+    }
+
+    /**
+     * Sets the appearance characteristics dictionary.
+     * 
+     * @param appearanceCharacteristics the appearance characteristics dictionary
+     */
+    public void setAppearanceCharacteristics(
+            PDAppearanceCharacteristicsDictionary appearanceCharacteristics)
+    {
+<span class="fc" id="L134">        getCOSObject().setItem(COSName.MK, appearanceCharacteristics);</span>
+<span class="fc" id="L135">    }</span>
+
+    /**
+     * Get the action to be performed when this annotation is to be activated.
+     *
+     * @return The action to be performed when this annotation is activated.
+     */
+    public PDAction getAction()
+    {
+<span class="nc" id="L144">        COSDictionary action = getCOSObject().getCOSDictionary(COSName.A);</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        return action != null ? PDActionFactory.createAction(action) : null;</span>
+    }
+
+    /**
+     * Set the annotation action. As of PDF 1.6 this is only used for Widget Annotations
+     * 
+     * @param action The annotation action.
+     */
+    public void setAction(PDAction action)
+    {
+<span class="nc" id="L155">        this.getCOSObject().setItem(COSName.A, action);</span>
+<span class="nc" id="L156">    }</span>
+
+    /**
+     * Get the additional actions for this field. This will return null if there are no additional actions for this
+     * field. As of PDF 1.6 this is only used for Widget Annotations.
+     *
+     * @return The actions of the field.
+     */
+    public PDAnnotationAdditionalActions getActions()
+    {
+<span class="nc" id="L166">        COSDictionary actions = getCOSObject().getCOSDictionary(COSName.AA);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">        return actions != null ? new PDAnnotationAdditionalActions(actions) : null;</span>
+    }
+
+    /**
+     * Set the actions of the field.
+     *
+     * @param actions The field actions.
+     */
+    public void setActions(PDAnnotationAdditionalActions actions)
+    {
+<span class="nc" id="L177">        this.getCOSObject().setItem(COSName.AA, actions);</span>
+<span class="nc" id="L178">    }</span>
+
+    /**
+     * This will set the border style dictionary, specifying the width and dash pattern used in drawing the line.
+     *
+     * @param bs the border style dictionary to set.
+     *
+     */
+    public void setBorderStyle(PDBorderStyleDictionary bs)
+    {
+<span class="fc" id="L188">        getCOSObject().setItem(COSName.BS, bs);</span>
+<span class="fc" id="L189">    }</span>
+
+    /**
+     * This will retrieve the border style dictionary, specifying the width and dash pattern used in drawing the line.
+     *
+     * @return the border style dictionary.
+     */
+    public PDBorderStyleDictionary getBorderStyle()
+    {
+<span class="fc" id="L198">        COSDictionary bs = getCOSObject().getCOSDictionary(COSName.BS);</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        return bs != null ? new PDBorderStyleDictionary(bs) : null;</span>
+    }
+
+    // TODO where to get acroForm from?
+    // public PDField getParent() throws IOException
+    // {
+    // COSBase parent = this.getCOSObject().getDictionaryObject(COSName.PARENT);
+    // if (parent instanceof COSDictionary)
+    // {
+    // PDAcroForm acroForm = null;
+    // return PDFieldFactory.createField(acroForm, (COSDictionary) parent);
+    // }
+    // return null;
+    // }
+
+    /**
+     * Set the parent field of a widget annotation. This is only required if this widget annotation
+     * is one of multiple children in a field, and not to be set otherwise. You will usually not
+     * need this, because in most cases, fields have only one widget and share a common dictionary.
+     * A usage can be found in the CreateMultiWidgetsForm example.
+     *
+     * @param field the parent field.
+     * @throws IllegalArgumentException if setParent() was called for a field that shares a
+     * dictionary with its only widget.
+     */
+    public void setParent(PDTerminalField field)
+    {
+<span class="nc bnc" id="L226" title="All 2 branches missed.">        if (getCOSObject().equals(field.getCOSObject()))</span>
+        {
+<span class="nc" id="L228">            throw new IllegalArgumentException(&quot;setParent() is not to be called for a field that shares a dictionary with its only widget&quot;);</span>
+        }
+<span class="nc" id="L230">        getCOSObject().setItem(COSName.PARENT, field);</span>
+<span class="nc" id="L231">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

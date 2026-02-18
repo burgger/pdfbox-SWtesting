@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Standard14Fonts.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font</a> &gt; <span class="el_source">Standard14Fonts.java</span></div><h1>Standard14Fonts.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.font;
+
+import static org.apache.pdfbox.pdmodel.font.UniUtil.getUniNameOfCodePoint;
+
+import java.awt.geom.GeneralPath;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import org.apache.fontbox.FontBoxFont;
+import org.apache.fontbox.afm.AFMParser;
+import org.apache.fontbox.afm.FontMetrics;
+import org.apache.pdfbox.pdmodel.font.encoding.GlyphList;
+import org.apache.pdfbox.pdmodel.font.encoding.SymbolEncoding;
+
+/**
+ * The &quot;Standard 14&quot; PDF fonts, also known as the &quot;base 14&quot; fonts.
+ * There are 14 font files, but Acrobat uses additional names for compatibility, e.g. Arial.
+ *
+ * @author John Hewson
+ */
+public final class Standard14Fonts
+{
+    /**
+     * Contains all base names and alias names for the known fonts.
+     * For base fonts both the key and the value will be the base name.
+     * For aliases, the key is an alias, and the value is a FontName.
+     * We want a single lookup in the map to find the font both by a base name or an alias.
+     */
+<span class="fc" id="L51">    private static final Map&lt;String, FontName&gt; ALIASES = new HashMap&lt;&gt;(38);</span>
+
+    /**
+     * Contains the font metrics for the standard 14 fonts. 
+     * The key is the font name, value is a FontMetrics instance.
+     * Metrics are loaded into this map on demand, only if needed.
+     * 
+     * @see #getAFM
+     */
+<span class="fc" id="L60">    private static final Map&lt;FontName, FontMetrics&gt; FONTS = new EnumMap&lt;&gt;(FontName.class);</span>
+
+    /**
+     * Contains the mapped fonts for the standard 14 fonts. 
+     * The key is the font name, value is a FontBoxFont instance.
+     * FontBoxFont are loaded into this map on demand, only if needed.
+     */
+<span class="fc" id="L67">    private static final Map&lt;FontName, FontBoxFont&gt; GENERIC_FONTS = new EnumMap&lt;&gt;(FontName.class);</span>
+
+    static
+    {
+        // the 14 standard fonts
+<span class="fc" id="L72">        mapName(FontName.COURIER);</span>
+<span class="fc" id="L73">        mapName(FontName.COURIER_BOLD);</span>
+<span class="fc" id="L74">        mapName(FontName.COURIER_BOLD_OBLIQUE);</span>
+<span class="fc" id="L75">        mapName(FontName.COURIER_OBLIQUE);</span>
+<span class="fc" id="L76">        mapName(FontName.HELVETICA);</span>
+<span class="fc" id="L77">        mapName(FontName.HELVETICA_BOLD);</span>
+<span class="fc" id="L78">        mapName(FontName.HELVETICA_BOLD_OBLIQUE);</span>
+<span class="fc" id="L79">        mapName(FontName.HELVETICA_OBLIQUE);</span>
+<span class="fc" id="L80">        mapName(FontName.TIMES_ROMAN);</span>
+<span class="fc" id="L81">        mapName(FontName.TIMES_BOLD);</span>
+<span class="fc" id="L82">        mapName(FontName.TIMES_BOLD_ITALIC);</span>
+<span class="fc" id="L83">        mapName(FontName.TIMES_ITALIC);</span>
+<span class="fc" id="L84">        mapName(FontName.SYMBOL);</span>
+<span class="fc" id="L85">        mapName(FontName.ZAPF_DINGBATS);</span>
+
+        // alternative names from Adobe Supplement to the ISO 32000
+<span class="fc" id="L88">        mapName(&quot;CourierCourierNew&quot;, FontName.COURIER);</span>
+<span class="fc" id="L89">        mapName(&quot;CourierNew&quot;, FontName.COURIER);</span>
+<span class="fc" id="L90">        mapName(&quot;CourierNew,Italic&quot;, FontName.COURIER_OBLIQUE);</span>
+<span class="fc" id="L91">        mapName(&quot;CourierNew,Bold&quot;, FontName.COURIER_BOLD);</span>
+<span class="fc" id="L92">        mapName(&quot;CourierNew,BoldItalic&quot;, FontName.COURIER_BOLD_OBLIQUE);</span>
+<span class="fc" id="L93">        mapName(&quot;Arial&quot;, FontName.HELVETICA);</span>
+<span class="fc" id="L94">        mapName(&quot;Arial,Italic&quot;, FontName.HELVETICA_OBLIQUE);</span>
+<span class="fc" id="L95">        mapName(&quot;Arial,Bold&quot;, FontName.HELVETICA_BOLD);</span>
+<span class="fc" id="L96">        mapName(&quot;Arial,BoldItalic&quot;, FontName.HELVETICA_BOLD_OBLIQUE);</span>
+<span class="fc" id="L97">        mapName(&quot;TimesNewRoman&quot;, FontName.TIMES_ROMAN);</span>
+<span class="fc" id="L98">        mapName(&quot;TimesNewRoman,Italic&quot;, FontName.TIMES_ITALIC);</span>
+<span class="fc" id="L99">        mapName(&quot;TimesNewRoman,Bold&quot;, FontName.TIMES_BOLD);</span>
+<span class="fc" id="L100">        mapName(&quot;TimesNewRoman,BoldItalic&quot;, FontName.TIMES_BOLD_ITALIC);</span>
+
+        // Acrobat treats these fonts as &quot;standard 14&quot; too (at least Acrobat preflight says so)
+<span class="fc" id="L103">        mapName(&quot;Symbol,Italic&quot;, FontName.SYMBOL);</span>
+<span class="fc" id="L104">        mapName(&quot;Symbol,Bold&quot;, FontName.SYMBOL);</span>
+<span class="fc" id="L105">        mapName(&quot;Symbol,BoldItalic&quot;, FontName.SYMBOL);</span>
+<span class="fc" id="L106">        mapName(&quot;Times&quot;, FontName.TIMES_ROMAN);</span>
+<span class="fc" id="L107">        mapName(&quot;Times,Italic&quot;, FontName.TIMES_ITALIC);</span>
+<span class="fc" id="L108">        mapName(&quot;Times,Bold&quot;, FontName.TIMES_BOLD);</span>
+<span class="fc" id="L109">        mapName(&quot;Times,BoldItalic&quot;, FontName.TIMES_BOLD_ITALIC);</span>
+
+        // PDFBOX-3457: PDF.js file bug864847.pdf
+<span class="fc" id="L112">        mapName(&quot;ArialMT&quot;, FontName.HELVETICA);</span>
+<span class="fc" id="L113">        mapName(&quot;Arial-ItalicMT&quot;, FontName.HELVETICA_OBLIQUE);</span>
+<span class="fc" id="L114">        mapName(&quot;Arial-BoldMT&quot;, FontName.HELVETICA_BOLD);</span>
+<span class="fc" id="L115">        mapName(&quot;Arial-BoldItalicMT&quot;, FontName.HELVETICA_BOLD_OBLIQUE);</span>
+<span class="fc" id="L116">    }</span>
+
+    private Standard14Fonts()
+    {
+    }
+
+    /**
+     * Loads the metrics for the base font specified by name. Metric file must exist in the pdfbox jar under
+     * /org/apache/pdfbox/resources/afm/
+     *
+     * @param fontName one of the standard 14 font names for which to load the metrics.
+     * @throws IOException if no metrics exist for that font.
+     */
+    private static void loadMetrics(FontName fontName) throws IOException
+    {
+<span class="fc" id="L131">        String resourceName = &quot;/org/apache/pdfbox/resources/afm/&quot; + fontName.getName() + &quot;.afm&quot;;</span>
+<span class="fc" id="L132">        InputStream resourceAsStream = PDType1Font.class.getResourceAsStream(resourceName);</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (resourceAsStream == null)</span>
+        {
+<span class="nc" id="L135">            throw new IOException(&quot;resource '&quot; + resourceName + &quot;' not found&quot;);</span>
+        }
+<span class="fc" id="L137">        try (InputStream afmStream = new BufferedInputStream(resourceAsStream))</span>
+        {
+<span class="fc" id="L139">            AFMParser parser = new AFMParser(afmStream);</span>
+<span class="fc" id="L140">            FontMetrics metric = parser.parse(true);</span>
+<span class="fc" id="L141">            FONTS.put(fontName, metric);</span>
+        }
+<span class="fc" id="L143">    }</span>
+
+    /**
+     * Adds a standard font name to the map of known aliases, to simplify the logic of finding
+     * font metrics by name. We want a single lookup in the map to find the font both by a base name or
+     * an alias.
+     *
+     * @see #getAFM
+     * @param baseName the font name of the Standard 14 font
+     */
+    private static void mapName(FontName baseName)
+    {
+<span class="fc" id="L155">        ALIASES.put(baseName.getName(), baseName);</span>
+<span class="fc" id="L156">    }</span>
+
+    /**
+     * Adds an alias name for a standard font to the map of known aliases to the map of aliases (alias as key, standard
+     * name as value). We want a single lookup in tbaseNamehe map to find the font both by a base name or an alias.
+     *
+     * @param alias an alias for the font
+     * @param baseName  the font name of the Standard 14 font
+     */
+    private static void mapName(String alias, FontName baseName)
+    {
+<span class="fc" id="L167">        ALIASES.put(alias, baseName);</span>
+<span class="fc" id="L168">    }</span>
+
+    /**
+     * Returns the metrics for font specified by fontName. Loads the font metrics if not already
+     * loaded.
+     *
+     * @param fontName name of font; either a base name or alias
+     * @return the font metrics or null if the name is not one of the known names
+     * @throws IllegalArgumentException if no metrics exist for that font.
+     */
+    public static FontMetrics getAFM(String fontName)
+    {
+<span class="fc" id="L180">        FontName baseName = ALIASES.get(fontName);</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        if (baseName == null)</span>
+        {
+<span class="fc" id="L183">            return null;</span>
+        }
+
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        if (FONTS.get(baseName) == null)</span>
+        {
+<span class="fc" id="L188">            synchronized (FONTS)</span>
+            {
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">                if (FONTS.get(baseName) == null)</span>
+                {
+                    try
+                    {
+<span class="fc" id="L194">                        loadMetrics(baseName);</span>
+                    }
+<span class="nc" id="L196">                    catch (IOException e)</span>
+                    {
+<span class="nc" id="L198">                        throw new IllegalArgumentException(e);</span>
+<span class="fc" id="L199">                    }</span>
+                }
+<span class="fc" id="L201">            }</span>
+        }
+
+<span class="fc" id="L204">        return FONTS.get(baseName);</span>
+    }
+
+    /**
+     * Returns true if the given font name is one of the known names, including alias.
+     *
+     * @param fontName the name of font, either a base name or alias
+     * @return true if the name is one of the known names
+     */
+    public static boolean containsName(String fontName)
+    {
+<span class="fc" id="L215">        return ALIASES.containsKey(fontName);</span>
+    }
+
+    /**
+     * Returns the set of known font names, including aliases.
+     * 
+     * @return the set of known font names
+     */
+    public static Set&lt;String&gt; getNames()
+    {
+<span class="fc" id="L225">        return Collections.unmodifiableSet(ALIASES.keySet());</span>
+    }
+
+    /**
+     * Returns the base name of the font which the given font name maps to.
+     *
+     * @param fontName name of font, either a base name or an alias
+     * @return the base name or null if this is not one of the known names
+     */
+    public static FontName getMappedFontName(String fontName)
+    {
+<span class="fc" id="L236">        return ALIASES.get(fontName);</span>
+    }
+
+    /**
+     * Returns the mapped font for the specified Standard 14 font. The mapped font is cached.
+     *
+     * @param baseName name of the standard 14 font
+     * @return the mapped font
+     */
+    private static FontBoxFont getMappedFont(FontName baseName)
+    {
+<span class="nc bnc" id="L247" title="All 2 branches missed.">        if (!GENERIC_FONTS.containsKey(baseName))</span>
+        {
+<span class="nc" id="L249">            synchronized (GENERIC_FONTS)</span>
+            {
+<span class="nc bnc" id="L251" title="All 2 branches missed.">                if (!GENERIC_FONTS.containsKey(baseName))</span>
+                {
+<span class="nc" id="L253">                    PDType1Font type1Font = new PDType1Font(baseName);</span>
+<span class="nc" id="L254">                    GENERIC_FONTS.put(baseName, type1Font.getFontBoxFont());</span>
+                }
+<span class="nc" id="L256">            }</span>
+        }
+<span class="nc" id="L258">        return GENERIC_FONTS.get(baseName);</span>
+    }
+
+    /**
+     * Returns the path for the character with the given name for the specified Standard 14 font. The mapped font is
+     * cached. The path may differ in different environments as it depends on the mapped font.
+     *
+     * @param baseName name of the standard 14 font
+     * @param glyphName name of glyph
+     * @return the mapped font
+     * 
+     * @throws IOException if the data could not be read
+     */
+    public static GeneralPath getGlyphPath(FontName baseName, String glyphName) throws IOException
+    {
+        // copied and adapted from PDType1Font.getNameInFont(String)
+<span class="nc bnc" id="L274" title="All 2 branches missed.">        if (!glyphName.equals(&quot;.notdef&quot;))</span>
+        {
+<span class="nc" id="L276">            FontBoxFont mappedFont = getMappedFont(baseName);</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">            if (mappedFont != null)</span>
+            {
+<span class="nc bnc" id="L279" title="All 2 branches missed.">                if (mappedFont.hasGlyph(glyphName))</span>
+                {
+<span class="nc" id="L281">                    return mappedFont.getPath(glyphName);</span>
+                }
+<span class="nc" id="L283">                String unicodes = getGlyphList(baseName).toUnicode(glyphName);</span>
+<span class="nc bnc" id="L284" title="All 4 branches missed.">                if (unicodes != null &amp;&amp; unicodes.length() == 1)</span>
+                {
+<span class="nc" id="L286">                    String uniName = getUniNameOfCodePoint(unicodes.codePointAt(0));</span>
+<span class="nc bnc" id="L287" title="All 2 branches missed.">                    if (mappedFont.hasGlyph(uniName))</span>
+                    {
+<span class="nc" id="L289">                        return mappedFont.getPath(uniName);</span>
+                    }
+                }
+<span class="nc bnc" id="L292" title="All 2 branches missed.">                if (&quot;SymbolMT&quot;.equals(mappedFont.getName()))</span>
+                {
+<span class="nc" id="L294">                    Integer code = SymbolEncoding.INSTANCE.getNameToCodeMap().get(glyphName);</span>
+<span class="nc bnc" id="L295" title="All 2 branches missed.">                    if (code != null)</span>
+                    {
+<span class="nc" id="L297">                        String uniName = getUniNameOfCodePoint(code + 0xF000);</span>
+<span class="nc bnc" id="L298" title="All 2 branches missed.">                        if (mappedFont.hasGlyph(uniName))</span>
+                        {
+<span class="nc" id="L300">                            return mappedFont.getPath(uniName);</span>
+                        }
+                    }
+                }
+            }
+        }
+<span class="nc" id="L306">        return new GeneralPath();</span>
+    }
+
+    private static GlyphList getGlyphList(FontName baseName)
+    {
+<span class="nc bnc" id="L311" title="All 2 branches missed.">        return FontName.ZAPF_DINGBATS == baseName ? GlyphList.getZapfDingbats()</span>
+<span class="nc" id="L312">                : GlyphList.getAdobeGlyphList();</span>
+    }
+    /**
+     * Enum for the names of the 14 standard fonts.
+     */
+<span class="fc" id="L317">    public enum FontName</span>
+    {
+<span class="fc" id="L319">        TIMES_ROMAN(&quot;Times-Roman&quot;), //</span>
+<span class="fc" id="L320">        TIMES_BOLD(&quot;Times-Bold&quot;), //</span>
+<span class="fc" id="L321">        TIMES_ITALIC(&quot;Times-Italic&quot;), //</span>
+<span class="fc" id="L322">        TIMES_BOLD_ITALIC(&quot;Times-BoldItalic&quot;), //</span>
+<span class="fc" id="L323">        HELVETICA(&quot;Helvetica&quot;), //</span>
+<span class="fc" id="L324">        HELVETICA_BOLD(&quot;Helvetica-Bold&quot;), //</span>
+<span class="fc" id="L325">        HELVETICA_OBLIQUE(&quot;Helvetica-Oblique&quot;), //</span>
+<span class="fc" id="L326">        HELVETICA_BOLD_OBLIQUE(&quot;Helvetica-BoldOblique&quot;), //</span>
+<span class="fc" id="L327">        COURIER(&quot;Courier&quot;), //</span>
+<span class="fc" id="L328">        COURIER_BOLD(&quot;Courier-Bold&quot;), //</span>
+<span class="fc" id="L329">        COURIER_OBLIQUE(&quot;Courier-Oblique&quot;), //</span>
+<span class="fc" id="L330">        COURIER_BOLD_OBLIQUE(&quot;Courier-BoldOblique&quot;), //</span>
+<span class="fc" id="L331">        SYMBOL(&quot;Symbol&quot;), //</span>
+<span class="fc" id="L332">        ZAPF_DINGBATS(&quot;ZapfDingbats&quot;);</span>
+
+        private final String name;
+
+        private FontName(String name)
+<span class="fc" id="L337">        {</span>
+<span class="fc" id="L338">            this.name = name;</span>
+<span class="fc" id="L339">        }</span>
+
+        public String getName()
+        {
+<span class="fc" id="L343">            return name;</span>
+        }
+
+        @Override
+        public String toString()
+        {
+<span class="nc" id="L349">            return name;</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CCITTFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.image</a> &gt; <span class="el_source">CCITTFactory.java</span></div><h1>CCITTFactory.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.image;
+
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.filter.Filter;
+import org.apache.pdfbox.filter.FilterFactory;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceGray;
+
+/**
+ * Factory for creating a PDImageXObject containing a CCITT Fax compressed TIFF image.
+ * 
+ * @author Ben Litchfield
+ * @author Paul King
+ */
+public final class CCITTFactory
+{
+    private CCITTFactory()
+    {
+    }
+    
+    /**
+     * Creates a new CCITT group 4 (T6) compressed image XObject from a b/w BufferedImage. This
+     * compression technique usually results in smaller images than those produced by {@link LosslessFactory#createFromImage(PDDocument, BufferedImage)
+     * }.
+     *
+     * @param document the document to create the image as part of.
+     * @param image the image.
+     * @return a new image XObject.
+     * @throws IOException if there is an error creating the image.
+     * @throws IllegalArgumentException if the BufferedImage is not a b/w image.
+     */
+    public static PDImageXObject createFromImage(PDDocument document, BufferedImage image)
+            throws IOException
+    {
+<span class="pc bpc" id="L63" title="3 of 4 branches missed.">        if (image.getType() != BufferedImage.TYPE_BYTE_BINARY &amp;&amp; image.getColorModel().getPixelSize() != 1)</span>
+        {
+<span class="nc" id="L65">            throw new IllegalArgumentException(&quot;Only 1-bit b/w images supported&quot;);</span>
+        }
+        
+<span class="fc" id="L68">        int height = image.getHeight();</span>
+<span class="fc" id="L69">        int width = image.getWidth();</span>
+
+<span class="fc" id="L71">        ByteArrayOutputStream bos = new ByteArrayOutputStream(Math.max(32, (width + 1) * height));</span>
+<span class="fc" id="L72">        try (MemoryCacheImageOutputStream mcios = new MemoryCacheImageOutputStream(bos))</span>
+        {
+<span class="fc bfc" id="L74" title="All 2 branches covered.">            for (int y = 0; y &lt; height; ++y)</span>
+            {
+<span class="fc bfc" id="L76" title="All 2 branches covered.">                for (int x = 0; x &lt; width; ++x)</span>
+                {
+                    // flip bit to avoid having to set /BlackIs1
+<span class="fc" id="L79">                    mcios.writeBits(~(image.getRGB(x, y) &amp; 1), 1);</span>
+                }
+<span class="fc" id="L81">                int bitOffset = mcios.getBitOffset();</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">                if (bitOffset != 0)</span>
+                {
+<span class="fc" id="L84">                    mcios.writeBits(0, 8 - bitOffset);</span>
+                }
+            }
+<span class="fc" id="L87">            mcios.flush();</span>
+        }
+
+<span class="fc" id="L90">        return prepareImageXObject(document, bos.toByteArray(), width, height, PDDeviceGray.INSTANCE);</span>
+    }
+
+    /**
+     * Creates a new CCITT Fax compressed image XObject from a specific image of a TIFF file stored
+     * in a byte array. Only single-strip CCITT T4 or T6 compressed TIFF files are supported. If
+     * you're not sure what TIFF files you have, use
+     * {@link LosslessFactory#createFromImage(PDDocument, BufferedImage) }
+     * or {@link CCITTFactory#createFromImage(PDDocument, BufferedImage) }
+     * instead.
+     *
+     * @param document the document to create the image as part of.
+     * @param byteArray the TIFF file in a byte array which contains a suitable CCITT compressed
+     * image
+     * @return a new Image XObject
+     * @throws IOException if there is an error reading the TIFF data.
+     */
+    public static PDImageXObject createFromByteArray(PDDocument document, byte[] byteArray)
+            throws IOException
+    {
+<span class="fc" id="L110">        return createFromByteArray(document, byteArray, 0);</span>
+    }
+
+    /**
+     * Creates a new CCITT Fax compressed image XObject from a specific image of a TIFF file stored
+     * in a byte array. Only single-strip CCITT T4 or T6 compressed TIFF files are supported. If
+     * you're not sure what TIFF files you have, use
+     * {@link LosslessFactory#createFromImage(PDDocument, BufferedImage) }
+     * or {@link CCITTFactory#createFromImage(PDDocument, BufferedImage) }
+     * instead.
+     *
+     * @param document the document to create the image as part of.
+     * @param byteArray the TIFF file in a byte array which contains a suitable CCITT compressed
+     * image
+     * @param number TIFF image number, starting from 0
+     * @return a new Image XObject
+     * @throws IOException if there is an error reading the TIFF data.
+     */
+    public static PDImageXObject createFromByteArray(PDDocument document, byte[] byteArray, int number)
+            throws IOException
+    {
+<span class="fc" id="L131">        try (RandomAccessRead raf = new RandomAccessReadBuffer(byteArray))</span>
+        {
+<span class="fc" id="L133">            return createFromRandomAccessImpl(document, raf, number);</span>
+        }
+    }
+
+    private static PDImageXObject prepareImageXObject(PDDocument document,
+            byte[] byteArray, int width, int height,
+            PDColorSpace initColorSpace) throws IOException
+    {
+<span class="fc" id="L141">        ByteArrayOutputStream baos = new ByteArrayOutputStream();</span>
+
+<span class="fc" id="L143">        Filter filter = FilterFactory.INSTANCE.getFilter(COSName.CCITTFAX_DECODE);</span>
+<span class="fc" id="L144">        COSDictionary dict = new COSDictionary();</span>
+<span class="fc" id="L145">        dict.setInt(COSName.COLUMNS, width);</span>
+<span class="fc" id="L146">        dict.setInt(COSName.ROWS, height);</span>
+<span class="fc" id="L147">        filter.encode(new ByteArrayInputStream(byteArray), baos, dict, 0);</span>
+
+<span class="fc" id="L149">        ByteArrayInputStream encodedByteStream = new ByteArrayInputStream(baos.toByteArray());</span>
+<span class="fc" id="L150">        PDImageXObject image = new PDImageXObject(document, encodedByteStream, COSName.CCITTFAX_DECODE,</span>
+                width, height, 1, initColorSpace);
+<span class="fc" id="L152">        dict.setInt(COSName.K, -1);</span>
+<span class="fc" id="L153">        image.getCOSObject().setItem(COSName.DECODE_PARMS, dict);</span>
+<span class="fc" id="L154">        return image;</span>
+    }
+
+    /**
+     * Creates a new CCITT Fax compressed image XObject from the first image of a TIFF file. Only
+     * single-strip CCITT T4 or T6 compressed TIFF files are supported. If you're not sure what TIFF
+     * files you have, use
+     * {@link LosslessFactory#createFromImage(org.apache.pdfbox.pdmodel.PDDocument, java.awt.image.BufferedImage)}
+     * or {@link CCITTFactory#createFromImage(PDDocument, BufferedImage) }
+     * instead.
+     *
+     * @param document the document to create the image as part of.
+     * @param file the  TIFF file which contains a suitable CCITT compressed image
+     * @return a new Image XObject
+     * @throws IOException if there is an error reading the TIFF data.
+     */
+    public static PDImageXObject createFromFile(PDDocument document, File file)
+            throws IOException
+    {
+<span class="fc" id="L173">        return createFromFile(document, file, 0);</span>
+    }
+
+    /**
+     * Creates a new CCITT Fax compressed image XObject from a specific image of a TIFF file. Only
+     * single-strip CCITT T4 or T6 compressed TIFF files are supported. If you're not sure what TIFF
+     * files you have, use
+     * {@link LosslessFactory#createFromImage(PDDocument, BufferedImage) }
+     * or {@link CCITTFactory#createFromImage(PDDocument, BufferedImage) }
+     * instead.
+     *
+     * @param document the document to create the image as part of.
+     * @param file the TIFF file which contains a suitable CCITT compressed image
+     * @param number TIFF image number, starting from 0
+     * @return a new Image XObject
+     * @throws IOException if there is an error reading the TIFF data.
+     */
+    public static PDImageXObject createFromFile(PDDocument document, File file, int number)
+            throws IOException
+    {
+<span class="fc" id="L193">        try (RandomAccessRead raf = new RandomAccessReadBufferedFile(file))</span>
+        {
+<span class="fc" id="L195">            return createFromRandomAccessImpl(document, raf, number);</span>
+        }
+    }
+    
+    /**
+     * Creates a new CCITT Fax compressed image XObject from a TIFF file.
+     * 
+     * @param document the document to create the image as part of.
+     * @param reader the random access TIFF file which contains a suitable CCITT
+     * compressed image
+     * @param number TIFF image number, starting from 0
+     * @return a new Image XObject, or null if no such page
+     * @throws IOException if there is an error reading the TIFF data.
+     */
+    private static PDImageXObject createFromRandomAccessImpl(PDDocument document,
+            RandomAccessRead reader,
+                                                             int number) throws IOException
+    {
+<span class="fc" id="L213">        COSDictionary decodeParms = new COSDictionary();</span>
+<span class="fc" id="L214">        ByteArrayOutputStream bos = new ByteArrayOutputStream();</span>
+<span class="fc" id="L215">        extractFromTiff(reader, bos, decodeParms, number);</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        if (bos.size() == 0)</span>
+        {
+<span class="fc" id="L218">            return null;</span>
+        }
+<span class="fc" id="L220">        ByteArrayInputStream encodedByteStream = new ByteArrayInputStream(bos.toByteArray());</span>
+<span class="fc" id="L221">        PDImageXObject pdImage = new PDImageXObject(document, </span>
+                encodedByteStream, 
+                COSName.CCITTFAX_DECODE, 
+<span class="fc" id="L224">                decodeParms.getInt(COSName.COLUMNS), </span>
+<span class="fc" id="L225">                decodeParms.getInt(COSName.ROWS),</span>
+                1,
+                PDDeviceGray.INSTANCE);
+        
+<span class="fc" id="L229">        COSDictionary dict = pdImage.getCOSObject();</span>
+<span class="fc" id="L230">        dict.setItem(COSName.DECODE_PARMS, decodeParms);</span>
+<span class="fc" id="L231">        return pdImage;</span>
+    }
+
+    // extracts the CCITT stream from the TIFF file
+    private static void extractFromTiff(RandomAccessRead reader,
+            OutputStream os,
+            COSDictionary params, int number) throws IOException
+    {
+<span class="fc" id="L239">        try (os)</span>
+        {
+            // First check the basic tiff header
+<span class="fc" id="L242">            reader.seek(0);</span>
+<span class="fc" id="L243">            char endianess = (char) reader.read();</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">            if ((char) reader.read() != endianess)</span>
+            {
+<span class="nc" id="L246">                throw new IOException(&quot;Not a valid tiff file&quot;);</span>
+            }
+            // ensure that endianess is either M or I
+<span class="pc bpc" id="L249" title="1 of 4 branches missed.">            if (endianess != 'M' &amp;&amp; endianess != 'I')</span>
+            {
+<span class="nc" id="L251">                throw new IOException(&quot;Not a valid tiff file&quot;);</span>
+            }
+<span class="fc" id="L253">            int magicNumber = readshort(endianess, reader);</span>
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">            if (magicNumber != 42)</span>
+            {
+<span class="nc" id="L256">                throw new IOException(&quot;Not a valid tiff file&quot;);</span>
+            }
+
+            // Relocate to the first set of tags
+<span class="fc" id="L260">            long address = readlong(endianess, reader);</span>
+<span class="fc" id="L261">            reader.seek(address);</span>
+    
+            // If some higher page number is required, skip this page's tags, 
+            // then read the next page's address
+<span class="fc bfc" id="L265" title="All 2 branches covered.">            for (int i = 0; i &lt; number; i++)</span>
+            {
+<span class="fc" id="L267">                int numtags = readshort(endianess, reader);</span>
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">                if (numtags &gt; 50)</span>
+                {
+<span class="nc" id="L270">                    throw new IOException(&quot;Not a valid tiff file&quot;);</span>
+                }
+<span class="fc" id="L272">                reader.seek(address + 2 + numtags * 12L);</span>
+<span class="fc" id="L273">                address = readlong(endianess, reader);</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">                if (address == 0)</span>
+                {
+<span class="fc" id="L276">                    return;</span>
+                }
+<span class="fc" id="L278">                reader.seek(address);</span>
+            }
+
+<span class="fc" id="L281">            int numtags = readshort(endianess, reader);</span>
+
+            // The number 50 is somewhat arbitrary, it just stops us load up junk from somewhere
+            // and tramping on
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">            if (numtags &gt; 50)</span>
+            {
+<span class="nc" id="L287">                throw new IOException(&quot;Not a valid tiff file&quot;);</span>
+            }
+
+            // Loop through the tags, some will convert to items in the params dictionary
+            // Other point us to where to find the data stream.
+            // The only param which might change as a result of other TIFF tags is K, so
+            // we'll deal with that differently.
+            
+            // Default value to detect error
+<span class="fc" id="L296">            int k = -1000;</span>
+            
+<span class="fc" id="L298">            int dataoffset = 0;</span>
+<span class="fc" id="L299">            int datalength = 0;</span>
+
+<span class="fc bfc" id="L301" title="All 2 branches covered.">            for (int i = 0; i &lt; numtags; i++)</span>
+            {
+<span class="fc" id="L303">                int tag = readshort(endianess, reader);</span>
+<span class="fc" id="L304">                int type = readshort(endianess, reader);</span>
+<span class="fc" id="L305">                int count = readlong(endianess, reader);</span>
+                int val;
+                // Note that when the type is shorter than 4 bytes, the rest can be garbage
+                // and must be ignored. E.g. short (2 bytes) from &quot;01 00 38 32&quot; (little endian)
+                // is 1, not 842530817 (seen in a real-life TIFF image).
+<span class="pc bpc" id="L310" title="1 of 3 branches missed.">                switch (type)</span>
+                {
+                    case 1: // byte value
+<span class="nc" id="L313">                        val = reader.read();</span>
+<span class="nc" id="L314">                        reader.read();</span>
+<span class="nc" id="L315">                        reader.read();</span>
+<span class="nc" id="L316">                        reader.read();</span>
+<span class="nc" id="L317">                        break;</span>
+                    case 3: // short value
+<span class="fc" id="L319">                        val = readshort(endianess, reader);</span>
+<span class="fc" id="L320">                        reader.read();</span>
+<span class="fc" id="L321">                        reader.read();</span>
+<span class="fc" id="L322">                        break;</span>
+                    default: // long and other types
+<span class="fc" id="L324">                        val = readlong(endianess, reader);</span>
+                        break;
+                }
+<span class="pc bpc" id="L327" title="3 of 12 branches missed.">                switch (tag)</span>
+                {
+                    case 256:
+                    {
+<span class="fc" id="L331">                        params.setInt(COSName.COLUMNS, val);</span>
+<span class="fc" id="L332">                        break;</span>
+                    }
+                    case 257:
+                    {
+<span class="fc" id="L336">                        params.setInt(COSName.ROWS, val);</span>
+<span class="fc" id="L337">                        break;</span>
+                    }
+                    case 259:
+                    {
+<span class="fc bfc" id="L341" title="All 2 branches covered.">                        if (val == 4)</span>
+                        {
+<span class="fc" id="L343">                            k = -1;</span>
+                        }
+<span class="fc bfc" id="L345" title="All 2 branches covered.">                        if (val == 3)</span>
+                        {
+<span class="fc" id="L347">                            k = 0;</span>
+                        }
+                        break; // T6/T4 Compression
+                    }
+                    case 262:
+                    {
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">                        if (val == 1)</span>
+                        {
+<span class="nc" id="L355">                            params.setBoolean(COSName.BLACK_IS_1, true);</span>
+                        }
+                        break;
+                    }
+                    case 266:
+                    {
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">                        if (val != 1)</span>
+                        {
+<span class="nc" id="L363">                            throw new IOException(&quot;FillOrder &quot; + val + &quot; is not supported&quot;);</span>
+                        }
+                        break;
+                    }
+                    case 273:
+                    {
+<span class="fc bfc" id="L369" title="All 2 branches covered.">                        if (count == 1)</span>
+                        {
+<span class="fc" id="L371">                            dataoffset = val;</span>
+                        }
+                        break;
+                    }
+                    case 274:
+                    {
+                        // http://www.awaresystems.be/imaging/tiff/tifftags/orientation.html
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">                        if (val != 1)</span>
+                        {
+<span class="nc" id="L380">                            throw new IOException(&quot;Orientation &quot; + val + &quot; is not supported&quot;);</span>
+                        }
+                        break;
+                    }
+                    case 279:
+                    {
+<span class="fc bfc" id="L386" title="All 2 branches covered.">                        if (count == 1)</span>
+                        {
+<span class="fc" id="L388">                            datalength = val;</span>
+                        }
+                        break;
+                    }
+                    case 292:
+                    {
+<span class="nc bnc" id="L394" title="All 2 branches missed.">                        if ((val &amp; 1) != 0)</span>
+                        {
+                            // T4 2D - arbitrary positive K value
+<span class="nc" id="L397">                            k = 50;</span>
+                        }
+                        // http://www.awaresystems.be/imaging/tiff/tifftags/t4options.html
+<span class="nc bnc" id="L400" title="All 2 branches missed.">                        if ((val &amp; 4) != 0)</span>
+                        {
+<span class="nc" id="L402">                            throw new IOException(&quot;CCITT Group 3 'uncompressed mode' is not supported&quot;);</span>
+                        }
+<span class="nc bnc" id="L404" title="All 2 branches missed.">                        if ((val &amp; 2) != 0)</span>
+                        {
+<span class="nc" id="L406">                            throw new IOException(&quot;CCITT Group 3 'fill bits before EOL' is not supported&quot;);</span>
+                        }
+                        break;
+                    }
+                    case 324:
+                    {
+<span class="nc bnc" id="L412" title="All 2 branches missed.">                        if (count == 1)</span>
+                        {
+<span class="nc" id="L414">                            dataoffset = val;</span>
+                        }
+                        break;
+                    }
+                    case 325:
+                    {
+<span class="nc bnc" id="L420" title="All 2 branches missed.">                        if (count == 1)</span>
+                        {
+<span class="nc" id="L422">                            datalength = val;</span>
+                        }
+                        break;
+                    }
+                    default:
+                    {
+                        // do nothing
+                    }
+                }
+            }
+
+<span class="fc bfc" id="L433" title="All 2 branches covered.">            if (k == -1000)</span>
+            {
+<span class="fc" id="L435">                throw new IOException(&quot;First image in tiff is not CCITT T4 or T6 compressed&quot;);</span>
+            }
+<span class="pc bpc" id="L437" title="1 of 2 branches missed.">            if (dataoffset == 0)</span>
+            {
+<span class="nc" id="L439">                throw new IOException(&quot;First image in tiff is not a single tile/strip&quot;);</span>
+            }
+
+<span class="fc" id="L442">            params.setInt(COSName.K, k);</span>
+
+<span class="fc" id="L444">            reader.seek(dataoffset);</span>
+
+<span class="fc" id="L446">            byte[] buf = new byte[8192];</span>
+            int amountRead;
+<span class="fc bfc" id="L448" title="All 2 branches covered.">            while ((amountRead = reader.read(buf, 0, Math.min(8192, datalength))) &gt; 0)</span>
+            {
+<span class="fc" id="L450">                datalength -= amountRead;</span>
+<span class="fc" id="L451">                os.write(buf, 0, amountRead);</span>
+            }
+
+<span class="pc bpc" id="L454" title="1 of 2 branches missed.">        }</span>
+<span class="fc" id="L455">    }</span>
+
+    private static int readshort(char endianess, RandomAccessRead raf) throws IOException
+    {
+<span class="fc bfc" id="L459" title="All 2 branches covered.">        if (endianess == 'I')</span>
+        {
+<span class="fc" id="L461">            return raf.read() | (raf.read() &lt;&lt; 8);</span>
+        }
+<span class="fc" id="L463">        return (raf.read() &lt;&lt; 8) | raf.read();</span>
+    }
+
+    private static int readlong(char endianess, RandomAccessRead raf) throws IOException
+    {
+<span class="fc bfc" id="L468" title="All 2 branches covered.">        if (endianess == 'I')</span>
+        {
+<span class="fc" id="L470">            return raf.read() | (raf.read() &lt;&lt; 8) | (raf.read() &lt;&lt; 16) | (raf.read() &lt;&lt; 24);</span>
+        }
+<span class="fc" id="L472">        return (raf.read() &lt;&lt; 24) | (raf.read() &lt;&lt; 16) | (raf.read() &lt;&lt; 8) | raf.read();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,479 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDField.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.form</a> &gt; <span class="el_source">PDField.java</span></div><h1>PDField.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.form;
+
+import java.io.IOException;
+import java.util.List;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.fdf.FDFField;
+import org.apache.pdfbox.pdmodel.interactive.action.PDFormFieldAdditionalActions;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+
+/**
+ * A field in an interactive form.
+ */
+public abstract class PDField implements COSObjectable
+{
+    private static final int FLAG_READ_ONLY = 1;
+    private static final int FLAG_REQUIRED = 1 &lt;&lt; 1;
+    private static final int FLAG_NO_EXPORT = 1 &lt;&lt; 2;
+
+    private final PDAcroForm acroForm;
+    private final PDNonTerminalField parent;
+    private final COSDictionary dictionary;
+   
+    /**
+     * Constructor.
+     * 
+     * @param acroForm The form that this field is part of.
+     */
+    PDField(PDAcroForm acroForm)
+    {
+<span class="fc" id="L53">        this(acroForm, new COSDictionary(), null);</span>
+<span class="fc" id="L54">    }</span>
+
+    /**
+     * Constructor.
+     *  @param acroForm The form that this field is part of.
+     * @param field the PDF object to represent as a field.
+     * @param parent the parent node of the node
+     */
+    PDField(PDAcroForm acroForm, COSDictionary field, PDNonTerminalField parent)
+<span class="fc" id="L63">    {</span>
+<span class="fc" id="L64">        this.acroForm = acroForm;</span>
+<span class="fc" id="L65">        this.dictionary = field;</span>
+<span class="fc" id="L66">        this.parent = parent;</span>
+<span class="fc" id="L67">    }</span>
+    
+    /**
+     * Creates a COSField subclass from the given COS field. This is for reading fields from PDFs.
+     *
+     * @param form the form that the field is part of
+     * @param field the dictionary representing a field element
+     * @param parent the parent node of the node to be created, or null if root.
+     * @return a new PDField instance
+     */
+    static PDField fromDictionary(PDAcroForm form, COSDictionary field, PDNonTerminalField parent)
+    {
+<span class="fc" id="L79">        return PDFieldFactory.createField(form, field, parent);</span>
+    }
+
+    /**
+     * Returns the given attribute, inheriting from parent nodes if necessary.
+     *
+     * @param key the key to look up
+     * @return COS value for the given key
+     */
+    protected COSBase getInheritableAttribute(COSName key)
+    {
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (dictionary.containsKey(key))</span>
+        {
+<span class="fc" id="L92">            return dictionary.getDictionaryObject(key);</span>
+        }
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        else if (parent != null)</span>
+        {
+<span class="fc" id="L96">            return parent.getInheritableAttribute(key);</span>
+        }
+        else
+        {
+<span class="fc" id="L100">            return acroForm.getCOSObject().getDictionaryObject(key);</span>
+        }
+    }
+    
+    /**
+     * Get the FT entry of the field. This is a read only field and is set depending on the actual type. The field type
+     * is an inheritable attribute.
+     * 
+     * @return The Field type.
+     * 
+     */
+    public abstract String getFieldType();
+
+    /**
+     * Returns a string representation of the &quot;V&quot; entry, or an empty string.
+     * 
+     * @return The list of widget annotations.
+     */
+    public abstract String getValueAsString();
+
+    /**
+     * Sets the value of the field.
+     *
+     * @param value the new field value.
+     * 
+     * @throws IOException if the value could not be set
+     */
+    public abstract void setValue(String value) throws IOException;
+    
+    
+    /**
+     * Returns the widget annotations associated with this field.
+     * 
+     * For {@link PDNonTerminalField} the list will be empty as non terminal fields
+     * have no visual representation in the form.
+     * 
+     * @return a List of {@link PDAnnotationWidget} annotations. Be aware that this list is
+     * &lt;i&gt;not&lt;/i&gt; backed by the actual widget collection of the field, so adding or deleting has no
+     * effect on the PDF document. For {@link PDTerminalField} you'd have to call
+     * {@link PDTerminalField#setWidgets(java.util.List) setWidgets()} with the modified list.
+     */
+    public abstract List&lt;PDAnnotationWidget&gt; getWidgets();
+    
+    /**
+     * sets the field to be read-only.
+     * 
+     * @param readonly The new flag for readonly.
+     */
+    public void setReadOnly(boolean readonly)
+    {
+<span class="nc" id="L150">        dictionary.setFlag(COSName.FF, FLAG_READ_ONLY, readonly);</span>
+<span class="nc" id="L151">    }</span>
+
+    /**
+     * 
+     * @return true if the field is readonly
+     */
+    public boolean isReadOnly()
+    {
+<span class="nc" id="L159">        return dictionary.getFlag(COSName.FF, FLAG_READ_ONLY);</span>
+    }
+
+    /**
+     * sets the flag whether the field is to be required to have a value at the time it is exported
+     * by a submit-form action.
+     *
+     * @param required The new flag for required.
+     */
+    public void setRequired(boolean required)
+    {
+<span class="nc" id="L170">        dictionary.setFlag(COSName.FF, FLAG_REQUIRED, required);</span>
+<span class="nc" id="L171">    }</span>
+
+    /**
+     * @return true if the field is required to have a value at the time it is exported by a
+     * submit-form action.
+     */
+    public boolean isRequired()
+    {
+<span class="nc" id="L179">        return dictionary.getFlag(COSName.FF, FLAG_REQUIRED);</span>
+    }
+
+    /**
+     * sets the field to be not exported.
+     * 
+     * @param noExport The new flag for noExport.
+     */
+    public void setNoExport(boolean noExport)
+    {
+<span class="nc" id="L189">        dictionary.setFlag(COSName.FF, FLAG_NO_EXPORT, noExport);</span>
+<span class="nc" id="L190">    }</span>
+
+    /**
+     * 
+     * @return true if the field is not to be exported.
+     */
+    public boolean isNoExport()
+    {
+<span class="nc" id="L198">        return dictionary.getFlag(COSName.FF, FLAG_NO_EXPORT);</span>
+    }
+
+    /**
+     * This will get the flags for this field.
+     * 
+     * @return flags The set of flags.
+     */
+    public abstract int getFieldFlags();
+
+    /**
+     * This will set the flags for this field.
+     * 
+     * @param flags The new flags.
+     */
+    public void setFieldFlags(int flags)
+    {
+<span class="nc" id="L215">        dictionary.setInt(COSName.FF, flags);</span>
+<span class="nc" id="L216">    }</span>
+
+    /**
+     * Get the additional actions for this field. This will return null if there
+     * are no additional actions for this field.
+     *
+     * @return The actions of the field.
+     */
+    public PDFormFieldAdditionalActions getActions()
+    {
+<span class="fc" id="L226">        COSDictionary aa = dictionary.getCOSDictionary(COSName.AA);</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">        return aa != null ? new PDFormFieldAdditionalActions(aa) : null;</span>
+    }
+
+   /**
+     * This will import a fdf field from a fdf document.
+     * 
+     * @param fdfField The fdf field to import.
+     * @throws IOException If there is an error importing the data for this field.
+     */
+    void importFDF(FDFField fdfField) throws IOException
+    {
+<span class="fc" id="L238">        COSBase fieldValue = fdfField.getCOSValue();</span>
+        
+<span class="pc bpc" id="L240" title="2 of 4 branches missed.">        if (fieldValue != null &amp;&amp; this instanceof PDTerminalField)</span>
+        {
+<span class="fc" id="L242">            PDTerminalField currentField = (PDTerminalField) this;</span>
+            
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">            if (fieldValue instanceof COSName)</span>
+            {
+<span class="nc" id="L246">                currentField.setValue(((COSName) fieldValue).getName());</span>
+            }
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">            else if (fieldValue instanceof COSString)</span>
+            {
+<span class="fc" id="L250">                currentField.setValue(((COSString) fieldValue).getString());</span>
+            }
+<span class="nc bnc" id="L252" title="All 2 branches missed.">            else if (fieldValue instanceof COSStream)</span>
+            {
+<span class="nc" id="L254">                currentField.setValue(((COSStream) fieldValue).toTextString());</span>
+            }
+<span class="nc bnc" id="L256" title="All 4 branches missed.">            else if (fieldValue instanceof COSArray &amp;&amp; this instanceof PDChoice)</span>
+            {
+<span class="nc" id="L258">                ((PDChoice) this).setValue(((COSArray) fieldValue).toCOSStringStringList());</span>
+            }
+            else
+            {
+<span class="nc" id="L262">                throw new IOException(&quot;Error:Unknown type for field import&quot; + fieldValue);</span>
+            }
+<span class="fc" id="L264">        }</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">        else if (fieldValue != null)</span>
+        {
+<span class="nc" id="L267">            dictionary.setItem(COSName.V, fieldValue);</span>
+        }
+        
+<span class="fc" id="L270">        Integer ff = fdfField.getFieldFlags();</span>
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">        if (ff != null)</span>
+        {
+<span class="nc" id="L273">            setFieldFlags(ff);</span>
+        }
+        else
+        {
+            // these are suppose to be ignored if the Ff is set.
+<span class="fc" id="L278">            Integer setFf = fdfField.getSetFieldFlags();</span>
+<span class="fc" id="L279">            int fieldFlags = getFieldFlags();</span>
+            
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">            if (setFf != null)</span>
+            {
+<span class="nc" id="L283">                int setFfInt = setFf;</span>
+<span class="nc" id="L284">                fieldFlags = fieldFlags | setFfInt;</span>
+<span class="nc" id="L285">                setFieldFlags(fieldFlags);</span>
+            }
+
+<span class="fc" id="L288">            Integer clrFf = fdfField.getClearFieldFlags();</span>
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">            if (clrFf != null)</span>
+            {
+                // we have to clear the bits of the document fields for every bit that is
+                // set in this field.
+                //
+                // Example:
+                // docFf = 1011
+                // clrFf = 1101
+                // clrFfValue = 0010;
+                // newValue = 1011 &amp; 0010 which is 0010
+<span class="nc" id="L299">                int clrFfValue = clrFf;</span>
+<span class="nc" id="L300">                clrFfValue ^= 0xFFFFFFFF;</span>
+<span class="nc" id="L301">                fieldFlags = fieldFlags &amp; clrFfValue;</span>
+<span class="nc" id="L302">                setFieldFlags(fieldFlags);</span>
+            }
+        }
+<span class="fc" id="L305">    }</span>
+
+    /**
+     * Exports this field and its children as FDF.
+     */
+    abstract FDFField exportFDF() throws IOException;
+    
+    /**
+     * Get the parent field to this field, or null if none exists.
+     * 
+     * @return The parent field.
+     */
+    public PDNonTerminalField getParent()
+    {
+<span class="fc" id="L319">        return parent;</span>
+    }
+
+    /**
+     * This will find one of the child elements. The name array are the components of the name to search down the tree
+     * of names. The nameIndex is where to start in that array. This method is called recursively until it finds the end
+     * point based on the name array.
+     * 
+     * @param name An array that picks the path to the field.
+     * @param nameIndex The index into the array.
+     * @return The field at the endpoint or null if none is found.
+     */
+    PDField findKid(String[] name, int nameIndex)
+    {
+<span class="nc" id="L333">        PDField retval = null;</span>
+<span class="nc" id="L334">        COSArray kids = dictionary.getCOSArray(COSName.KIDS);</span>
+<span class="nc bnc" id="L335" title="All 2 branches missed.">        if (kids != null)</span>
+        {
+<span class="nc bnc" id="L337" title="All 4 branches missed.">            for (int i = 0; retval == null &amp;&amp; i &lt; kids.size(); i++)</span>
+            {
+<span class="nc" id="L339">                COSDictionary kidDictionary = (COSDictionary) kids.getObject(i);</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">                if (name[nameIndex].equals(kidDictionary.getString(COSName.T)))</span>
+                {
+<span class="nc" id="L342">                    retval = PDField.fromDictionary(acroForm, kidDictionary,</span>
+                                                    (PDNonTerminalField)this);
+<span class="nc bnc" id="L344" title="All 4 branches missed.">                    if (retval != null &amp;&amp; name.length &gt; nameIndex + 1)</span>
+                    {
+<span class="nc" id="L346">                        retval = retval.findKid(name, nameIndex + 1);</span>
+                    }
+                }
+            }
+        }
+<span class="nc" id="L351">        return retval;</span>
+    }
+
+    /**
+     * This will get the acroform that this field is part of.
+     * 
+     * @return The form this field is on.
+     */
+    public PDAcroForm getAcroForm()
+    {
+<span class="fc" id="L361">        return acroForm;</span>
+    }
+
+    /**
+     * This will get the dictionary associated with this field.
+     * 
+     * @return the dictionary that this class wraps.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="fc" id="L372">        return dictionary;</span>
+    }
+
+    /**
+     * Returns the partial name of the field.
+     * 
+     * @return the name of the field
+     */
+    public String getPartialName()
+    {
+<span class="fc" id="L382">        return dictionary.getString(COSName.T);</span>
+    }
+
+    /**
+     * This will set the partial name of the field.
+     * 
+     * @param name The new name for the field.
+     * @throws IllegalArgumentException If the name contains a period character.
+     */
+    public void setPartialName(String name)
+    {
+<span class="pc bpc" id="L393" title="1 of 2 branches missed.">        if (name.contains(&quot;.&quot;))</span>
+        {
+<span class="nc" id="L395">            throw new IllegalArgumentException(</span>
+                    &quot;A field partial name shall not contain a period character: &quot; + name);
+        }
+<span class="fc" id="L398">        dictionary.setString(COSName.T, name);</span>
+<span class="fc" id="L399">    }</span>
+
+    /**
+     * Returns the fully qualified name of the field, which is a concatenation of the names of all the parents fields.
+     * 
+     * @return the name of the field
+     */
+    public String getFullyQualifiedName()
+    {
+<span class="fc" id="L408">        String finalName = getPartialName();</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">        String parentName = parent != null ? parent.getFullyQualifiedName() : null;</span>
+<span class="fc bfc" id="L410" title="All 2 branches covered.">        if (parentName != null)</span>
+        {
+<span class="pc bpc" id="L412" title="1 of 2 branches missed.">            if (finalName != null)</span>
+            {
+<span class="fc" id="L414">                finalName = parentName + &quot;.&quot; + finalName;</span>
+            }
+            else
+            {
+<span class="nc" id="L418">                finalName = parentName;</span>
+            }
+        }
+<span class="fc" id="L421">        return finalName;</span>
+    }
+
+    /**
+     * Gets the alternate name of the field (&quot;shall be used in place of the actual field name
+     * wherever the field shall be identified in the user interface (such as in error or status
+     * messages referring to the field)&quot;).
+     *
+     * @return the alternate name of the field
+     */
+    public String getAlternateFieldName()
+    {
+<span class="nc" id="L433">        return dictionary.getString(COSName.TU);</span>
+    }
+
+    /**
+     * This will set the alternate name of the field (&quot;shall be used in place of the actual field
+     * name wherever the field shall be identified in the user interface (such as in error or status
+     * messages referring to the field)&quot;). The text appears as a tool tip in Adobe Reader. Because
+     * of the usage for error or status messages, it should be different for each field.
+     *
+     * @param alternateFieldName the alternate name of the field.
+     */
+    public void setAlternateFieldName(String alternateFieldName)
+    {
+<span class="nc" id="L446">        dictionary.setString(COSName.TU, alternateFieldName);</span>
+<span class="nc" id="L447">    }</span>
+    
+    /**
+     * Gets the mapping name of the field.
+     * 
+     * The mapping name shall be used when exporting interactive form field
+     * data from the document.
+     * 
+     * @return the mapping name of the field
+     */
+    public String getMappingName()
+    {
+<span class="nc" id="L459">        return dictionary.getString(COSName.TM);</span>
+    }
+
+    /**
+     * This will set the mapping name of the field.
+     * 
+     * @param mappingName the mapping name of the field
+     */
+    public void setMappingName(String mappingName)
+    {
+<span class="nc" id="L469">        dictionary.setString(COSName.TM, mappingName);</span>
+<span class="nc" id="L470">    }</span>
+
+    @Override
+    public String toString()
+    {
+<span class="fc" id="L475">        return getFullyQualifiedName() + &quot;{type: &quot; + getClass().getSimpleName() + &quot; value: &quot; +</span>
+<span class="fc" id="L476">                getInheritableAttribute(COSName.V) + &quot;}&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

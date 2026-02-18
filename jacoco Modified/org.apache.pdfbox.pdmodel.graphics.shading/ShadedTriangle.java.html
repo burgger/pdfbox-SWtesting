@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ShadedTriangle.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.shading</a> &gt; <span class="el_source">ShadedTriangle.java</span></div><h1>ShadedTriangle.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2014 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.shading;
+
+import java.awt.Point;
+import java.awt.geom.Point2D;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * This is an assistant class for accomplishing type 4, 5, 6 and 7 shading. It
+ * describes a triangle actually, which is used to compose a patch. It contains
+ * the degenerated cases, a triangle degenerates to a line or to a point. This
+ * was done as part of GSoC2014, Tilman Hausherr is the mentor.
+ *
+ * @author Shaola Ren
+ */
+class ShadedTriangle
+{
+    protected final Point2D[] corner; // vertices coordinates of a triangle
+    protected final float[][] color;
+    private final double area; // area of the triangle
+
+    /*
+     degree = 3 describes a normal triangle, 
+     degree = 2 when a triangle degenerates to a line,
+     degree = 1 when a triangle degenerates to a point
+     */
+    private final int degree;
+
+    // describes a rasterized line when a triangle degerates to a line, otherwise null
+    private final Line line;
+
+    // corner's edge (the opposite edge of a corner) equation value
+    private final double v0;
+    private final double v1;
+    private final double v2;
+
+    /**
+     * Constructor.
+     *
+     * @param p an array of the 3 vertices of a triangle
+     * @param c an array of color corresponding the vertex array p
+     */
+    ShadedTriangle(Point2D[] p, float[][] c)
+<span class="nc" id="L59">    {</span>
+<span class="nc" id="L60">        corner = p.clone(); // yes this is a shallow clone</span>
+<span class="nc" id="L61">        color = c.clone();</span>
+<span class="nc" id="L62">        area = getArea(p[0], p[1], p[2]);</span>
+<span class="nc" id="L63">        degree = calcDeg(p);</span>
+
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (degree == 2)</span>
+        {
+<span class="nc bnc" id="L67" title="All 4 branches missed.">            if (overlaps(corner[1], corner[2]) &amp;&amp; !overlaps(corner[0], corner[2]))</span>
+            {
+<span class="nc" id="L69">                Point p0 = new Point((int) Math.round(corner[0].getX()),</span>
+<span class="nc" id="L70">                        (int) Math.round(corner[0].getY()));</span>
+<span class="nc" id="L71">                Point p1 = new Point((int) Math.round(corner[2].getX()),</span>
+<span class="nc" id="L72">                        (int) Math.round(corner[2].getY()));</span>
+<span class="nc" id="L73">                line = new Line(p0, p1, color[0], color[2]);</span>
+<span class="nc" id="L74">            }</span>
+            else
+            {
+<span class="nc" id="L77">                Point p0 = new Point((int) Math.round(corner[1].getX()),</span>
+<span class="nc" id="L78">                        (int) Math.round(corner[1].getY()));</span>
+<span class="nc" id="L79">                Point p1 = new Point((int) Math.round(corner[2].getX()),</span>
+<span class="nc" id="L80">                        (int) Math.round(corner[2].getY()));</span>
+<span class="nc" id="L81">                line = new Line(p0, p1, color[1], color[2]);</span>
+<span class="nc" id="L82">            }</span>
+        }
+        else
+        {
+<span class="nc" id="L86">            line = null;</span>
+        }
+
+<span class="nc" id="L89">        v0 = edgeEquationValue(p[0], p[1], p[2]);</span>
+<span class="nc" id="L90">        v1 = edgeEquationValue(p[1], p[2], p[0]);</span>
+<span class="nc" id="L91">        v2 = edgeEquationValue(p[2], p[0], p[1]);</span>
+<span class="nc" id="L92">    }</span>
+
+    /**
+     * Calculate the degree value of a triangle.
+     *
+     * @param p 3 vertices coordinates
+     * @return number of unique points in the 3 vertices of a triangle, 3, 2 or
+     * 1
+     */
+    private int calcDeg(Point2D[] p)
+    {
+<span class="nc" id="L103">        Set&lt;Point&gt; set = new HashSet&lt;&gt;(3);</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">        for (Point2D itp : p)</span>
+        {
+<span class="nc" id="L106">            Point np = new Point((int) Math.round(itp.getX() * 1000), (int) Math.round(itp.getY() * 1000));</span>
+<span class="nc" id="L107">            set.add(np);</span>
+        }
+<span class="nc" id="L109">        return set.size();</span>
+    }
+
+    public int getDeg()
+    {
+<span class="nc" id="L114">        return degree;</span>
+    }
+
+    /**
+     * get the boundary of a triangle.
+     *
+     * @return {xmin, xmax, ymin, ymax}
+     */
+    public int[] getBoundary()
+    {
+<span class="nc" id="L124">        int[] boundary = new int[4];</span>
+<span class="nc" id="L125">        int x0 = (int) Math.round(corner[0].getX());</span>
+<span class="nc" id="L126">        int x1 = (int) Math.round(corner[1].getX());</span>
+<span class="nc" id="L127">        int x2 = (int) Math.round(corner[2].getX());</span>
+<span class="nc" id="L128">        int y0 = (int) Math.round(corner[0].getY());</span>
+<span class="nc" id="L129">        int y1 = (int) Math.round(corner[1].getY());</span>
+<span class="nc" id="L130">        int y2 = (int) Math.round(corner[2].getY());</span>
+
+<span class="nc" id="L132">        boundary[0] = Math.min(Math.min(x0, x1), x2);</span>
+<span class="nc" id="L133">        boundary[1] = Math.max(Math.max(x0, x1), x2);</span>
+<span class="nc" id="L134">        boundary[2] = Math.min(Math.min(y0, y1), y2);</span>
+<span class="nc" id="L135">        boundary[3] = Math.max(Math.max(y0, y1), y2);</span>
+
+<span class="nc" id="L137">        return boundary;</span>
+    }
+
+    /**
+     * Get the line of a triangle.
+     *
+     * @return points of the line, or null if this triangle isn't a line
+     */
+    public Line getLine()
+    {
+<span class="nc" id="L147">        return line;</span>
+    }
+
+    /**
+     * Whether a point is contained in this ShadedTriangle.
+     *
+     * @param p the target point
+     * @return false if p is outside of this triangle, otherwise true
+     */
+    public boolean contains(Point2D p)
+    {
+<span class="nc bnc" id="L158" title="All 2 branches missed.">        if (degree == 1)</span>
+        {
+<span class="nc bnc" id="L160" title="All 6 branches missed.">            return overlaps(corner[0], p) || overlaps(corner[1], p) || overlaps(corner[2], p);</span>
+        }
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        else if (degree == 2)</span>
+        {
+<span class="nc" id="L164">            Point tp = new Point((int) Math.round(p.getX()), (int) Math.round(p.getY()));</span>
+<span class="nc" id="L165">            return line.linePoints.contains(tp);</span>
+        }
+
+        /*
+         the following code judges whether a point is contained in a normal triangle, 
+         taking the on edge case as contained
+         */
+<span class="nc" id="L172">        double pv0 = edgeEquationValue(p, corner[1], corner[2]);</span>
+        /*
+         if corner[0] and point p are on different sides of line from corner[1] to corner[2], 
+         p is outside of the triangle
+         */
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        if (pv0 * v0 &lt; 0)</span>
+        {
+<span class="nc" id="L179">            return false;</span>
+        }
+<span class="nc" id="L181">        double pv1 = edgeEquationValue(p, corner[2], corner[0]);</span>
+        /*
+         if vertex corner[1] and point p are on different sides of line from corner[2] to corner[0], 
+         p is outside of the triangle
+         */
+<span class="nc bnc" id="L186" title="All 2 branches missed.">        if (pv1 * v1 &lt; 0)</span>
+        {
+<span class="nc" id="L188">            return false;</span>
+        }
+<span class="nc" id="L190">        double pv2 = edgeEquationValue(p, corner[0], corner[1]);</span>
+        /*
+         only left one case:
+         if corner[1] and point p are on different sides of line from corner[2] to corner[0], 
+         p is outside of the triangle, otherwise p is contained in the triangle
+         */
+<span class="nc bnc" id="L196" title="All 2 branches missed.">        return pv2 * v2 &gt;= 0; // !(pv2 * v2 &lt; 0)</span>
+    }
+
+    /*
+     check whether two points overlaps each other, as points' coordinates are 
+     of type double, the coordinates' accuracy used here is 0.001
+     */
+    private boolean overlaps(Point2D p0, Point2D p1)
+    {
+<span class="nc bnc" id="L205" title="All 4 branches missed.">        return Math.abs(p0.getX() - p1.getX()) &lt; 0.001 &amp;&amp; Math.abs(p0.getY() - p1.getY()) &lt; 0.001;</span>
+    }
+
+    /*
+     two points can define a line equation, adjust the form of the equation to 
+     let the rhs equals 0, calculate the lhs value by plugging the coordinate 
+     of p in the lhs expression
+     */
+    private double edgeEquationValue(Point2D p, Point2D p1, Point2D p2)
+    {
+<span class="nc" id="L215">        return (p2.getY() - p1.getY()) * (p.getX() - p1.getX())</span>
+<span class="nc" id="L216">                - (p2.getX() - p1.getX()) * (p.getY() - p1.getY());</span>
+    }
+
+    // calculate the area of a triangle
+    private double getArea(Point2D a, Point2D b, Point2D c)
+    {
+<span class="nc" id="L222">        return Math.abs((c.getX() - b.getX()) * (c.getY() - a.getY())</span>
+<span class="nc" id="L223">                - (c.getX() - a.getX()) * (c.getY() - b.getY())) / 2.0;</span>
+    }
+
+    /**
+     * Calculate the color of a point.
+     *
+     * @param p the target point
+     * @return an array denotes the point's color
+     */
+    public float[] calcColor(Point2D p)
+    {
+<span class="nc" id="L234">        int numberOfColorComponents = color[0].length;</span>
+<span class="nc" id="L235">        float[] pCol = null;</span>
+
+<span class="nc bnc" id="L237" title="All 3 branches missed.">        switch (degree)</span>
+        {
+            case 1:
+<span class="nc" id="L240">                pCol = new float[numberOfColorComponents];</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">                for (int i = 0; i &lt; numberOfColorComponents; i++)</span>
+                {
+                    // average
+<span class="nc" id="L244">                    pCol[i] = (color[0][i] + color[1][i] + color[2][i]) / 3.0f;</span>
+                }
+<span class="nc" id="L246">                break;</span>
+            case 2:
+                // linear interpolation
+<span class="nc" id="L249">                Point tp = new Point((int) Math.round(p.getX()), (int) Math.round(p.getY()));</span>
+<span class="nc" id="L250">                pCol = line.calcColor(tp);</span>
+<span class="nc" id="L251">                break;</span>
+            default:
+<span class="nc" id="L253">                pCol = new float[numberOfColorComponents];</span>
+<span class="nc" id="L254">                float aw = (float) (getArea(p, corner[1], corner[2]) / area);</span>
+<span class="nc" id="L255">                float bw = (float) (getArea(p, corner[2], corner[0]) / area);</span>
+<span class="nc" id="L256">                float cw = (float) (getArea(p, corner[0], corner[1]) / area);</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">                for (int i = 0; i &lt; numberOfColorComponents; i++)</span>
+                {
+                    // barycentric interpolation
+<span class="nc" id="L260">                    pCol[i] = color[0][i] * aw + color[1][i] * bw + color[2][i] * cw;</span>
+                }
+                break;
+        }
+<span class="nc" id="L264">        return pCol;</span>
+    }
+
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L270">        return corner[0] + &quot; &quot; + corner[1] + &quot; &quot; + corner[2];</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

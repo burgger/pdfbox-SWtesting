@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDContentStream.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.contentstream</a> &gt; <span class="el_source">PDContentStream.java</span></div><h1>PDContentStream.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.contentstream;
+
+import java.io.IOException;
+import java.io.InputStream;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * A content stream.
+ *
+ * @author John Hewson
+ */
+public interface PDContentStream
+{
+    /**
+     * Returns this stream's content, if any.
+     * 
+     * @return An InputStream or null.
+     * @throws IOException If the stream could not be read
+     */
+    InputStream getContents() throws IOException;
+
+    /**
+     * Returns this stream's content, if any.
+     * 
+     * @return A RandomAccessRead or null.
+     * @throws IOException If the content could not be read
+     */
+    RandomAccessRead getContentsForRandomAccess() throws IOException;
+
+    /**
+     * Returns this stream's content, if any.
+     * 
+     * The random access capabilities of the returned instance is supposed to be limited. Peek/rewind operations are
+     * limited to a small range of data and not the whole set of data. Seek operations aren't supported at all.
+     * 
+     * @return A RandomAccessRead or null.
+     * @throws IOException If the content could not be read
+     */
+    default RandomAccessRead getContentsForStreamParsing() throws IOException
+    {
+<span class="fc" id="L61">        return getContentsForRandomAccess();</span>
+    }
+
+    /**
+     * Returns this stream's resources, if any.
+     * 
+     * @return the resources of the content stream or null
+     */
+    PDResources getResources();
+
+    /**
+     * Returns the bounding box of the contents.
+     * 
+     * @return the bounding box of the content stream or null
+     * 
+     */
+    PDRectangle getBBox();
+
+    /**
+     * Returns the matrix which transforms from the stream's space to user space.
+     * 
+     * @return the matrix of the content stream or the identity matrix if there isn't any
+     */
+    Matrix getMatrix();
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

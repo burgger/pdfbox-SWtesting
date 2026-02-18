@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDPropertyList.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.documentinterchange.markedcontent</a> &gt; <span class="el_source">PDPropertyList.java</span></div><h1>PDPropertyList.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.documentinterchange.markedcontent;
+
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.graphics.optionalcontent.PDOptionalContentGroup;
+import org.apache.pdfbox.pdmodel.graphics.optionalcontent.PDOptionalContentMembershipDictionary;
+
+/**
+ * A property list is a dictionary containing private information meaningful to the conforming
+ * writer creating the marked content.
+ */
+public class PDPropertyList implements COSObjectable
+{
+    protected final COSDictionary dict;
+
+    /**
+     * Creates a property list from the given dictionary.
+     * 
+     * @param dict COS dictionary
+     * @return a new instance of a PDPropertyList using the given dictionary
+     */
+    public static PDPropertyList create(COSDictionary dict)
+    {
+<span class="fc" id="L42">        COSBase item = dict.getItem(COSName.TYPE);</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        if (COSName.OCG.equals(item))</span>
+        {
+<span class="fc" id="L45">            return new PDOptionalContentGroup(dict);</span>
+        }
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        else if (COSName.OCMD.equals(item))</span>
+        {
+<span class="fc" id="L49">            return new PDOptionalContentMembershipDictionary(dict);</span>
+        }
+        else
+        {
+            // todo: more types
+<span class="fc" id="L54">            return new PDPropertyList(dict);</span>
+        }
+    }
+
+    /**
+     * Constructor for subclasses.
+     */
+    protected PDPropertyList()
+<span class="fc" id="L62">    {</span>
+<span class="fc" id="L63">        this.dict = new COSDictionary();</span>
+<span class="fc" id="L64">    }</span>
+
+    /**
+     * Constructor for subclasses.
+     * 
+     * @param dict the dictionary to be used to create an instance of PDPropertyList
+     */
+    protected PDPropertyList(COSDictionary dict)
+<span class="fc" id="L72">    {</span>
+<span class="fc" id="L73">        this.dict = dict;</span>
+<span class="fc" id="L74">    }</span>
+
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="fc" id="L79">        return dict;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

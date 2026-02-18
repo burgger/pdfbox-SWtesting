@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDNumberTreeNode.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.common</a> &gt; <span class="el_source">PDNumberTreeNode.java</span></div><h1>PDNumberTreeNode.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.common;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNull;
+
+/**
+ * This class represents a PDF Number tree. See the PDF Reference 1.7 section
+ * 7.9.7 for more details.
+ *
+ * @author Ben Litchfield,
+ * @author Igor Podolskiy
+ */
+public class PDNumberTreeNode implements COSObjectable
+{
+<span class="fc" id="L44">    private static final Logger LOG = LogManager.getLogger(PDNumberTreeNode.class );</span>
+
+    private final COSDictionary node;
+<span class="fc" id="L47">    private Class&lt;? extends COSObjectable&gt; valueType = null;</span>
+
+    /**
+     * Constructor.
+     *
+     * @param valueClass The PD Model type of object that is the value.
+     */
+    public PDNumberTreeNode( Class&lt;? extends COSObjectable&gt; valueClass )
+<span class="fc" id="L55">    {</span>
+<span class="fc" id="L56">        node = new COSDictionary();</span>
+<span class="fc" id="L57">        valueType = valueClass;</span>
+<span class="fc" id="L58">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param dict The dictionary that holds the number information.
+     * @param valueClass The PD Model type of object that is the value.
+     */
+    public PDNumberTreeNode( COSDictionary dict, Class&lt;? extends COSObjectable&gt; valueClass )
+<span class="fc" id="L67">    {</span>
+<span class="fc" id="L68">        node = dict;</span>
+<span class="fc" id="L69">        valueType = valueClass;</span>
+<span class="fc" id="L70">    }</span>
+
+    /**
+     * Convert this standard java object to a COS object.
+     *
+     * @return The cos object that matches this Java object.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="fc" id="L80">        return node;</span>
+    }
+
+    /**
+     * Return the children of this node.  This list will contain PDNumberTreeNode objects.
+     *
+     * @return The list of children or null if there are no children.
+     */
+    public List&lt;PDNumberTreeNode&gt; getKids()
+    {
+<span class="fc" id="L90">        List&lt;PDNumberTreeNode&gt; retval = null;</span>
+<span class="fc" id="L91">        COSArray kids = node.getCOSArray(COSName.KIDS);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if( kids != null )</span>
+        {
+<span class="fc" id="L94">            List&lt;PDNumberTreeNode&gt; pdObjects = new ArrayList&lt;&gt;(kids.size());</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">            for( int i=0; i&lt;kids.size(); i++ )</span>
+            {
+<span class="fc" id="L97">                COSBase base = kids.getObject(i);</span>
+                PDNumberTreeNode childNode;
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">                if (base instanceof COSDictionary)</span>
+                {
+<span class="fc" id="L101">                    childNode = createChildNode((COSDictionary) base);</span>
+                }
+                else
+                {
+<span class="nc" id="L105">                    LOG.warn(&quot;Bad child node at position {}&quot;, i);</span>
+<span class="nc" id="L106">                    childNode = new PDNumberTreeNode(valueType);</span>
+                }
+<span class="fc" id="L108">                pdObjects.add(childNode);</span>
+            }
+<span class="fc" id="L110">            retval = new COSArrayList&lt;&gt;(pdObjects,kids);</span>
+        }
+
+<span class="fc" id="L113">        return retval;</span>
+    }
+
+    /**
+     * Set the children of this number tree.
+     *
+     * @param kids The children of this number tree. These have to be in sorted order. Because of
+     * that, it is usually easier to call {@link #setNumbers(Map)} with a map and pass a single
+     * element list here.
+     */
+    public void setKids( List&lt;? extends PDNumberTreeNode&gt; kids )
+    {
+<span class="pc bpc" id="L125" title="1 of 4 branches missed.">        if (kids != null &amp;&amp; !kids.isEmpty())</span>
+        {
+<span class="fc" id="L127">            PDNumberTreeNode firstKid = kids.get(0);</span>
+<span class="fc" id="L128">            PDNumberTreeNode lastKid = kids.get(kids.size() - 1);</span>
+<span class="fc" id="L129">            Integer lowerLimit = firstKid.getLowerLimit();</span>
+<span class="fc" id="L130">            setLowerLimit(lowerLimit);</span>
+<span class="fc" id="L131">            Integer upperLimit = lastKid.getUpperLimit();</span>
+<span class="fc" id="L132">            setUpperLimit(upperLimit);</span>
+<span class="fc" id="L133">            node.setItem(COSName.KIDS, new COSArray(kids));</span>
+<span class="fc" id="L134">        }</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        else if ( node.getDictionaryObject( COSName.NUMS ) == null )</span>
+        {
+            // Remove limits if there are no kids and no numbers set.
+<span class="fc" id="L138">            node.setItem( COSName.LIMITS, null);</span>
+<span class="fc" id="L139">            node.setItem(COSName.KIDS, null);</span>
+        }
+<span class="fc" id="L141">    }</span>
+
+    /**
+     * Returns the value corresponding to an index in the number tree.
+     *
+     * @param index The index in the number tree.
+     *
+     * @return The value corresponding to the index.
+     *
+     * @throws IOException If there is a problem creating the values.
+     */
+    public Object getValue(Integer index) throws IOException
+    {
+<span class="fc" id="L154">        Map&lt;Integer, COSObjectable&gt; numbers = getNumbers();</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        if (numbers != null)</span>
+        {
+<span class="fc" id="L157">            return numbers.get(index);</span>
+        }
+<span class="fc" id="L159">        Object retval = null;</span>
+<span class="fc" id="L160">        List&lt;PDNumberTreeNode&gt; kids = getKids();</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        if (kids != null)</span>
+        {
+<span class="pc bpc" id="L163" title="1 of 4 branches missed.">            for (int i = 0; i &lt; kids.size() &amp;&amp; retval == null; i++)</span>
+            {
+<span class="fc" id="L165">                PDNumberTreeNode childNode = kids.get(i);</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">                if (childNode.getLowerLimit().compareTo(index) &lt;= 0 &amp;&amp;</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">                    childNode.getUpperLimit().compareTo(index) &gt;= 0)</span>
+                {
+<span class="fc" id="L169">                    retval = childNode.getValue(index);</span>
+                }
+            }
+        }
+        else
+        {
+<span class="fc" id="L175">            LOG.warn(&quot;NumberTreeNode does not have \&quot;nums\&quot; nor \&quot;kids\&quot; objects.&quot;);</span>
+        }
+<span class="fc" id="L177">        return retval;</span>
+    }
+
+    /**
+     * This will return a map of numbers on this level. The key will be a java.lang.Integer, the
+     * value will depend on where this class is being used.
+     *
+     * @return A map of COS objects.
+     *
+     * @throws IOException If there is a problem creating the values.
+     */
+    public Map&lt;Integer,COSObjectable&gt; getNumbers()  throws IOException
+    {
+<span class="fc" id="L190">        Map&lt;Integer, COSObjectable&gt; indices = null;</span>
+<span class="fc" id="L191">        COSArray numbersArray = node.getCOSArray(COSName.NUMS);</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        if (numbersArray != null)</span>
+        {
+<span class="fc" id="L194">            int size = numbersArray.size();</span>
+<span class="fc" id="L195">            indices = new HashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">            if (size % 2 != 0)</span>
+            {
+<span class="nc" id="L198">                LOG.warn(&quot;Numbers array has odd size: {}&quot;, size);</span>
+            }
+<span class="fc bfc" id="L200" title="All 2 branches covered.">            for (int i = 0; i + 1 &lt; size; i += 2)</span>
+            {
+<span class="fc" id="L202">                COSBase base = numbersArray.getObject(i);</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">                if (!(base instanceof COSInteger))</span>
+                {
+<span class="nc" id="L205">                    LOG.error(&quot;page labels ignored, index {} should be a number, but is {}&quot;, i,</span>
+                            base);
+<span class="nc" id="L207">                    return null;</span>
+                }
+<span class="fc" id="L209">                COSInteger key = (COSInteger) base;</span>
+<span class="fc" id="L210">                COSBase cosValue = numbersArray.getObject(i + 1);</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">                indices.put(key.intValue(), cosValue == null ? null : convertCOSToPD(cosValue));</span>
+            }
+<span class="fc" id="L213">            indices = Collections.unmodifiableMap(indices);</span>
+        }
+<span class="fc" id="L215">        return indices;</span>
+    }
+
+    /**
+     * Method to convert the COS value in the number tree to the PD Model object. The default
+     * implementation will simply use reflection to create the correct object type. Subclasses can
+     * do whatever they want.
+     *
+     * @param base The COS object to convert.
+     * @return The converted PD Model object.
+     * @throws IOException If there is an error during creation.
+     */
+    protected COSObjectable convertCOSToPD(COSBase base) throws IOException
+    {
+        // valueType (passed in constructor here) must have a constructor of type of COSBase as parameter
+        try
+        {
+<span class="fc" id="L232">            return valueType.getDeclaredConstructor(base.getClass()).newInstance(base);</span>
+        }
+<span class="nc" id="L234">        catch( Exception t )</span>
+        {
+<span class="nc" id="L236">            throw new IOException(&quot;Error while trying to create value in number tree:&quot; + t.getMessage(), t);</span>
+        }
+    }
+
+    /**
+     * Create a child node object.
+     *
+     * @param dic The dictionary for the child node object to refer to.
+     * @return The new child node object.
+     */
+    protected PDNumberTreeNode createChildNode( COSDictionary dic )
+    {
+<span class="fc" id="L248">        return new PDNumberTreeNode(dic,valueType);</span>
+    }
+
+    /**
+     * Set the numbers for this node. This method will set the appropriate upper and lower limits
+     * based on the keys in the map and take care of the ordering.
+     *
+     * @param numbers The map of numbers to objects, or &lt;code&gt;null&lt;/code&gt; for nothing.
+     */
+    public void setNumbers( Map&lt;Integer, ? extends COSObjectable&gt; numbers )
+    {
+<span class="fc bfc" id="L259" title="All 2 branches covered.">        if( numbers == null )</span>
+        {
+<span class="fc" id="L261">            node.setItem( COSName.NUMS, (COSObjectable)null );</span>
+<span class="fc" id="L262">            node.setItem( COSName.LIMITS, (COSObjectable)null);</span>
+        }
+        else
+        {
+<span class="fc" id="L266">            List&lt;Integer&gt; keys = new ArrayList&lt;&gt;( numbers.keySet() );</span>
+<span class="fc" id="L267">            Collections.sort( keys );</span>
+<span class="fc" id="L268">            COSArray array = new COSArray();</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">            for (Integer key : keys)</span>
+            {
+<span class="fc" id="L271">                array.add( COSInteger.get( key ) );</span>
+<span class="fc" id="L272">                COSObjectable obj = numbers.get( key );</span>
+<span class="pc bpc" id="L273" title="1 of 2 branches missed.">                array.add(obj == null ? COSNull.NULL : obj);</span>
+<span class="fc" id="L274">            }</span>
+<span class="fc" id="L275">            Integer lower = null;</span>
+<span class="fc" id="L276">            Integer upper = null;</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">            if (!keys.isEmpty())</span>
+            {
+<span class="fc" id="L279">                lower = keys.get( 0 );</span>
+<span class="fc" id="L280">                upper = keys.get( keys.size()-1 );</span>
+            }
+<span class="fc" id="L282">            setUpperLimit( upper );</span>
+<span class="fc" id="L283">            setLowerLimit( lower );</span>
+<span class="fc" id="L284">            node.setItem( COSName.NUMS, array );</span>
+        }
+<span class="fc" id="L286">    }</span>
+
+    /**
+     * Get the highest value for a key in the number map.
+     *
+     * @return The highest value for a key in the map or null if missing.
+     */
+    public Integer getUpperLimit()
+    {
+<span class="fc" id="L295">        Integer retval = null;</span>
+<span class="fc" id="L296">        COSArray arr = node.getCOSArray(COSName.LIMITS);</span>
+<span class="fc bfc" id="L297" title="All 4 branches covered.">        if( arr != null &amp;&amp; arr.get(1) != null )</span>
+        {
+<span class="fc" id="L299">            retval = arr.getInt( 1 );</span>
+        }
+<span class="fc" id="L301">        return retval;</span>
+    }
+
+    /**
+     * Set the highest value for the key in the map.
+     *
+     * @param upper The new highest value for a key in the map.
+     */
+    private void setUpperLimit( Integer upper )
+    {
+<span class="fc" id="L311">        COSArray arr = node.getCOSArray(COSName.LIMITS);</span>
+<span class="fc bfc" id="L312" title="All 2 branches covered.">        if( arr == null )</span>
+        {
+<span class="fc" id="L314">            arr = new COSArray();</span>
+<span class="fc" id="L315">            arr.add( null );</span>
+<span class="fc" id="L316">            arr.add( null );</span>
+<span class="fc" id="L317">            node.setItem( COSName.LIMITS, arr );</span>
+        }
+<span class="fc bfc" id="L319" title="All 2 branches covered.">        if ( upper != null)</span>
+        {
+<span class="fc" id="L321">            arr.setInt( 1, upper);</span>
+        }
+        else
+        {
+<span class="fc" id="L325">            arr.set( 1, null );</span>
+        }
+<span class="fc" id="L327">    }</span>
+
+    /**
+     * Get the lowest value for a key in the number map.
+     *
+     * @return The lowest value for a key in the map or null if missing.
+     */
+    public Integer getLowerLimit()
+    {
+<span class="fc" id="L336">        Integer retval = null;</span>
+<span class="fc" id="L337">        COSArray arr = node.getCOSArray(COSName.LIMITS);</span>
+<span class="fc bfc" id="L338" title="All 4 branches covered.">        if( arr != null &amp;&amp; arr.get(0) != null )</span>
+        {
+<span class="fc" id="L340">            retval = arr.getInt( 0 );</span>
+        }
+<span class="fc" id="L342">        return retval;</span>
+    }
+
+    /**
+     * Set the lowest value for the key in the map.
+     *
+     * @param lower The new lowest value for a key in the map.
+     */
+    private void setLowerLimit( Integer lower )
+    {
+<span class="fc" id="L352">        COSArray arr = node.getCOSArray(COSName.LIMITS);</span>
+<span class="fc bfc" id="L353" title="All 2 branches covered.">        if( arr == null )</span>
+        {
+<span class="fc" id="L355">            arr = new COSArray();</span>
+<span class="fc" id="L356">            arr.add( null );</span>
+<span class="fc" id="L357">            arr.add( null );</span>
+<span class="fc" id="L358">            node.setItem( COSName.LIMITS, arr );</span>
+        }
+<span class="fc bfc" id="L360" title="All 2 branches covered.">        if ( lower != null )</span>
+        {
+<span class="fc" id="L362">            arr.setInt( 0, lower);</span>
+        }
+        else
+        {
+<span class="fc" id="L366">            arr.set( 0, null );</span>
+        }
+<span class="fc" id="L368">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

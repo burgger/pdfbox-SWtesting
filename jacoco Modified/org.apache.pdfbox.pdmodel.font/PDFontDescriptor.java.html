@@ -1,0 +1,825 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFontDescriptor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font</a> &gt; <span class="el_source">PDFontDescriptor.java</span></div><h1>PDFontDescriptor.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.font;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+
+/**
+ * A font descriptor.
+ *
+ * @author Ben Litchfield
+ */
+public final class PDFontDescriptor implements COSObjectable
+{
+    private static final int FLAG_FIXED_PITCH = 1;
+    private static final int FLAG_SERIF = 2;
+    private static final int FLAG_SYMBOLIC = 4;
+    private static final int FLAG_SCRIPT = 8;
+    private static final int FLAG_NON_SYMBOLIC = 32;
+    private static final int FLAG_ITALIC = 64;
+    private static final int FLAG_ALL_CAP = 65536;
+    private static final int FLAG_SMALL_CAP = 131072;
+    private static final int FLAG_FORCE_BOLD = 262144;
+
+    private final COSDictionary dic;
+<span class="fc" id="L46">    private float xHeight = Float.NEGATIVE_INFINITY;</span>
+<span class="fc" id="L47">    private float capHeight = Float.NEGATIVE_INFINITY;</span>
+<span class="fc" id="L48">    private int flags = -1;</span>
+
+
+    /**
+     * Package-private constructor, for embedding.
+     */
+    PDFontDescriptor()
+<span class="fc" id="L55">    {</span>
+<span class="fc" id="L56">        dic = new COSDictionary();</span>
+<span class="fc" id="L57">        dic.setItem( COSName.TYPE, COSName.FONT_DESC );</span>
+<span class="fc" id="L58">    }</span>
+
+    /**
+     * Creates a PDFontDescriptor from a COS dictionary.
+     *
+     * @param desc The wrapped COS Dictionary.
+     */
+    public PDFontDescriptor( COSDictionary desc )
+<span class="fc" id="L66">    {</span>
+<span class="fc" id="L67">        dic = desc;</span>
+<span class="fc" id="L68">    }</span>
+
+    /**
+     * A convenience method that checks the flag bit.
+     *
+     * @return The flag value.
+     */
+    public boolean isFixedPitch()
+    {
+<span class="fc" id="L77">        return isFlagBitOn( FLAG_FIXED_PITCH );</span>
+    }
+
+    /**
+     * A convenience method that sets the flag bit.
+     *
+     * @param flag The flag value.
+     */
+    public void setFixedPitch( boolean flag )
+    {
+<span class="fc" id="L87">        setFlagBit( FLAG_FIXED_PITCH, flag );</span>
+<span class="fc" id="L88">    }</span>
+
+    /**
+     * A convenience method that checks the flag bit.
+     *
+     * @return The flag value.
+     */
+    public boolean isSerif()
+    {
+<span class="fc" id="L97">        return isFlagBitOn( FLAG_SERIF );</span>
+    }
+
+    /**
+     * A convenience method that sets the flag bit.
+     *
+     * @param flag The flag value.
+     */
+    public void setSerif( boolean flag )
+    {
+<span class="nc" id="L107">        setFlagBit( FLAG_SERIF, flag );</span>
+<span class="nc" id="L108">    }</span>
+
+    /**
+     * A convenience method that checks the flag bit.
+     *
+     * @return The flag value.
+     */
+    public boolean isSymbolic()
+    {
+<span class="fc" id="L117">        return isFlagBitOn( FLAG_SYMBOLIC );</span>
+    }
+
+    /**
+     * A convenience method that sets the flag bit.
+     *
+     * @param flag The flag value.
+     */
+    public void setSymbolic( boolean flag )
+    {
+<span class="fc" id="L127">        setFlagBit( FLAG_SYMBOLIC, flag );</span>
+<span class="fc" id="L128">    }</span>
+
+    /**
+     * A convenience method that checks the flag bit.
+     *
+     * @return The flag value.
+     */
+    public boolean isScript()
+    {
+<span class="nc" id="L137">        return isFlagBitOn( FLAG_SCRIPT );</span>
+    }
+
+    /**
+     * A convenience method that sets the flag bit.
+     *
+     * @param flag The flag value.
+     */
+    public void setScript( boolean flag )
+    {
+<span class="nc" id="L147">        setFlagBit( FLAG_SCRIPT, flag );</span>
+<span class="nc" id="L148">    }</span>
+
+    /**
+     * A convenience method that checks the flag bit.
+     *
+     * @return The flag value.
+     */
+    public boolean isNonSymbolic()
+    {
+<span class="nc" id="L157">        return isFlagBitOn( FLAG_NON_SYMBOLIC );</span>
+    }
+
+    /**
+     * A convenience method that sets the flag bit.
+     *
+     * @param flag The flag value.
+     */
+    public void setNonSymbolic( boolean flag )
+    {
+<span class="fc" id="L167">        setFlagBit( FLAG_NON_SYMBOLIC, flag );</span>
+<span class="fc" id="L168">    }</span>
+
+    /**
+     * A convenience method that checks the flag bit.
+     *
+     * @return The flag value.
+     */
+    public boolean isItalic()
+    {
+<span class="fc" id="L177">        return isFlagBitOn( FLAG_ITALIC );</span>
+    }
+
+    /**
+     * A convenience method that sets the flag bit.
+     *
+     * @param flag The flag value.
+     */
+    public void setItalic( boolean flag )
+    {
+<span class="fc" id="L187">        setFlagBit( FLAG_ITALIC, flag );</span>
+<span class="fc" id="L188">    }</span>
+
+    /**
+     * A convenience method that checks the flag bit.
+     *
+     * @return The flag value.
+     */
+    public boolean isAllCap()
+    {
+<span class="nc" id="L197">        return isFlagBitOn( FLAG_ALL_CAP);</span>
+    }
+
+    /**
+     * A convenience method that sets the flag bit.
+     *
+     * @param flag The flag value.
+     */
+    public void setAllCap( boolean flag )
+    {
+<span class="nc" id="L207">        setFlagBit( FLAG_ALL_CAP, flag );</span>
+<span class="nc" id="L208">    }</span>
+
+    /**
+     * A convenience method that checks the flag bit.
+     *
+     * @return The flag value.
+     */
+    public boolean isSmallCap()
+    {
+<span class="nc" id="L217">        return isFlagBitOn( FLAG_SMALL_CAP );</span>
+    }
+
+    /**
+     * A convenience method that sets the flag bit.
+     *
+     * @param flag The flag value.
+     */
+    public void setSmallCap( boolean flag )
+    {
+<span class="nc" id="L227">        setFlagBit( FLAG_SMALL_CAP, flag );</span>
+<span class="nc" id="L228">    }</span>
+
+    /**
+     * A convenience method that checks the flag bit.
+     *
+     * @return The flag value.
+     */
+    public boolean isForceBold()
+    {
+<span class="nc" id="L237">        return isFlagBitOn( FLAG_FORCE_BOLD );</span>
+    }
+
+    /**
+     * A convenience method that sets the flag bit.
+     *
+     * @param flag The flag value.
+     */
+    public void setForceBold( boolean flag )
+    {
+<span class="nc" id="L247">        setFlagBit( FLAG_FORCE_BOLD, flag );</span>
+<span class="nc" id="L248">    }</span>
+
+    private boolean isFlagBitOn( int bit )
+    {
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        return (getFlags() &amp; bit) != 0;</span>
+    }
+
+    private void setFlagBit( int bit, boolean value )
+    {
+<span class="fc" id="L257">        int flags = getFlags();</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        if( value )</span>
+        {
+<span class="fc" id="L260">            flags = flags | bit;</span>
+        }
+        else
+        {
+<span class="fc" id="L264">            flags = flags &amp; (~bit);</span>
+        }
+<span class="fc" id="L266">        setFlags( flags );</span>
+<span class="fc" id="L267">    }</span>
+
+    /**
+     * Convert this standard java object to a COS object.
+     *
+     * @return The cos object that matches this Java object.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="fc" id="L277">        return dic;</span>
+    }
+
+    /**
+     * Get the font name.
+     *
+     * @return The name of the font.
+     */
+    public String getFontName()
+    {
+<span class="fc" id="L287">        return dic.getNameAsString(COSName.FONT_NAME);</span>
+    }
+
+    /**
+     * This will set the font name.
+     *
+     * @param fontName The new name for the font.
+     */
+    public void setFontName( String fontName )
+    {
+<span class="fc" id="L297">        COSName name = null;</span>
+<span class="pc bpc" id="L298" title="1 of 2 branches missed.">        if( fontName != null )</span>
+        {
+<span class="fc" id="L300">            name = COSName.getPDFName( fontName );</span>
+        }
+<span class="fc" id="L302">        dic.setItem( COSName.FONT_NAME, name );</span>
+<span class="fc" id="L303">    }</span>
+
+    /**
+     * A string representing the preferred font family.
+     *
+     * @return The font family.
+     */
+    public String getFontFamily()
+    {
+<span class="nc" id="L312">        return dic.getString(COSName.FONT_FAMILY);</span>
+    }
+
+    /**
+     * This will set the font family.
+     *
+     * @param fontFamily The font family.
+     */
+    public void setFontFamily( String fontFamily )
+    {
+<span class="fc" id="L322">        COSString name = null;</span>
+<span class="pc bpc" id="L323" title="1 of 2 branches missed.">        if( fontFamily != null )</span>
+        {
+<span class="fc" id="L325">            name = new COSString( fontFamily );</span>
+        }
+<span class="fc" id="L327">        dic.setItem( COSName.FONT_FAMILY, name );</span>
+<span class="fc" id="L328">    }</span>
+
+    /**
+     * The weight of the font.  According to the PDF spec &quot;possible values are
+     * 100, 200, 300, 400, 500, 600, 700, 800 or 900&quot;  Where a higher number is
+     * more weight and appears to be more bold.
+     *
+     * @return The font weight.
+     */
+    public float getFontWeight()
+    {
+<span class="nc" id="L339">        return dic.getFloat( COSName.FONT_WEIGHT,0 );</span>
+    }
+
+    /**
+     * Set the weight of the font.
+     *
+     * @param fontWeight The new weight of the font.
+     */
+    public void setFontWeight( float fontWeight )
+    {
+<span class="fc" id="L349">        dic.setFloat( COSName.FONT_WEIGHT, fontWeight );</span>
+<span class="fc" id="L350">    }</span>
+
+    /**
+     * A string representing the preferred font stretch.
+     * According to the PDF Spec:
+     * The font stretch value; it must be one of the following (ordered from
+     * narrowest to widest): UltraCondensed, ExtraCondensed, Condensed, SemiCondensed,
+     * Normal, SemiExpanded, Expanded, ExtraExpanded or UltraExpanded.
+     *
+     * @return The stretch of the font.
+     */
+    public String getFontStretch()
+    {
+<span class="nc" id="L363">        return dic.getNameAsString(COSName.FONT_STRETCH);</span>
+    }
+
+    /**
+     * This will set the font stretch.
+     *
+     * @param fontStretch The new stretch for the font.
+     */
+    public void setFontStretch( String fontStretch )
+    {
+<span class="nc" id="L373">        COSName name = null;</span>
+<span class="nc bnc" id="L374" title="All 2 branches missed.">        if( fontStretch != null )</span>
+        {
+<span class="nc" id="L376">            name = COSName.getPDFName( fontStretch );</span>
+        }
+<span class="nc" id="L378">        dic.setItem( COSName.FONT_STRETCH, name );</span>
+<span class="nc" id="L379">    }</span>
+
+    /**
+     * This will get the font flags.
+     *
+     * @return The font flags.
+     */
+    public int getFlags()
+    {
+<span class="fc bfc" id="L388" title="All 2 branches covered.">        if (flags == -1)</span>
+        {
+<span class="fc" id="L390">            flags = dic.getInt( COSName.FLAGS, 0 );</span>
+        }
+<span class="fc" id="L392">        return flags;</span>
+    }
+
+    /**
+     * This will set the font flags.
+     *
+     * @param flags The new font flags.
+     */
+    public void setFlags( int flags )
+    {
+<span class="fc" id="L402">        dic.setInt( COSName.FLAGS, flags );</span>
+<span class="fc" id="L403">        this.flags = flags;</span>
+<span class="fc" id="L404">    }</span>
+
+    /**
+     * This will get the fonts bounding box.
+     *
+     * @return The fonts bounding box.
+     */
+    public PDRectangle getFontBoundingBox()
+    {
+<span class="fc" id="L413">        COSArray rect = dic.getCOSArray(COSName.FONT_BBOX);</span>
+<span class="fc" id="L414">        PDRectangle retval = null;</span>
+<span class="pc bpc" id="L415" title="1 of 2 branches missed.">        if( rect != null )</span>
+        {
+<span class="fc" id="L417">            retval = new PDRectangle( rect );</span>
+        }
+<span class="fc" id="L419">        return retval;</span>
+    }
+
+    /**
+     * Set the fonts bounding box.
+     *
+     * @param rect The new bounding box.
+     */
+    public void setFontBoundingBox( PDRectangle rect )
+    {
+<span class="fc" id="L429">        COSArray array = null;</span>
+<span class="pc bpc" id="L430" title="1 of 2 branches missed.">        if( rect != null )</span>
+        {
+<span class="fc" id="L432">            array = rect.getCOSArray();</span>
+        }
+<span class="fc" id="L434">        dic.setItem( COSName.FONT_BBOX, array );</span>
+<span class="fc" id="L435">    }</span>
+
+    /**
+     * This will get the italic angle for the font.
+     *
+     * @return The italic angle.
+     */
+    public float getItalicAngle()
+    {
+<span class="nc" id="L444">        return dic.getFloat( COSName.ITALIC_ANGLE, 0 );</span>
+    }
+
+    /**
+     * This will set the italic angle for the font.
+     *
+     * @param angle The new italic angle for the font.
+     */
+    public void setItalicAngle( float angle )
+    {
+<span class="fc" id="L454">        dic.setFloat( COSName.ITALIC_ANGLE, angle );</span>
+<span class="fc" id="L455">    }</span>
+
+    /**
+     * This will get the ascent for the font.
+     *
+     * @return The ascent.
+     */
+    public float getAscent()
+    {
+<span class="fc" id="L464">        return dic.getFloat( COSName.ASCENT, 0 );</span>
+    }
+
+    /**
+     * This will set the ascent for the font.
+     *
+     * @param ascent The new ascent for the font.
+     */
+    public void setAscent( float ascent )
+    {
+<span class="fc" id="L474">        dic.setFloat( COSName.ASCENT, ascent );</span>
+<span class="fc" id="L475">    }</span>
+
+    /**
+     * This will get the descent for the font.
+     *
+     * @return The descent.
+     */
+    public float getDescent()
+    {
+<span class="fc" id="L484">        return dic.getFloat( COSName.DESCENT, 0 );</span>
+    }
+
+    /**
+     * This will set the descent for the font.
+     *
+     * @param descent The new descent for the font.
+     */
+    public void setDescent( float descent )
+    {
+<span class="fc" id="L494">        dic.setFloat( COSName.DESCENT, descent );</span>
+<span class="fc" id="L495">    }</span>
+
+    /**
+     * This will get the leading for the font.
+     *
+     * @return The leading.
+     */
+    public float getLeading()
+    {
+<span class="nc" id="L504">        return dic.getFloat( COSName.LEADING, 0 );</span>
+    }
+
+    /**
+     * This will set the leading for the font.
+     *
+     * @param leading The new leading for the font.
+     */
+    public void setLeading( float leading )
+    {
+<span class="nc" id="L514">        dic.setFloat( COSName.LEADING, leading );</span>
+<span class="nc" id="L515">    }</span>
+
+    /**
+     * This will get the CapHeight for the font.
+     *
+     * @return The cap height.
+     */
+    public float getCapHeight()
+    {
+<span class="fc bfc" id="L524" title="All 2 branches covered.">        if(Float.compare(capHeight, Float.NEGATIVE_INFINITY) == 0)</span>
+        {
+            /* We observed a negative value being returned with
+             * the Scheherazade font. PDFBOX-429 was logged for this.
+             * We are not sure if returning the absolute value
+             * is the correct fix, but it seems to work.  */
+<span class="fc" id="L530">            capHeight = java.lang.Math.abs(dic.getFloat( COSName.CAP_HEIGHT, 0 ));</span>
+        }
+<span class="fc" id="L532">        return capHeight;</span>
+    }
+
+
+    /**
+     * This will set the cap height for the font.
+     *
+     * @param capHeight The new cap height for the font.
+     */
+    public void setCapHeight( float capHeight )
+    {
+<span class="fc" id="L543">        dic.setFloat( COSName.CAP_HEIGHT, capHeight );</span>
+<span class="fc" id="L544">        this.capHeight = capHeight;</span>
+<span class="fc" id="L545">    }</span>
+
+    /**
+     * This will get the x height for the font.
+     *
+     * @return The x height.
+     */
+    public float getXHeight()
+    {
+<span class="nc bnc" id="L554" title="All 2 branches missed.">        if(Float.compare(xHeight, Float.NEGATIVE_INFINITY) == 0)</span>
+        {
+            /* We observed a negative value being returned with
+             * the Scheherazade font. PDFBOX-429 was logged for this.
+             * We are not sure if returning the absolute value
+             * is the correct fix, but it seems to work.  */
+<span class="nc" id="L560">            xHeight = java.lang.Math.abs(dic.getFloat( COSName.XHEIGHT, 0 ));</span>
+        }
+<span class="nc" id="L562">        return xHeight;</span>
+    }
+
+    /**
+     * This will set the x height for the font.
+     *
+     * @param xHeight The new x height for the font.
+     */
+    public void setXHeight( float xHeight )
+    {
+<span class="fc" id="L572">        dic.setFloat( COSName.XHEIGHT, xHeight );</span>
+<span class="fc" id="L573">        this.xHeight = xHeight;</span>
+<span class="fc" id="L574">    }</span>
+
+    /**
+     * This will get the stemV for the font.
+     *
+     * @return The stem v value.
+     */
+    public float getStemV()
+    {
+<span class="nc" id="L583">        return dic.getFloat( COSName.STEM_V, 0 );</span>
+    }
+
+    /**
+     * This will set the stem V for the font.
+     *
+     * @param stemV The new stem v for the font.
+     */
+    public void setStemV( float stemV )
+    {
+<span class="fc" id="L593">        dic.setFloat( COSName.STEM_V, stemV );</span>
+<span class="fc" id="L594">    }</span>
+
+    /**
+     * This will get the stemH for the font.
+     *
+     * @return The stem h value.
+     */
+    public float getStemH()
+    {
+<span class="nc" id="L603">        return dic.getFloat( COSName.STEM_H, 0 );</span>
+    }
+
+    /**
+     * This will set the stem H for the font.
+     *
+     * @param stemH The new stem h for the font.
+     */
+    public void setStemH( float stemH )
+    {
+<span class="nc" id="L613">        dic.setFloat( COSName.STEM_H, stemH );</span>
+<span class="nc" id="L614">    }</span>
+
+    /**
+     * This will get the average width for the font.
+     *
+     * @return The average width value.
+     */
+    public float getAverageWidth()
+    {
+<span class="nc" id="L623">        return dic.getFloat( COSName.AVG_WIDTH, 0 );</span>
+    }
+
+    /**
+     * This will set the average width for the font.
+     *
+     * @param averageWidth The new average width for the font.
+     */
+    public void setAverageWidth( float averageWidth )
+    {
+<span class="fc" id="L633">        dic.setFloat( COSName.AVG_WIDTH, averageWidth );</span>
+<span class="fc" id="L634">    }</span>
+
+    /**
+     * This will get the max width for the font.
+     *
+     * @return The max width value.
+     */
+    public float getMaxWidth()
+    {
+<span class="nc" id="L643">        return dic.getFloat( COSName.MAX_WIDTH, 0 );</span>
+    }
+
+    /**
+     * This will set the max width for the font.
+     *
+     * @param maxWidth The new max width for the font.
+     */
+    public void setMaxWidth( float maxWidth )
+    {
+<span class="nc" id="L653">        dic.setFloat( COSName.MAX_WIDTH, maxWidth );</span>
+<span class="nc" id="L654">    }</span>
+
+    /**
+     * Returns true if widths are present in the font descriptor.
+     * 
+     * @return true if widths are present in the font descriptor
+     */
+    public boolean hasWidths()
+    {
+<span class="nc bnc" id="L663" title="All 4 branches missed.">        return dic.containsKey(COSName.WIDTHS) || dic.containsKey(COSName.MISSING_WIDTH);</span>
+    }
+
+    /**
+     * Returns true if the missing widths entry is present in the font descriptor.
+     * 
+     * @return true if the missing widths entry is present in the font descriptor
+     */
+    public boolean hasMissingWidth()
+    {
+<span class="nc" id="L673">        return dic.containsKey(COSName.MISSING_WIDTH);</span>
+    }
+
+    /**
+     * This will get the missing width for the font from the /MissingWidth dictionary entry.
+     *
+     * @return The missing width value, or 0 if there is no such dictionary entry.
+     */
+    public float getMissingWidth()
+    {
+<span class="fc" id="L683">        return dic.getFloat( COSName.MISSING_WIDTH, 0 );</span>
+    }
+
+    /**
+     * This will set the missing width for the font.
+     *
+     * @param missingWidth The new missing width for the font.
+     */
+    public void setMissingWidth( float missingWidth )
+    {
+<span class="nc" id="L693">        dic.setFloat( COSName.MISSING_WIDTH, missingWidth );</span>
+<span class="nc" id="L694">    }</span>
+
+    /**
+     * This will get the character set for the font.
+     *
+     * @return The character set value.
+     */
+    public String getCharSet()
+    {
+<span class="nc" id="L703">        return dic.getString(COSName.CHAR_SET);</span>
+    }
+
+    /**
+     * This will set the character set for the font.
+     *
+     * @param charSet The new character set for the font.
+     */
+    public void setCharacterSet( String charSet )
+    {
+<span class="fc" id="L713">        COSString name = null;</span>
+<span class="pc bpc" id="L714" title="1 of 2 branches missed.">        if( charSet != null )</span>
+        {
+<span class="fc" id="L716">            name = new COSString( charSet );</span>
+        }
+<span class="fc" id="L718">        dic.setItem( COSName.CHAR_SET, name );</span>
+<span class="fc" id="L719">    }</span>
+
+    /**
+     * A stream containing a Type 1 font program.
+     *
+     * @return A stream containing a Type 1 font program.
+     */
+    public PDStream getFontFile()
+    {
+<span class="fc" id="L728">        COSStream stream = dic.getCOSStream(COSName.FONT_FILE);</span>
+<span class="fc bfc" id="L729" title="All 2 branches covered.">        return stream != null ? new PDStream(stream) : null;</span>
+    }
+
+    /**
+     * Set the type 1 font program.
+     *
+     * @param type1Stream The type 1 stream.
+     */
+    public void setFontFile( PDStream type1Stream )
+    {
+<span class="fc" id="L739">        dic.setItem( COSName.FONT_FILE, type1Stream );</span>
+<span class="fc" id="L740">    }</span>
+
+    /**
+     * A stream containing a true type font program.
+     *
+     * @return A stream containing a true type font program.
+     */
+    public PDStream getFontFile2()
+    {
+<span class="fc" id="L749">        COSStream stream = dic.getCOSStream(COSName.FONT_FILE2);</span>
+<span class="fc bfc" id="L750" title="All 2 branches covered.">        return stream != null ? new PDStream(stream) : null;</span>
+    }
+
+    /**
+     * Set the true type font program.
+     *
+     * @param ttfStream The true type stream.
+     */
+    public void setFontFile2( PDStream ttfStream )
+    {
+<span class="fc" id="L760">        dic.setItem( COSName.FONT_FILE2, ttfStream );</span>
+<span class="fc" id="L761">    }</span>
+
+    /**
+     * A stream containing a font program that is not true type or type 1.
+     *
+     * @return A stream containing a font program.
+     */
+    public PDStream getFontFile3()
+    {
+<span class="fc" id="L770">        COSStream stream = dic.getCOSStream(COSName.FONT_FILE3);</span>
+<span class="fc bfc" id="L771" title="All 2 branches covered.">        return stream != null ? new PDStream(stream) : null;</span>
+    }
+
+    /**
+     * Set a stream containing a font program that is not true type or type 1.
+     *
+     * @param stream The font program stream.
+     */
+    public void setFontFile3( PDStream stream )
+    {
+<span class="nc" id="L781">        dic.setItem( COSName.FONT_FILE3, stream );</span>
+<span class="nc" id="L782">    }</span>
+
+    /**
+     * Get the CIDSet stream.
+     *
+     * @return A stream containing a CIDSet.
+     */
+    public PDStream getCIDSet()
+    {
+<span class="nc" id="L791">        COSStream cidSet = dic.getCOSStream(COSName.CID_SET);</span>
+<span class="nc bnc" id="L792" title="All 2 branches missed.">        return cidSet != null ? new PDStream(cidSet) : null;</span>
+    }
+
+    /**
+     * Set a stream containing a CIDSet.
+     *
+     * @param stream The font program stream.
+     */
+    public void setCIDSet( PDStream stream )
+    {
+<span class="fc" id="L802">        dic.setItem( COSName.CID_SET, stream );</span>
+<span class="fc" id="L803">    }</span>
+
+    /**
+     * Returns the Panose entry of the Style dictionary, if any.
+     *
+     * @return A Panose wrapper object.
+     */
+    public PDPanose getPanose()
+    {
+<span class="nc" id="L812">        COSDictionary style = dic.getCOSDictionary(COSName.STYLE);</span>
+<span class="nc bnc" id="L813" title="All 2 branches missed.">        if (style != null)</span>
+        {
+<span class="nc" id="L815">            COSString panose = (COSString)style.getDictionaryObject(COSName.PANOSE);</span>
+<span class="nc" id="L816">            byte[] bytes = panose.getBytes();</span>
+<span class="nc bnc" id="L817" title="All 2 branches missed.">            if (bytes.length &gt;= PDPanose.LENGTH)</span>
+            {
+<span class="nc" id="L819">                return new PDPanose(bytes);</span>
+            }
+        }
+<span class="nc" id="L822">        return null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

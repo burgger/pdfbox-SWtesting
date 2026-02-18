@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FDFCatalog.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.fdf</a> &gt; <span class="el_source">FDFCatalog.java</span></div><h1>FDFCatalog.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.fdf;
+
+import java.io.IOException;
+import java.io.Writer;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
+import org.w3c.dom.Element;
+
+/**
+ * This represents an FDF catalog that is part of the FDF document.
+ *
+ * @author Ben Litchfield
+ */
+public class FDFCatalog implements COSObjectable
+{
+    private final COSDictionary catalog;
+
+    /**
+     * Default constructor.
+     */
+    public FDFCatalog()
+<span class="fc" id="L41">    {</span>
+<span class="fc" id="L42">        catalog = new COSDictionary();</span>
+<span class="fc" id="L43">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param cat The FDF documents catalog.
+     */
+    public FDFCatalog(COSDictionary cat)
+<span class="fc" id="L51">    {</span>
+<span class="fc" id="L52">        catalog = cat;</span>
+<span class="fc" id="L53">    }</span>
+
+    /**
+     * This will create an FDF catalog from an XFDF XML document.
+     *
+     * @param element The XML document that contains the XFDF data.
+     */
+    public FDFCatalog(Element element)
+    {
+<span class="fc" id="L62">        this();</span>
+<span class="fc" id="L63">        FDFDictionary fdfDict = new FDFDictionary(element);</span>
+<span class="fc" id="L64">        setFDF(fdfDict);</span>
+<span class="fc" id="L65">    }</span>
+
+    /**
+     * This will write this element as an XML document.
+     *
+     * @param output The stream to write the xml to.
+     *
+     * @throws IOException If there is an error writing the XML.
+     */
+    public void writeXML(Writer output) throws IOException
+    {
+<span class="fc" id="L76">        FDFDictionary fdf = getFDF();</span>
+<span class="fc" id="L77">        fdf.writeXML(output);</span>
+<span class="fc" id="L78">    }</span>
+
+    /**
+     * Convert this standard java object to a COS object.
+     *
+     * @return The cos object that matches this Java object.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="fc" id="L88">        return catalog;</span>
+    }
+
+    /**
+     * This will get the version that was specified in the catalog dictionary.
+     *
+     * @return The FDF version.
+     */
+    public String getVersion()
+    {
+<span class="nc" id="L98">        return catalog.getNameAsString(COSName.VERSION);</span>
+    }
+
+    /**
+     * This will set the version of the FDF document.
+     *
+     * @param version The new version for the FDF document.
+     */
+    public void setVersion(String version)
+    {
+<span class="nc" id="L108">        catalog.setName(COSName.VERSION, version);</span>
+<span class="nc" id="L109">    }</span>
+
+    /**
+     * This will get the FDF dictionary.
+     *
+     * @return The FDF dictionary.
+     */
+    public FDFDictionary getFDF()
+    {
+<span class="fc" id="L118">        COSDictionary fdf = catalog.getCOSDictionary(COSName.FDF);</span>
+        FDFDictionary retval;
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if (fdf != null)</span>
+        {
+<span class="fc" id="L122">            retval = new FDFDictionary(fdf);</span>
+        }
+        else
+        {
+<span class="nc" id="L126">            retval = new FDFDictionary();</span>
+<span class="nc" id="L127">            setFDF(retval);</span>
+        }
+<span class="fc" id="L129">        return retval;</span>
+    }
+
+    /**
+     * This will set the FDF document.
+     *
+     * @param fdf The new FDF dictionary.
+     */
+    public final void setFDF(FDFDictionary fdf)
+    {
+<span class="fc" id="L139">        catalog.setItem(COSName.FDF, fdf);</span>
+<span class="fc" id="L140">    }</span>
+
+    /**
+     * This will get the signature or null if there is none.
+     *
+     * @return The signature.
+     */
+    public PDSignature getSignature()
+    {
+<span class="nc" id="L149">        COSDictionary sig = catalog.getCOSDictionary(COSName.SIG);</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        return sig != null ? new PDSignature(sig) : null;</span>
+    }
+
+    /**
+     * This will set the signature that is associated with this catalog.
+     *
+     * @param sig The new signature.
+     */
+    public void setSignature(PDSignature sig)
+    {
+<span class="nc" id="L160">        catalog.setItem(COSName.SIG, sig);</span>
+<span class="nc" id="L161">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

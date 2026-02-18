@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RC4Cipher.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.encryption</a> &gt; <span class="el_source">RC4Cipher.java</span></div><h1>RC4Cipher.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.encryption;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+/**
+ * An implementation of the RC4 stream cipher.
+ *
+ * @author Ben Litchfield
+ */
+class RC4Cipher
+{
+    private final int[] salt;
+    private int b;
+    private int c;
+
+    /**
+     * Constructor.
+     */
+    RC4Cipher()
+<span class="fc" id="L38">    {</span>
+<span class="fc" id="L39">        salt = new int[256];</span>
+<span class="fc" id="L40">    }</span>
+
+    /**
+     * This will reset the key to be used.
+     *
+     * @param key The RC4 key used during encryption.
+     */
+    void setKey( byte[] key )
+    {
+<span class="fc" id="L49">        b = 0;</span>
+<span class="fc" id="L50">        c = 0;</span>
+
+<span class="pc bpc" id="L52" title="2 of 4 branches missed.">        if(key.length &lt; 1 || key.length &gt; 32)</span>
+        {
+<span class="nc" id="L54">            throw new IllegalArgumentException(&quot;number of bytes must be between 1 and 32&quot;);</span>
+        }
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        for(int i = 0; i &lt; salt.length; i++)</span>
+        {
+<span class="fc" id="L58">            salt[i] = i;</span>
+        }
+
+<span class="fc" id="L61">        int keyIndex = 0;</span>
+<span class="fc" id="L62">        int saltIndex = 0;</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        for( int i = 0; i &lt; salt.length; i++)</span>
+        {
+<span class="fc" id="L65">            saltIndex = (fixByte(key[keyIndex]) + salt[i] + saltIndex) % 256;</span>
+<span class="fc" id="L66">            swap( salt, i, saltIndex );</span>
+<span class="fc" id="L67">            keyIndex = (keyIndex + 1) % key.length;</span>
+        }
+
+<span class="fc" id="L70">    }</span>
+
+    /**
+     * This will ensure that the value for a byte &amp;gt;=0.
+     *
+     * @param aByte The byte to test against.
+     *
+     * @return A value &amp;gt;=0 and &amp;lt; 256
+     */
+    private static int fixByte( byte aByte )
+    {
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        return aByte &lt; 0 ? 256 + aByte : aByte;</span>
+    }
+
+    /**
+     * This will swap two values in an array.
+     *
+     * @param data The array to swap from.
+     * @param firstIndex The index of the first element to swap.
+     * @param secondIndex The index of the second element to swap.
+     */
+    private static void swap( int[] data, int firstIndex, int secondIndex )
+    {
+<span class="fc" id="L93">        int tmp = data[ firstIndex ];</span>
+<span class="fc" id="L94">        data[ firstIndex ] = data[ secondIndex ];</span>
+<span class="fc" id="L95">        data[ secondIndex ] = tmp;</span>
+<span class="fc" id="L96">    }</span>
+
+    private byte encrypt(byte aByte)
+    {
+<span class="fc" id="L100">        b = (b + 1) % 256;</span>
+<span class="fc" id="L101">        c = (salt[b] + c) % 256;</span>
+<span class="fc" id="L102">        swap(salt, b, c);</span>
+<span class="fc" id="L103">        int saltIndex = (salt[b] + salt[c]) % 256;</span>
+<span class="fc" id="L104">        return (byte) (aByte ^ (byte) salt[saltIndex]);</span>
+    }
+
+    /**
+     * This will encrypt and write the data.
+     *
+     * @param data The data to encrypt.
+     * @param output The stream to write to.
+     *
+     * @throws IOException If there is an error writing to the output stream.
+     */
+    void write(byte[] data, OutputStream output) throws IOException
+    {
+<span class="fc" id="L117">        write(data, 0, data.length, output, new byte[data.length]);</span>
+<span class="fc" id="L118">    }</span>
+
+    /**
+     * This will encrypt and write the data.
+     *
+     * @param data The data to encrypt.
+     * @param output The stream to write to.
+     *
+     * @throws IOException If there is an error writing to the output stream.
+     */
+    void write(InputStream data, OutputStream output) throws IOException
+    {
+<span class="fc" id="L130">        byte[] buffer = new byte[1024];</span>
+        int amountRead;
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        while( (amountRead = data.read( buffer )) != -1 )</span>
+        {
+<span class="fc" id="L134">            write(buffer, 0, amountRead, output, buffer);</span>
+        }
+<span class="fc" id="L136">    }</span>
+
+    /**
+     * This will encrypt and write the data.
+     *
+     * @param data The data to encrypt, may be overwritten.
+     * @param offset The offset into the array to start reading data from.
+     * @param len The number of bytes to attempt to read.
+     * @param output The stream to write to.
+     * @param buffer The buffer to use, it can be altered and be identical to the data to encrypt.
+     *
+     * @throws IOException If there is an error writing to the output stream.
+     */
+    private void write(byte[] data, int offset, int len, OutputStream output, byte[] buffer) throws IOException
+    {
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        for (int i = 0, j = offset; i &lt; len; ++i, ++j)</span>
+        {
+<span class="fc" id="L153">            buffer[i] = encrypt(data[j]);</span>
+        }
+
+<span class="fc" id="L156">        output.write(buffer, 0, len);</span>
+<span class="fc" id="L157">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

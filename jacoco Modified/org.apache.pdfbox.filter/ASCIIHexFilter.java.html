@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ASCIIHexFilter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.filter</a> &gt; <span class="el_source">ASCIIHexFilter.java</span></div><h1>ASCIIHexFilter.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.filter;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.util.Hex;
+
+/**
+ * Decodes data encoded in an ASCII hexadecimal form, reproducing the original binary data.
+ *
+ * @author Ben Litchfield
+ */
+<span class="fc" id="L33">final class ASCIIHexFilter extends Filter</span>
+{
+<span class="fc" id="L35">    private static final Logger LOG = LogManager.getLogger(ASCIIHexFilter.class);</span>
+
+<span class="fc" id="L37">    private static final int[] REVERSE_HEX = {</span>
+      /*   0 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /*  10 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /*  20 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /*  30 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /*  40 */  -1, -1, -1, -1, -1, -1, -1, -1,  0,  1,
+      /*  50 */   2,  3,  4,  5,  6,  7,  8,  9, -1, -1,
+      /*  60 */  -1, -1, -1, -1, -1, 10, 11, 12, 13, 14,
+      /*  70 */  15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /*  80 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /*  90 */  -1, -1, -1, -1, -1, -1, -1, 10, 11, 12,
+      /* 100 */  13, 14, 15, -1, -1, -1, -1, -1, -1, -1,
+      /* 110 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /* 120 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /* 130 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /* 140 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /* 150 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /* 160 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /* 170 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /* 180 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /* 190 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /* 200 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /* 210 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /* 220 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /* 230 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /* 240 */  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      /* 250 */  -1, -1, -1, -1, -1, -1
+    };
+
+    @Override
+    public DecodeResult decode(InputStream encoded, OutputStream decoded,
+                                         COSDictionary parameters, int index) throws IOException
+    {
+        int value, firstByte, secondByte;
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        while ((firstByte = encoded.read()) != -1)</span>
+        {
+            // always after first char
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">            while (isWhitespace(firstByte))</span>
+            {
+<span class="nc" id="L76">                firstByte = encoded.read();</span>
+            }
+<span class="pc bpc" id="L78" title="2 of 4 branches missed.">            if (firstByte == -1 || isEOD(firstByte))</span>
+            {
+<span class="nc" id="L80">                break;</span>
+            }
+       
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">            if (REVERSE_HEX[firstByte] == -1)</span>
+            {
+<span class="nc" id="L85">                LOG.error(&quot;Invalid hex, int: {} char: {}&quot;, firstByte, (char) firstByte);</span>
+            }
+<span class="fc" id="L87">            value = REVERSE_HEX[firstByte] * 16;</span>
+<span class="fc" id="L88">            secondByte = encoded.read();</span>
+       
+<span class="pc bpc" id="L90" title="2 of 4 branches missed.">            if (secondByte == -1 || isEOD(secondByte)) </span>
+            {
+                // second value behaves like 0 in case of EOD
+<span class="nc" id="L93">                decoded.write(value);</span>
+<span class="nc" id="L94">                break;</span>
+            }
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">            if (REVERSE_HEX[secondByte] == -1)</span>
+            {
+<span class="nc" id="L98">                LOG.error(&quot;Invalid hex, int: {} char: {}&quot;, secondByte, (char) secondByte);</span>
+            }
+<span class="fc" id="L100">            value += REVERSE_HEX[secondByte];</span>
+<span class="fc" id="L101">            decoded.write(value);</span>
+        }
+<span class="fc" id="L103">        decoded.flush();</span>
+<span class="fc" id="L104">        return new DecodeResult(parameters);</span>
+    }
+
+    // whitespace
+    //   0  0x00  Null (NUL)
+    //   9  0x09  Tab (HT)
+    //  10  0x0A  Line feed (LF)
+    //  12  0x0C  Form feed (FF)
+    //  13  0x0D  Carriage return (CR)
+    //  32  0x20  Space (SP)
+    private static boolean isWhitespace(int c)
+    {
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        switch (c)</span>
+        {
+        case 0:
+        case 9:
+        case 10:
+        case 12:
+        case 13:
+        case 32:
+<span class="nc" id="L124">            return true;</span>
+        default:
+<span class="fc" id="L126">            return false;</span>
+        }
+    }
+
+    private static boolean isEOD(int c)
+    {
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">        return c == '&gt;';</span>
+    }
+
+    @Override
+    public void encode(InputStream input, OutputStream encoded, COSDictionary parameters)
+        throws IOException
+    {
+        int byteRead;
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        while ((byteRead = input.read()) != -1)</span>
+        {
+<span class="fc" id="L142">            Hex.writeHexByte((byte)byteRead, encoded);</span>
+        }
+<span class="fc" id="L144">        encoded.flush();</span>
+<span class="fc" id="L145">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFieldFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.form</a> &gt; <span class="el_source">PDFieldFactory.java</span></div><h1>PDFieldFactory.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.interactive.form;
+
+import java.util.HashSet;
+import java.util.Set;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+
+/**
+ * A PDField factory.
+ */
+public final class PDFieldFactory
+{
+
+    private static final String FIELD_TYPE_TEXT = &quot;Tx&quot;;
+    private static final String FIELD_TYPE_BUTTON = &quot;Btn&quot;;
+    private static final String FIELD_TYPE_CHOICE = &quot;Ch&quot;;
+    private static final String FIELD_TYPE_SIGNATURE = &quot;Sig&quot;;
+    
+    private PDFieldFactory()
+    {
+    }
+    
+    /**
+     * Creates a COSField subclass from the given field.
+     *
+     * @param form the form that the field is part of
+     * @param field the dictionary representing a field element
+     * @param parent the parent node of the node to be created 
+     * @return the corresponding PDField instance
+     */
+    public static PDField createField(PDAcroForm form, COSDictionary field, PDNonTerminalField parent)
+    {
+        // Test if we have a non terminal field first as it might have
+        // properties which do apply to other fields
+        // A non terminal fields has Kids entries which do have
+        // a field name (other than annotations)
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (field.containsKey(COSName.KIDS))</span>
+        {
+<span class="fc" id="L58">            COSArray kids = field.getCOSArray(COSName.KIDS);</span>
+<span class="pc bpc" id="L59" title="2 of 4 branches missed.">            if (kids != null &amp;&amp; !kids.isEmpty())</span>
+            {
+<span class="fc bfc" id="L61" title="All 2 branches covered.">                for (int i = 0; i &lt; kids.size(); i++)</span>
+                {
+<span class="fc" id="L63">                    COSBase kid = kids.getObject(i);</span>
+<span class="pc bpc" id="L64" title="1 of 4 branches missed.">                    if (kid instanceof COSDictionary &amp;&amp; ((COSDictionary) kid).getString(COSName.T) != null)</span>
+                    {
+<span class="fc" id="L66">                        return new PDNonTerminalField(form, field, parent);</span>
+                    }
+                }
+            }
+        } 
+
+<span class="fc" id="L72">        String fieldType = findFieldType(field, new HashSet&lt;&gt;());</span>
+
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (FIELD_TYPE_CHOICE.equals(fieldType))</span>
+        {
+<span class="fc" id="L76">            return createChoiceSubType(form, field, parent);</span>
+        }
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        else if (FIELD_TYPE_TEXT.equals(fieldType))</span>
+        {
+<span class="fc" id="L80">            return new PDTextField(form, field, parent);</span>
+        }
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        else if (FIELD_TYPE_SIGNATURE.equals(fieldType))</span>
+        {
+<span class="fc" id="L84">            return new PDSignatureField(form, field, parent);</span>
+        }
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        else if (FIELD_TYPE_BUTTON.equals(fieldType))</span>
+        {
+<span class="fc" id="L88">            return createButtonSubType(form, field, parent);</span>
+        }
+        else
+        {
+            // an erroneous non-field object, see PDFBOX-2885
+<span class="nc" id="L93">            return null;</span>
+        }
+    }
+
+    private static PDField createChoiceSubType(PDAcroForm form, COSDictionary field,
+                                               PDNonTerminalField parent)
+    {
+<span class="fc" id="L100">        int flags = field.getInt(COSName.FF, 0);</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        if ((flags &amp; PDChoice.FLAG_COMBO) != 0)</span>
+        {
+<span class="fc" id="L103">            return new PDComboBox(form, field, parent);</span>
+        }
+        else
+        {
+<span class="fc" id="L107">            return new PDListBox(form, field, parent);</span>
+        }
+    }
+
+    private static PDField createButtonSubType(PDAcroForm form, COSDictionary field,
+                                               PDNonTerminalField parent)
+    {
+<span class="fc" id="L114">        int flags = field.getInt(COSName.FF, 0);</span>
+        // BJL: I have found that the radio flag bit is not always set
+        // and that sometimes there is just a kids dictionary.
+        // so, if there is a kids dictionary then it must be a radio button group.
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if ((flags &amp; PDButton.FLAG_RADIO) != 0)</span>
+        {
+<span class="fc" id="L120">            return new PDRadioButton(form, field, parent);</span>
+        }
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        else if ((flags &amp; PDButton.FLAG_PUSHBUTTON) != 0)</span>
+        {
+<span class="fc" id="L124">            return new PDPushButton(form, field, parent);</span>
+        }
+        else
+        {
+<span class="fc" id="L128">            return new PDCheckBox(form, field, parent);</span>
+        }
+    }
+
+    private static String findFieldType(COSDictionary dic, Set&lt;COSDictionary&gt; seen)
+    {
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">        if (!seen.add(dic))</span>
+        {
+            // PDFBOX-5896: avoid endless recursion
+<span class="nc" id="L137">            return null;</span>
+        }
+<span class="fc" id="L139">        String retval = dic.getNameAsString(COSName.FT);</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">        if (retval == null)</span>
+        {
+<span class="nc" id="L142">            COSDictionary base = dic.getCOSDictionary(COSName.PARENT, COSName.P);</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">            return base != null ? findFieldType(base, seen) : null;</span>
+        }
+<span class="fc" id="L145">        seen.remove(dic);</span>
+<span class="fc" id="L146">        return retval;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

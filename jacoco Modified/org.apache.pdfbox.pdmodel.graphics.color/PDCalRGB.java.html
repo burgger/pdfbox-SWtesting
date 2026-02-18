@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDCalRGB.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.color</a> &gt; <span class="el_source">PDCalRGB.java</span></div><h1>PDCalRGB.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.color;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSName;
+
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * A CalRGB colour space is a CIE-based colour space with one transformation stage instead of two.
+ * In this type of space, A, B, and C represent calibrated red, green, and blue colour values.
+ *
+ * @author Ben Litchfield
+ * @author John Hewson
+ */
+public class PDCalRGB extends PDCIEDictionaryBasedColorSpace
+{
+<span class="nc" id="L34">    private final PDColor initialColor = new PDColor(new float[] { 0, 0, 0 }, this);</span>
+
+    /**
+     * Creates a new CalRGB color space.
+     */
+    public PDCalRGB()
+    {
+<span class="nc" id="L41">        super(COSName.CALRGB);</span>
+<span class="nc" id="L42">    }</span>
+
+    /**
+     * Creates a new CalRGB color space using the given COS array.
+     * @param rgb the cos array which represents this color space
+     */
+    public PDCalRGB(COSArray rgb)
+    {
+<span class="nc" id="L50">        super(rgb);</span>
+<span class="nc" id="L51">    }</span>
+
+    @Override
+    public String getName()
+    {
+<span class="nc" id="L56">        return COSName.CALRGB.getName();</span>
+    }
+
+    @Override
+    public int getNumberOfComponents()
+    {
+<span class="nc" id="L62">        return 3;</span>
+    }
+
+    @Override
+    public float[] getDefaultDecode(int bitsPerComponent)
+    {
+<span class="nc" id="L68">        return new float[] { 0, 1, 0, 1, 0, 1 };</span>
+    }
+
+    @Override
+    public PDColor getInitialColor()
+    {
+<span class="nc" id="L74">        return initialColor;</span>
+    }
+
+    @Override
+    public float[] toRGB(float[] value)
+    {
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        if (isWhitePoint())</span>
+        {
+<span class="nc" id="L82">            float a = value[0];</span>
+<span class="nc" id="L83">            float b = value[1];</span>
+<span class="nc" id="L84">            float c = value[2];</span>
+
+<span class="nc" id="L86">            PDGamma gamma = getGamma();</span>
+<span class="nc" id="L87">            float powAR = (float)Math.pow(a, gamma.getR());</span>
+<span class="nc" id="L88">            float powBG = (float)Math.pow(b, gamma.getG());</span>
+<span class="nc" id="L89">            float powCB = (float)Math.pow(c, gamma.getB());</span>
+
+<span class="nc" id="L91">            float[] matrix = getMatrix();</span>
+<span class="nc" id="L92">            float mXA = matrix[0];</span>
+<span class="nc" id="L93">            float mYA = matrix[1];</span>
+<span class="nc" id="L94">            float mZA = matrix[2];</span>
+<span class="nc" id="L95">            float mXB = matrix[3];</span>
+<span class="nc" id="L96">            float mYB = matrix[4];</span>
+<span class="nc" id="L97">            float mZB = matrix[5];</span>
+<span class="nc" id="L98">            float mXC = matrix[6];</span>
+<span class="nc" id="L99">            float mYC = matrix[7];</span>
+<span class="nc" id="L100">            float mZC = matrix[8];</span>
+
+<span class="nc" id="L102">            float x = mXA * powAR + mXB * powBG + mXC * powCB;</span>
+<span class="nc" id="L103">            float y = mYA * powAR + mYB * powBG + mYC * powCB;</span>
+<span class="nc" id="L104">            float z = mZA * powAR + mZB * powBG + mZC * powCB;</span>
+<span class="nc" id="L105">            return convXYZtoRGB(x, y, z);</span>
+        }
+        else
+        {
+            // this is a hack, we simply skip CIE calibration of the RGB value
+            // this works only with whitepoint D65 (0.9505 1.0 1.089)
+            // see PDFBOX-2553
+<span class="nc" id="L112">            return new float[] { value[0], value[1], value[2] };</span>
+        }
+    }
+
+    /**
+     * Returns the gamma value.
+     * If none is present then the default of 1,1,1 will be returned.
+     * @return the gamma value
+     */
+    public final PDGamma getGamma()
+    {
+<span class="nc" id="L123">        COSArray gammaArray = dictionary.getCOSArray(COSName.GAMMA);</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">        if (gammaArray == null)</span>
+        {
+<span class="nc" id="L126">            gammaArray = new COSArray();</span>
+<span class="nc" id="L127">            gammaArray.add(COSFloat.ONE);</span>
+<span class="nc" id="L128">            gammaArray.add(COSFloat.ONE);</span>
+<span class="nc" id="L129">            gammaArray.add(COSFloat.ONE);</span>
+<span class="nc" id="L130">            dictionary.setItem(COSName.GAMMA, gammaArray);</span>
+        }
+<span class="nc" id="L132">        return new PDGamma(gammaArray);</span>
+    }
+
+    /**
+     * Returns the linear interpretation matrix, which is an array of nine numbers.
+     * If the underlying dictionary contains null then the identity matrix will be returned.
+     * @return the linear interpretation matrix
+     */
+    public final float[] getMatrix()
+    {
+<span class="nc" id="L142">        COSArray matrix = dictionary.getCOSArray(COSName.MATRIX);</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        if (matrix == null)</span>
+        {
+<span class="nc" id="L145">            return new float[] {  1, 0, 0, 0, 1, 0, 0, 0, 1 };</span>
+        }
+        else
+        {
+<span class="nc" id="L149">           return matrix.toFloatArray();</span>
+        }
+    }
+
+    /**
+     * Sets the gamma value.
+     * @param gamma the new gamma value
+     */
+    public final void setGamma(PDGamma gamma)
+    {
+<span class="nc" id="L159">        COSArray gammaArray = null;</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">        if(gamma != null)</span>
+        {
+<span class="nc" id="L162">            gammaArray = gamma.getCOSArray();</span>
+        }
+<span class="nc" id="L164">        dictionary.setItem(COSName.GAMMA, gammaArray);</span>
+<span class="nc" id="L165">    }</span>
+
+    /**
+     * Sets the linear interpretation matrix.
+     * Passing in null will clear the matrix.
+     * @param matrix the new linear interpretation matrix, or null
+     */
+    public final void setMatrix(Matrix matrix)
+    {
+<span class="nc" id="L174">        COSArray matrixArray = null;</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">        if(matrix != null)</span>
+        {
+            // We can't use matrix.toCOSArray(), as it only returns a subset of the matrix
+<span class="nc" id="L178">            float[][] values = matrix.getValues();</span>
+<span class="nc" id="L179">            matrixArray = new COSArray();</span>
+<span class="nc" id="L180">            matrixArray.add(new COSFloat(values[0][0]));</span>
+<span class="nc" id="L181">            matrixArray.add(new COSFloat(values[0][1]));</span>
+<span class="nc" id="L182">            matrixArray.add(new COSFloat(values[0][2]));</span>
+<span class="nc" id="L183">            matrixArray.add(new COSFloat(values[1][0]));</span>
+<span class="nc" id="L184">            matrixArray.add(new COSFloat(values[1][1]));</span>
+<span class="nc" id="L185">            matrixArray.add(new COSFloat(values[1][2]));</span>
+<span class="nc" id="L186">            matrixArray.add(new COSFloat(values[2][0]));</span>
+<span class="nc" id="L187">            matrixArray.add(new COSFloat(values[2][1]));</span>
+<span class="nc" id="L188">            matrixArray.add(new COSFloat(values[2][2]));</span>
+        }
+<span class="nc" id="L190">        dictionary.setItem(COSName.MATRIX, matrixArray);</span>
+<span class="nc" id="L191">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

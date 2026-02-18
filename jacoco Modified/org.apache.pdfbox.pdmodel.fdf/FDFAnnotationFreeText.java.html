@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FDFAnnotationFreeText.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.fdf</a> &gt; <span class="el_source">FDFAnnotationFreeText.java</span></div><h1>FDFAnnotationFreeText.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.fdf;
+
+import java.io.IOException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.w3c.dom.Element;
+
+/**
+ * This represents a FreeText FDF annotation.
+ *
+ * @author Ben Litchfield
+ */
+public class FDFAnnotationFreeText extends FDFAnnotation
+{
+<span class="fc" id="L39">    private static final Logger LOG = LogManager.getLogger(FDFAnnotationFreeText.class);</span>
+ 
+    /**
+     * COS Model value for SubType entry.
+     */
+    public static final String SUBTYPE = &quot;FreeText&quot;;
+
+    /**
+     * Default constructor.
+     */
+    public FDFAnnotationFreeText()
+<span class="nc" id="L50">    {</span>
+<span class="nc" id="L51">        annot.setName(COSName.SUBTYPE, SUBTYPE);</span>
+<span class="nc" id="L52">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param a An existing FDF Annotation.
+     */
+    public FDFAnnotationFreeText(COSDictionary a)
+    {
+<span class="fc" id="L61">        super(a);</span>
+<span class="fc" id="L62">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param element An XFDF element.
+     *
+     * @throws IOException If there is an error extracting information from the element.
+     */
+    public FDFAnnotationFreeText(Element element) throws IOException
+    {
+<span class="fc" id="L73">        super(element);</span>
+<span class="fc" id="L74">        annot.setName(COSName.SUBTYPE, SUBTYPE);</span>
+
+<span class="fc" id="L76">        setJustification(element.getAttribute(&quot;justification&quot;));</span>
+        
+<span class="fc" id="L78">        XPath xpath = XPathFactory.newInstance().newXPath();</span>
+        try
+        {
+<span class="fc" id="L81">            setDefaultAppearance(xpath.evaluate(&quot;defaultappearance&quot;, element));</span>
+<span class="fc" id="L82">            setDefaultStyle(xpath.evaluate(&quot;defaultstyle&quot;, element));</span>
+        }
+<span class="nc" id="L84">        catch (XPathExpressionException ex)</span>
+        {
+<span class="nc" id="L86">            LOG.debug(&quot;Error while evaluating XPath expression&quot;, ex);</span>
+<span class="fc" id="L87">        }</span>
+<span class="fc" id="L88">        initCallout(element);</span>
+<span class="fc" id="L89">        String rotation = element.getAttribute(&quot;rotation&quot;);</span>
+<span class="pc bpc" id="L90" title="1 of 4 branches missed.">        if (rotation != null &amp;&amp; !rotation.isEmpty())</span>
+        {
+<span class="fc" id="L92">            setRotation(Integer.parseInt(rotation));</span>
+        }
+<span class="fc" id="L94">        initFringe(element);</span>
+<span class="fc" id="L95">        String lineEndingStyle = element.getAttribute(&quot;head&quot;);</span>
+<span class="pc bpc" id="L96" title="1 of 4 branches missed.">        if (lineEndingStyle != null &amp;&amp; !lineEndingStyle.isEmpty())</span>
+        {
+<span class="fc" id="L98">            setLineEndingStyle(lineEndingStyle);</span>
+        }
+<span class="fc" id="L100">    }</span>
+
+    private void initFringe(Element element) throws IOException
+    {
+<span class="fc" id="L104">        String fringe = element.getAttribute(&quot;fringe&quot;);</span>
+<span class="pc bpc" id="L105" title="1 of 4 branches missed.">        if (fringe != null &amp;&amp; !fringe.isEmpty())</span>
+        {
+<span class="fc" id="L107">            PDRectangle rect = createRectangleFromAttributes(</span>
+                    fringe, &quot;Error: wrong amount of numbers in attribute 'fringe'&quot;);
+<span class="fc" id="L109">            setFringe(rect);</span>
+        }
+<span class="fc" id="L111">    }</span>
+
+    private void initCallout(Element element)
+    {
+<span class="fc" id="L115">        String callout = element.getAttribute(&quot;callout&quot;);</span>
+<span class="pc bpc" id="L116" title="1 of 4 branches missed.">        if (callout != null &amp;&amp; !callout.isEmpty())</span>
+        {
+<span class="fc" id="L118">            String[] calloutValues = callout.split(&quot;,&quot;);</span>
+<span class="fc" id="L119">            float[] values = parseFloats(calloutValues);</span>
+<span class="fc" id="L120">            setCallout(values);</span>
+        }
+<span class="fc" id="L122">    }</span>
+
+    /**
+     * This will set the coordinates of the callout line.
+     *
+     * @param callout An array of four or six numbers specifying a callout line attached to the free
+     * text annotation. Six numbers [ x1 y1 x2 y2 x3 y3 ] represent the starting, knee point, and
+     * ending coordinates of the line in default user space, Four numbers [ x1 y1 x2 y2 ] represent
+     * the starting and ending coordinates of the line.
+     */
+    public final void setCallout(float[] callout)
+    {
+<span class="fc" id="L134">        annot.setItem(COSName.CL, COSArray.of(callout));</span>
+<span class="fc" id="L135">    }</span>
+
+    /**
+     * This will get the coordinates of the callout line.
+     *
+     * @return An array of four or six numbers specifying a callout line attached to the free text
+     * annotation. Six numbers [ x1 y1 x2 y2 x3 y3 ] represent the starting, knee point, and ending
+     * coordinates of the line in default user space, Four numbers [ x1 y1 x2 y2 ] represent the
+     * starting and ending coordinates of the line.
+     */
+    public float[] getCallout()
+    {
+<span class="nc" id="L147">        COSArray array = annot.getCOSArray(COSName.CL);</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">        return array != null ? array.toFloatArray() : null;</span>
+    }
+
+    /**
+     * This will set the form of quadding (justification) of the annotation text.
+     * 
+     * @param justification The quadding of the text.
+     */
+    public final void setJustification(String justification)
+    {
+<span class="fc" id="L158">        int quadding = 0;</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">        if (&quot;centered&quot;.equals(justification))</span>
+        {
+<span class="nc" id="L161">            quadding = 1;</span>
+        }
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        else if (&quot;right&quot;.equals(justification))</span>
+        {
+<span class="nc" id="L165">            quadding = 2;</span>
+        }
+<span class="fc" id="L167">        annot.setInt(COSName.Q, quadding);</span>
+<span class="fc" id="L168">    }</span>
+
+    /**
+     * This will get the form of quadding (justification) of the annotation text.
+     * 
+     * @return The quadding of the text.
+     */
+    public String getJustification()
+    {
+<span class="nc" id="L177">        return &quot;&quot; + annot.getInt(COSName.Q, 0);</span>
+    }
+
+    /**
+     * This will set the clockwise rotation in degrees.
+     * 
+     * @param rotation The number of degrees of clockwise rotation.
+     */
+    public final void setRotation(int rotation)
+    {
+<span class="fc" id="L187">        annot.setInt(COSName.ROTATE, rotation);</span>
+<span class="fc" id="L188">    }</span>
+
+    /**
+     * This will get the clockwise rotation in degrees.
+     * 
+     * @return The number of degrees of clockwise rotation.
+     */
+    public String getRotation()
+    {
+<span class="nc" id="L197">        return annot.getString(COSName.ROTATE);</span>
+    }
+
+    /**
+     * Set the default appearance string.
+     *
+     * @param appearance The new default appearance string.
+     */
+    public final void setDefaultAppearance(String appearance)
+    {
+<span class="fc" id="L207">        annot.setString(COSName.DA, appearance);</span>
+<span class="fc" id="L208">    }</span>
+
+    /**
+     * Get the default appearance string.
+     *
+     * @return The default appearance of the annotation.
+     */
+    public String getDefaultAppearance()
+    {
+<span class="nc" id="L217">        return annot.getString(COSName.DA);</span>
+
+    }
+
+    /**
+     * Set the default style string.
+     *
+     * @param style The new default style string.
+     */
+    public final void setDefaultStyle(String style)
+    {
+<span class="fc" id="L228">        annot.setString(COSName.DS, style);</span>
+<span class="fc" id="L229">    }</span>
+
+    /**
+     * Get the default style string.
+     *
+     * @return The default style of the annotation.
+     */
+    public String getDefaultStyle()
+    {
+<span class="nc" id="L238">        return annot.getString(COSName.DS);</span>
+    }
+
+    /**
+     * This will set the fringe rectangle. Giving the difference between the annotations rectangle
+     * and where the drawing occurs. (To take account of any effects applied through the BE entry
+     * for example)
+     *
+     * @param fringe the fringe
+     */
+    public final void setFringe(PDRectangle fringe)
+    {
+<span class="fc" id="L250">        annot.setItem(COSName.RD, fringe);</span>
+<span class="fc" id="L251">    }</span>
+
+    /**
+     * This will get the fringe. Giving the difference between the annotations rectangle and where
+     * the drawing occurs. (To take account of any effects applied through the BE entry for example)
+     *
+     * @return the rectangle difference
+     */
+    public PDRectangle getFringe()
+    {
+<span class="nc" id="L261">        COSArray rd = annot.getCOSArray(COSName.RD);</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">        return rd != null ? new PDRectangle(rd) : null;</span>
+    }
+
+    /**
+     * This will set the line ending style.
+     *
+     * @param style The new style.
+     */
+    public final void setLineEndingStyle(String style)
+    {
+<span class="fc" id="L272">        annot.setName(COSName.LE, style);</span>
+<span class="fc" id="L273">    }</span>
+
+    /**
+     * This will retrieve the line ending style.
+     *
+     * @return The ending style for the start point.
+     */
+    public String getLineEndingStyle()
+    {
+<span class="nc" id="L282">        return annot.getNameAsString(COSName.LE);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

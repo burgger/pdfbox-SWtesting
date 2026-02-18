@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDViewerPreferences.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.viewerpreferences</a> &gt; <span class="el_source">PDViewerPreferences.java</span></div><h1>PDViewerPreferences.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.viewerpreferences;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * This is the document viewing preferences.
+ *
+ * @author Ben Litchfield
+ */
+public class PDViewerPreferences implements COSObjectable
+{
+    
+    /**
+     * Enumeration containing all valid values for NonFullScreenPageMode.
+     */
+<span class="nc" id="L35">    public enum NON_FULL_SCREEN_PAGE_MODE</span>
+    {
+        /**
+         *  From PDF Reference: &quot;Neither document outline nor thumbnail images visible&quot;.
+         */
+<span class="nc" id="L40">        UseNone,</span>
+        /**
+         * From PDF Reference: &quot;Document outline visible&quot;.
+         */
+<span class="nc" id="L44">        UseOutlines, </span>
+        /**
+         * From PDF Reference: &quot;Thumbnail images visible&quot;.
+         */
+<span class="nc" id="L48">        UseThumbs, </span>
+        /**
+         * From PDF Reference: &quot;Optional content group panel visible&quot;.
+         */
+<span class="nc" id="L52">        UseOC</span>
+    }
+
+    /**
+     * Enumeration containing all valid values for ReadingDirection.
+     */
+<span class="nc" id="L58">    public enum READING_DIRECTION</span>
+    {
+        /**
+         * left to right.
+         */
+<span class="nc" id="L63">        L2R,</span>
+        /**
+         * right to left.
+         */
+<span class="nc" id="L67">        R2L</span>
+    }
+
+    /**
+     * Enumeration containing all valid values for boundaries.
+     */
+<span class="nc" id="L73">    public enum BOUNDARY</span>
+    {
+        /**
+         * use media box as boundary.
+         */
+<span class="nc" id="L78">        MediaBox, </span>
+        /**
+         * use crop box as boundary.
+         */
+<span class="nc" id="L82">        CropBox, </span>
+        /**
+         * use bleed box as boundary.
+         */
+<span class="nc" id="L86">        BleedBox, </span>
+        /**
+         * use trim box as boundary.
+         */
+<span class="nc" id="L90">        TrimBox, </span>
+        /**
+         * use art box as boundary.
+         */
+<span class="nc" id="L94">        ArtBox</span>
+    }
+
+    /**
+     * Enumeration containing all valid values for duplex.
+     */
+<span class="nc" id="L100">    public enum DUPLEX</span>
+    {
+        /**
+         * simplex printing.
+         */
+<span class="nc" id="L105">        Simplex,</span>
+        /**
+         * duplex printing, flip at short edge.
+         */
+<span class="nc" id="L109">        DuplexFlipShortEdge, </span>
+        /**
+         * duplex printing, flip at long edge.
+         */
+<span class="nc" id="L113">        DuplexFlipLongEdge</span>
+    }
+
+    /**
+     * Enumeration containing all valid values for printscaling.
+     */
+<span class="nc" id="L119">    public enum PRINT_SCALING</span>
+    {
+        /**
+         * no scaling.
+         */
+<span class="nc" id="L124">        None, </span>
+        /**
+         * use app default.
+         */
+<span class="nc" id="L128">        AppDefault</span>
+    }
+
+    private final COSDictionary prefs;
+
+    /**
+     * Constructor.
+     */
+    public PDViewerPreferences()
+<span class="fc" id="L137">    {</span>
+<span class="fc" id="L138">        this.prefs = new COSDictionary();</span>
+<span class="fc" id="L139">    }</span>
+
+    /**
+     * Constructor that is used for a preexisting dictionary.
+     *
+     * @param dic The underlying dictionary.
+     */
+    public PDViewerPreferences( COSDictionary dic )
+<span class="fc" id="L147">    {</span>
+<span class="fc" id="L148">        prefs = dic;</span>
+<span class="fc" id="L149">    }</span>
+
+    /**
+     * This will get the underlying dictionary that this object wraps.
+     *
+     * @return The underlying info dictionary.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="fc" id="L159">        return prefs;</span>
+    }
+
+    /**
+     * Get the toolbar preference.
+     *
+     * @return the toolbar preference.
+     */
+    public boolean hideToolbar()
+    {
+<span class="fc" id="L169">        return prefs.getBoolean( COSName.HIDE_TOOLBAR, false );</span>
+    }
+
+    /**
+     * Set the toolbar preference.
+     *
+     * @param value Set the toolbar preference.
+     */
+    public void setHideToolbar( boolean value )
+    {
+<span class="nc" id="L179">        prefs.setBoolean( COSName.HIDE_TOOLBAR, value );</span>
+<span class="nc" id="L180">    }</span>
+
+    /**
+     * Get the menubar preference.
+     *
+     * @return the menubar preference.
+     */
+    public boolean hideMenubar()
+    {
+<span class="fc" id="L189">        return prefs.getBoolean( COSName.HIDE_MENUBAR, false );</span>
+    }
+
+    /**
+     * Set the menubar preference.
+     *
+     * @param value Set the menubar preference.
+     */
+    public void setHideMenubar( boolean value )
+    {
+<span class="nc" id="L199">        prefs.setBoolean( COSName.HIDE_MENUBAR, value );</span>
+<span class="nc" id="L200">    }</span>
+
+    /**
+     * Get the window UI preference.
+     *
+     * @return the window UI preference.
+     */
+    public boolean hideWindowUI()
+    {
+<span class="fc" id="L209">        return prefs.getBoolean( COSName.HIDE_WINDOWUI, false );</span>
+    }
+
+    /**
+     * Set the window UI preference.
+     *
+     * @param value Set the window UI preference.
+     */
+    public void setHideWindowUI( boolean value )
+    {
+<span class="nc" id="L219">        prefs.setBoolean( COSName.HIDE_WINDOWUI, value );</span>
+<span class="nc" id="L220">    }</span>
+
+    /**
+     * Get the fit window preference.
+     *
+     * @return the fit window preference.
+     */
+    public boolean fitWindow()
+    {
+<span class="fc" id="L229">        return prefs.getBoolean( COSName.FIT_WINDOW, false );</span>
+    }
+
+    /**
+     * Set the fit window preference.
+     *
+     * @param value Set the fit window preference.
+     */
+    public void setFitWindow( boolean value )
+    {
+<span class="nc" id="L239">        prefs.setBoolean( COSName.FIT_WINDOW, value );</span>
+<span class="nc" id="L240">    }</span>
+
+    /**
+     * Get the center window preference.
+     *
+     * @return the center window preference.
+     */
+    public boolean centerWindow()
+    {
+<span class="fc" id="L249">        return prefs.getBoolean( COSName.CENTER_WINDOW, false );</span>
+    }
+
+    /**
+     * Set the center window preference.
+     *
+     * @param value Set the center window preference.
+     */
+    public void setCenterWindow( boolean value )
+    {
+<span class="nc" id="L259">        prefs.setBoolean( COSName.CENTER_WINDOW, value );</span>
+<span class="nc" id="L260">    }</span>
+
+    /**
+     * Get the display doc title preference.
+     *
+     * @return the display doc title preference.
+     */
+    public boolean displayDocTitle()
+    {
+<span class="fc" id="L269">        return prefs.getBoolean( COSName.DISPLAY_DOC_TITLE, false );</span>
+    }
+
+    /**
+     * Set the display doc title preference.
+     *
+     * @param value Set the display doc title preference.
+     */
+    public void setDisplayDocTitle( boolean value )
+    {
+<span class="fc" id="L279">        prefs.setBoolean( COSName.DISPLAY_DOC_TITLE, value );</span>
+<span class="fc" id="L280">    }</span>
+
+    /**
+     * Get the non full screen page mode preference.
+     *
+     * @return the non full screen page mode preference.
+     */
+    public String getNonFullScreenPageMode()
+    {
+<span class="nc" id="L289">        return prefs.getNameAsString( COSName.NON_FULL_SCREEN_PAGE_MODE, </span>
+<span class="nc" id="L290">                NON_FULL_SCREEN_PAGE_MODE.UseNone.toString());</span>
+    }
+
+    /**
+     * Set the non full screen page mode preference.
+     *
+     * @param value Set the non full screen page mode preference.
+     */
+    public void setNonFullScreenPageMode( NON_FULL_SCREEN_PAGE_MODE value )
+    {
+<span class="nc" id="L300">        prefs.setName( COSName.NON_FULL_SCREEN_PAGE_MODE, value.toString() );</span>
+<span class="nc" id="L301">    }</span>
+
+    /**
+     * Get the reading direction preference.
+     *
+     * @return the reading direction preference.
+     */
+    public String getReadingDirection()
+    {
+<span class="nc" id="L310">        return prefs.getNameAsString( COSName.DIRECTION, READING_DIRECTION.L2R.toString());</span>
+    }
+
+    /**
+     * Set the reading direction preference.
+     *
+     * @param value Set the reading direction preference.
+     */
+    public void setReadingDirection( READING_DIRECTION value )
+    {
+<span class="nc" id="L320">        prefs.setName( COSName.DIRECTION, value.toString() );</span>
+<span class="nc" id="L321">    }</span>
+
+    /**
+     * Get the ViewArea preference.  See BOUNDARY enumeration.
+     *
+     * @return the ViewArea preference.
+     */
+    public String getViewArea()
+    {
+<span class="nc" id="L330">        return prefs.getNameAsString( COSName.VIEW_AREA, BOUNDARY.CropBox.toString());</span>
+    }
+
+    /**
+     * Set the ViewArea preference.  See BOUNDARY enumeration.
+     *
+     * @param value Set the ViewArea preference.
+     */
+    public void setViewArea( BOUNDARY value )
+    {
+<span class="nc" id="L340">        prefs.setName( COSName.VIEW_AREA, value.toString() );</span>
+<span class="nc" id="L341">    }</span>
+
+    /**
+     * Get the ViewClip preference.  See BOUNDARY enumeration.
+     *
+     * @return the ViewClip preference.
+     */
+    public String getViewClip()
+    {
+<span class="nc" id="L350">        return prefs.getNameAsString( COSName.VIEW_CLIP, BOUNDARY.CropBox.toString());</span>
+    }
+
+    /**
+     * Set the ViewClip preference.  See BOUNDARY enumeration.
+     *
+     * @param value Set the ViewClip preference.
+     */
+    public void setViewClip( BOUNDARY value )
+    {
+<span class="nc" id="L360">        prefs.setName( COSName.VIEW_CLIP, value.toString() );</span>
+<span class="nc" id="L361">    }</span>
+
+    /**
+     * Get the PrintArea preference.  See BOUNDARY enumeration.
+     *
+     * @return the PrintArea preference.
+     */
+    public String getPrintArea()
+    {
+<span class="nc" id="L370">        return prefs.getNameAsString( COSName.PRINT_AREA, BOUNDARY.CropBox.toString());</span>
+    }
+
+    /**
+     * Set the PrintArea preference.  See BOUNDARY enumeration.
+     *
+     * @param value Set the PrintArea preference.
+     */
+    public void setPrintArea( BOUNDARY value )
+    {
+<span class="nc" id="L380">        prefs.setName( COSName.PRINT_AREA, value.toString() );</span>
+<span class="nc" id="L381">    }</span>
+
+    /**
+     * Get the PrintClip preference.  See BOUNDARY enumeration.
+     *
+     * @return the PrintClip preference.
+     */
+    public String getPrintClip()
+    {
+<span class="nc" id="L390">        return prefs.getNameAsString( COSName.PRINT_CLIP, BOUNDARY.CropBox.toString());</span>
+    }
+    
+    /**
+     * Set the PrintClip preference.  See BOUNDARY enumeration.
+     *
+     * @param value Set the PrintClip preference.
+     */
+    public void setPrintClip( BOUNDARY value )
+    {
+<span class="nc" id="L400">        prefs.setName( COSName.PRINT_CLIP, value.toString() );</span>
+<span class="nc" id="L401">    }</span>
+    
+    /**
+     * Get the Duplex preference.  See DUPLEX enumeration.
+     *
+     * @return the Duplex preference.
+     */
+    public String getDuplex()
+    {
+<span class="nc" id="L410">        return prefs.getNameAsString( COSName.DUPLEX );</span>
+    }
+
+    /**
+     * Set the Duplex preference.  See DUPLEX enumeration.
+     *
+     * @param value Set the Duplex preference.
+     */
+    public void setDuplex( DUPLEX value )
+    {
+<span class="nc" id="L420">        prefs.setName( COSName.DUPLEX, value.toString() );</span>
+<span class="nc" id="L421">    }</span>
+    
+    /**
+     * Get the PrintScaling preference.  See PRINT_SCALING enumeration.
+     *
+     * @return the PrintScaling preference.
+     */
+    public String getPrintScaling()
+    {
+<span class="nc" id="L430">        return prefs.getNameAsString( COSName.PRINT_SCALING , PRINT_SCALING.AppDefault.toString());</span>
+    }
+
+    /**
+     * Set the PrintScaling preference.  See PRINT_SCALING enumeration.
+     *
+     * @param value Set the PrintScaling preference.
+     */
+    public void setPrintScaling( PRINT_SCALING value )
+    {
+<span class="nc" id="L440">        prefs.setName( COSName.PRINT_SCALING, value.toString() );</span>
+<span class="nc" id="L441">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

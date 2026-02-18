@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFTextStripperByArea.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.text</a> &gt; <span class="el_source">PDFTextStripperByArea.java</span></div><h1>PDFTextStripperByArea.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.text;
+
+import java.awt.geom.Rectangle2D;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.pdfbox.pdmodel.PDPage;
+
+/**
+ * This will extract text from a specified region in the PDF.
+ *
+ * @author Ben Litchfield
+ */
+public class PDFTextStripperByArea extends PDFTextStripper
+{
+<span class="fc" id="L35">    private final List&lt;String&gt; regions = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L36">    private final Map&lt;String, Rectangle2D&gt; regionArea = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L37">    private final Map&lt;String, ArrayList&lt;List&lt;TextPosition&gt;&gt;&gt; regionCharacterList</span>
+            = new HashMap&lt;&gt;();
+<span class="fc" id="L39">    private final Map&lt;String, StringWriter&gt; regionText = new HashMap&lt;&gt;();</span>
+
+    /**
+     * Constructor.
+     * @throws IOException If there is an error loading properties.
+     */
+    public PDFTextStripperByArea() throws IOException
+<span class="fc" id="L46">    {</span>
+<span class="fc" id="L47">        super.setShouldSeparateByBeads(false);</span>
+<span class="fc" id="L48">    }</span>
+
+    /**
+     * This method does nothing in this derived class, because beads and regions are incompatible. Beads are
+     * ignored when stripping by area.
+     *
+     * @param aShouldSeparateByBeads The new grouping of beads.
+     */
+    @Override
+    public final void setShouldSeparateByBeads(boolean aShouldSeparateByBeads)
+    {
+<span class="fc" id="L59">    }</span>
+
+   /**
+     * Add a new region to group text by.
+     *
+     * @param regionName The name of the region.
+     * @param rect The rectangle area to retrieve the text from. The y-coordinates are java
+     * coordinates (y == 0 is top), not PDF coordinates (y == 0 is bottom).
+     */
+    public void addRegion( String regionName, Rectangle2D rect )
+    {
+<span class="fc" id="L70">        regions.add( regionName );</span>
+<span class="fc" id="L71">        regionArea.put( regionName, rect );</span>
+<span class="fc" id="L72">    }</span>
+
+    /**
+     * Delete a region to group text by. If the region does not exist, this method does nothing.
+     *
+     * @param regionName The name of the region to delete.
+     */
+    public void removeRegion(String regionName)
+    {
+<span class="fc" id="L81">        regions.remove(regionName);</span>
+<span class="fc" id="L82">        regionArea.remove(regionName);</span>
+<span class="fc" id="L83">    }</span>
+    
+    /**
+     * Get the list of regions that have been setup.
+     *
+     * @return A list of java.lang.String objects to identify the region names.
+     */
+    public List&lt;String&gt; getRegions()
+    {
+<span class="fc" id="L92">        return regions;</span>
+    }
+
+    /**
+     * Get the text for the region, this should be called after extractRegions().
+     *
+     * @param regionName The name of the region to get the text from.
+     * @return The text that was identified in that region.
+     */
+    public String getTextForRegion( String regionName )
+    {
+<span class="fc" id="L103">        StringWriter text = regionText.get( regionName );</span>
+<span class="fc" id="L104">        return text.toString();</span>
+    }
+
+    /**
+     * Process the page to extract the region text.
+     *
+     * @param page The page to extract the regions from.
+     * @throws IOException If there is an error while extracting text.
+     */
+    public void extractRegions( PDPage page ) throws IOException
+    {
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        for (String regionName : regions)</span>
+        {
+<span class="fc" id="L117">            setStartPage(getCurrentPageNo());</span>
+<span class="fc" id="L118">            setEndPage(getCurrentPageNo());</span>
+            // reset the stored text for the region so this class can be reused.
+<span class="fc" id="L120">            ArrayList&lt;List&lt;TextPosition&gt;&gt; regionCharactersByArticle = new ArrayList&lt;&gt;(1);</span>
+<span class="fc" id="L121">            regionCharactersByArticle.add(new ArrayList&lt;&gt;());</span>
+<span class="fc" id="L122">            regionCharacterList.put( regionName, regionCharactersByArticle );</span>
+<span class="fc" id="L123">            regionText.put( regionName, new StringWriter() );</span>
+<span class="fc" id="L124">        }</span>
+        
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if( page.hasContents() )</span>
+        {
+<span class="fc" id="L128">            processPage( page );</span>
+        }
+<span class="fc" id="L130">    }</span>
+
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void processTextPosition(TextPosition text)
+    {
+<span class="fc" id="L139">        regionArea.forEach((key, rect) -&gt;</span>
+        {
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            if (rect.contains(text.getX(), text.getY()))</span>
+            {
+<span class="fc" id="L143">                charactersByArticle = regionCharacterList.get(key);</span>
+<span class="fc" id="L144">                super.processTextPosition(text);</span>
+            }
+<span class="fc" id="L146">        });</span>
+<span class="fc" id="L147">    }</span>
+
+    
+    /**
+     * This will print the processed page text to the output stream.
+     *
+     * @throws IOException If there is an error writing the text.
+     */
+    @Override
+    protected void writePage() throws IOException
+    {
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        for (String region : regionArea.keySet())</span>
+        {
+<span class="fc" id="L160">            charactersByArticle = regionCharacterList.get( region );</span>
+<span class="fc" id="L161">            output = regionText.get( region );</span>
+<span class="fc" id="L162">            super.writePage();</span>
+<span class="fc" id="L163">        }</span>
+<span class="fc" id="L164">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

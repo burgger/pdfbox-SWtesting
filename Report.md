@@ -413,3 +413,18 @@ behavior alone, but it becomes clear when we look at CFG
 branches and coverage results.
 
 ### 5.2 Baseline Structural Coverage
+
+At the project level, JaCoCo
+(<https://github.com/burgger/pdfbox-SWtesting/blob/trunk/jacoco%20Baseline/index.html>)
+reports 62% instruction coverage(68,767 missed out of 182,134
+total instructions) and 53% branch coverage (7,615 missed out of
+16,363 total branches). The project has 39,064 total lines, with 15,399
+lines missed (about 61% line coverage). It also has 7,058 total methods,
+with 3,051 methods missed (about 57% method coverage). 
+
+This baseline shows that many branches and methods are still not
+executed by tests. In particular, recovery paths and error-handling
+code are likely to be missed, because normal tests mostly use
+well-formed PDFs and common workflows.
+
+https://github.com/burgger/pdfbox-SWtesting/blob/trunk/jacoco%20Baseline/org.apache.pdfbox.pdfparser/BruteForceParser.java.html

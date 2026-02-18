@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDAttributeObject.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure</a> &gt; <span class="el_source">PDAttributeObject.java</span></div><h1>PDAttributeObject.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure;
+
+import java.util.StringJoiner;
+
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.PDDictionaryWrapper;
+import org.apache.pdfbox.pdmodel.documentinterchange.taggedpdf.PDExportFormatAttributeObject;
+import org.apache.pdfbox.pdmodel.documentinterchange.taggedpdf.PDLayoutAttributeObject;
+import org.apache.pdfbox.pdmodel.documentinterchange.taggedpdf.PDListAttributeObject;
+import org.apache.pdfbox.pdmodel.documentinterchange.taggedpdf.PDPrintFieldAttributeObject;
+import org.apache.pdfbox.pdmodel.documentinterchange.taggedpdf.PDTableAttributeObject;
+
+/**
+ * An attribute object.
+ *
+ * @author Johannes Koch
+ *
+ */
+public abstract class PDAttributeObject extends PDDictionaryWrapper
+{
+
+    /**
+     * Default constructor.
+     */
+    protected PDAttributeObject()
+<span class="nc" id="L44">    {</span>
+<span class="nc" id="L45">    }</span>
+
+    /**
+     * Creates a new attribute object with a given dictionary.
+     * 
+     * @param dictionary the dictionary
+     */
+    protected PDAttributeObject(COSDictionary dictionary)
+    {
+<span class="fc" id="L54">        super(dictionary);</span>
+<span class="fc" id="L55">    }</span>
+
+    /**
+     * Creates an attribute object.
+     * 
+     * @param dictionary the dictionary
+     * @return the attribute object
+     */
+    public static PDAttributeObject create(COSDictionary dictionary)
+    {
+<span class="fc" id="L65">        String owner = dictionary.getNameAsString(COSName.O);</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (owner != null)</span>
+        {
+<span class="pc bpc" id="L68" title="4 of 7 branches missed.">            switch (owner)</span>
+            {
+                case PDUserAttributeObject.OWNER_USER_PROPERTIES:
+<span class="nc" id="L71">                    return new PDUserAttributeObject(dictionary);</span>
+                case PDListAttributeObject.OWNER_LIST:
+<span class="nc" id="L73">                    return new PDListAttributeObject(dictionary);</span>
+                case PDPrintFieldAttributeObject.OWNER_PRINT_FIELD:
+<span class="nc" id="L75">                    return new PDPrintFieldAttributeObject(dictionary);</span>
+                case PDTableAttributeObject.OWNER_TABLE:
+<span class="fc" id="L77">                    return new PDTableAttributeObject(dictionary);</span>
+                case PDLayoutAttributeObject.OWNER_LAYOUT:
+<span class="fc" id="L79">                    return new PDLayoutAttributeObject(dictionary);</span>
+                case PDExportFormatAttributeObject.OWNER_XML_1_00:
+                case PDExportFormatAttributeObject.OWNER_HTML_3_20:
+                case PDExportFormatAttributeObject.OWNER_HTML_4_01:
+                case PDExportFormatAttributeObject.OWNER_OEB_1_00:
+                case PDExportFormatAttributeObject.OWNER_RTF_1_05:
+                case PDExportFormatAttributeObject.OWNER_CSS_1_00:
+                case PDExportFormatAttributeObject.OWNER_CSS_2_00:
+<span class="nc" id="L87">                    return new PDExportFormatAttributeObject(dictionary);</span>
+                default:
+                    break;
+            }
+        }
+<span class="fc" id="L92">        return new PDDefaultAttributeObject(dictionary);</span>
+    }
+
+    private PDStructureElement structureElement;
+
+    /**
+     * Gets the structure element.
+     * 
+     * @return the structure element
+     */
+    private PDStructureElement getStructureElement()
+    {
+<span class="nc" id="L104">        return this.structureElement;</span>
+    }
+
+    /**
+     * Sets the structure element.
+     * 
+     * @param structureElement the structure element
+     */
+    protected void setStructureElement(PDStructureElement structureElement)
+    {
+<span class="fc" id="L114">        this.structureElement = structureElement;</span>
+<span class="fc" id="L115">    }</span>
+
+    /**
+     * Returns the owner of the attributes.
+     * 
+     * @return the owner of the attributes
+     */
+    public String getOwner()
+    {
+<span class="fc" id="L124">        return this.getCOSObject().getNameAsString(COSName.O);</span>
+    }
+
+    /**
+     * Sets the owner of the attributes.
+     * 
+     * @param owner the owner of the attributes
+     */
+    protected void setOwner(String owner)
+    {
+<span class="nc" id="L134">        this.getCOSObject().setName(COSName.O, owner);</span>
+<span class="nc" id="L135">    }</span>
+
+    /**
+     * Detects whether there are no properties in the attribute object.
+     * 
+     * @return &lt;code&gt;true&lt;/code&gt; if the attribute object is empty,
+     *  &lt;code&gt;false&lt;/code&gt; otherwise
+     */
+    public boolean isEmpty()
+    {
+        // only entry is the owner?
+<span class="nc bnc" id="L146" title="All 4 branches missed.">        return (this.getCOSObject().size() == 1) &amp;&amp; (this.getOwner() != null);</span>
+    }
+
+
+    /**
+     * Notifies the attribute object change listeners if the attribute is changed.
+     * 
+     * @param oldBase old value
+     * @param newBase new value
+     */
+    protected void potentiallyNotifyChanged(COSBase oldBase, COSBase newBase)
+    {
+<span class="nc bnc" id="L158" title="All 2 branches missed.">        if (this.isValueChanged(oldBase, newBase))</span>
+        {
+<span class="nc" id="L160">            this.notifyChanged();</span>
+        }
+<span class="nc" id="L162">    }</span>
+
+    /**
+     * Is the value changed?
+     * 
+     * @param oldValue old value
+     * @param newValue new value
+     * @return &lt;code&gt;true&lt;/code&gt; if the value is changed, &lt;code&gt;false&lt;/code&gt;
+     * otherwise
+     */
+    private boolean isValueChanged(COSBase oldValue, COSBase newValue)
+    {
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        if (oldValue == null)</span>
+        {
+<span class="nc bnc" id="L176" title="All 2 branches missed.">            return newValue != null;</span>
+        }
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        return !oldValue.equals(newValue);</span>
+    }
+
+    /**
+     * Notifies the attribute object change listeners about a change in this
+     * attribute object.
+     */
+    protected void notifyChanged()
+    {
+<span class="nc bnc" id="L187" title="All 2 branches missed.">        if (this.getStructureElement() != null)</span>
+        {
+<span class="nc" id="L189">            this.getStructureElement().attributeChanged(this);</span>
+        }
+<span class="nc" id="L191">    }</span>
+
+    @Override
+    public String toString()
+    {
+<span class="fc" id="L196">        return &quot;O=&quot; + this.getOwner();</span>
+    }
+
+    /**
+     * Creates a String representation of an Object array.
+     * 
+     * @param array the Object array
+     * @return the String representation
+     */
+    protected static String arrayToString(Object[] array)
+    {
+<span class="nc" id="L207">        StringJoiner sj = new StringJoiner(&quot;, &quot;, &quot;[&quot;, &quot;]&quot;);</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">        for (Object o : array)</span>
+        {
+<span class="nc" id="L210">            sj.add(o.toString());</span>
+        }
+<span class="nc" id="L212">        return sj.toString();</span>
+    }
+
+    /**
+     * Creates a String representation of a float array.
+     * 
+     * @param array the float array
+     * @return the String representation
+     */
+    protected static String arrayToString(float[] array)
+    {
+<span class="nc" id="L223">        StringJoiner sj = new StringJoiner(&quot;, &quot;, &quot;[&quot;, &quot;]&quot;);</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">        for (float f : array)</span>
+        {
+<span class="nc" id="L226">            sj.add(Float.toString(f));</span>
+        }
+<span class="nc" id="L228">        return sj.toString();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

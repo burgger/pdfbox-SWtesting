@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>COSObject.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.cos</a> &gt; <span class="el_source">COSObject.java</span></div><h1>COSObject.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.cos;
+
+import java.io.IOException;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+/**
+ * This class represents a PDF object.
+ *
+ * @author Ben Litchfield
+ * 
+ */
+public class COSObject extends COSBase implements COSUpdateInfo
+{
+    private COSBase baseObject;
+    private ICOSParser parser;
+<span class="pc" id="L34">    private boolean isDereferenced = false;</span>
+    private final COSUpdateState updateState;
+    
+<span class="fc" id="L37">    private static final Logger LOG = LogManager.getLogger(COSObject.class);</span>
+
+    /**
+     * Constructor.
+     *
+     * @param object The object that this encapsulates.
+     *
+     */
+    public COSObject(COSBase object)
+<span class="fc" id="L46">    {</span>
+<span class="fc" id="L47">        updateState = new COSUpdateState(this);</span>
+<span class="fc" id="L48">        baseObject = object;</span>
+<span class="fc" id="L49">        isDereferenced = true;</span>
+<span class="fc" id="L50">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param object The object that this encapsulates.
+     * @param objectKey The COSObjectKey of the encapsulated object
+     */
+    public COSObject(COSBase object, COSObjectKey objectKey)
+    {
+<span class="fc" id="L60">        this(objectKey, null);</span>
+<span class="fc" id="L61">        baseObject = object;</span>
+<span class="fc" id="L62">        isDereferenced = true;</span>
+<span class="fc" id="L63">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param object The object that this encapsulates.
+     * @param parser The parser to be used to load the object on demand
+     *
+     */
+    public COSObject(COSBase object, ICOSParser parser)
+<span class="nc" id="L73">    {</span>
+<span class="nc" id="L74">        updateState = new COSUpdateState(this);</span>
+<span class="nc" id="L75">        baseObject = object;</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">        isDereferenced = object != null;</span>
+<span class="nc" id="L77">        this.parser = parser;</span>
+<span class="nc" id="L78">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param key The object number of the encapsulated object.
+     * @param parser The parser to be used to load the object on demand
+     *
+     */
+    public COSObject(COSObjectKey key, ICOSParser parser)
+<span class="fc" id="L88">    {</span>
+<span class="fc" id="L89">        updateState = new COSUpdateState(this);</span>
+<span class="fc" id="L90">        this.parser = parser;</span>
+<span class="fc" id="L91">        setKey(key);</span>
+<span class="fc" id="L92">    }</span>
+
+    /**
+     * Indicates if the referenced object is present or not.
+     * 
+     * @return true if the indirect object is dereferenced
+     */
+    public boolean isObjectNull()
+    {
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        return baseObject == null;</span>
+    }
+
+    /**
+     * This will get the object that this object encapsulates.
+     *
+     * @return The encapsulated object.
+     */
+    public COSBase getObject()
+    {
+<span class="pc bpc" id="L111" title="1 of 4 branches missed.">        if (!isDereferenced &amp;&amp; parser != null)</span>
+        {
+            try
+            {
+                // mark as dereferenced to avoid endless recursions
+<span class="fc" id="L116">                isDereferenced = true;</span>
+<span class="fc" id="L117">                baseObject = parser.dereferenceCOSObject(this);</span>
+<span class="fc" id="L118">                getUpdateState().dereferenceChild(baseObject);</span>
+            }
+<span class="fc" id="L120">            catch (IOException e)</span>
+            {
+<span class="fc" id="L122">                LOG.error(() -&gt; &quot;Can't dereference &quot; + this, e);</span>
+            }
+            finally
+            {
+<span class="fc" id="L126">                parser = null;</span>
+            }
+        }
+<span class="fc" id="L129">        return baseObject;</span>
+    }
+
+    /**
+     * Sets the referenced object to COSNull and removes the initially assigned parser.
+     */
+    public final void setToNull()
+    {
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        if(baseObject != null)</span>
+        {
+<span class="nc" id="L139">            getUpdateState().update();</span>
+        }
+<span class="fc" id="L141">        baseObject = COSNull.NULL;</span>
+<span class="fc" id="L142">        parser = null;</span>
+<span class="fc" id="L143">    }</span>
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+<span class="fc" id="L151">        return &quot;COSObject{&quot; + getKey() + &quot;}&quot;;</span>
+    }
+
+    /**
+     * visitor pattern double dispatch method.
+     *
+     * @param visitor The object to notify when visiting this object.
+     * @throws IOException If an error occurs while visiting this object.
+     */
+    @Override
+    public void accept( ICOSVisitor visitor ) throws IOException
+    {
+<span class="fc" id="L163">        visitor.visitFromObject(this);</span>
+<span class="fc" id="L164">    }</span>
+
+    /**
+     * Returns {@code true}, if the hereby referenced {@link COSBase} has already been parsed and loaded.
+     *
+     * @return {@code true}, if the hereby referenced {@link COSBase} has already been parsed and loaded.
+     */
+    public boolean isDereferenced()
+    {
+<span class="fc" id="L173">        return isDereferenced;</span>
+    }
+    
+    /**
+     * Returns the current {@link COSUpdateState} of this {@link COSObject}.
+     *
+     * @return The current {@link COSUpdateState} of this {@link COSObject}.
+     * @see COSUpdateState
+     */
+    @Override
+    public COSUpdateState getUpdateState()
+    {
+<span class="fc" id="L185">        return updateState;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

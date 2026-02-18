@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>COSFilterInputStream.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.digitalsignature</a> &gt; <span class="el_source">COSFilterInputStream.java</span></div><h1>COSFilterInputStream.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.digitalsignature;
+
+import java.io.ByteArrayInputStream;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+
+/**
+ * A filtered stream that includes the bytes that are in the (begin,length) intervals passed in the
+ * constructor.
+ *
+ * @author boix_jor
+ *
+ */
+public class COSFilterInputStream extends FilterInputStream
+{
+    private int[][] ranges;
+    private int range;
+<span class="fc" id="L36">    private long position = 0;</span>
+
+    public COSFilterInputStream(InputStream in, int[] byteRange)
+    {
+<span class="fc" id="L40">        super(in);</span>
+<span class="fc" id="L41">        calculateRanges(byteRange);</span>
+<span class="fc" id="L42">    }</span>
+
+    public COSFilterInputStream(byte[] in, int[] byteRange)
+    {
+<span class="nc" id="L46">        this(new ByteArrayInputStream(in), byteRange);</span>
+<span class="nc" id="L47">    }</span>
+
+    @Override
+    public int read() throws IOException
+    {
+<span class="nc bnc" id="L52" title="All 6 branches missed.">        if ((this.range == -1 || getRemaining() &lt;= 0) &amp;&amp; !nextRange())</span>
+        {
+<span class="nc" id="L54">            return -1; // EOF</span>
+        }
+<span class="nc" id="L56">        int result = super.read();</span>
+<span class="nc" id="L57">        this.position++;</span>
+<span class="nc" id="L58">        return result;</span>
+    }
+
+    @Override
+    public int read(byte[] b) throws IOException
+    {
+<span class="fc" id="L64">        return read(b, 0, b.length);</span>
+    }
+
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException
+    {
+<span class="pc bpc" id="L70" title="1 of 6 branches missed.">        if ((this.range == -1 || getRemaining() &lt;= 0) &amp;&amp; !nextRange())</span>
+        {
+<span class="fc" id="L72">            return -1; // EOF</span>
+        }
+<span class="fc" id="L74">        int bytesRead = super.read(b, off, (int) Math.min(len, getRemaining()));</span>
+<span class="fc" id="L75">        this.position += bytesRead;</span>
+<span class="fc" id="L76">        return bytesRead;</span>
+    }
+
+    public byte[] toByteArray() throws IOException
+    {
+<span class="nc" id="L81">        return readAllBytes();</span>
+    }
+
+    private void calculateRanges(int[] byteRange)
+    {
+<span class="fc" id="L86">        this.ranges = new int[byteRange.length / 2][];</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        for (int i = 0; i &lt; byteRange.length / 2; i++)</span>
+        {
+<span class="fc" id="L89">            this.ranges[i] = new int[] { byteRange[i * 2], byteRange[i * 2] + byteRange[i * 2 + 1] };</span>
+        }
+<span class="fc" id="L91">        this.range = -1;</span>
+<span class="fc" id="L92">    }</span>
+
+    private long getRemaining()
+    {
+<span class="fc" id="L96">        return this.ranges[this.range][1] - this.position;</span>
+    }
+
+    private boolean nextRange() throws IOException
+    {
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        if (this.range + 1 &lt; this.ranges.length)</span>
+        {
+<span class="fc" id="L103">            this.range++;</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            while (this.position &lt; this.ranges[this.range][0])</span>
+            {
+<span class="fc" id="L106">                long skipped = super.skip(this.ranges[this.range][0] - this.position);</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">                if (skipped == 0)</span>
+                {
+<span class="nc" id="L109">                    throw new IOException(&quot;FilterInputStream.skip() returns 0, range: &quot; +</span>
+<span class="nc" id="L110">                            Arrays.toString(this.ranges[this.range]));</span>
+                }
+<span class="fc" id="L112">                this.position += skipped;</span>
+<span class="fc" id="L113">            }</span>
+<span class="fc" id="L114">            return true;</span>
+        }
+        else
+        {
+<span class="fc" id="L118">            return false;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

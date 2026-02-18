@@ -1,0 +1,1041 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FDFAnnotation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.fdf</a> &gt; <span class="el_source">FDFAnnotation.java</span></div><h1>FDFAnnotation.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.fdf;
+
+import java.awt.Color;
+import java.io.IOException;
+import java.util.Calendar;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDBorderEffectDictionary;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictionary;
+import org.apache.pdfbox.util.DateConverter;
+import org.w3c.dom.CDATASection;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Text;
+
+/**
+ * This represents an FDF annotation that is part of the FDF document.
+ *
+ * @author Ben Litchfield
+ * @author Johanneke Lamberink
+ * 
+ * */
+public abstract class FDFAnnotation implements COSObjectable
+{
+<span class="fc" id="L56">    private static final Logger LOG = LogManager.getLogger(FDFAnnotation.class);</span>
+
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_INVISIBLE = 1;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_HIDDEN = 1 &lt;&lt; 1;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_PRINTED = 1 &lt;&lt; 2;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_NO_ZOOM = 1 &lt;&lt; 3;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_NO_ROTATE = 1 &lt;&lt; 4;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_NO_VIEW = 1 &lt;&lt; 5;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_READ_ONLY = 1 &lt;&lt; 6;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_LOCKED = 1 &lt;&lt; 7;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_TOGGLE_NO_VIEW = 1 &lt;&lt; 8;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_LOCKED_CONTENTS = 1 &lt;&lt; 9;
+
+    /**
+     * Annotation dictionary.
+     */
+    protected final COSDictionary annot;
+
+    /**
+     * Default constructor.
+     */
+    protected FDFAnnotation()
+<span class="fc" id="L108">    {</span>
+<span class="fc" id="L109">        annot = new COSDictionary();</span>
+<span class="fc" id="L110">        annot.setItem(COSName.TYPE, COSName.ANNOT);</span>
+<span class="fc" id="L111">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param a The FDF annotation.
+     */
+    protected FDFAnnotation(COSDictionary a)
+<span class="fc" id="L119">    {</span>
+<span class="fc" id="L120">        annot = a;</span>
+<span class="fc" id="L121">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param element An XFDF element.
+     *
+     * @throws IOException If there is an error extracting data from the element.
+     */
+    protected FDFAnnotation(Element element) throws IOException
+    {
+<span class="fc" id="L132">        this();</span>
+
+<span class="fc" id="L134">        String page = element.getAttribute(&quot;page&quot;);</span>
+<span class="pc bpc" id="L135" title="2 of 4 branches missed.">        if (page == null || page.isEmpty())</span>
+        {
+<span class="nc" id="L137">            throw new IOException(&quot;Error: missing required attribute 'page'&quot;);</span>
+        }
+<span class="fc" id="L139">        setPage(Integer.parseInt(page));</span>
+
+<span class="fc" id="L141">        String color = element.getAttribute(&quot;color&quot;);</span>
+<span class="pc bpc" id="L142" title="2 of 6 branches missed.">        if (color != null &amp;&amp; color.length() == 7 &amp;&amp; color.charAt(0) == '#')</span>
+        {
+<span class="fc" id="L144">            int colorValue = Integer.parseInt(color.substring(1, 7), 16);</span>
+<span class="fc" id="L145">            setColor(new Color(colorValue));</span>
+        }
+
+<span class="fc" id="L148">        setDate(element.getAttribute(&quot;date&quot;));</span>
+
+<span class="fc" id="L150">        String flags = element.getAttribute(&quot;flags&quot;);</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">        if (flags != null)</span>
+        {
+<span class="fc" id="L153">            String[] flagTokens = flags.split(&quot;,&quot;);</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            for (String flagToken : flagTokens)</span>
+            {
+<span class="pc bpc" id="L156" title="8 of 10 branches missed.">                switch (flagToken)</span>
+                {
+                    case &quot;invisible&quot;:
+<span class="nc" id="L159">                        setInvisible(true);</span>
+<span class="nc" id="L160">                        break;</span>
+                    case &quot;hidden&quot;:
+<span class="nc" id="L162">                        setHidden(true);</span>
+<span class="nc" id="L163">                        break;</span>
+                    case &quot;print&quot;:
+<span class="fc" id="L165">                        setPrinted(true);</span>
+<span class="fc" id="L166">                        break;</span>
+                    case &quot;nozoom&quot;:
+<span class="nc" id="L168">                        setNoZoom(true);</span>
+<span class="nc" id="L169">                        break;</span>
+                    case &quot;norotate&quot;:
+<span class="nc" id="L171">                        setNoRotate(true);</span>
+<span class="nc" id="L172">                        break;</span>
+                    case &quot;noview&quot;:
+<span class="nc" id="L174">                        setNoView(true);</span>
+<span class="nc" id="L175">                        break;</span>
+                    case &quot;readonly&quot;:
+<span class="nc" id="L177">                        setReadOnly(true);</span>
+<span class="nc" id="L178">                        break;</span>
+                    case &quot;locked&quot;:
+<span class="nc" id="L180">                        setLocked(true);</span>
+<span class="nc" id="L181">                        break;</span>
+                    case &quot;togglenoview&quot;:
+<span class="nc" id="L183">                        setToggleNoView(true);</span>
+<span class="nc" id="L184">                        break;</span>
+                    default:
+                        break;
+                }
+            }
+        }
+
+<span class="fc" id="L191">        setName(element.getAttribute(&quot;name&quot;));</span>
+
+<span class="fc" id="L193">        String rect = element.getAttribute(&quot;rect&quot;);</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        if (rect == null)</span>
+        {
+<span class="nc" id="L196">            throw new IOException(&quot;Error: missing attribute 'rect'&quot;);</span>
+        }
+<span class="fc" id="L198">        float[] values = parseRectangleAttributes(</span>
+                rect, &quot;Error: wrong amount of numbers in attribute 'rect'&quot;);
+<span class="fc" id="L200">        setRectangle(new PDRectangle(COSArray.of(values)));</span>
+
+<span class="fc" id="L202">        setTitle(element.getAttribute(&quot;title&quot;));</span>
+
+        /*
+         * Set the markup annotation attributes
+         */
+<span class="fc" id="L207">        setCreationDate(DateConverter.toCalendar(element.getAttribute(&quot;creationdate&quot;)));</span>
+<span class="fc" id="L208">        String opac = element.getAttribute(&quot;opacity&quot;);</span>
+<span class="pc bpc" id="L209" title="2 of 4 branches missed.">        if (opac != null &amp;&amp; !opac.isEmpty())</span>
+        {
+<span class="fc" id="L211">            setOpacity(Float.parseFloat(opac));</span>
+        }
+<span class="fc" id="L213">        setSubject(element.getAttribute(&quot;subject&quot;));</span>
+
+<span class="fc" id="L215">        String intent = element.getAttribute(&quot;intent&quot;);</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        if (intent.isEmpty())</span>
+        {
+            // not conforming to spec, but qoppa produces it and Adobe accepts it
+<span class="fc" id="L219">            intent = element.getAttribute(&quot;IT&quot;);</span>
+        }
+<span class="fc bfc" id="L221" title="All 2 branches covered.">        if (!intent.isEmpty())</span>
+        {
+<span class="fc" id="L223">            setIntent(intent);</span>
+        }
+
+<span class="fc" id="L226">        XPath xpath = XPathFactory.newInstance().newXPath();</span>
+        try
+        {
+<span class="fc" id="L229">            setContents(xpath.evaluate(&quot;contents[1]&quot;, element));</span>
+        }
+<span class="nc" id="L231">        catch (XPathExpressionException e)</span>
+        {
+<span class="nc" id="L233">            LOG.debug(&quot;Error while evaluating XPath expression for richtext contents&quot;, e);</span>
+<span class="fc" id="L234">        }</span>
+
+        try
+        {
+<span class="fc" id="L238">            Node richContents = (Node) xpath.evaluate(&quot;contents-richtext[1]&quot;, element,</span>
+                    XPathConstants.NODE);
+<span class="fc bfc" id="L240" title="All 2 branches covered.">            if (richContents != null)</span>
+            {
+<span class="fc" id="L242">                setRichContents(richContentsToString(richContents, true));</span>
+<span class="fc" id="L243">                setContents(richContents.getTextContent().trim());</span>
+            }
+        }
+<span class="nc" id="L246">        catch (XPathExpressionException e)</span>
+        {
+<span class="nc" id="L248">            LOG.debug(&quot;Error while evaluating XPath expression for richtext contents&quot;, e);</span>
+<span class="fc" id="L249">        }</span>
+
+<span class="fc" id="L251">        PDBorderStyleDictionary borderStyle = new PDBorderStyleDictionary();</span>
+<span class="fc" id="L252">        String width = element.getAttribute(&quot;width&quot;);</span>
+<span class="pc bpc" id="L253" title="1 of 4 branches missed.">        if (width != null &amp;&amp; !width.isEmpty())</span>
+        {
+<span class="fc" id="L255">            borderStyle.setWidth(Float.parseFloat(width));</span>
+        }
+<span class="fc bfc" id="L257" title="All 2 branches covered.">        if (borderStyle.getWidth() &gt; 0)</span>
+        {
+<span class="fc" id="L259">            String style = element.getAttribute(&quot;style&quot;);</span>
+<span class="pc bpc" id="L260" title="1 of 4 branches missed.">            if (style != null &amp;&amp; !style.isEmpty())</span>
+            {
+<span class="pc bpc" id="L262" title="5 of 6 branches missed.">                switch (style)</span>
+                {
+                    case &quot;dash&quot;:
+<span class="nc" id="L265">                        borderStyle.setStyle(PDBorderStyleDictionary.STYLE_DASHED);</span>
+<span class="nc" id="L266">                        break;</span>
+                    case &quot;bevelled&quot;:
+<span class="nc" id="L268">                        borderStyle.setStyle(PDBorderStyleDictionary.STYLE_BEVELED);</span>
+<span class="nc" id="L269">                        break;</span>
+                    case &quot;inset&quot;:
+<span class="nc" id="L271">                        borderStyle.setStyle(PDBorderStyleDictionary.STYLE_INSET);</span>
+<span class="nc" id="L272">                        break;</span>
+                    case &quot;underline&quot;:
+<span class="nc" id="L274">                        borderStyle.setStyle(PDBorderStyleDictionary.STYLE_SOLID);</span>
+<span class="nc" id="L275">                        break;</span>
+                    case &quot;cloudy&quot;:
+<span class="nc" id="L277">                        borderStyle.setStyle(PDBorderStyleDictionary.STYLE_SOLID);</span>
+<span class="nc" id="L278">                        PDBorderEffectDictionary borderEffect = new PDBorderEffectDictionary();</span>
+<span class="nc" id="L279">                        borderEffect.setStyle(PDBorderEffectDictionary.STYLE_CLOUDY);</span>
+<span class="nc" id="L280">                        String intensity = element.getAttribute(&quot;intensity&quot;);</span>
+<span class="nc bnc" id="L281" title="All 4 branches missed.">                        if (intensity != null &amp;&amp; !intensity.isEmpty())</span>
+                        {
+<span class="nc" id="L283">                            borderEffect.setIntensity(Float.parseFloat(element</span>
+<span class="nc" id="L284">                                    .getAttribute(&quot;intensity&quot;)));</span>
+                        }
+<span class="nc" id="L286">                        setBorderEffect(borderEffect);</span>
+<span class="nc" id="L287">                        break;</span>
+                    default:
+<span class="fc" id="L289">                        borderStyle.setStyle(PDBorderStyleDictionary.STYLE_SOLID);</span>
+                        break;
+                }
+            }
+<span class="fc" id="L293">            String dashes = element.getAttribute(&quot;dashes&quot;);</span>
+<span class="pc bpc" id="L294" title="2 of 4 branches missed.">            if (dashes != null &amp;&amp; !dashes.isEmpty())</span>
+            {
+<span class="nc" id="L296">                String[] dashesValues = dashes.split(&quot;,&quot;);</span>
+<span class="nc" id="L297">                COSArray dashPattern = new COSArray();</span>
+<span class="nc bnc" id="L298" title="All 2 branches missed.">                for (String dashesValue : dashesValues)</span>
+                {
+<span class="nc" id="L300">                    dashPattern.add(COSNumber.get(dashesValue));</span>
+                }
+<span class="nc" id="L302">                borderStyle.setDashStyle(dashPattern);</span>
+            }
+        }
+<span class="fc" id="L305">        setBorderStyle(borderStyle);</span>
+<span class="fc" id="L306">    }</span>
+
+    final float[] parseRectangleAttributes(String rect, String errorMessage) throws IOException
+    {
+<span class="fc" id="L310">        String[] rectValues = rect.split(&quot;,&quot;);</span>
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">        if (rectValues.length != 4)</span>
+        {
+<span class="nc" id="L313">            throw new IOException(errorMessage);</span>
+        }
+<span class="fc" id="L315">        float[] values = new float[4];</span>
+<span class="fc" id="L316">        values[0] = Float.parseFloat(rectValues[0]);</span>
+<span class="fc" id="L317">        values[1] = Float.parseFloat(rectValues[1]);</span>
+<span class="fc" id="L318">        values[2] = Float.parseFloat(rectValues[2]);</span>
+<span class="fc" id="L319">        values[3] = Float.parseFloat(rectValues[3]);</span>
+<span class="fc" id="L320">        return values;</span>
+    }
+
+    final float[] parseFloats(String[] srcValues)
+    {
+<span class="fc" id="L325">        float[] values = new float[srcValues.length];</span>
+<span class="fc bfc" id="L326" title="All 2 branches covered.">        for (int i = 0; i &lt; srcValues.length; i++)</span>
+        {
+<span class="fc" id="L328">            values[i] = Float.parseFloat(srcValues[i]);</span>
+        }
+<span class="fc" id="L330">        return values;</span>
+    }
+
+    final PDRectangle createRectangleFromAttributes(String rect, String errorMessage) throws IOException
+    {
+<span class="fc" id="L335">        String[] rectValues = rect.split(&quot;,&quot;);</span>
+<span class="pc bpc" id="L336" title="1 of 2 branches missed.">        if (rectValues.length != 4)</span>
+        {
+<span class="nc" id="L338">            throw new IOException(errorMessage);</span>
+        }
+<span class="fc" id="L340">        PDRectangle rectangle = new PDRectangle();</span>
+<span class="fc" id="L341">        rectangle.setLowerLeftX(Float.parseFloat(rectValues[0]));</span>
+<span class="fc" id="L342">        rectangle.setLowerLeftY(Float.parseFloat(rectValues[1]));</span>
+<span class="fc" id="L343">        rectangle.setUpperRightX(Float.parseFloat(rectValues[2]));</span>
+<span class="fc" id="L344">        rectangle.setUpperRightY(Float.parseFloat(rectValues[3]));</span>
+
+<span class="fc" id="L346">        return rectangle;</span>
+    }
+
+    /**
+     * Create the correct FDFAnnotation.
+     *
+     * @param fdfDic The FDF dictionary.
+     *
+     * @return A newly created FDFAnnotation
+     */
+    public static FDFAnnotation create(COSDictionary fdfDic)
+    {
+<span class="fc" id="L358">        FDFAnnotation retval = null;</span>
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">        if (fdfDic != null)</span>
+        {
+<span class="fc" id="L361">            String fdfDicName = fdfDic.getNameAsString(COSName.SUBTYPE);</span>
+<span class="fc bfc" id="L362" title="All 2 branches covered.">            if (FDFAnnotationText.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="fc" id="L364">                retval = new FDFAnnotationText(fdfDic);</span>
+            }
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">            else if (FDFAnnotationCaret.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="nc" id="L368">                retval = new FDFAnnotationCaret(fdfDic);</span>
+            }
+<span class="fc bfc" id="L370" title="All 2 branches covered.">            else if (FDFAnnotationFreeText.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="fc" id="L372">                retval = new FDFAnnotationFreeText(fdfDic);</span>
+            }
+<span class="pc bpc" id="L374" title="1 of 2 branches missed.">            else if (FDFAnnotationFileAttachment.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="nc" id="L376">                retval = new FDFAnnotationFileAttachment(fdfDic);</span>
+            }
+<span class="fc bfc" id="L378" title="All 2 branches covered.">            else if (FDFAnnotationHighlight.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="fc" id="L380">                retval = new FDFAnnotationHighlight(fdfDic);</span>
+            }
+<span class="fc bfc" id="L382" title="All 2 branches covered.">            else if (FDFAnnotationInk.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="fc" id="L384">                retval = new FDFAnnotationInk(fdfDic);</span>
+            }
+<span class="fc bfc" id="L386" title="All 2 branches covered.">            else if (FDFAnnotationLine.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="fc" id="L388">                retval = new FDFAnnotationLine(fdfDic);</span>
+            }
+<span class="fc bfc" id="L390" title="All 2 branches covered.">            else if (FDFAnnotationLink.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="fc" id="L392">                retval = new FDFAnnotationLink(fdfDic);</span>
+            }
+<span class="pc bpc" id="L394" title="1 of 2 branches missed.">            else if (FDFAnnotationCircle.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="nc" id="L396">                retval = new FDFAnnotationCircle(fdfDic);</span>
+            }
+<span class="pc bpc" id="L398" title="1 of 2 branches missed.">            else if (FDFAnnotationSquare.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="nc" id="L400">                retval = new FDFAnnotationSquare(fdfDic);</span>
+            }
+<span class="pc bpc" id="L402" title="1 of 2 branches missed.">            else if (FDFAnnotationPolygon.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="nc" id="L404">                retval = new FDFAnnotationPolygon(fdfDic);</span>
+            }
+<span class="pc bpc" id="L406" title="1 of 2 branches missed.">            else if (FDFAnnotationPolyline.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="nc" id="L408">                retval = new FDFAnnotationPolyline(fdfDic);</span>
+            }
+<span class="pc bpc" id="L410" title="1 of 2 branches missed.">            else if (FDFAnnotationSound.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="nc" id="L412">                retval = new FDFAnnotationSound(fdfDic);</span>
+            }
+<span class="pc bpc" id="L414" title="1 of 2 branches missed.">            else if (FDFAnnotationSquiggly.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="nc" id="L416">                retval = new FDFAnnotationSquiggly(fdfDic);</span>
+            }
+<span class="pc bpc" id="L418" title="1 of 2 branches missed.">            else if (FDFAnnotationStamp.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="nc" id="L420">                retval = new FDFAnnotationStamp(fdfDic);</span>
+            }
+<span class="fc bfc" id="L422" title="All 2 branches covered.">            else if (FDFAnnotationStrikeOut.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="fc" id="L424">                retval = new FDFAnnotationStrikeOut(fdfDic);</span>
+            }
+<span class="pc bpc" id="L426" title="1 of 2 branches missed.">            else if (FDFAnnotationUnderline.SUBTYPE.equals(fdfDicName))</span>
+            {
+<span class="fc" id="L428">                retval = new FDFAnnotationUnderline(fdfDic);</span>
+            }
+            else
+            {
+<span class="nc" id="L432">                LOG.warn(&quot;Unknown or unsupported annotation type '{}'&quot;, fdfDicName);</span>
+            }
+        }
+<span class="fc" id="L435">        return retval;</span>
+    }
+
+    /**
+     * Convert this standard java object to a COS object.
+     *
+     * @return The cos object that matches this Java object.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="fc" id="L446">        return annot;</span>
+    }
+
+    /**
+     * This will get the page number or null if it does not exist.
+     *
+     * @return The page number.
+     */
+    public Integer getPage()
+    {
+<span class="nc" id="L456">        Integer retval = null;</span>
+<span class="nc" id="L457">        COSNumber page = (COSNumber) annot.getDictionaryObject(COSName.PAGE);</span>
+<span class="nc bnc" id="L458" title="All 2 branches missed.">        if (page != null)</span>
+        {
+<span class="nc" id="L460">            retval = page.intValue();</span>
+        }
+<span class="nc" id="L462">        return retval;</span>
+    }
+
+    /**
+     * This will set the page.
+     *
+     * @param page The page number.
+     */
+    public final void setPage(int page)
+    {
+<span class="fc" id="L472">        annot.setInt(COSName.PAGE, page);</span>
+<span class="fc" id="L473">    }</span>
+
+    /**
+     * Get the annotation color.
+     *
+     * @return The annotation color, or null if there is none.
+     */
+    public Color getColor()
+    {
+<span class="nc" id="L482">        return getColor(COSName.C);</span>
+    }
+
+    final Color getColor(COSName colorName)
+    {
+<span class="nc" id="L487">        Color retval = null;</span>
+<span class="nc" id="L488">        COSArray array = annot.getCOSArray(colorName);</span>
+<span class="nc bnc" id="L489" title="All 2 branches missed.">        if (array != null)</span>
+        {
+<span class="nc" id="L491">            float[] rgb = array.toFloatArray();</span>
+<span class="nc bnc" id="L492" title="All 2 branches missed.">            if (rgb.length &gt;= 3)</span>
+            {
+<span class="nc" id="L494">                retval = new Color(rgb[0], rgb[1], rgb[2]);</span>
+            }
+        }
+<span class="nc" id="L497">        return retval;</span>
+    }
+
+    /**
+     * Set the annotation color.
+     *
+     * @param c The annotation color.
+     */
+    public final void setColor(Color c)
+    {
+<span class="fc" id="L507">        COSArray color = null;</span>
+<span class="pc bpc" id="L508" title="1 of 2 branches missed.">        if (c != null)</span>
+        {
+<span class="fc" id="L510">            color = COSArray.of(c.getRGBColorComponents(null));</span>
+        }
+<span class="fc" id="L512">        annot.setItem(COSName.C, color);</span>
+<span class="fc" id="L513">    }</span>
+
+    /**
+     * Modification date.
+     *
+     * @return The date as a string.
+     */
+    public String getDate()
+    {
+<span class="nc" id="L522">        return annot.getString(COSName.M);</span>
+    }
+
+    /**
+     * The annotation modification date.
+     *
+     * @param date The date to store in the FDF annotation.
+     */
+    public final void setDate(String date)
+    {
+<span class="fc" id="L532">        annot.setString(COSName.M, date);</span>
+<span class="fc" id="L533">    }</span>
+
+    /**
+     * Get the invisible flag.
+     *
+     * @return The invisible flag.
+     */
+    public boolean isInvisible()
+    {
+<span class="nc" id="L542">        return annot.getFlag(COSName.F, FLAG_INVISIBLE);</span>
+    }
+
+    /**
+     * Set the invisible flag.
+     *
+     * @param invisible The new invisible flag.
+     */
+    public final void setInvisible(boolean invisible)
+    {
+<span class="nc" id="L552">        annot.setFlag(COSName.F, FLAG_INVISIBLE, invisible);</span>
+<span class="nc" id="L553">    }</span>
+
+    /**
+     * Get the hidden flag.
+     *
+     * @return The hidden flag.
+     */
+    public boolean isHidden()
+    {
+<span class="nc" id="L562">        return annot.getFlag(COSName.F, FLAG_HIDDEN);</span>
+    }
+
+    /**
+     * Set the hidden flag.
+     *
+     * @param hidden The new hidden flag.
+     */
+    public final void setHidden(boolean hidden)
+    {
+<span class="nc" id="L572">        annot.setFlag(COSName.F, FLAG_HIDDEN, hidden);</span>
+<span class="nc" id="L573">    }</span>
+
+    /**
+     * Get the printed flag.
+     *
+     * @return The printed flag.
+     */
+    public boolean isPrinted()
+    {
+<span class="nc" id="L582">        return annot.getFlag(COSName.F, FLAG_PRINTED);</span>
+    }
+
+    /**
+     * Set the printed flag.
+     *
+     * @param printed The new printed flag.
+     */
+    public final void setPrinted(boolean printed)
+    {
+<span class="fc" id="L592">        annot.setFlag(COSName.F, FLAG_PRINTED, printed);</span>
+<span class="fc" id="L593">    }</span>
+
+    /**
+     * Get the noZoom flag.
+     *
+     * @return The noZoom flag.
+     */
+    public boolean isNoZoom()
+    {
+<span class="nc" id="L602">        return annot.getFlag(COSName.F, FLAG_NO_ZOOM);</span>
+    }
+
+    /**
+     * Set the noZoom flag.
+     *
+     * @param noZoom The new noZoom flag.
+     */
+    public final void setNoZoom(boolean noZoom)
+    {
+<span class="nc" id="L612">        annot.setFlag(COSName.F, FLAG_NO_ZOOM, noZoom);</span>
+<span class="nc" id="L613">    }</span>
+
+    /**
+     * Get the noRotate flag.
+     *
+     * @return The noRotate flag.
+     */
+    public boolean isNoRotate()
+    {
+<span class="nc" id="L622">        return annot.getFlag(COSName.F, FLAG_NO_ROTATE);</span>
+    }
+
+    /**
+     * Set the noRotate flag.
+     *
+     * @param noRotate The new noRotate flag.
+     */
+    public final void setNoRotate(boolean noRotate)
+    {
+<span class="nc" id="L632">        annot.setFlag(COSName.F, FLAG_NO_ROTATE, noRotate);</span>
+<span class="nc" id="L633">    }</span>
+
+    /**
+     * Get the noView flag.
+     *
+     * @return The noView flag.
+     */
+    public boolean isNoView()
+    {
+<span class="nc" id="L642">        return annot.getFlag(COSName.F, FLAG_NO_VIEW);</span>
+    }
+
+    /**
+     * Set the noView flag.
+     *
+     * @param noView The new noView flag.
+     */
+    public final void setNoView(boolean noView)
+    {
+<span class="nc" id="L652">        annot.setFlag(COSName.F, FLAG_NO_VIEW, noView);</span>
+<span class="nc" id="L653">    }</span>
+
+    /**
+     * Get the readOnly flag.
+     *
+     * @return The readOnly flag.
+     */
+    public boolean isReadOnly()
+    {
+<span class="nc" id="L662">        return annot.getFlag(COSName.F, FLAG_READ_ONLY);</span>
+    }
+
+    /**
+     * Set the readOnly flag.
+     *
+     * @param readOnly The new readOnly flag.
+     */
+    public final void setReadOnly(boolean readOnly)
+    {
+<span class="nc" id="L672">        annot.setFlag(COSName.F, FLAG_READ_ONLY, readOnly);</span>
+<span class="nc" id="L673">    }</span>
+
+    /**
+     * Get the locked flag.
+     *
+     * @return The locked flag.
+     */
+    public boolean isLocked()
+    {
+<span class="nc" id="L682">        return annot.getFlag(COSName.F, FLAG_LOCKED);</span>
+    }
+
+    /**
+     * Set the locked flag.
+     *
+     * @param locked The new locked flag.
+     */
+    public final void setLocked(boolean locked)
+    {
+<span class="nc" id="L692">        annot.setFlag(COSName.F, FLAG_LOCKED, locked);</span>
+<span class="nc" id="L693">    }</span>
+
+    /**
+     * Get the toggleNoView flag.
+     *
+     * @return The toggleNoView flag.
+     */
+    public boolean isToggleNoView()
+    {
+<span class="nc" id="L702">        return annot.getFlag(COSName.F, FLAG_TOGGLE_NO_VIEW);</span>
+    }
+
+    /**
+     * Set the toggleNoView flag.
+     *
+     * @param toggleNoView The new toggleNoView flag.
+     */
+    public final void setToggleNoView(boolean toggleNoView)
+    {
+<span class="nc" id="L712">        annot.setFlag(COSName.F, FLAG_TOGGLE_NO_VIEW, toggleNoView);</span>
+<span class="nc" id="L713">    }</span>
+
+    /**
+     * Get the LockedContents flag.
+     *
+     * @return The LockedContents flag.
+     */
+    public boolean isLockedContents()
+    {
+<span class="nc" id="L722">        return annot.getFlag(COSName.F, FLAG_LOCKED_CONTENTS);</span>
+    }
+
+    /**
+     * Set the LockedContents flag.
+     * 
+     * @param lockedContents The new LockedContents flag.
+     */
+    public void setLockedContents(boolean lockedContents)
+    {
+<span class="nc" id="L732">        annot.setFlag(COSName.F, FLAG_LOCKED_CONTENTS, lockedContents);</span>
+<span class="nc" id="L733">    }</span>
+
+    /**
+     * Set a unique name for an annotation.
+     *
+     * @param name The unique annotation name.
+     */
+    public final void setName(String name)
+    {
+<span class="fc" id="L742">        annot.setString(COSName.NM, name);</span>
+<span class="fc" id="L743">    }</span>
+
+    /**
+     * Get the annotation name.
+     *
+     * @return The unique name of the annotation.
+     */
+    public String getName()
+    {
+<span class="nc" id="L752">        return annot.getString(COSName.NM);</span>
+    }
+
+    /**
+     * Set the rectangle associated with this annotation.
+     *
+     * @param rectangle The annotation rectangle.
+     */
+    public final void setRectangle(PDRectangle rectangle)
+    {
+<span class="fc" id="L762">        annot.setItem(COSName.RECT, rectangle);</span>
+<span class="fc" id="L763">    }</span>
+
+    /**
+     * The rectangle associated with this annotation.
+     *
+     * @return The annotation rectangle.
+     */
+    public PDRectangle getRectangle()
+    {
+<span class="nc" id="L772">        COSArray rectArray = annot.getCOSArray(COSName.RECT);</span>
+<span class="nc bnc" id="L773" title="All 2 branches missed.">        return rectArray != null ? new PDRectangle(rectArray) : null;</span>
+    }
+
+    /**
+     * Set the contents, or a description, for an annotation.
+     *
+     * @param contents The annotation contents, or a description.
+     */
+    public final void setContents(String contents)
+    {
+<span class="fc" id="L783">        annot.setString(COSName.CONTENTS, contents);</span>
+<span class="fc" id="L784">    }</span>
+
+    /**
+     * Get the text, or a description, of the annotation.
+     *
+     * @return The text, or a description, of the annotation.
+     */
+    public String getContents()
+    {
+<span class="fc" id="L793">        return annot.getString(COSName.CONTENTS);</span>
+    }
+
+    /**
+     * Set a unique title for an annotation.
+     *
+     * @param title The annotation title.
+     */
+    public final void setTitle(String title)
+    {
+<span class="fc" id="L803">        annot.setString(COSName.T, title);</span>
+<span class="fc" id="L804">    }</span>
+
+    /**
+     * Get the annotation title.
+     *
+     * @return The title of the annotation.
+     */
+    public String getTitle()
+    {
+<span class="nc" id="L813">        return annot.getString(COSName.T);</span>
+    }
+
+    /**
+     * The annotation create date.
+     *
+     * @return The date of the creation of the annotation date
+     *
+     * @throws IOException If there is an error converting the string to a Calendar object.
+     */
+    public Calendar getCreationDate() throws IOException
+    {
+<span class="nc" id="L825">        return annot.getDate(COSName.CREATION_DATE);</span>
+    }
+
+    /**
+     * Set the creation date.
+     *
+     * @param date The date the annotation was created.
+     */
+    public final void setCreationDate(Calendar date)
+    {
+<span class="fc" id="L835">        annot.setDate(COSName.CREATION_DATE, date);</span>
+<span class="fc" id="L836">    }</span>
+
+    /**
+     * Set the annotation opacity.
+     *
+     * @param opacity The new opacity value.
+     */
+    public final void setOpacity(float opacity)
+    {
+<span class="fc" id="L845">        annot.setFloat(COSName.CA, opacity);</span>
+<span class="fc" id="L846">    }</span>
+
+    /**
+     * Get the opacity value.
+     *
+     * @return The opacity of the annotation.
+     */
+    public float getOpacity()
+    {
+<span class="nc" id="L855">        return annot.getFloat(COSName.CA, 1f);</span>
+
+    }
+
+    /**
+     * A short description of the annotation.
+     *
+     * @param subject The annotation subject.
+     */
+    public final void setSubject(String subject)
+    {
+<span class="fc" id="L866">        annot.setString(COSName.SUBJ, subject);</span>
+<span class="fc" id="L867">    }</span>
+
+    /**
+     * Get the description of the annotation.
+     *
+     * @return The subject of the annotation.
+     */
+    public String getSubject()
+    {
+<span class="nc" id="L876">        return annot.getString(COSName.SUBJ);</span>
+    }
+
+    /**
+     * The intent of the annotation.
+     * 
+     * @param intent The annotation's intent.
+     */
+    public final void setIntent(String intent)
+    {
+<span class="fc" id="L886">        annot.setName(COSName.IT, intent);</span>
+<span class="fc" id="L887">    }</span>
+
+    /**
+     * Get the intent of the annotation.
+     * 
+     * @return The intent of the annotation.
+     */
+    public String getIntent()
+    {
+<span class="nc" id="L896">        return annot.getNameAsString(COSName.IT);</span>
+    }
+
+    /**
+     * This will retrieve the rich text stream which is displayed in the popup window.
+     *
+     * @return the rich text stream.
+     */
+    public String getRichContents()
+    {
+<span class="fc" id="L906">        return getStringOrStream(annot.getDictionaryObject(COSName.RC));</span>
+    }
+
+    /**
+     * This will set the rich text stream which is displayed in the popup window.
+     *
+     * @param rc the rich text stream.
+     */
+    public final void setRichContents(String rc)
+    {
+<span class="fc" id="L916">        annot.setItem(COSName.RC, new COSString(rc));</span>
+<span class="fc" id="L917">    }</span>
+
+    /**
+     * This will set the border style dictionary, specifying the width and dash pattern used in drawing the annotation.
+     *
+     * @param bs the border style dictionary to set.
+     *
+     */
+    public final void setBorderStyle(PDBorderStyleDictionary bs)
+    {
+<span class="fc" id="L927">        annot.setItem(COSName.BS, bs);</span>
+<span class="fc" id="L928">    }</span>
+
+    /**
+     * This will retrieve the border style dictionary, specifying the width and dash pattern used in drawing the
+     * annotation.
+     *
+     * @return the border style dictionary.
+     */
+    public PDBorderStyleDictionary getBorderStyle()
+    {
+<span class="fc" id="L938">        COSDictionary bs = annot.getCOSDictionary(COSName.BS);</span>
+<span class="pc bpc" id="L939" title="1 of 2 branches missed.">        return bs != null ? new PDBorderStyleDictionary(bs) : null;</span>
+    }
+
+    /**
+     * This will set the border effect dictionary, describing the effect applied to the border described by the BS
+     * entry.
+     *
+     * @param be the border effect dictionary to set.
+     *
+     */
+    public final void setBorderEffect(PDBorderEffectDictionary be)
+    {
+<span class="nc" id="L951">        annot.setItem(COSName.BE, be);</span>
+<span class="nc" id="L952">    }</span>
+
+    /**
+     * This will retrieve the border style dictionary, describing the effect applied to the border described by the BS
+     * entry.
+     *
+     * @return the border effect dictionary.
+     */
+    public PDBorderEffectDictionary getBorderEffect()
+    {
+<span class="nc" id="L962">        COSDictionary be = annot.getCOSDictionary(COSName.BE);</span>
+<span class="nc bnc" id="L963" title="All 2 branches missed.">        return be != null ? new PDBorderEffectDictionary(be) : null;</span>
+    }
+
+    /**
+     * Get a text or text stream.
+     *
+     * Some dictionary entries allow either a text or a text stream.
+     *
+     * @param base the potential text or text stream
+     * @return the text stream
+     */
+    protected final String getStringOrStream(COSBase base)
+    {
+<span class="pc bpc" id="L976" title="1 of 2 branches missed.">        if (base == null)</span>
+        {
+<span class="nc" id="L978">            return &quot;&quot;;</span>
+        }
+<span class="pc bpc" id="L980" title="1 of 2 branches missed.">        else if (base instanceof COSString)</span>
+        {
+<span class="fc" id="L982">            return ((COSString) base).getString();</span>
+        }
+<span class="nc bnc" id="L984" title="All 2 branches missed.">        else if (base instanceof COSStream)</span>
+        {
+<span class="nc" id="L986">            return ((COSStream) base).toTextString();</span>
+        }
+        else
+        {
+<span class="nc" id="L990">            return &quot;&quot;;</span>
+        }
+    }
+
+    private String richContentsToString(Node node, boolean root)
+    {
+<span class="fc" id="L996">        StringBuilder sb = new StringBuilder();</span>
+
+<span class="fc" id="L998">        NodeList nodelist = node.getChildNodes();</span>
+<span class="fc bfc" id="L999" title="All 2 branches covered.">        for (int i = 0; i &lt; nodelist.getLength(); i++)</span>
+        {
+<span class="fc" id="L1001">            Node child = nodelist.item(i);</span>
+<span class="fc bfc" id="L1002" title="All 2 branches covered.">            if (child instanceof Element)</span>
+            {
+<span class="fc" id="L1004">                sb.append(richContentsToString(child, false));</span>
+            }
+<span class="pc bpc" id="L1006" title="1 of 2 branches missed.">            else if (child instanceof CDATASection)</span>
+            {
+<span class="nc" id="L1008">                sb.append(&quot;&lt;![CDATA[&quot;).append(((CDATASection) child).getData()).append(&quot;]]&gt;&quot;);</span>
+            }
+<span class="pc bpc" id="L1010" title="1 of 2 branches missed.">            else if (child instanceof Text)</span>
+            {
+<span class="fc" id="L1012">                String cdata = ((Text) child).getData();</span>
+<span class="pc bpc" id="L1013" title="1 of 2 branches missed.">                if (cdata!=null)</span>
+                {
+<span class="fc" id="L1015">                    cdata = cdata.replace(&quot;&amp;&quot;, &quot;&amp;amp;&quot;).replace(&quot;&lt;&quot;, &quot;&amp;lt;&quot;);</span>
+                }
+<span class="fc" id="L1017">                sb.append(cdata);</span>
+            }
+        }
+<span class="fc bfc" id="L1020" title="All 2 branches covered.">        if (root)</span>
+        {
+<span class="fc" id="L1022">            return sb.toString();</span>
+        }
+
+<span class="fc" id="L1025">        NamedNodeMap attributes = node.getAttributes();</span>
+<span class="fc" id="L1026">        StringBuilder builder = new StringBuilder();</span>
+<span class="fc bfc" id="L1027" title="All 2 branches covered.">        for (int i = 0; i &lt; attributes.getLength(); i++)</span>
+        {
+<span class="fc" id="L1029">            Node attribute = attributes.item(i);</span>
+<span class="fc" id="L1030">            String attributeNodeValue = attribute.getNodeValue();</span>
+<span class="pc bpc" id="L1031" title="1 of 2 branches missed.">            if (attributeNodeValue!=null)</span>
+            {
+<span class="fc" id="L1033">                attributeNodeValue = attributeNodeValue.replace(&quot;\&quot;&quot;, &quot;&amp;quot;&quot;);</span>
+            }
+<span class="fc" id="L1035">            builder.append(String.format(&quot; %s=\&quot;%s\&quot;&quot;, attribute.getNodeName(),</span>
+                    attributeNodeValue));
+        }
+<span class="fc" id="L1038">        return String.format(&quot;&lt;%s%s&gt;%s&lt;/%s&gt;&quot;, node.getNodeName(), builder, sb, node.getNodeName());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

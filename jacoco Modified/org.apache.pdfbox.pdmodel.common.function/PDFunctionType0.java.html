@@ -1,0 +1,470 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFunctionType0.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.common.function</a> &gt; <span class="el_source">PDFunctionType0.java</span></div><h1>PDFunctionType0.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.common.function;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.PDRange;
+
+/**
+ * This class represents a type 0 function in a PDF document.
+ *
+ * @author Ben Litchfield
+ * @author Tilman Hausherr
+ * 
+ */
+public class PDFunctionType0 extends PDFunction
+{
+ 
+    /**
+     * Log instance.
+     */
+<span class="nc" id="L46">    private static final Logger LOG = LogManager.getLogger(PDFunctionType0.class);</span>
+
+    /**
+     * An array of 2 x m numbers specifying the linear mapping of input values 
+     * into the domain of the function's sample table. Default value: [ 0 (Size0
+     * - 1) 0 (Size1 - 1) ...].
+     */
+<span class="nc" id="L53">    private COSArray encode = null;</span>
+    /**
+     * An array of 2 x n numbers specifying the linear mapping of sample values 
+     * into the range appropriate for the function's output values. Default
+     * value: same as the value of Range
+     */
+<span class="nc" id="L59">    private COSArray decode = null;</span>
+    /**
+     * An array of m positive integers specifying the number of samples in each 
+     * input dimension of the sample table.
+     */
+<span class="nc" id="L64">    private COSArray size = null;</span>
+    /**
+     * The samples of the function.
+     */
+<span class="nc" id="L68">    private int[][] samples = null;</span>
+    
+    /**
+     * Constructor.
+     *
+     * @param function The function.
+     */
+    public PDFunctionType0(COSBase function)
+    {
+<span class="nc" id="L77">        super(function);</span>
+<span class="nc" id="L78">    }</span>
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getFunctionType()
+    {
+<span class="nc" id="L86">        return 0;</span>
+    }
+
+    /**
+     * The &quot;Size&quot; entry, which is the number of samples in each input dimension
+     * of the sample table.
+     *
+     * @return A List of java.lang.Integer objects.
+     */
+    public COSArray getSize()
+    {
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        if (size == null)</span>
+        {
+<span class="nc" id="L99">            size = getCOSObject().getCOSArray(COSName.SIZE);</span>
+        }
+<span class="nc" id="L101">        return size;</span>
+    }
+
+    /**
+     * Get the number of bits that the output value will take up.  
+     * 
+     * Valid values are 1,2,4,8,12,16,24,32.
+     *
+     * @return Number of bits for each output value.
+     */
+    public int getBitsPerSample()
+    {
+<span class="nc" id="L113">        return getCOSObject().getInt(COSName.BITS_PER_SAMPLE);</span>
+    }
+
+    /**
+     * Get the order of interpolation between samples. Valid values are 1 and 3,
+     * specifying linear and cubic spline interpolation, respectively. Default
+     * is 1. See p.170 in PDF spec 1.7.
+     *
+     * @return order of interpolation.
+     */
+    public int getOrder()
+    {
+<span class="nc" id="L125">        return getCOSObject().getInt(COSName.ORDER, 1);</span>
+    }
+
+    /**
+     * Set the number of bits that the output value will take up. Valid values
+     * are 1,2,4,8,12,16,24,32.
+     *
+     * @param bps The number of bits for each output value.
+     */
+    public void setBitsPerSample(int bps)
+    {
+<span class="nc" id="L136">        getCOSObject().setInt(COSName.BITS_PER_SAMPLE, bps);</span>
+<span class="nc" id="L137">    }</span>
+    
+    /**
+     * Returns all encode values as COSArray.
+     * 
+     * @return the encode array. 
+     */
+    private COSArray getEncodeValues() 
+    {
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        if (encode == null)</span>
+        {
+<span class="nc" id="L148">            encode = getCOSObject().getCOSArray(COSName.ENCODE);</span>
+            // the default value is [0 (size[0]-1) 0 (size[1]-1) ...]
+<span class="nc bnc" id="L150" title="All 2 branches missed.">            if (encode == null)</span>
+            {
+<span class="nc" id="L152">                encode = new COSArray();</span>
+<span class="nc" id="L153">                COSArray sizeValues = getSize();</span>
+<span class="nc" id="L154">                int sizeValuesSize = sizeValues.size();</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">                for (int i = 0; i &lt; sizeValuesSize; i++)</span>
+                {
+<span class="nc" id="L157">                    encode.add(COSInteger.ZERO);</span>
+<span class="nc" id="L158">                    encode.add(COSInteger.get(sizeValues.getInt(i) - 1L));</span>
+                }
+            }
+        }
+<span class="nc" id="L162">        return encode;</span>
+    }
+
+    /**
+     * Returns all decode values as COSArray.
+     * 
+     * @return the decode array. 
+     */
+    private COSArray getDecodeValues() 
+    {
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        if (decode == null)</span>
+        {
+<span class="nc" id="L174">            decode = getCOSObject().getCOSArray(COSName.DECODE);</span>
+            // if decode is null, the default values are the range values
+<span class="nc bnc" id="L176" title="All 2 branches missed.">            if (decode == null)</span>
+            {
+<span class="nc" id="L178">                decode = getRangeValues();</span>
+            }
+        }
+<span class="nc" id="L181">        return decode;</span>
+    }
+
+    /**
+     * Get the encode for the input parameter.
+     *
+     * @param paramNum The function parameter number.
+     *
+     * @return The encode parameter range or null if none is set.
+     */
+    public PDRange getEncodeForParameter(int paramNum)
+    {
+<span class="nc" id="L193">        PDRange retval = null;</span>
+<span class="nc" id="L194">        COSArray encodeValues = getEncodeValues();</span>
+<span class="nc bnc" id="L195" title="All 4 branches missed.">        if (encodeValues != null &amp;&amp; encodeValues.size() &gt;= paramNum * 2 + 1)</span>
+        {
+<span class="nc" id="L197">            retval = new PDRange(encodeValues, paramNum);</span>
+        }
+<span class="nc" id="L199">        return retval;</span>
+    }
+
+    /**
+     * This will set the encode values.
+     *
+     * @param encodeValues The new encode values.
+     */
+    public void setEncodeValues(COSArray encodeValues)
+    {
+<span class="nc" id="L209">        encode = encodeValues;</span>
+<span class="nc" id="L210">        getCOSObject().setItem(COSName.ENCODE, encodeValues);</span>
+<span class="nc" id="L211">    }</span>
+
+    /**
+     * Get the decode for the input parameter.
+     *
+     * @param paramNum The function parameter number.
+     *
+     * @return The decode parameter range or null if none is set.
+     */
+    public PDRange getDecodeForParameter(int paramNum)
+    {
+<span class="nc" id="L222">        PDRange retval = null;</span>
+<span class="nc" id="L223">        COSArray decodeValues = getDecodeValues();</span>
+<span class="nc bnc" id="L224" title="All 4 branches missed.">        if (decodeValues != null &amp;&amp; decodeValues.size() &gt;= paramNum * 2 + 1)</span>
+        {
+<span class="nc" id="L226">            retval = new PDRange(decodeValues, paramNum);</span>
+        }
+<span class="nc" id="L228">        return retval;</span>
+    }
+
+    /**
+     * This will set the decode values.
+     *
+     * @param decodeValues The new decode values.
+     */
+    public void setDecodeValues(COSArray decodeValues)
+    {
+<span class="nc" id="L238">        decode = decodeValues;</span>
+<span class="nc" id="L239">        getCOSObject().setItem(COSName.DECODE, decodeValues);</span>
+<span class="nc" id="L240">    }</span>
+
+    /**
+     * Inner class do to an interpolation in the Nth dimension by comparing the
+     * content size of N-1 dimensional objects. This is done with the help of
+     * recursive calls. To understand the algorithm without recursion, here is a
+     * &lt;a
+     * href=&quot;http://harmoniccode.blogspot.de/2011/04/bilinear-color-interpolation.html&quot;&gt;bilinear
+     * interpolation&lt;/a&gt; and here's a &lt;a
+     * href=&quot;https://en.wikipedia.org/wiki/Trilinear_interpolation&quot;&gt;trilinear
+     * interpolation&lt;/a&gt; (external links).
+     */
+    private class Rinterpol
+    {
+        // coordinate that is to be interpolated
+        private final float[] in;
+        // coordinate of the &quot;ceil&quot; point
+        private final int[] inPrev;
+        // coordinate of the &quot;floor&quot; point
+        private final int[] inNext;
+        private final int numberOfInputValues;
+<span class="nc" id="L261">        private final int numberOfOutputValues = getNumberOfOutputParameters();</span>
+
+        /**
+         * Constructor.
+         *
+         * @param input the input coordinates
+         * @param inputPrev coordinate of the &quot;ceil&quot; point
+         * @param inputNext coordinate of the &quot;floor&quot; point
+         *
+         */
+        Rinterpol(float[] input, int[] inputPrev, int[] inputNext)
+<span class="nc" id="L272">        {</span>
+<span class="nc" id="L273">            in = input;</span>
+<span class="nc" id="L274">            inPrev = inputPrev;</span>
+<span class="nc" id="L275">            inNext = inputNext;</span>
+<span class="nc" id="L276">            numberOfInputValues = input.length;</span>
+<span class="nc" id="L277">        }</span>
+
+        /**
+         * Calculate the interpolation.
+         *
+         * @return interpolated result sample
+         */
+        float[] rinterpolate()
+        {
+<span class="nc" id="L286">            return rinterpol(new int[numberOfInputValues], 0);</span>
+        }
+
+        /**
+         * Do a linear interpolation if the two coordinates can be known, or
+         * call itself recursively twice.
+         *
+         * @param coord coord partially set coordinate (not set from step
+         * upwards); gets fully filled in the last call (&quot;leaf&quot;), where it is
+         * used to get the correct sample
+         * @param step between 0 (first call) and dimension - 1
+         * @return interpolated result sample
+         */
+        private float[] rinterpol(int[] coord, int step)
+        {
+<span class="nc" id="L301">            float[] resultSample = new float[numberOfOutputValues];</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">            if (step == in.length - 1)</span>
+            {
+                // leaf
+<span class="nc bnc" id="L305" title="All 2 branches missed.">                if (inPrev[step] == inNext[step])</span>
+                {
+<span class="nc" id="L307">                    coord[step] = inPrev[step];</span>
+<span class="nc" id="L308">                    int[] tmpSample = getSamples()[calcSampleIndex(coord)];</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">                    for (int i = 0; i &lt; numberOfOutputValues; ++i)</span>
+                    {
+<span class="nc" id="L311">                        resultSample[i] = tmpSample[i];</span>
+                    }
+<span class="nc" id="L313">                    return resultSample;</span>
+                }
+<span class="nc" id="L315">                coord[step] = inPrev[step];</span>
+<span class="nc" id="L316">                int[] sample1 = getSamples()[calcSampleIndex(coord)];</span>
+<span class="nc" id="L317">                coord[step] = inNext[step];</span>
+<span class="nc" id="L318">                int[] sample2 = getSamples()[calcSampleIndex(coord)];</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">                for (int i = 0; i &lt; numberOfOutputValues; ++i)</span>
+                {
+<span class="nc" id="L321">                    resultSample[i] = interpolate(in[step], inPrev[step], inNext[step], sample1[i], sample2[i]);</span>
+                }
+<span class="nc" id="L323">                return resultSample;</span>
+            }
+            else
+            {
+                // branch
+<span class="nc bnc" id="L328" title="All 2 branches missed.">                if (inPrev[step] == inNext[step])</span>
+                {
+<span class="nc" id="L330">                    coord[step] = inPrev[step];</span>
+<span class="nc" id="L331">                    return rinterpol(coord, step + 1);</span>
+                }
+<span class="nc" id="L333">                coord[step] = inPrev[step];</span>
+<span class="nc" id="L334">                float[] sample1 = rinterpol(coord, step + 1);</span>
+<span class="nc" id="L335">                coord[step] = inNext[step];</span>
+<span class="nc" id="L336">                float[] sample2 = rinterpol(coord, step + 1);</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">                for (int i = 0; i &lt; numberOfOutputValues; ++i)</span>
+                {
+<span class="nc" id="L339">                    resultSample[i] = interpolate(in[step], inPrev[step], inNext[step], sample1[i], sample2[i]);</span>
+                }
+<span class="nc" id="L341">                return resultSample;</span>
+            }
+        }
+
+        /**
+         * calculate array index (structure described in p.171 PDF spec 1.7) in multiple dimensions.
+         *
+         * @param vector with coordinates
+         * @return index in flat array
+         */
+        private int calcSampleIndex(int[] vector)
+        {
+            // inspiration: http://stackoverflow.com/a/12113479/535646
+            // but used in reverse
+<span class="nc" id="L355">            float[] sizeValues = getSize().toFloatArray();</span>
+<span class="nc" id="L356">            int index = 0;</span>
+<span class="nc" id="L357">            int sizeProduct = 1;</span>
+<span class="nc" id="L358">            int dimension = vector.length;</span>
+<span class="nc bnc" id="L359" title="All 2 branches missed.">            for (int i = dimension - 2; i &gt;= 0; --i)</span>
+            {
+<span class="nc" id="L361">                sizeProduct *= sizeValues[i];</span>
+            }
+<span class="nc bnc" id="L363" title="All 2 branches missed.">            for (int i = dimension - 1; i &gt;= 0; --i)</span>
+            {
+<span class="nc" id="L365">                index += sizeProduct * vector[i];</span>
+<span class="nc bnc" id="L366" title="All 2 branches missed.">                if (i - 1 &gt;= 0)</span>
+                {
+<span class="nc" id="L368">                    sizeProduct /= sizeValues[i - 1];</span>
+                }
+            }
+<span class="nc" id="L371">            return index;</span>
+        }
+
+        /**
+         * Get all sample values of this function.
+         *
+         * @return an array with all samples.
+         */
+        private int[][] getSamples()
+        {
+<span class="nc bnc" id="L381" title="All 2 branches missed.">            if (samples == null)</span>
+            {
+<span class="nc" id="L383">                int arraySize = 1;</span>
+<span class="nc" id="L384">                int nIn = getNumberOfInputParameters();</span>
+<span class="nc" id="L385">                int nOut = getNumberOfOutputParameters();</span>
+<span class="nc" id="L386">                COSArray sizes = getSize();</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">                for (int i = 0; i &lt; nIn; i++)</span>
+                {
+<span class="nc" id="L389">                    arraySize *= sizes.getInt(i);</span>
+                }
+<span class="nc" id="L391">                samples = new int[arraySize][nOut];</span>
+<span class="nc" id="L392">                int bitsPerSample = getBitsPerSample();</span>
+<span class="nc" id="L393">                int index = 0;</span>
+<span class="nc" id="L394">                try (InputStream is = getPDStream().createInputStream())</span>
+                {
+                    // PDF spec 1.7 p.171:
+                    // Each sample value is represented as a sequence of BitsPerSample bits. 
+                    // Successive values are adjacent in the bit stream; there is no padding at byte boundaries.
+<span class="nc" id="L399">                    try (ImageInputStream mciis = new MemoryCacheImageInputStream(is))</span>
+                    {
+<span class="nc bnc" id="L401" title="All 2 branches missed.">                        for (int i = 0; i &lt; arraySize; i++)</span>
+                        {
+<span class="nc bnc" id="L403" title="All 2 branches missed.">                            for (int k = 0; k &lt; nOut; k++)</span>
+                            {
+                                // TODO will this cast work properly for 32 bitsPerSample or should we use long[]?
+<span class="nc" id="L406">                                samples[index][k] = (int) mciis.readBits(bitsPerSample);</span>
+                            }
+<span class="nc" id="L408">                            index++;</span>
+                        }
+                    }
+                }
+<span class="nc" id="L412">                catch (IOException exception)</span>
+                {
+<span class="nc" id="L414">                    LOG.error(&quot;IOException while reading the sample values of this function.&quot;, exception);</span>
+<span class="nc" id="L415">                }</span>
+            }
+<span class="nc" id="L417">            return samples;</span>
+        }
+    }
+
+    /**
+    * {@inheritDoc}
+    */
+    @Override
+    public float[] eval(float[] input) throws IOException
+    {
+        //This involves linear interpolation based on a set of sample points.
+        //Theoretically it's not that difficult ... see section 3.9.1 of the PDF Reference.
+
+<span class="nc" id="L430">        float[] sizeValues = getSize().toFloatArray();</span>
+<span class="nc" id="L431">        int bitsPerSample = getBitsPerSample();</span>
+<span class="nc" id="L432">        float maxSample = (float) (Math.pow(2, bitsPerSample) - 1.0);</span>
+<span class="nc" id="L433">        int numberOfInputValues = input.length;</span>
+<span class="nc" id="L434">        int numberOfOutputValues = getNumberOfOutputParameters();</span>
+
+<span class="nc" id="L436">        int[] inputPrev = new int[numberOfInputValues];</span>
+<span class="nc" id="L437">        int[] inputNext = new int[numberOfInputValues];</span>
+<span class="nc" id="L438">        input = input.clone(); // PDFBOX-4461</span>
+
+<span class="nc bnc" id="L440" title="All 2 branches missed.">        for (int i = 0; i &lt; numberOfInputValues; i++)</span>
+        {
+<span class="nc" id="L442">            PDRange domain = getDomainForInput(i);</span>
+<span class="nc" id="L443">            PDRange encodeValues = getEncodeForParameter(i);</span>
+<span class="nc" id="L444">            float min = domain.getMin();</span>
+<span class="nc" id="L445">            float max = domain.getMax();</span>
+<span class="nc" id="L446">            input[i] = clipToRange(input[i], min, max);</span>
+<span class="nc" id="L447">            input[i] = interpolate(input[i], min, max, encodeValues.getMin(), encodeValues.getMax());</span>
+<span class="nc" id="L448">            input[i] = clipToRange(input[i], 0, sizeValues[i] - 1);</span>
+<span class="nc" id="L449">            inputPrev[i] = (int) Math.floor(input[i]);</span>
+<span class="nc" id="L450">            inputNext[i] = (int) Math.ceil(input[i]);</span>
+        }
+        
+<span class="nc" id="L453">        float[] outputValues = new Rinterpol(input, inputPrev, inputNext).rinterpolate();</span>
+
+<span class="nc bnc" id="L455" title="All 2 branches missed.">        for (int i = 0; i &lt; numberOfOutputValues; i++)</span>
+        {
+<span class="nc" id="L457">            PDRange range = getRangeForOutput(i);</span>
+<span class="nc" id="L458">            PDRange decodeValues = getDecodeForParameter(i);</span>
+<span class="nc bnc" id="L459" title="All 2 branches missed.">            if (decodeValues == null)</span>
+            {
+<span class="nc" id="L461">                throw new IOException(&quot;Range missing in function /Decode entry&quot;);</span>
+            }
+<span class="nc" id="L463">            outputValues[i] = interpolate(outputValues[i], 0, maxSample, decodeValues.getMin(), decodeValues.getMax());</span>
+<span class="nc" id="L464">            outputValues[i] = clipToRange(outputValues[i], range.getMin(), range.getMax());</span>
+        }
+
+<span class="nc" id="L467">        return outputValues;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

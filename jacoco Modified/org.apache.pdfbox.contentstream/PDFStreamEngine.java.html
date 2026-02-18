@@ -1,0 +1,1209 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFStreamEngine.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.contentstream</a> &gt; <span class="el_source">PDFStreamEngine.java</span></div><h1>PDFStreamEngine.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.contentstream;
+
+import java.awt.geom.GeneralPath;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.zip.DataFormatException;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.contentstream.operator.MissingOperandException;
+import org.apache.pdfbox.contentstream.operator.state.EmptyGraphicsStackException;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.filter.MissingImageReaderException;
+import org.apache.pdfbox.pdfparser.PDFStreamParser;
+import org.apache.pdfbox.pdmodel.MissingResourceException;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.PDType3CharProc;
+import org.apache.pdfbox.pdmodel.font.PDType3Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName;
+import org.apache.pdfbox.pdmodel.graphics.PDLineDashPattern;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
+import org.apache.pdfbox.pdmodel.graphics.form.PDTransparencyGroup;
+import org.apache.pdfbox.pdmodel.graphics.pattern.PDTilingPattern;
+import org.apache.pdfbox.pdmodel.graphics.state.PDGraphicsState;
+import org.apache.pdfbox.pdmodel.graphics.state.PDTextState;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceStream;
+import org.apache.pdfbox.util.Matrix;
+import org.apache.pdfbox.util.Vector;
+import org.apache.pdfbox.contentstream.operator.Operator;
+import org.apache.pdfbox.contentstream.operator.OperatorName;
+import org.apache.pdfbox.contentstream.operator.OperatorProcessor;
+import org.apache.pdfbox.pdmodel.graphics.blend.BlendMode;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceGray;
+
+/**
+ * Processes a PDF content stream and executes certain operations.
+ * Provides a callback interface for clients that want to do things with the stream.
+ * 
+ * @author Ben Litchfield
+ */
+public abstract class PDFStreamEngine
+{
+<span class="fc" id="L80">    private static final Logger LOG = LogManager.getLogger(PDFStreamEngine.class);</span>
+
+<span class="fc" id="L82">    private final Map&lt;String, OperatorProcessor&gt; operators = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L84">    private Deque&lt;PDGraphicsState&gt; graphicsStack = new ArrayDeque&lt;&gt;();</span>
+
+    private PDResources resources;
+    private PDPage currentPage;
+    private boolean isProcessingPage;
+    private Matrix initialMatrix;
+
+    // used to monitor potentially recursive operations.
+<span class="fc" id="L92">    private int level = 0;</span>
+
+    // default font, used if there isn't any font available
+    private PDFont defaultFont;
+
+    // false in certain cases, e.g. type3 charprocs with d1 or uncolored tiling patterns
+    private boolean shouldProcessColorOperators;
+
+    /**
+     * Creates a new PDFStreamEngine.
+     */
+    protected PDFStreamEngine()
+<span class="fc" id="L104">    {</span>
+<span class="fc" id="L105">    }</span>
+
+    /**
+     * Adds an operator processor to the engine.
+     *
+     * @param op operator processor
+     */
+    public final void addOperator(OperatorProcessor op)
+    {
+<span class="fc" id="L114">        operators.put(op.getName(), op);</span>
+<span class="fc" id="L115">    }</span>
+
+    /**
+     * Initializes the stream engine for the given page.
+     */
+    private void initPage(PDPage page)
+    {
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">        if (page == null)</span>
+        {
+<span class="nc" id="L124">            throw new IllegalArgumentException(&quot;Page cannot be null&quot;);</span>
+        }
+<span class="fc" id="L126">        currentPage = page;</span>
+<span class="fc" id="L127">        graphicsStack.clear();</span>
+<span class="fc" id="L128">        graphicsStack.push(new PDGraphicsState(page.getCropBox()));</span>
+<span class="fc" id="L129">        resources = null;</span>
+<span class="fc" id="L130">        initialMatrix = page.getMatrix();</span>
+<span class="fc" id="L131">    }</span>
+
+    /**
+     * Provide standard 14 Helvetica font as default if there isn't any font available.  
+     * @return the default font
+     */
+    private PDFont getDefaultFont()
+    {
+<span class="nc bnc" id="L139" title="All 2 branches missed.">        if (defaultFont == null)</span>
+        {
+<span class="nc" id="L141">            defaultFont = new PDType1Font(FontName.HELVETICA);</span>
+        }
+<span class="nc" id="L143">        return defaultFont;</span>
+    }
+    
+    /**
+     * This will initialize and process the contents of the stream.
+     *
+     * @param page the page to process
+     * @throws IOException if there is an error accessing the stream
+     */
+    public void processPage(PDPage page) throws IOException
+    {
+<span class="fc" id="L154">        initPage(page);</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        if (page.hasContents())</span>
+        {
+<span class="fc" id="L157">            isProcessingPage = true;</span>
+<span class="fc" id="L158">            processStream(page);</span>
+<span class="fc" id="L159">            isProcessingPage = false;</span>
+        }
+<span class="fc" id="L161">    }</span>
+
+    /**
+     * Shows a transparency group from the content stream.
+     *
+     * @param form transparency group (form) XObject
+     * @throws IOException if the transparency group cannot be processed
+     */
+    public void showTransparencyGroup(PDTransparencyGroup form) throws IOException
+    {
+<span class="nc" id="L171">        processTransparencyGroup(form);</span>
+<span class="nc" id="L172">    }</span>
+
+    /**
+     * Shows a form from the content stream.
+     *
+     * @param form form XObject
+     * @throws IOException if the form cannot be processed
+     */
+    public void showForm(PDFormXObject form) throws IOException
+    {
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">        if (currentPage == null)</span>
+        {
+<span class="nc" id="L184">            throw new IllegalStateException(&quot;No current page, call &quot; +</span>
+                    &quot;#processChildStream(PDContentStream, PDPage) instead&quot;);
+        }
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        if (form.getCOSObject().getLength() &gt; 0)</span>
+        {
+<span class="fc" id="L189">            processStream(form);</span>
+        }
+<span class="fc" id="L191">    }</span>
+
+    /**
+     * Processes a soft mask transparency group stream.
+     * 
+     * @param group transparency group used for the soft mask
+     * @throws IOException if the transparency group cannot be processed
+     */
+    protected void processSoftMask(PDTransparencyGroup group) throws IOException
+    {
+<span class="nc" id="L201">        saveGraphicsState();</span>
+<span class="nc" id="L202">        PDGraphicsState graphicsState = getGraphicsState();</span>
+<span class="nc" id="L203">        Matrix softMaskCTM = graphicsState.getSoftMask().getInitialTransformationMatrix();</span>
+<span class="nc" id="L204">        graphicsState.setCurrentTransformationMatrix(softMaskCTM);</span>
+<span class="nc" id="L205">        graphicsState.setTextMatrix(new Matrix());</span>
+<span class="nc" id="L206">        graphicsState.setTextLineMatrix(new Matrix());</span>
+<span class="nc" id="L207">        graphicsState.setNonStrokingColorSpace(PDDeviceGray.INSTANCE);</span>
+<span class="nc" id="L208">        graphicsState.setNonStrokingColor(PDDeviceGray.INSTANCE.getInitialColor());</span>
+<span class="nc" id="L209">        graphicsState.setStrokingColorSpace(PDDeviceGray.INSTANCE);</span>
+<span class="nc" id="L210">        graphicsState.setStrokingColor(PDDeviceGray.INSTANCE.getInitialColor());</span>
+
+        try
+        {
+<span class="nc" id="L214">            processTransparencyGroup(group);</span>
+        }
+        finally
+        {
+<span class="nc" id="L218">            restoreGraphicsState();</span>
+        }
+<span class="nc" id="L220">    }</span>
+
+    /**
+     * Processes a transparency group stream.
+     * 
+     * @param group transparency group to be processed
+     * @throws IOException if the transparency group cannot be processed
+     */
+    protected void processTransparencyGroup(PDTransparencyGroup group) throws IOException
+    {
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">        if (currentPage == null)</span>
+        {
+<span class="nc" id="L232">            throw new IllegalStateException(&quot;No current page, call &quot; +</span>
+                    &quot;#processChildStream(PDContentStream, PDPage) instead&quot;);
+        }
+
+<span class="fc" id="L236">        PDResources parent = pushResources(group);</span>
+<span class="fc" id="L237">        Deque&lt;PDGraphicsState&gt; savedStack = saveGraphicsStack();</span>
+        
+<span class="fc" id="L239">        Matrix parentMatrix = initialMatrix;</span>
+<span class="fc" id="L240">        PDGraphicsState graphicsState = getGraphicsState();</span>
+
+        // the stream's initial matrix includes the parent CTM, e.g. this allows a scaled form
+<span class="fc" id="L243">        initialMatrix = graphicsState.getCurrentTransformationMatrix().clone();</span>
+
+        // transform the CTM using the stream's matrix
+<span class="fc" id="L246">        graphicsState.getCurrentTransformationMatrix().concatenate(group.getMatrix());</span>
+
+        // Before execution of the transparency group XObject’s content stream, 
+        // the current blend mode in the graphics state shall be initialized to Normal, 
+        // the current stroking and nonstroking alpha constants to 1.0, and the current soft mask to None.
+<span class="fc" id="L251">        graphicsState.setBlendMode(BlendMode.NORMAL);</span>
+<span class="fc" id="L252">        graphicsState.setAlphaConstant(1);</span>
+<span class="fc" id="L253">        graphicsState.setNonStrokeAlphaConstant(1);</span>
+<span class="fc" id="L254">        graphicsState.setSoftMask(null);</span>
+
+        // clip to bounding box
+<span class="fc" id="L257">        clipToRect(group.getBBox());</span>
+
+        try
+        {
+<span class="fc" id="L261">            processStreamOperators(group);</span>
+        }
+        finally
+        {
+<span class="fc" id="L265">            initialMatrix = parentMatrix;</span>
+
+<span class="fc" id="L267">            restoreGraphicsStack(savedStack);</span>
+<span class="fc" id="L268">            popResources(parent);</span>
+        }
+<span class="fc" id="L270">    }</span>
+
+    /**
+     * Processes a Type 3 character stream.
+     *
+     * @param charProc Type 3 character procedure
+     * @param textRenderingMatrix the Text Rendering Matrix
+     * @throws IOException if there is an error reading or parsing the character content stream.
+     */
+    protected void processType3Stream(PDType3CharProc charProc, Matrix textRenderingMatrix)
+            throws IOException
+    {
+<span class="nc bnc" id="L282" title="All 2 branches missed.">        if (currentPage == null)</span>
+        {
+<span class="nc" id="L284">            throw new IllegalStateException(&quot;No current page, call &quot; +</span>
+                    &quot;#processChildStream(PDContentStream, PDPage) instead&quot;);
+        }
+
+<span class="nc" id="L288">        PDResources parent = pushResources(charProc);</span>
+<span class="nc" id="L289">        Deque&lt;PDGraphicsState&gt; savedStack = saveGraphicsStack();</span>
+<span class="nc" id="L290">        PDGraphicsState graphicsState = getGraphicsState();</span>
+
+        // replace the CTM with the TRM
+<span class="nc" id="L293">        graphicsState.setCurrentTransformationMatrix(textRenderingMatrix);</span>
+
+        // transform the CTM using the stream's matrix (this is the FontMatrix)
+<span class="nc" id="L296">        textRenderingMatrix.concatenate(charProc.getMatrix());</span>
+
+        // note: we don't clip to the BBox as it is often wrong, see PDFBOX-1917
+
+<span class="nc" id="L300">        graphicsState.setTextMatrix(new Matrix());</span>
+<span class="nc" id="L301">        graphicsState.setTextLineMatrix(new Matrix());</span>
+
+        try
+        {
+<span class="nc" id="L305">            processStreamOperators(charProc);</span>
+        }
+        finally
+        {
+<span class="nc" id="L309">            restoreGraphicsStack(savedStack);</span>
+<span class="nc" id="L310">            popResources(parent);</span>
+        }
+<span class="nc" id="L312">    }</span>
+
+    /**
+     * Process the given annotation with the specified appearance stream.
+     *
+     * @param annotation The annotation containing the appearance stream to process.
+     * @param appearance The appearance stream to process.
+     * @throws IOException If there is an error reading or parsing the appearance content stream.
+     */
+    protected void processAnnotation(PDAnnotation annotation, PDAppearanceStream appearance)
+            throws IOException
+    {
+<span class="fc" id="L324">        PDRectangle bbox = appearance.getBBox();</span>
+<span class="fc" id="L325">        PDRectangle rect = annotation.getRectangle();</span>
+
+        // PDFBOX-4783: zero-sized rectangles are not valid
+<span class="pc bpc" id="L328" title="4 of 8 branches missed.">        if (rect != null &amp;&amp; rect.getWidth() &gt; 0 &amp;&amp; rect.getHeight() &gt; 0 &amp;&amp;</span>
+<span class="pc bpc" id="L329" title="1 of 4 branches missed.">            bbox != null &amp;&amp; bbox.getWidth() &gt; 0 &amp;&amp; bbox.getHeight() &gt; 0)</span>
+        {
+<span class="fc" id="L331">            Matrix matrix = appearance.getMatrix();</span>
+
+            // transformed appearance box  fixme: may be an arbitrary shape
+<span class="fc" id="L334">            Rectangle2D transformedBox = bbox.transform(matrix).getBounds2D();</span>
+<span class="pc bpc" id="L335" title="1 of 2 branches missed.">            if (transformedBox.isEmpty())</span>
+            {
+                // PDFBOX-6095: zero-sized rectangles are not valid
+<span class="nc" id="L338">                return;</span>
+            }
+
+            // compute a matrix which scales and translates the transformed appearance box to align
+            // with the edges of the annotation's rectangle
+<span class="fc" id="L343">            Matrix a = Matrix.getTranslateInstance(rect.getLowerLeftX(), rect.getLowerLeftY());</span>
+<span class="fc" id="L344">            a.scale((float)(rect.getWidth() / transformedBox.getWidth()),</span>
+<span class="fc" id="L345">                    (float)(rect.getHeight() / transformedBox.getHeight()));</span>
+<span class="fc" id="L346">            a.translate((float) -transformedBox.getX(), (float) -transformedBox.getY());</span>
+
+            // Matrix shall be concatenated with A to form a matrix AA that maps from the appearance's
+            // coordinate system to the annotation's rectangle in default user space
+            //
+            // HOWEVER only the opposite order works for rotated pages with 
+            // filled fields / annotations that have a matrix in the appearance stream, see PDFBOX-3083
+<span class="fc" id="L353">            Matrix aa = Matrix.concatenate(a, matrix);</span>
+
+<span class="fc" id="L355">            PDResources parent = pushResources(appearance);</span>
+<span class="fc" id="L356">            Deque&lt;PDGraphicsState&gt; savedStack = saveGraphicsStack();</span>
+
+            // make matrix AA the CTM
+<span class="fc" id="L359">            getGraphicsState().setCurrentTransformationMatrix(aa);</span>
+
+            // clip to bounding box
+<span class="fc" id="L362">            clipToRect(bbox);</span>
+
+            // needed for patterns in appearance streams, e.g. PDFBOX-2182
+<span class="fc" id="L365">            initialMatrix = aa.clone();</span>
+
+            try
+            {
+<span class="fc" id="L369">                processStreamOperators(appearance);</span>
+            }
+            finally
+            {
+<span class="fc" id="L373">                restoreGraphicsStack(savedStack);</span>
+<span class="fc" id="L374">                popResources(parent);</span>
+            }
+        }
+<span class="fc" id="L377">    }</span>
+
+    /**
+     * Process the given tiling pattern.
+     *
+     * @param tilingPattern the tiling pattern
+     * @param color color to use, if this is an uncoloured pattern, otherwise null.
+     * @param colorSpace color space to use, if this is an uncoloured pattern, otherwise null.
+     * @throws IOException if there is an error reading or parsing the tiling pattern content stream.
+     */
+    protected final void processTilingPattern(PDTilingPattern tilingPattern, PDColor color,
+                                              PDColorSpace colorSpace) throws IOException
+    {
+<span class="nc" id="L390">        processTilingPattern(tilingPattern, color, colorSpace, tilingPattern.getMatrix());</span>
+<span class="nc" id="L391">    }</span>
+
+    /**
+     * Process the given tiling pattern. Allows the pattern matrix to be overridden for custom
+     * rendering.
+     *
+     * @param tilingPattern the tiling pattern
+     * @param color color to use, if this is an uncoloured pattern, otherwise null.
+     * @param colorSpace color space to use, if this is an uncoloured pattern, otherwise null.
+     * @param patternMatrix the pattern matrix, may be overridden for custom rendering.
+     * @throws IOException if there is an error reading or parsing the tiling pattern content stream.
+     */
+    protected final void processTilingPattern(PDTilingPattern tilingPattern, PDColor color,
+                                              PDColorSpace colorSpace, Matrix patternMatrix)
+            throws IOException
+    {
+<span class="fc" id="L407">        PDResources parent = pushResources(tilingPattern);</span>
+
+<span class="fc" id="L409">        Matrix parentMatrix = initialMatrix;</span>
+<span class="fc" id="L410">        initialMatrix = Matrix.concatenate(initialMatrix, patternMatrix);</span>
+
+        // save the original graphics state
+<span class="fc" id="L413">        Deque&lt;PDGraphicsState&gt; savedStack = saveGraphicsStack();</span>
+
+        // save a clean state (new clipping path, line path, etc.)
+<span class="fc" id="L416">        PDRectangle tilingBBox = tilingPattern.getBBox();</span>
+<span class="fc" id="L417">        Rectangle2D bbox = tilingBBox.transform(patternMatrix).getBounds2D();</span>
+<span class="fc" id="L418">        PDRectangle rect = new PDRectangle((float)bbox.getX(), (float)bbox.getY(),</span>
+<span class="fc" id="L419">                (float)bbox.getWidth(), (float)bbox.getHeight());</span>
+<span class="fc" id="L420">        graphicsStack.push(new PDGraphicsState(rect));</span>
+<span class="fc" id="L421">        PDGraphicsState graphicsState = getGraphicsState();</span>
+
+        // non-colored patterns have to be given a color
+<span class="pc bpc" id="L424" title="1 of 2 branches missed.">        if (colorSpace != null)</span>
+        {
+<span class="nc" id="L426">            color = new PDColor(color.getComponents(), colorSpace);</span>
+<span class="nc" id="L427">            graphicsState.setNonStrokingColorSpace(colorSpace);</span>
+<span class="nc" id="L428">            graphicsState.setNonStrokingColor(color);</span>
+<span class="nc" id="L429">            graphicsState.setStrokingColorSpace(colorSpace);</span>
+<span class="nc" id="L430">            graphicsState.setStrokingColor(color);</span>
+        }
+
+        // transform the CTM using the stream's matrix
+<span class="fc" id="L434">        graphicsState.getCurrentTransformationMatrix().concatenate(patternMatrix);</span>
+
+        // clip to bounding box
+<span class="fc" id="L437">        clipToRect(tilingBBox);</span>
+
+        try
+        {
+<span class="fc" id="L441">            processStreamOperators(tilingPattern);</span>
+        }
+        finally
+        {
+<span class="fc" id="L445">            initialMatrix = parentMatrix;</span>
+<span class="fc" id="L446">            restoreGraphicsStack(savedStack);</span>
+<span class="fc" id="L447">            popResources(parent);</span>
+        }
+<span class="fc" id="L449">    }</span>
+
+    /**
+     * Shows the given annotation.
+     *
+     * @param annotation An annotation on the current page.
+     * @throws IOException If an error occurred reading the annotation
+     */
+    public void showAnnotation(PDAnnotation annotation) throws IOException
+    {
+<span class="fc" id="L459">        PDAppearanceStream appearanceStream = getAppearance(annotation);</span>
+<span class="fc bfc" id="L460" title="All 2 branches covered.">        if (appearanceStream != null)</span>
+        {
+<span class="fc" id="L462">            processAnnotation(annotation, appearanceStream);</span>
+        }
+<span class="fc" id="L464">    }</span>
+
+    /**
+     * Returns the appearance stream to process for the given annotation. May be used to render
+     * a specific appearance such as &quot;hover&quot;.
+     *
+     * @param annotation The current annotation.
+     * @return The stream to process.
+     */
+    public PDAppearanceStream getAppearance(PDAnnotation annotation)
+    {
+<span class="fc" id="L475">        return annotation.getNormalAppearanceStream();</span>
+    }
+
+    /**
+     * Process a child stream of the given page. Cannot be used with {@link #processPage(PDPage)}.
+     *
+     * @param contentStream the child content stream
+     * @param page the page to be used for processing
+     * @throws IOException if there is an exception while processing the stream
+     */
+    protected void processChildStream(PDContentStream contentStream, PDPage page) throws IOException
+    {
+<span class="nc bnc" id="L487" title="All 2 branches missed.">        if (isProcessingPage)</span>
+        {
+<span class="nc" id="L489">            throw new IllegalStateException(&quot;Current page has already been set via &quot; +</span>
+                    &quot; #processPage(PDPage) call #processChildStream(PDContentStream) instead&quot;);
+        }
+<span class="nc" id="L492">        initPage(page);</span>
+<span class="nc" id="L493">        processStream(contentStream);</span>
+<span class="nc" id="L494">        currentPage = null;</span>
+<span class="nc" id="L495">    }</span>
+
+    /**
+     * Process a content stream.
+     *
+     * @param contentStream the content stream
+     * @throws IOException if there is an exception while processing the stream
+     */
+    private void processStream(PDContentStream contentStream) throws IOException
+    {
+<span class="fc" id="L505">        PDResources parent = pushResources(contentStream);</span>
+<span class="fc" id="L506">        Deque&lt;PDGraphicsState&gt; savedStack = saveGraphicsStack();</span>
+<span class="fc" id="L507">        Matrix parentMatrix = initialMatrix;</span>
+<span class="fc" id="L508">        PDGraphicsState graphicsState = getGraphicsState();</span>
+
+        // transform the CTM using the stream's matrix
+<span class="fc" id="L511">        graphicsState.getCurrentTransformationMatrix().concatenate(contentStream.getMatrix());</span>
+
+        // the stream's initial matrix includes the parent CTM, e.g. this allows a scaled form
+<span class="fc" id="L514">        initialMatrix = graphicsState.getCurrentTransformationMatrix().clone();</span>
+
+        // clip to bounding box
+<span class="fc" id="L517">        PDRectangle bbox = contentStream.getBBox();</span>
+<span class="fc" id="L518">        clipToRect(bbox);</span>
+
+        try
+        {
+<span class="fc" id="L522">            processStreamOperators(contentStream);</span>
+        }
+        finally
+        {
+<span class="fc" id="L526">            initialMatrix = parentMatrix;</span>
+<span class="fc" id="L527">            restoreGraphicsStack(savedStack);</span>
+<span class="fc" id="L528">            popResources(parent);</span>
+        }
+<span class="fc" id="L530">    }</span>
+
+    /**
+     * Processes the operators of the given content stream.
+     *
+     * @param contentStream to content stream to parse.
+     * @throws IOException if there is an error reading or parsing the content stream.
+     */
+    private void processStreamOperators(PDContentStream contentStream) throws IOException
+    {
+<span class="fc" id="L540">        List&lt;COSBase&gt; arguments = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L541">        PDFStreamParser parser = new PDFStreamParser(contentStream);</span>
+<span class="fc" id="L542">        Object token = parser.parseNextToken();</span>
+
+<span class="fc" id="L544">        boolean isFirstOperator = true;</span>
+<span class="fc" id="L545">        boolean oldShouldProcessColorOperators = shouldProcessColorOperators;</span>
+<span class="fc" id="L546">        shouldProcessColorOperators = true;</span>
+<span class="fc bfc" id="L547" title="All 2 branches covered.">        if (contentStream instanceof PDTilingPattern &amp;&amp;</span>
+<span class="pc bpc" id="L548" title="1 of 2 branches missed.">            ((PDTilingPattern) contentStream).getPaintType() == PDTilingPattern.PAINT_UNCOLORED)</span>
+        {
+<span class="nc" id="L550">            shouldProcessColorOperators = false;</span>
+        }
+        try
+        {
+<span class="fc bfc" id="L554" title="All 2 branches covered.">            while (token != null)</span>
+            {
+<span class="fc bfc" id="L556" title="All 2 branches covered.">                if (token instanceof Operator)</span>
+                {
+<span class="pc bpc" id="L558" title="1 of 4 branches missed.">                    if (isFirstOperator &amp;&amp; contentStream instanceof PDType3CharProc &amp;&amp; </span>
+<span class="nc bnc" id="L559" title="All 2 branches missed.">                        OperatorName.TYPE3_D1.equals(((Operator) token).getName()))</span>
+                    {
+<span class="nc" id="L561">                        shouldProcessColorOperators = false;</span>
+                    }
+<span class="fc" id="L563">                    isFirstOperator = false;</span>
+<span class="fc" id="L564">                    processOperator((Operator) token, arguments);</span>
+<span class="fc" id="L565">                    arguments.clear();</span>
+                }
+                else
+                {
+<span class="fc" id="L569">                    arguments.add((COSBase) token);</span>
+                }
+<span class="fc" id="L571">                token = parser.parseNextToken();</span>
+            }
+        }
+        finally
+        {
+<span class="fc" id="L576">            shouldProcessColorOperators = oldShouldProcessColorOperators;</span>
+        }
+<span class="fc" id="L578">    }</span>
+
+    /**
+     * Pushes the given stream's resources, returning the previous resources.
+     */
+    private PDResources pushResources(PDContentStream contentStream)
+    {
+        // resource lookup: first look for stream resources, then fallback to the current page
+<span class="fc" id="L586">        PDResources parentResources = resources;</span>
+<span class="fc" id="L587">        PDResources streamResources = contentStream.getResources();</span>
+<span class="fc bfc" id="L588" title="All 2 branches covered.">        if (streamResources != null)</span>
+        {
+<span class="fc" id="L590">            resources = streamResources;</span>
+        }
+<span class="pc bpc" id="L592" title="1 of 2 branches missed.">        else if (resources != null)</span>
+        {
+            // inherit directly from parent stream, this is not in the PDF spec, but the file from
+            // PDFBOX-1359 does this and works in Acrobat
+        }
+        else
+        {
+<span class="nc" id="L599">            resources = currentPage.getResources();</span>
+
+            // resources are required in PDF
+<span class="nc bnc" id="L602" title="All 2 branches missed.">            if (resources == null)</span>
+            {
+<span class="nc" id="L604">                resources = new PDResources();</span>
+            }
+        }
+
+<span class="fc" id="L608">        return parentResources;</span>
+    }
+
+    /**
+     * Pops the current resources, replacing them with the given resources.
+     */
+    private void popResources(PDResources parentResources)
+    {
+<span class="fc" id="L616">        resources = parentResources;</span>
+<span class="fc" id="L617">    }</span>
+
+    /**
+     * Transforms the given rectangle using the CTM and then intersects it with the current
+     * clipping area.
+     */
+    private void clipToRect(PDRectangle rectangle)
+    {
+<span class="pc bpc" id="L625" title="1 of 2 branches missed.">        if (rectangle != null)</span>
+        {
+<span class="fc" id="L627">            PDGraphicsState graphicsState = getGraphicsState();</span>
+<span class="fc" id="L628">            GeneralPath clip = rectangle.transform(graphicsState.getCurrentTransformationMatrix());</span>
+<span class="fc" id="L629">            graphicsState.intersectClippingPath(clip);</span>
+        }
+<span class="fc" id="L631">    }</span>
+
+    /**
+     * Called when the BT operator is encountered. This method is for overriding in subclasses, the
+     * default implementation does nothing.
+     *
+     * @throws IOException if there was an error processing the text
+     */
+    public void beginText() throws IOException
+    {
+        // overridden in subclasses
+<span class="fc" id="L642">    }</span>
+
+    /**
+     * Called when the ET operator is encountered. This method is for overriding in subclasses, the
+     * default implementation does nothing.
+     *
+     * @throws IOException if there was an error processing the text
+     */
+    public void endText() throws IOException
+    {
+        // overridden in subclasses
+<span class="fc" id="L653">    }</span>
+
+    /**
+     * Called when a string of text is to be shown.
+     *
+     * @param string the encoded text
+     * @throws IOException if there was an error showing the text
+     */
+    public void showTextString(byte[] string) throws IOException
+    {
+<span class="fc" id="L663">        showText(string);</span>
+<span class="fc" id="L664">    }</span>
+
+    /**
+     * Called when a string of text with spacing adjustments is to be shown.
+     *
+     * @param array array of encoded text strings and adjustments
+     * @throws IOException if there was an error showing the text
+     */
+    public void showTextStrings(COSArray array) throws IOException
+    {
+<span class="fc" id="L674">        PDTextState textState = getGraphicsState().getTextState();</span>
+<span class="fc" id="L675">        float fontSize = textState.getFontSize();</span>
+<span class="fc" id="L676">        float horizontalScaling = textState.getHorizontalScaling() / 100f;</span>
+<span class="fc" id="L677">        PDFont font = textState.getFont();</span>
+<span class="fc" id="L678">        boolean isVertical = false;</span>
+<span class="pc bpc" id="L679" title="1 of 2 branches missed.">        if (font != null)</span>
+        {
+<span class="fc" id="L681">            isVertical = font.isVertical();</span>
+        }
+
+<span class="fc bfc" id="L684" title="All 2 branches covered.">        for (COSBase obj : array)</span>
+        {
+<span class="fc bfc" id="L686" title="All 2 branches covered.">            if (obj instanceof COSNumber)</span>
+            {
+<span class="fc" id="L688">                float tj = ((COSNumber)obj).floatValue();</span>
+
+                // calculate the combined displacements
+                float tx;
+                float ty;
+<span class="pc bpc" id="L693" title="1 of 2 branches missed.">                if (isVertical)</span>
+                {
+<span class="nc" id="L695">                    tx = 0;</span>
+<span class="nc" id="L696">                    ty = -tj / 1000 * fontSize;</span>
+                }
+                else
+                {
+<span class="fc" id="L700">                    tx = -tj / 1000 * fontSize * horizontalScaling;</span>
+<span class="fc" id="L701">                    ty = 0;</span>
+                }
+
+<span class="fc" id="L704">                applyTextAdjustment(tx, ty);</span>
+<span class="fc" id="L705">            }</span>
+<span class="pc bpc" id="L706" title="1 of 2 branches missed.">            else if(obj instanceof COSString)</span>
+            {
+<span class="fc" id="L708">                byte[] string = ((COSString)obj).getBytes();</span>
+<span class="fc" id="L709">                showText(string);</span>
+<span class="fc" id="L710">            }</span>
+<span class="nc bnc" id="L711" title="All 2 branches missed.">            else if (obj instanceof COSArray)</span>
+            {
+<span class="nc" id="L713">                LOG.error(&quot;Nested arrays are not allowed in an array for TJ operation: {}&quot;, obj);</span>
+            }
+            else
+            {
+<span class="nc" id="L717">                LOG.error(&quot;Unknown type {} in array for TJ operation: {}&quot;,</span>
+<span class="nc" id="L718">                        obj.getClass().getSimpleName(), obj);</span>
+            }
+<span class="fc" id="L720">        }</span>
+<span class="fc" id="L721">    }</span>
+
+    /**
+     * Applies a text position adjustment from the TJ operator. May be overridden in subclasses.
+     *
+     * @param tx x-translation
+     * @param ty y-translation
+     */
+    protected void applyTextAdjustment(float tx, float ty)
+    {
+        // update the text matrix
+<span class="fc" id="L732">        getGraphicsState().getTextMatrix().translate(tx, ty);</span>
+<span class="fc" id="L733">    }</span>
+
+    /**
+     * Process text from the PDF Stream. You should override this method if you want to
+     * perform an action when encoded text is being processed.
+     *
+     * @param string the encoded text
+     * @throws IOException if there is an error processing the string
+     */
+    protected void showText(byte[] string) throws IOException
+    {
+<span class="fc" id="L744">        PDGraphicsState state = getGraphicsState();</span>
+<span class="fc" id="L745">        PDTextState textState = state.getTextState();</span>
+
+        // get the current font
+<span class="fc" id="L748">        PDFont font = textState.getFont();</span>
+<span class="pc bpc" id="L749" title="1 of 2 branches missed.">        if (font == null)</span>
+        {
+<span class="nc" id="L751">            LOG.warn(&quot;No current font, will use default&quot;);</span>
+<span class="nc" id="L752">            font = getDefaultFont();</span>
+        }
+
+<span class="fc" id="L755">        float fontSize = textState.getFontSize();</span>
+<span class="fc" id="L756">        float horizontalScaling = textState.getHorizontalScaling() / 100f;</span>
+<span class="fc" id="L757">        float charSpacing = textState.getCharacterSpacing();</span>
+
+        // put the text state parameters into matrix form
+<span class="fc" id="L760">        Matrix parameters = new Matrix(</span>
+                fontSize * horizontalScaling, 0, // 0
+                0, fontSize,                     // 0
+<span class="fc" id="L763">                0, textState.getRise());         // 1</span>
+        
+<span class="fc" id="L765">        Matrix textMatrix = state.getTextMatrix();</span>
+
+        // read the stream until it is empty
+<span class="fc" id="L768">        InputStream in = new ByteArrayInputStream(string);</span>
+<span class="fc bfc" id="L769" title="All 2 branches covered.">        while (in.available() &gt; 0)</span>
+        {
+            // decode a character
+<span class="fc" id="L772">            int before = in.available();</span>
+<span class="fc" id="L773">            int code = font.readCode(in);</span>
+<span class="fc" id="L774">            int codeLength = before - in.available();</span>
+
+            // Word spacing shall be applied to every occurrence of the single-byte character code
+            // 32 in a string when using a simple font or a composite font that defines code 32 as
+            // a single-byte code.
+<span class="fc" id="L779">            float wordSpacing = 0;</span>
+<span class="fc bfc" id="L780" title="All 4 branches covered.">            if (codeLength == 1 &amp;&amp; code == 32)</span>
+            {
+<span class="fc" id="L782">                wordSpacing += textState.getWordSpacing();</span>
+            }
+
+            // text rendering matrix (text space -&gt; device space)
+<span class="fc" id="L786">            Matrix ctm = state.getCurrentTransformationMatrix();</span>
+<span class="fc" id="L787">            Matrix textRenderingMatrix = parameters.multiply(textMatrix).multiply(ctm);</span>
+
+            // get glyph's position vector if this is vertical text
+            // changes to vertical text should be tested with PDFBOX-2294 and PDFBOX-1422
+<span class="fc bfc" id="L791" title="All 2 branches covered.">            if (font.isVertical())</span>
+            {
+                // position vector, in text space
+<span class="fc" id="L794">                Vector v = font.getPositionVector(code);</span>
+
+                // apply the position vector to the horizontal origin to get the vertical origin
+<span class="fc" id="L797">                textRenderingMatrix.translate(v);</span>
+            }
+
+            // get glyph's horizontal and vertical displacements, in text space
+<span class="fc" id="L801">            Vector w = font.getDisplacement(code);</span>
+
+            // process the decoded glyph
+<span class="fc" id="L804">            showGlyph(textRenderingMatrix, font, code, w);</span>
+
+            // calculate the combined displacements
+            float tx;
+            float ty;
+<span class="fc bfc" id="L809" title="All 2 branches covered.">            if (font.isVertical())</span>
+            {
+<span class="fc" id="L811">                tx = 0;</span>
+<span class="fc" id="L812">                ty = w.getY() * fontSize + charSpacing + wordSpacing;</span>
+            }
+            else
+            {
+<span class="fc" id="L816">                tx = (w.getX() * fontSize + charSpacing + wordSpacing) * horizontalScaling;</span>
+<span class="fc" id="L817">                ty = 0;</span>
+            }
+
+            // update the text matrix
+<span class="fc" id="L821">            textMatrix.translate(tx, ty);</span>
+<span class="fc" id="L822">        }</span>
+<span class="fc" id="L823">    }</span>
+
+    /**
+     * Called when a glyph is to be processed. This method is intended for overriding in subclasses,
+     * the default implementation does nothing.
+     *
+     * @param textRenderingMatrix the current text rendering matrix, T&lt;sub&gt;rm&lt;/sub&gt;
+     * @param font the current font
+     * @param code internal PDF character code for the glyph
+     * @param displacement the displacement (i.e. advance) of the glyph in text space
+     * @throws IOException if the glyph cannot be processed
+     */
+    protected void showGlyph(Matrix textRenderingMatrix, PDFont font, int code, Vector displacement)
+            throws IOException
+    {
+<span class="pc bpc" id="L838" title="1 of 2 branches missed.">        if (font instanceof PDType3Font)</span>
+        {
+<span class="nc" id="L840">            showType3Glyph(textRenderingMatrix, (PDType3Font) font, code, displacement);</span>
+        }
+        else
+        {
+<span class="fc" id="L844">            showFontGlyph(textRenderingMatrix, font, code, displacement);</span>
+        }
+<span class="fc" id="L846">    }</span>
+
+    /**
+     * Called when a glyph is to be processed. This method is intended for overriding in subclasses,
+     * the default implementation does nothing.
+     *
+     * @param textRenderingMatrix the current text rendering matrix, T&lt;sub&gt;rm&lt;/sub&gt;
+     * @param font the current font
+     * @param code internal PDF character code for the glyph
+     * @param displacement the displacement (i.e. advance) of the glyph in text space
+     * @throws IOException if the glyph cannot be processed
+     */
+    protected void showFontGlyph(Matrix textRenderingMatrix, PDFont font,
+            int code, Vector displacement) throws IOException
+    {
+        // overridden in subclasses
+<span class="nc" id="L862">    }</span>
+
+    /**
+     * Called when a glyph is to be processed. This method is intended for overriding in subclasses,
+     * the default implementation does nothing.
+     *
+     * @param textRenderingMatrix the current text rendering matrix, T&lt;sub&gt;rm&lt;/sub&gt;
+     * @param font the current font
+     * @param code internal PDF character code for the glyph
+     * @param displacement the displacement (i.e. advance) of the glyph in text space
+     * @throws IOException if the glyph cannot be processed
+     */
+    protected void showType3Glyph(Matrix textRenderingMatrix, PDType3Font font, int code,
+            Vector displacement) throws IOException
+    {
+<span class="nc" id="L877">        PDType3CharProc charProc = font.getCharProc(code);</span>
+<span class="nc bnc" id="L878" title="All 2 branches missed.">        if (charProc != null)</span>
+        {
+<span class="nc" id="L880">            processType3Stream(charProc, textRenderingMatrix);</span>
+        }
+<span class="nc" id="L882">    }</span>
+
+    /**
+     * Called when a marked content group begins
+     *
+     * @param tag indicates the role or significance of the sequence
+     * @param properties optional properties
+     */
+    public void beginMarkedContentSequence(COSName tag, COSDictionary properties)
+    {
+        // overridden in subclasses
+<span class="fc" id="L893">    }</span>
+
+    /**
+     * Called when a marked content group ends
+     */
+    public void endMarkedContentSequence()
+    {
+        // overridden in subclasses
+<span class="fc" id="L901">    }</span>
+
+    /**
+     * This is used to handle an operation.
+     * 
+     * @param operation The operation to perform.
+     * @param arguments The list of arguments.
+     * @throws IOException If there is an error processing the operation.
+     */
+    public void processOperator(String operation, List&lt;COSBase&gt; arguments) throws IOException
+    {
+<span class="fc" id="L912">        Operator operator = Operator.getOperator(operation);</span>
+<span class="fc" id="L913">        processOperator(operator, arguments);</span>
+<span class="fc" id="L914">    }</span>
+
+    /**
+     * This is used to handle an operation.
+     * 
+     * @param operator The operation to perform.
+     * @param operands The list of arguments.
+     * @throws IOException If there is an error processing the operation.
+     */
+    protected void processOperator(Operator operator, List&lt;COSBase&gt; operands) throws IOException
+    {
+<span class="fc" id="L925">        String name = operator.getName();</span>
+<span class="fc" id="L926">        OperatorProcessor processor = operators.get(name);</span>
+<span class="fc bfc" id="L927" title="All 2 branches covered.">        if (processor != null)</span>
+        {
+            try
+            {
+<span class="fc" id="L931">                processor.process(operator, operands);</span>
+            }
+<span class="fc" id="L933">            catch (IOException e)</span>
+            {
+<span class="fc" id="L935">                operatorException(operator, operands, e);</span>
+<span class="fc" id="L936">            }</span>
+        }
+        else
+        {
+<span class="fc" id="L940">            unsupportedOperator(operator, operands);</span>
+        }
+<span class="fc" id="L942">    }</span>
+
+    /**
+     * Called when an unsupported operator is encountered.
+     *
+     * @param operator The unknown operator.
+     * @param operands The list of operands.
+     * 
+     * @throws IOException if there is an error processing the unsupported operator
+     */
+    protected void unsupportedOperator(Operator operator, List&lt;COSBase&gt; operands) throws IOException
+    {
+        // overridden in subclasses
+<span class="fc" id="L955">    }</span>
+
+    /**
+     * Called when an exception is thrown by an operator.
+     *
+     * @param operator The unknown operator.
+     * @param operands The list of operands.
+     * @param exception the exception which occurred when processing the operator
+     * 
+     * @throws IOException if there is an error processing the operator exception
+     */
+    protected void operatorException(Operator operator, List&lt;COSBase&gt; operands, IOException exception)
+            throws IOException
+    {
+<span class="pc bpc" id="L969" title="2 of 6 branches missed.">        if (exception instanceof MissingOperandException ||</span>
+            exception instanceof MissingResourceException ||
+            exception instanceof MissingImageReaderException)
+        {
+<span class="fc" id="L973">            LOG.error(exception.getMessage(), exception);</span>
+        }
+<span class="pc bpc" id="L975" title="1 of 2 branches missed.">        else if (exception instanceof EmptyGraphicsStackException)</span>
+        {
+<span class="nc" id="L977">            LOG.warn(exception.getMessage(), exception);</span>
+        }
+<span class="pc bpc" id="L979" title="1 of 2 branches missed.">        else if (operator.getName().equals(&quot;Do&quot;))</span>
+        {
+            // todo: this too forgiving, but PDFBox has always worked this way for DrawObject
+            //       some careful refactoring is needed
+<span class="nc" id="L983">            LOG.warn(exception.getMessage(), exception);</span>
+        }
+<span class="pc bpc" id="L985" title="1 of 2 branches missed.">        else if (exception.getCause() instanceof DataFormatException)</span>
+        {
+<span class="nc" id="L987">            LOG.warn(exception.getMessage(), exception);</span>
+        }
+        else
+        {
+<span class="fc" id="L991">            throw exception;</span>
+        }
+<span class="fc" id="L993">    }</span>
+
+    /**
+     * Pushes the current graphics state to the stack.
+     */
+    public void saveGraphicsState()
+    {
+<span class="fc" id="L1000">        graphicsStack.push(graphicsStack.peek().clone());</span>
+<span class="fc" id="L1001">    }</span>
+
+    /**
+     * Pops the current graphics state from the stack.
+     */
+    public void restoreGraphicsState()
+    {
+<span class="fc" id="L1008">        graphicsStack.pop();</span>
+<span class="fc" id="L1009">    }</span>
+
+    /**
+     * Saves the entire graphics stack.
+     * 
+     * @return the saved graphics state stack.
+     */
+    protected final Deque&lt;PDGraphicsState&gt; saveGraphicsStack()
+    {
+<span class="fc" id="L1018">        Deque&lt;PDGraphicsState&gt; savedStack = graphicsStack;</span>
+<span class="fc" id="L1019">        graphicsStack = new ArrayDeque&lt;&gt;(1);</span>
+<span class="fc" id="L1020">        graphicsStack.add(savedStack.peek().clone());</span>
+<span class="fc" id="L1021">        return savedStack;</span>
+    }
+
+    /**
+     * Restores the entire graphics stack.
+     * 
+     * @param snapshot the graphics state to be restored
+     * 
+     */
+    protected final void restoreGraphicsStack(Deque&lt;PDGraphicsState&gt; snapshot)
+    {
+<span class="fc" id="L1032">        graphicsStack = snapshot;</span>
+<span class="fc" id="L1033">    }</span>
+    
+    /**
+     * @return Returns the size of the graphicsStack.
+     */
+    public int getGraphicsStackSize()
+    {
+<span class="fc" id="L1040">        return graphicsStack.size();</span>
+    }
+
+    /**
+     * @return Returns the graphicsState.
+     */
+    public PDGraphicsState getGraphicsState()
+    {
+<span class="fc" id="L1048">        return graphicsStack.peek();</span>
+    }
+
+    /**
+     * @return Returns the textLineMatrix.
+     */
+    public Matrix getTextLineMatrix()
+    {
+<span class="fc" id="L1056">        return getGraphicsState().getTextLineMatrix();</span>
+    }
+
+    /**
+     * @param value The textLineMatrix to set.
+     */
+    public void setTextLineMatrix(Matrix value)
+    {
+<span class="fc" id="L1064">        getGraphicsState().setTextLineMatrix(value);</span>
+<span class="fc" id="L1065">    }</span>
+
+    /**
+     * @return Returns the textMatrix.
+     */
+    public Matrix getTextMatrix()
+    {
+<span class="fc" id="L1072">        return getGraphicsState().getTextMatrix();</span>
+    }
+
+    /**
+     * @param value The textMatrix to set.
+     */
+    public void setTextMatrix(Matrix value)
+    {
+<span class="fc" id="L1080">        getGraphicsState().setTextMatrix(value);</span>
+<span class="fc" id="L1081">    }</span>
+
+    /**
+     * @param array dash array
+     * @param phase dash phase
+     */
+    public void setLineDashPattern(COSArray array, int phase)
+    {
+<span class="fc" id="L1089">        PDLineDashPattern lineDash = new PDLineDashPattern(array, phase);</span>
+<span class="fc" id="L1090">        getGraphicsState().setLineDashPattern(lineDash);</span>
+<span class="fc" id="L1091">    }</span>
+
+    /**
+     * @return the stream' resources. This is mainly to be used by the {@link OperatorProcessor}
+     * classes.
+     */
+    public PDResources getResources()
+    {
+<span class="fc" id="L1099">        return resources;</span>
+    }
+
+    /**
+     * Returns the current page.
+     * 
+     * @return the current page
+     */
+    public PDPage getCurrentPage()
+    {
+<span class="fc" id="L1109">        return currentPage;</span>
+    }
+
+    /**
+     * Gets the stream's initial matrix.
+     * 
+     * @return the initial matrix
+     */
+    public Matrix getInitialMatrix()
+    {
+<span class="fc" id="L1119">        return initialMatrix;</span>
+    }
+
+    /**
+     * Transforms a point using the CTM.
+     * 
+     * @param x the x-coordinate of the point to be transformed
+     * @param y the y-coordinate of the point to be transformed
+     * 
+     * @return the transformed point
+     */
+    public Point2D.Float transformedPoint(float x, float y)
+    {
+<span class="fc" id="L1132">        float[] position = { x, y };</span>
+<span class="fc" id="L1133">        getGraphicsState().getCurrentTransformationMatrix().createAffineTransform()</span>
+<span class="fc" id="L1134">                .transform(position, 0, position, 0, 1);</span>
+<span class="fc" id="L1135">        return new Point2D.Float(position[0], position[1]);</span>
+    }
+
+    /**
+     * Transforms a width using the CTM.
+     * 
+     * @param width the width to be transformed
+     * 
+     * @return the transformed width
+     */
+    protected float transformWidth(float width)
+    {
+<span class="fc" id="L1147">        Matrix ctm = getGraphicsState().getCurrentTransformationMatrix();</span>
+<span class="fc" id="L1148">        float x = ctm.getScaleX() + ctm.getShearX();</span>
+<span class="fc" id="L1149">        float y = ctm.getScaleY() + ctm.getShearY();</span>
+<span class="fc" id="L1150">        return width * (float)Math.sqrt((x * x + y * y) * 0.5);</span>
+    }
+
+    /**
+     * Get the current level. This can be used to decide whether a recursion has done too deep and
+     * an operation should be skipped to avoid a stack overflow.
+     *
+     * @return the current level.
+     */
+    public int getLevel()
+    {
+<span class="fc" id="L1161">        return level;</span>
+    }
+
+    /**
+     * Increase the level. Call this before running a potentially recursive operation.
+     */
+    public void increaseLevel()
+    {
+<span class="fc" id="L1169">        ++level;</span>
+<span class="fc" id="L1170">    }</span>
+
+    /**
+     * Decrease the level. Call this after running a potentially recursive operation. A log message
+     * is shown if the level is below 0. This can happen if the level is not decreased after an
+     * operation is done, e.g. by using a &quot;finally&quot; block.
+     */
+    public void decreaseLevel()
+    {
+<span class="fc" id="L1179">        --level;</span>
+<span class="pc bpc" id="L1180" title="1 of 2 branches missed.">        if (level &lt; 0)</span>
+        {
+<span class="nc" id="L1182">            LOG.error(&quot;level is {}&quot;, level);</span>
+        }
+<span class="fc" id="L1184">    }</span>
+
+    /**
+     * Tells whether color operators should be processed. To be used in some OperatorProcessor
+     * classes.
+     *
+     * @return true if color operators should be processed, false if not, e.g. in type3 charprocs
+     * with d1 or in uncolored tiling patterns.
+     */
+    public boolean isShouldProcessColorOperators()
+    {
+<span class="fc" id="L1195">        return shouldProcessColorOperators;</span>
+    }
+
+    /**
+     * Handles MP and DP operators.
+     *
+     * @param tag indicates the role or significance of the sequence
+     * @param properties optional properties
+     */
+    public void markedContentPoint(COSName tag, COSDictionary properties)
+    {
+        // overridden in subclasses
+<span class="nc" id="L1207">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

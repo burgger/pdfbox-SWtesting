@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FlateFilterDecoderStream.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.filter</a> &gt; <span class="el_source">FlateFilterDecoderStream.java</span></div><h1>FlateFilterDecoderStream.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.filter;
+
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.zip.DataFormatException;
+import java.util.zip.Inflater;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+/**
+ * Stream based decoder for the flate filter which uses zlib/deflate compression.
+ * 
+ * Use Inflater instead of InflateInputStream to avoid an EOFException due to a probably missing Z_STREAM_END, see
+ * PDFBOX-1232 for details.
+ * 
+ */
+public final class FlateFilterDecoderStream extends FilterInputStream
+{
+<span class="fc" id="L38">    private static final Logger LOG = LogManager.getLogger(FlateFilterDecoderStream.class);</span>
+
+<span class="fc" id="L40">    private boolean isEOF = false;</span>
+<span class="fc" id="L41">    private int currentDataIndex = 0;</span>
+<span class="fc" id="L42">    private int bytesDecoded = 0;</span>
+
+<span class="fc" id="L44">    private final byte[] buffer = new byte[2048];</span>
+<span class="fc" id="L45">    private final byte[] decodedData = new byte[4096];</span>
+    // use nowrap mode to bypass zlib-header and checksum to avoid a DataFormatException
+<span class="fc" id="L47">    private final Inflater inflater = new Inflater(true);</span>
+
+    /**
+     * Constructor.
+     *
+     * @param inputStream The input stream to actually read from.
+     */
+    public FlateFilterDecoderStream(InputStream inputStream) throws IOException
+    {
+<span class="fc" id="L56">        super(inputStream);</span>
+        // skip zlib header
+<span class="fc" id="L58">        in.read();</span>
+<span class="fc" id="L59">        in.read();</span>
+<span class="fc" id="L60">    }</span>
+
+    private boolean fetch() throws IOException
+    {
+<span class="fc" id="L64">        currentDataIndex = 0;</span>
+<span class="fc bfc" id="L65" title="All 4 branches covered.">        if (isEOF || inflater.finished())</span>
+        {
+<span class="fc" id="L67">            isEOF = true;</span>
+<span class="fc" id="L68">            bytesDecoded = 0;</span>
+<span class="fc" id="L69">            return false;</span>
+        }
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (inflater.needsInput())</span>
+        {
+<span class="fc" id="L73">            int bytesRead = in.read(buffer);</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">            if (bytesRead &gt; -1)</span>
+            {
+<span class="fc" id="L76">                inflater.setInput(buffer, 0, bytesRead);</span>
+            }
+            else
+            {
+<span class="nc" id="L80">                isEOF = true;</span>
+<span class="nc" id="L81">                return false;</span>
+            }
+        }
+        try
+        {
+            // overwrite formerly read bytes
+<span class="fc bfc" id="L87" title="All 2 branches covered.">            if (bytesDecoded &gt; 0)</span>
+            {
+<span class="fc" id="L89">                Arrays.fill(decodedData, 0, bytesDecoded, (byte) 0);</span>
+            }
+<span class="fc" id="L91">            bytesDecoded = inflater.inflate(decodedData);</span>
+        }
+<span class="fc" id="L93">        catch (DataFormatException exception)</span>
+        {
+<span class="fc" id="L95">            isEOF = true;</span>
+            // check if some bytes could be read at all
+<span class="fc" id="L97">            int countZeros = 0;</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">            for (int i = 0; i &lt; decodedData.length; i++)</span>
+            {
+<span class="fc bfc" id="L100" title="All 2 branches covered.">                if (decodedData[i] == 0)</span>
+                {
+<span class="fc" id="L102">                    countZeros++;</span>
+                }
+                else
+                {
+<span class="fc" id="L106">                    countZeros = 0;</span>
+                }
+            }
+<span class="fc" id="L109">            bytesDecoded = decodedData.length - countZeros;</span>
+            // don't throw an exception, use the already read data or an empty stream
+<span class="fc" id="L111">            LOG.warn(&quot;FlateFilter: premature end of stream due to a DataFormatException = {}&quot;,</span>
+<span class="fc" id="L112">                    exception.getMessage());</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">            return bytesDecoded &gt; 0;</span>
+<span class="fc" id="L114">        }</span>
+<span class="fc" id="L115">        return true;</span>
+    }
+
+    /**
+     * This will read the next byte from the stream.
+     *
+     * @return The next byte read from the stream.
+     *
+     * @throws IOException If there is an error reading from the wrapped stream.
+     */
+    @Override
+    public int read() throws IOException
+    {
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (isEOF)</span>
+        {
+<span class="nc" id="L130">            return -1;</span>
+        }
+<span class="nc bnc" id="L132" title="All 4 branches missed.">        if (currentDataIndex == bytesDecoded &amp;&amp; !fetch())</span>
+        {
+<span class="nc" id="L134">            return -1;</span>
+        }
+<span class="nc" id="L136">        return decodedData[currentDataIndex++] &amp; 0xFF;</span>
+    }
+
+    /**
+     * This will read a chunk of data.
+     *
+     * @param data The buffer to write data to.
+     * @param offset The offset into the data stream.
+     * @param length The number of byte to attempt to read.
+     *
+     * @return The number of bytes actually read.
+     *
+     * @throws IOException If there is an error reading data from the underlying stream.
+     */
+    @Override
+    public int read(byte[] data, int offset, int length) throws IOException
+    {
+<span class="fc bfc" id="L153" title="All 2 branches covered.">        if (isEOF)</span>
+        {
+<span class="fc" id="L155">            return -1;</span>
+        }
+<span class="fc" id="L157">        int numberOfBytesRead = 0;</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        while (numberOfBytesRead &lt; length)</span>
+        {
+<span class="fc" id="L160">            int available = bytesDecoded - currentDataIndex;</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">            if (available &gt; 0)</span>
+            {
+<span class="fc" id="L163">                int bytes2Copy = Math.min(length - numberOfBytesRead, available);</span>
+<span class="fc" id="L164">                System.arraycopy(decodedData, currentDataIndex, data, numberOfBytesRead + offset,</span>
+                        bytes2Copy);
+<span class="fc" id="L166">                currentDataIndex += bytes2Copy;</span>
+<span class="fc" id="L167">                numberOfBytesRead += bytes2Copy;</span>
+<span class="fc" id="L168">            }</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">            else if (!fetch())</span>
+            {
+<span class="fc" id="L171">                break;</span>
+            }
+<span class="fc" id="L173">        }</span>
+<span class="fc" id="L174">        return numberOfBytesRead;</span>
+    }
+
+    /**
+     * This will close the underlying stream and release any resources.
+     *
+     * @throws IOException If there is an error closing the underlying stream.
+     */
+    @Override
+    public void close() throws IOException
+    {
+<span class="fc" id="L185">        inflater.end();</span>
+<span class="fc" id="L186">        super.close();</span>
+<span class="fc" id="L187">    }</span>
+
+    /**
+     * mark/reset isn't supported.
+     *
+     * @return always false.
+     */
+    @Override
+    public boolean markSupported()
+    {
+<span class="nc" id="L197">        return false;</span>
+    }
+
+    /**
+     * Unsupported.
+     *
+     * @param n ignored.
+     *
+     * @return always zero.
+     */
+    @Override
+    public long skip(long n)
+    {
+<span class="nc" id="L210">        return 0;</span>
+    }
+
+    /**
+     * Unsupported.
+     *
+     * @return always zero.
+     */
+    @Override
+    public int available()
+    {
+<span class="nc" id="L221">        return 0;</span>
+    }
+
+    /**
+     * Unsupported.
+     *
+     * @param readlimit ignored.
+     */
+    @Override
+    public synchronized void mark(int readlimit)
+    {
+<span class="nc" id="L232">    }</span>
+
+    /**
+     * Unsupported.
+     *
+     * @throws IOException always throw as reset is an unsupported feature.
+     */
+    @Override
+    public synchronized void reset() throws IOException
+    {
+<span class="nc" id="L242">        throw new IOException(&quot;reset is not supported&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDActionLaunch.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.action</a> &gt; <span class="el_source">PDActionLaunch.java</span></div><h1>PDActionLaunch.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.action;
+
+import java.io.IOException;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSBoolean;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+
+import org.apache.pdfbox.pdmodel.common.filespecification.PDFileSpecification;
+
+/**
+ * This represents a launch action that can be executed in a PDF document.
+ *
+ * @author Ben Litchfield
+ * @author Panagiotis Toumasis
+ */
+public class PDActionLaunch extends PDAction
+{
+
+    /**
+     * This type of action this object represents.
+     */
+    public static final String SUB_TYPE = &quot;Launch&quot;;
+
+    /**
+     * Default constructor.
+     */
+    public PDActionLaunch()
+<span class="nc" id="L46">    {</span>
+<span class="nc" id="L47">        setSubType( SUB_TYPE );</span>
+<span class="nc" id="L48">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param a The action dictionary.
+     */
+    public PDActionLaunch( COSDictionary a )
+    {
+<span class="nc" id="L57">        super( a );</span>
+<span class="nc" id="L58">    }</span>
+
+    /**
+     * This will get the application to be launched or the document
+     * to be opened or printed. It is required if none of the entries
+     * Win, Mac or Unix is present. If this entry is absent and the
+     * viewer application does not understand any of the alternative
+     * entries it should do nothing.
+     *
+     * @return The F entry of the specific launch action dictionary.
+     *
+     * @throws IOException If there is an error creating the file spec.
+     */
+    public PDFileSpecification getFile() throws IOException
+    {
+<span class="nc" id="L73">        return PDFileSpecification.createFS(getCOSObject().getDictionaryObject(COSName.F));</span>
+    }
+
+    /**
+     * This will set the application to be launched or the document
+     * to be opened or printed. It is required if none of the entries
+     * Win, Mac or Unix is present. If this entry is absent and the
+     * viewer application does not understand any of the alternative
+     * entries it should do nothing.
+     *
+     * @param fs The file specification.
+     */
+    public void setFile( PDFileSpecification fs )
+    {
+<span class="nc" id="L87">        getCOSObject().setItem(COSName.F, fs);</span>
+<span class="nc" id="L88">    }</span>
+
+    /**
+     * This will get a dictionary containing Windows-specific launch parameters.
+     *
+     * @return The Win entry of of the specific launch action dictionary.
+     */
+    public PDWindowsLaunchParams getWinLaunchParams()
+    {
+<span class="nc" id="L97">        COSDictionary win = action.getCOSDictionary(COSName.WIN);</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        return win != null ? new PDWindowsLaunchParams(win) : null;</span>
+    }
+
+    /**
+     * This will set a dictionary containing Windows-specific launch parameters.
+     *
+     * @param win The action to be performed.
+     */
+    public void setWinLaunchParams( PDWindowsLaunchParams win )
+    {
+<span class="nc" id="L108">        action.setItem(COSName.WIN, win);</span>
+<span class="nc" id="L109">    }</span>
+
+    /**
+     * This will get the file name to be launched or the document to be opened
+     * or printed, in standard Windows pathname format. If the name string includes
+     * a backslash character (\), the backslash must itself be preceded by a backslash.
+     * This value must be a single string; it is not a file specification.
+     *
+     * @return The F entry of the specific Windows launch parameter dictionary.
+     */
+    public String getF()
+    {
+<span class="nc" id="L121">        return action.getString(COSName.F);</span>
+    }
+
+    /**
+     * This will set the file name to be launched or the document to be opened
+     * or printed, in standard Windows pathname format. If the name string includes
+     * a backslash character (\), the backslash must itself be preceded by a backslash.
+     * This value must be a single string; it is not a file specification.
+     *
+     * @param f The file name to be launched.
+     */
+    public void setF( String f )
+    {
+<span class="nc" id="L134">        action.setString(COSName.F, f );</span>
+<span class="nc" id="L135">    }</span>
+
+    /**
+     * This will get the string specifying the default directory in standard DOS syntax.
+     *
+     * @return The D entry of the specific Windows launch parameter dictionary.
+     */
+    public String getD()
+    {
+<span class="nc" id="L144">        return action.getString(COSName.D);</span>
+    }
+
+    /**
+     * This will set the string specifying the default directory in standard DOS syntax.
+     *
+     * @param d The default directory.
+     */
+    public void setD( String d )
+    {
+<span class="nc" id="L154">        action.setString(COSName.D, d );</span>
+<span class="nc" id="L155">    }</span>
+
+    /**
+     * This will get the string specifying the operation to perform:
+     * open to open a document
+     * print to print a document
+     * If the F entry designates an application instead of a document, this entry
+     * is ignored and the application is launched. Default value: open.
+     *
+     * @return The O entry of the specific Windows launch parameter dictionary.
+     */
+    public String getO()
+    {
+<span class="nc" id="L168">        return action.getString(COSName.O);</span>
+    }
+
+    /**
+     * This will set the string specifying the operation to perform:
+     * open to open a document
+     * print to print a document
+     * If the F entry designates an application instead of a document, this entry
+     * is ignored and the application is launched. Default value: open.
+     *
+     * @param o The operation to perform.
+     */
+    public void setO( String o )
+    {
+<span class="nc" id="L182">        action.setString(COSName.O, o );</span>
+<span class="nc" id="L183">    }</span>
+
+    /**
+     * This will get a parameter string to be passed to the application designated by the F entry.
+     * This entry should be omitted if F designates a document.
+     *
+     * @return The P entry of the specific Windows launch parameter dictionary.
+     */
+    public String getP()
+    {
+<span class="nc" id="L193">        return action.getString(COSName.P);</span>
+    }
+
+    /**
+     * This will set a parameter string to be passed to the application designated by the F entry.
+     * This entry should be omitted if F designates a document.
+     *
+     * @param p The parameter string.
+     */
+    public void setP( String p )
+    {
+<span class="nc" id="L204">        action.setString(COSName.P, p );</span>
+<span class="nc" id="L205">    }</span>
+
+    /**
+     * This will specify whether to open the destination document in a new window, in the same
+     * window, or behave in accordance with the current user preference.
+     *
+     * @return A flag specifying how to open the destination document.
+     */
+    public OpenMode getOpenInNewWindow()
+    {
+<span class="nc" id="L215">        COSBase dictionaryObject = getCOSObject().getDictionaryObject(COSName.NEW_WINDOW);</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">        if (dictionaryObject instanceof COSBoolean)</span>
+        {
+<span class="nc" id="L218">            COSBoolean b = (COSBoolean) dictionaryObject;</span>
+<span class="nc bnc" id="L219" title="All 2 branches missed.">            return b.getValue() ? OpenMode.NEW_WINDOW : OpenMode.SAME_WINDOW;</span>
+        }
+<span class="nc" id="L221">        return OpenMode.USER_PREFERENCE;</span>
+    }
+
+    /**
+     * This will specify whether to open the destination document in a new window.
+     *
+     * @param value The flag value.
+     */
+    public void setOpenInNewWindow(OpenMode value)
+    {
+<span class="nc bnc" id="L231" title="All 2 branches missed.">        if (null == value)</span>
+        {
+<span class="nc" id="L233">            getCOSObject().removeItem(COSName.NEW_WINDOW);</span>
+<span class="nc" id="L234">            return;</span>
+        }
+<span class="nc bnc" id="L236" title="All 4 branches missed.">        switch (value)</span>
+        {
+            case USER_PREFERENCE:
+<span class="nc" id="L239">                getCOSObject().removeItem(COSName.NEW_WINDOW);</span>
+<span class="nc" id="L240">                break;</span>
+            case SAME_WINDOW:
+<span class="nc" id="L242">                getCOSObject().setBoolean(COSName.NEW_WINDOW, false);</span>
+<span class="nc" id="L243">                break;</span>
+            case NEW_WINDOW:
+<span class="nc" id="L245">                getCOSObject().setBoolean(COSName.NEW_WINDOW, true);</span>
+<span class="nc" id="L246">                break;</span>
+            default:
+                // shouldn't happen unless the enum type is changed
+                break;
+        }
+<span class="nc" id="L251">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

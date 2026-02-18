@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDStrikeoutAppearanceHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation.handlers</a> &gt; <span class="el_source">PDStrikeoutAppearanceHandler.java</span></div><h1>PDStrikeoutAppearanceHandler.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2018 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.interactive.annotation.handlers;
+
+import java.io.IOException;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationStrikeout;
+import org.apache.pdfbox.pdmodel.PDAppearanceContentStream;
+import org.apache.pdfbox.pdmodel.PDDocument;
+
+/**
+ *
+ */
+public class PDStrikeoutAppearanceHandler extends PDAbstractAppearanceHandler
+{
+<span class="nc" id="L34">    private static final Logger LOG = LogManager.getLogger(PDStrikeoutAppearanceHandler.class);</span>
+
+    public PDStrikeoutAppearanceHandler(PDAnnotation annotation)
+    {
+<span class="nc" id="L38">        super(annotation);</span>
+<span class="nc" id="L39">    }</span>
+
+    public PDStrikeoutAppearanceHandler(PDAnnotation annotation, PDDocument document)
+    {
+<span class="nc" id="L43">        super(annotation, document);</span>
+<span class="nc" id="L44">    }</span>
+
+    @Override
+    public void generateNormalAppearance()
+    {
+<span class="nc" id="L49">        PDAnnotationStrikeout annotation = (PDAnnotationStrikeout) getAnnotation();</span>
+<span class="nc" id="L50">        PDRectangle rect = annotation.getRectangle();</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        if (rect == null)</span>
+        {
+<span class="nc" id="L53">            return;</span>
+        }
+<span class="nc" id="L55">        float[] pathsArray = annotation.getQuadPoints();</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        if (pathsArray == null)</span>
+        {
+<span class="nc" id="L58">            return;</span>
+        }
+<span class="nc" id="L60">        AnnotationBorder ab = AnnotationBorder.getAnnotationBorder(annotation, annotation.getBorderStyle());</span>
+<span class="nc" id="L61">        PDColor color = annotation.getColor();</span>
+<span class="nc bnc" id="L62" title="All 4 branches missed.">        if (color == null || color.getComponents().length == 0)</span>
+        {
+<span class="nc" id="L64">            return;</span>
+        }
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (Float.compare(ab.width, 0) == 0)</span>
+        {
+            // value found in adobe reader
+<span class="nc" id="L69">            ab.width = 1.5f;</span>
+        }
+
+        // Adjust rectangle even if not empty, see PLPDF.com-MarkupAnnotations.pdf
+        //TODO in a class structure this should be overridable
+        // this is similar to polyline but different data type
+<span class="nc" id="L75">        float minX = Float.MAX_VALUE;</span>
+<span class="nc" id="L76">        float minY = Float.MAX_VALUE;</span>
+<span class="nc" id="L77">        float maxX = Float.MIN_VALUE;</span>
+<span class="nc" id="L78">        float maxY = Float.MIN_VALUE;</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        for (int i = 0; i &lt; pathsArray.length / 2; ++i)</span>
+        {
+<span class="nc" id="L81">            float x = pathsArray[i * 2];</span>
+<span class="nc" id="L82">            float y = pathsArray[i * 2 + 1];</span>
+<span class="nc" id="L83">            minX = Math.min(minX, x);</span>
+<span class="nc" id="L84">            minY = Math.min(minY, y);</span>
+<span class="nc" id="L85">            maxX = Math.max(maxX, x);</span>
+<span class="nc" id="L86">            maxY = Math.max(maxY, y);</span>
+        }
+<span class="nc" id="L88">        rect.setLowerLeftX(Math.min(minX - ab.width / 2, rect.getLowerLeftX()));</span>
+<span class="nc" id="L89">        rect.setLowerLeftY(Math.min(minY - ab.width / 2, rect.getLowerLeftY()));</span>
+<span class="nc" id="L90">        rect.setUpperRightX(Math.max(maxX + ab.width / 2, rect.getUpperRightX()));</span>
+<span class="nc" id="L91">        rect.setUpperRightY(Math.max(maxY + ab.width / 2, rect.getUpperRightY()));</span>
+<span class="nc" id="L92">        annotation.setRectangle(rect);</span>
+
+<span class="nc" id="L94">        try (PDAppearanceContentStream cs = getNormalAppearanceAsContentStream())</span>
+        {
+<span class="nc" id="L96">            setOpacity(cs, annotation.getConstantOpacity());</span>
+
+<span class="nc" id="L98">            cs.setStrokingColor(color);</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">            if (ab.dashArray != null)</span>
+            {
+<span class="nc" id="L101">                cs.setLineDashPattern(ab.dashArray, 0);</span>
+            }
+<span class="nc" id="L103">            cs.setLineWidth(ab.width);</span>
+
+            // spec is incorrect
+            // https://stackoverflow.com/questions/9855814/pdf-spec-vs-acrobat-creation-quadpoints
+<span class="nc bnc" id="L107" title="All 2 branches missed.">            for (int i = 0; i &lt; pathsArray.length / 8; ++i)</span>
+            {
+                // get mid point between bounds, subtract the line width to approximate what Adobe is doing
+                // See e.g. CTAN-example-Annotations.pdf and PLPDF.com-MarkupAnnotations.pdf
+                // and https://bugs.ghostscript.com/show_bug.cgi?id=693664
+                // do the math for diagonal annotations with this weird old trick:
+                // https://stackoverflow.com/questions/7740507/extend-a-line-segment-a-specific-distance
+<span class="nc" id="L114">                float len0 = (float) (Math.sqrt(Math.pow(pathsArray[i * 8] - pathsArray[i * 8 + 4], 2) + </span>
+<span class="nc" id="L115">                                      Math.pow(pathsArray[i * 8 + 1] - pathsArray[i * 8 + 5], 2)));</span>
+<span class="nc" id="L116">                float x0 = pathsArray[i * 8 + 4];</span>
+<span class="nc" id="L117">                float y0 = pathsArray[i * 8 + 5];</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">                if (Float.compare(len0, 0) != 0)</span>
+                {
+                    // only if both coordinates are not identical to avoid divide by zero
+<span class="nc" id="L121">                    x0 += (pathsArray[i * 8] - pathsArray[i * 8 + 4]) / len0 * (len0 / 2 - ab.width);</span>
+<span class="nc" id="L122">                    y0 += (pathsArray[i * 8 + 1] - pathsArray[i * 8 + 5]) / len0 * (len0 / 2 - ab.width);</span>
+                }
+<span class="nc" id="L124">                float len1 = (float) (Math.sqrt(Math.pow(pathsArray[i * 8 + 2] - pathsArray[i * 8 + 6], 2) + </span>
+<span class="nc" id="L125">                                      Math.pow(pathsArray[i * 8 + 3] - pathsArray[i * 8 + 7], 2)));</span>
+<span class="nc" id="L126">                float x1 = pathsArray[i * 8 + 6];</span>
+<span class="nc" id="L127">                float y1 = pathsArray[i * 8 + 7];</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">                if (Float.compare(len1, 0) != 0)</span>
+                {
+                    // only if both coordinates are not identical to avoid divide by zero
+<span class="nc" id="L131">                    x1 += (pathsArray[i * 8 + 2] - pathsArray[i * 8 + 6]) / len1 * (len1 / 2 - ab.width);</span>
+<span class="nc" id="L132">                    y1 += (pathsArray[i * 8 + 3] - pathsArray[i * 8 + 7]) / len1 * (len1 / 2 - ab.width);</span>
+                }
+<span class="nc" id="L134">                cs.moveTo(x0, y0);</span>
+<span class="nc" id="L135">                cs.lineTo(x1, y1);</span>
+            }
+<span class="nc" id="L137">            cs.stroke();</span>
+        }
+<span class="nc" id="L139">        catch (IOException ex)</span>
+        {
+<span class="nc" id="L141">            LOG.error(ex);</span>
+<span class="nc" id="L142">        }</span>
+<span class="nc" id="L143">    }</span>
+
+    @Override
+    public void generateRolloverAppearance()
+    {
+        // No rollover appearance generated
+<span class="nc" id="L149">    }</span>
+
+    @Override
+    public void generateDownAppearance()
+    {
+        // No down appearance generated
+<span class="nc" id="L155">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

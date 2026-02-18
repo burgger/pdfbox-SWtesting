@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDShadingType1.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.shading</a> &gt; <span class="el_source">PDShadingType1.java</span></div><h1>PDShadingType1.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.shading;
+
+import java.awt.Paint;
+import java.awt.geom.AffineTransform;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * Resources for a function based shading.
+ */
+public class PDShadingType1 extends PDShading
+{
+<span class="fc" id="L33">    private COSArray domain = null;</span>
+
+    /**
+     * Constructor using the given shading dictionary.
+     *
+     * @param shadingDictionary the dictionary for this shading
+     */
+    public PDShadingType1(COSDictionary shadingDictionary)
+    {
+<span class="fc" id="L42">        super(shadingDictionary);</span>
+<span class="fc" id="L43">    }</span>
+
+    @Override
+    public int getShadingType()
+    {
+<span class="nc" id="L48">        return PDShading.SHADING_TYPE1;</span>
+    }
+
+    /**
+     * This will get the optional Matrix of a function based shading.
+     *
+     * @return the matrix
+     */
+    public Matrix getMatrix()
+    {
+<span class="nc" id="L58">        return Matrix.createMatrix(getCOSObject().getDictionaryObject(COSName.MATRIX));</span>
+    }
+
+    /**
+     * Sets the optional Matrix entry for the function based shading.
+     *
+     * @param transform the transformation matrix
+     */
+    public void setMatrix(AffineTransform transform)
+    {
+<span class="nc" id="L68">        COSArray matrix = new COSArray();</span>
+<span class="nc" id="L69">        double[] values = new double[6];</span>
+<span class="nc" id="L70">        transform.getMatrix(values);</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        for (double v : values)</span>
+        {
+<span class="nc" id="L73">            matrix.add(new COSFloat((float) v));</span>
+        }
+<span class="nc" id="L75">        getCOSObject().setItem(COSName.MATRIX, matrix);</span>
+<span class="nc" id="L76">    }</span>
+
+    /**
+     * This will get the optional Domain values of a function based shading.
+     *
+     * @return the domain values
+     */
+    public COSArray getDomain()
+    {
+<span class="nc bnc" id="L85" title="All 2 branches missed.">        if (domain == null)</span>
+        {
+<span class="nc" id="L87">            domain = getCOSObject().getCOSArray(COSName.DOMAIN);</span>
+        }
+<span class="nc" id="L89">        return domain;</span>
+    }
+
+    /**
+     * Sets the optional Domain entry for the function based shading.
+     *
+     * @param newDomain the domain array
+     */
+    public void setDomain(COSArray newDomain)
+    {
+<span class="nc" id="L99">        domain = newDomain;</span>
+<span class="nc" id="L100">        getCOSObject().setItem(COSName.DOMAIN, newDomain);</span>
+<span class="nc" id="L101">    }</span>
+
+    @Override
+    public Paint toPaint(Matrix matrix)
+    {
+<span class="nc" id="L106">        return new Type1ShadingPaint(this, matrix);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

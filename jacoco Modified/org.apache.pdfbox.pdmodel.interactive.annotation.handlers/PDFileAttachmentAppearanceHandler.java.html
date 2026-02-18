@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFileAttachmentAppearanceHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation.handlers</a> &gt; <span class="el_source">PDFileAttachmentAppearanceHandler.java</span></div><h1>PDFileAttachmentAppearanceHandler.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.annotation.handlers;
+
+import java.io.IOException;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.pdmodel.PDAppearanceContentStream;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationFileAttachment;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ *
+ * @author Tilman Hausherr
+ */
+public class PDFileAttachmentAppearanceHandler extends PDAbstractAppearanceHandler
+{
+<span class="nc" id="L36">    private static final Logger LOG = LogManager.getLogger(PDFileAttachmentAppearanceHandler.class);</span>
+
+    public PDFileAttachmentAppearanceHandler(PDAnnotation annotation)
+    {
+<span class="nc" id="L40">        super(annotation);</span>
+<span class="nc" id="L41">    }</span>
+
+    public PDFileAttachmentAppearanceHandler(PDAnnotation annotation, PDDocument document)
+    {
+<span class="nc" id="L45">        super(annotation, document);</span>
+<span class="nc" id="L46">    }</span>
+
+    @Override
+    public void generateNormalAppearance()
+    {
+<span class="nc" id="L51">        PDAnnotationFileAttachment annotation = (PDAnnotationFileAttachment) getAnnotation();</span>
+<span class="nc" id="L52">        PDRectangle rect = getRectangle();</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        if (rect == null)</span>
+        {
+<span class="nc" id="L55">            return;</span>
+        }
+<span class="nc" id="L57">        try (PDAppearanceContentStream contentStream = getNormalAppearanceAsContentStream())</span>
+        {
+<span class="nc" id="L59">            setOpacity(contentStream, annotation.getConstantOpacity());</span>
+
+            // minimum code of PDTextAppearanceHandler.adjustRectAndBBox() 
+<span class="nc" id="L62">            int size = 18;</span>
+<span class="nc" id="L63">            rect.setUpperRightX(rect.getLowerLeftX() + size);</span>
+<span class="nc" id="L64">            rect.setLowerLeftY(rect.getUpperRightY() - size);</span>
+<span class="nc" id="L65">            annotation.setRectangle(rect);</span>
+<span class="nc" id="L66">            annotation.getNormalAppearanceStream().setBBox(new PDRectangle(size, size));</span>
+
+            // test case: pdf_commenting_new.pdf page 7
+<span class="nc" id="L69">            String attachmentName = annotation.getAttachmentName();</span>
+<span class="nc bnc" id="L70" title="All 4 branches missed.">            switch (attachmentName)</span>
+            {
+                case &quot;Paperclip&quot;:
+<span class="nc" id="L73">                    drawPaperclip(contentStream);</span>
+<span class="nc" id="L74">                    break;</span>
+                case &quot;Graph&quot;:
+<span class="nc" id="L76">                    drawGraph(contentStream);</span>
+<span class="nc" id="L77">                    break;</span>
+                case &quot;Tag&quot;:
+<span class="nc" id="L79">                    drawTag(contentStream);</span>
+<span class="nc" id="L80">                    break;</span>
+                default:
+<span class="nc" id="L82">                    drawPushPin(contentStream);</span>
+                    break;
+            }
+        }
+<span class="nc" id="L86">        catch (IOException e)</span>
+        {
+<span class="nc" id="L88">            LOG.error(e);</span>
+<span class="nc" id="L89">        }</span>
+<span class="nc" id="L90">    }</span>
+
+    /**
+     * Draw a paperclip. Shape is from
+     * &lt;a href=&quot;https://raw.githubusercontent.com/Iconscout/unicons/master/svg/line/paperclip.svg&quot;&gt;Iconscout&lt;/a&gt;
+     * (Apache licensed).
+     *
+     * @param contentStream
+     * @throws IOException
+     */
+    private void drawPaperclip(final PDAppearanceContentStream contentStream) throws IOException
+    {
+<span class="nc" id="L102">        contentStream.moveTo(13.574f, 9.301f);</span>
+<span class="nc" id="L103">        contentStream.lineTo(8.926f, 13.949f);</span>
+<span class="nc" id="L104">        contentStream.curveTo(7.648f, 15.227f, 5.625f, 15.227f, 4.426f, 13.949f);</span>
+<span class="nc" id="L105">        contentStream.curveTo(3.148f, 12.676f, 3.148f, 10.648f, 4.426f, 9.449f);</span>
+<span class="nc" id="L106">        contentStream.lineTo(10.426f, 3.449f);</span>
+<span class="nc" id="L107">        contentStream.curveTo(11.176f, 2.773f, 12.301f, 2.773f, 13.051f, 3.449f);</span>
+<span class="nc" id="L108">        contentStream.curveTo(13.801f, 4.199f, 13.801f, 5.398f, 13.051f, 6.074f);</span>
+<span class="nc" id="L109">        contentStream.lineTo(7.875f, 11.25f);</span>
+<span class="nc" id="L110">        contentStream.curveTo(7.648f, 11.477f, 7.273f, 11.477f, 7.051f, 11.25f);</span>
+<span class="nc" id="L111">        contentStream.curveTo(6.824f, 11.023f, 6.824f, 10.648f, 7.051f, 10.426f);</span>
+<span class="nc" id="L112">        contentStream.lineTo(10.875f, 6.602f);</span>
+<span class="nc" id="L113">        contentStream.curveTo(11.176f, 6.301f, 11.176f, 5.852f, 10.875f, 5.551f);</span>
+<span class="nc" id="L114">        contentStream.curveTo(10.574f, 5.25f, 10.125f, 5.25f, 9.824f, 5.551f);</span>
+<span class="nc" id="L115">        contentStream.lineTo(6f, 9.449f);</span>
+<span class="nc" id="L116">        contentStream.curveTo(5.176f, 10.273f, 5.176f, 11.551f, 6f, 12.375f);</span>
+<span class="nc" id="L117">        contentStream.curveTo(6.824f, 13.125f, 8.102f, 13.125f, 8.926f, 12.375f);</span>
+<span class="nc" id="L118">        contentStream.lineTo(14.102f, 7.199f);</span>
+<span class="nc" id="L119">        contentStream.curveTo(15.449f, 5.852f, 15.449f, 3.75f, 14.102f, 2.398f);</span>
+<span class="nc" id="L120">        contentStream.curveTo(12.75f, 1.051f, 10.648f, 1.051f, 9.301f, 2.398f);</span>
+<span class="nc" id="L121">        contentStream.lineTo(3.301f, 8.398f);</span>
+<span class="nc" id="L122">        contentStream.curveTo(2.398f, 9.301f, 1.949f, 10.5f, 1.949f, 11.699f);</span>
+<span class="nc" id="L123">        contentStream.curveTo(1.949f, 14.324f, 4.051f, 16.352f, 6.676f, 16.352f);</span>
+<span class="nc" id="L124">        contentStream.curveTo(7.949f, 16.352f, 9.074f, 15.824f, 9.977f, 15f);</span>
+<span class="nc" id="L125">        contentStream.lineTo(14.625f, 10.352f);</span>
+<span class="nc" id="L126">        contentStream.curveTo(14.926f, 10.051f, 14.926f, 9.602f, 14.625f, 9.301f);</span>
+<span class="nc" id="L127">        contentStream.curveTo(14.324f, 9f, 13.875f, 9f, 13.574f, 9.301f);</span>
+<span class="nc" id="L128">        contentStream.closePath();</span>
+<span class="nc" id="L129">        contentStream.fill();</span>
+<span class="nc" id="L130">    }</span>
+
+    private void drawPushPin(final PDAppearanceContentStream contentStream) throws IOException
+    {
+        // ty 18 is from the caller, scale 0.022 is by trial and error
+<span class="nc" id="L135">        contentStream.transform(new Matrix(0.022f, 0, 0, -0.022f, 0f, 18f));</span>
+
+        // Source: https://www.svgrepo.com/svg/269187/push-pin
+        // License: CC0
+<span class="nc" id="L139">        contentStream.transform(Matrix.getTranslateInstance(586.47f, 178.97f));</span>
+<span class="nc" id="L140">        contentStream.moveTo(0, 0);</span>
+<span class="nc" id="L141">        contentStream.curveTo(13f, 0f, 23.43f, -10.58f, 23.43f, -23.57f);</span>
+<span class="nc" id="L142">        contentStream.lineTo(23.43f, -70.53f);</span>
+<span class="nc" id="L143">        contentStream.curveTo(23.43f, -109.32f, -8.19f, -141.06f, -47.03f, -141.06f);</span>
+<span class="nc" id="L144">        contentStream.lineTo(-329.17f, -141.06f);</span>
+<span class="nc" id="L145">        contentStream.curveTo(-368.17f, -141.06f, -399.79f, -109.32f, -399.79f, -70.53f);</span>
+<span class="nc" id="L146">        contentStream.lineTo(-399.79f, -23.57f);</span>
+<span class="nc" id="L147">        contentStream.curveTo(-399.79f, -10.58f, -389.19f, 0.0f, -376.19f, 0f);</span>
+<span class="nc" id="L148">        contentStream.lineTo(-305.74f, 0f);</span>
+<span class="nc" id="L149">        contentStream.lineTo(-305.74f, 129.52f);</span>
+<span class="nc" id="L150">        contentStream.curveTo(-364.0f, 168.47f, -399.79f, 234.67f, -399.79f, 305.36f);</span>
+<span class="nc" id="L151">        contentStream.curveTo(-399.79f, 318.34f, -389.19f, 328.76f, -376.19f, 328.76f);</span>
+<span class="nc" id="L152">        contentStream.lineTo(-211.69f, 328.76f);</span>
+<span class="nc" id="L153">        contentStream.lineTo(-211.69f, 555.9f);</span>
+<span class="nc" id="L154">        contentStream.curveTo(-211.69f, 568.88f, -201.1f, 579.3f, -188.1f, 579.3f);</span>
+<span class="nc" id="L155">        contentStream.curveTo(-175.1f, 579.3f, -164.67f, 568.88f, -164.67f, 555.9f);</span>
+<span class="nc" id="L156">        contentStream.lineTo(-164.67f, 328.76f);</span>
+<span class="nc" id="L157">        contentStream.lineTo(0f, 328.76f);</span>
+<span class="nc" id="L158">        contentStream.curveTo(13.0f, 328.76f, 23.43f, 318.34f, 23.43f, 305.36f);</span>
+<span class="nc" id="L159">        contentStream.curveTo(23.43f, 234.67f, -12.2f, 168.47f, -70.62f, 129.52f);</span>
+<span class="nc" id="L160">        contentStream.lineTo(-70.62f, 0f);</span>
+<span class="nc" id="L161">        contentStream.lineTo(0f, 0f);</span>
+<span class="nc" id="L162">        contentStream.closePath();</span>
+<span class="nc" id="L163">        contentStream.moveTo(-25.2f, 281.79f);</span>
+<span class="nc" id="L164">        contentStream.lineTo(-351.0f, 281.79f);</span>
+<span class="nc" id="L165">        contentStream.curveTo(-343.77f, 232.42f, -314.24f, 188.18f, -270.43f, 162.86f);</span>
+<span class="nc" id="L166">        contentStream.curveTo(-263.21f, 158.69f, -258.71f, 150.99f, -258.71f, 142.5f);</span>
+<span class="nc" id="L167">        contentStream.lineTo(-258.71f, 0f);</span>
+<span class="nc" id="L168">        contentStream.lineTo(-117.64f, 0f);</span>
+<span class="nc" id="L169">        contentStream.lineTo(-117.64f, 142.5f);</span>
+<span class="nc" id="L170">        contentStream.curveTo(-117.64f, 150.99f, -113.15f, 158.69f, -105.77f, 162.86f);</span>
+<span class="nc" id="L171">        contentStream.curveTo(-61.95f, 188.18f, -32.42f, 232.42f, -25.2f, 281.79f);</span>
+<span class="nc" id="L172">        contentStream.closePath();</span>
+<span class="nc" id="L173">        contentStream.moveTo(-352.76f, -46.97f);</span>
+<span class="nc" id="L174">        contentStream.lineTo(-352.76f, -70.53f);</span>
+<span class="nc" id="L175">        contentStream.curveTo(-352.76f, -83.52f, -342.17f, -93.93f, -329.17f, -93.93f);</span>
+<span class="nc" id="L176">        contentStream.lineTo(-47.03f, -93.93f);</span>
+<span class="nc" id="L177">        contentStream.curveTo(-34.03f, -93.93f, -23.59f, -83.52f, -23.59f, -70.53f);</span>
+<span class="nc" id="L178">        contentStream.lineTo(-23.59f, -46.97f);</span>
+<span class="nc" id="L179">        contentStream.lineTo(-352.76f, -46.97f);</span>
+<span class="nc" id="L180">        contentStream.lineTo(-352.76f, -46.97f);</span>
+<span class="nc" id="L181">        contentStream.closePath();</span>
+<span class="nc" id="L182">        contentStream.fill();</span>
+<span class="nc" id="L183">    }</span>
+
+    private void drawGraph(final PDAppearanceContentStream contentStream) throws IOException
+    {
+        // ty 18 is from the caller, scale 0.022 is by trial and error
+<span class="nc" id="L188">        contentStream.transform(new Matrix(0.022f, 0, 0, -0.022f, 0f, 18f));</span>
+
+        // Source: https://www.svgrepo.com/svg/339018/chart-histogram
+        // Author: Carbon Design https://github.com/carbon-design-system/carbon
+        // License: Apache
+<span class="nc" id="L193">        contentStream.transform(Matrix.getTranslateInstance(736.04f, 907.89f));</span>
+<span class="nc" id="L194">        contentStream.moveTo(0f, 0f);</span>
+<span class="nc" id="L195">        contentStream.lineTo(-675.23f, 0f);</span>
+<span class="nc" id="L196">        contentStream.curveTo(-679.72f, 0f, -683.41f, -3.53f, -683.41f, -8.01f);</span>
+<span class="nc" id="L197">        contentStream.lineTo(-683.41f, -683.37f);</span>
+<span class="nc" id="L198">        contentStream.lineTo(-667.22f, -683.37f);</span>
+<span class="nc" id="L199">        contentStream.lineTo(-667.22f, -353.95f);</span>
+<span class="nc" id="L200">        contentStream.curveTo(-583.85f, -357.8f, -541.53f, -419.99f, -500.49f, -480.27f);</span>
+<span class="nc" id="L201">        contentStream.curveTo(-459.93f, -539.74f, -418.09f, -601.46f, -337.61f, -601.46f);</span>
+<span class="nc" id="L202">        contentStream.curveTo(-257.14f, -601.46f, -215.3f, -539.74f, -174.74f, -480.27f);</span>
+<span class="nc" id="L203">        contentStream.curveTo(-132.58f, -418.07f, -88.81f, -353.79f, 0f, -353.79f);</span>
+<span class="nc" id="L204">        contentStream.lineTo(0f, -337.6f);</span>
+<span class="nc" id="L205">        contentStream.curveTo(-97.31f, -337.6f, -143.48f, -405.41f, -188.2f, -471.13f);</span>
+<span class="nc" id="L206">        contentStream.curveTo(-228.12f, -529.8f, -265.8f, -585.27f, -337.61f, -585.27f);</span>
+<span class="nc" id="L207">        contentStream.curveTo(-409.43f, -585.27f, -447.11f, -529.8f, -487.03f, -471.13f);</span>
+<span class="nc" id="L208">        contentStream.curveTo(-530.47f, -407.33f, -575.36f, -341.45f, -667.22f, -337.76f);</span>
+<span class="nc" id="L209">        contentStream.lineTo(-667.22f, -16.19f);</span>
+<span class="nc" id="L210">        contentStream.lineTo(-615.76f, -16.19f);</span>
+<span class="nc" id="L211">        contentStream.lineTo(-615.76f, -255.68f);</span>
+<span class="nc" id="L212">        contentStream.curveTo(-615.76f, -260.17f, -612.23f, -263.7f, -607.74f, -263.7f);</span>
+<span class="nc" id="L213">        contentStream.lineTo(-525.82f, -263.7f);</span>
+<span class="nc" id="L214">        contentStream.lineTo(-525.82f, -345.77f);</span>
+<span class="nc" id="L215">        contentStream.curveTo(-525.82f, -350.26f, -522.13f, -353.79f, -517.64f, -353.79f);</span>
+<span class="nc" id="L216">        contentStream.lineTo(-435.73f, -353.79f);</span>
+<span class="nc" id="L217">        contentStream.lineTo(-435.73f, -458.31f);</span>
+<span class="nc" id="L218">        contentStream.curveTo(-435.73f, -462.8f, -432.2f, -466.32f, -427.71f, -466.32f);</span>
+<span class="nc" id="L219">        contentStream.lineTo(-337.61f, -466.32f);</span>
+<span class="nc" id="L220">        contentStream.curveTo(-333.13f, -466.32f, -329.6f, -462.8f, -329.6f, -458.31f);</span>
+<span class="nc" id="L221">        contentStream.lineTo(-329.6f, -421.28f);</span>
+<span class="nc" id="L222">        contentStream.lineTo(-247.68f, -421.28f);</span>
+<span class="nc" id="L223">        contentStream.curveTo(-243.19f, -421.28f, -239.5f, -417.75f, -239.5f, -413.26f);</span>
+<span class="nc" id="L224">        contentStream.lineTo(-239.5f, -331.35f);</span>
+<span class="nc" id="L225">        contentStream.lineTo(-157.58f, -331.35f);</span>
+<span class="nc" id="L226">        contentStream.curveTo(-153.1f, -331.35f, -149.41f, -327.66f, -149.41f, -323.17f);</span>
+<span class="nc" id="L227">        contentStream.lineTo(-149.41f, -218.81f);</span>
+<span class="nc" id="L228">        contentStream.lineTo(-67.49f, -218.81f);</span>
+<span class="nc" id="L229">        contentStream.curveTo(-63.0f, -218.81f, -59.47f, -215.13f, -59.47f, -210.64f);</span>
+<span class="nc" id="L230">        contentStream.lineTo(-59.47f, -16.19f);</span>
+<span class="nc" id="L231">        contentStream.lineTo(0f, -16.19f);</span>
+<span class="nc" id="L232">        contentStream.lineTo(0f, 0f);</span>
+<span class="nc" id="L233">        contentStream.closePath();</span>
+<span class="nc" id="L234">        contentStream.moveTo(-149.41f, -16.19f);</span>
+<span class="nc" id="L235">        contentStream.lineTo(-75.67f, -16.19f);</span>
+<span class="nc" id="L236">        contentStream.lineTo(-75.67f, -202.62f);</span>
+<span class="nc" id="L237">        contentStream.lineTo(-149.41f, -202.62f);</span>
+<span class="nc" id="L238">        contentStream.lineTo(-149.41f, -16.19f);</span>
+<span class="nc" id="L239">        contentStream.closePath();</span>
+<span class="nc" id="L240">        contentStream.moveTo(-239.5f, -16.19f);</span>
+<span class="nc" id="L241">        contentStream.lineTo(-165.76f, -16.19f);</span>
+<span class="nc" id="L242">        contentStream.lineTo(-165.76f, -315.16f);</span>
+<span class="nc" id="L243">        contentStream.lineTo(-239.5f, -315.16f);</span>
+<span class="nc" id="L244">        contentStream.lineTo(-239.5f, -16.19f);</span>
+<span class="nc" id="L245">        contentStream.closePath();</span>
+<span class="nc" id="L246">        contentStream.moveTo(-329.6f, -16.19f);</span>
+<span class="nc" id="L247">        contentStream.lineTo(-255.7f, -16.19f);</span>
+<span class="nc" id="L248">        contentStream.lineTo(-255.7f, -405.09f);</span>
+<span class="nc" id="L249">        contentStream.lineTo(-329.6f, -405.09f);</span>
+<span class="nc" id="L250">        contentStream.lineTo(-329.6f, -16.19f);</span>
+<span class="nc" id="L251">        contentStream.closePath();</span>
+<span class="nc" id="L252">        contentStream.moveTo(-419.53f, -16.19f);</span>
+<span class="nc" id="L253">        contentStream.lineTo(-345.79f, -16.19f);</span>
+<span class="nc" id="L254">        contentStream.lineTo(-345.79f, -450.13f);</span>
+<span class="nc" id="L255">        contentStream.lineTo(-419.53f, -450.13f);</span>
+<span class="nc" id="L256">        contentStream.lineTo(-419.53f, -16.19f);</span>
+<span class="nc" id="L257">        contentStream.closePath();</span>
+<span class="nc" id="L258">        contentStream.moveTo(-509.63f, -16.19f);</span>
+<span class="nc" id="L259">        contentStream.lineTo(-435.73f, -16.19f);</span>
+<span class="nc" id="L260">        contentStream.lineTo(-435.73f, -337.6f);</span>
+<span class="nc" id="L261">        contentStream.lineTo(-509.63f, -337.6f);</span>
+<span class="nc" id="L262">        contentStream.lineTo(-509.63f, -16.19f);</span>
+<span class="nc" id="L263">        contentStream.closePath();</span>
+<span class="nc" id="L264">        contentStream.moveTo(-599.56f, -16.19f);</span>
+<span class="nc" id="L265">        contentStream.lineTo(-525.82f, -16.19f);</span>
+<span class="nc" id="L266">        contentStream.lineTo(-525.82f, -247.51f);</span>
+<span class="nc" id="L267">        contentStream.lineTo(-599.56f, -247.51f);</span>
+<span class="nc" id="L268">        contentStream.lineTo(-599.56f, -16.19f);</span>
+<span class="nc" id="L269">        contentStream.closePath();</span>
+<span class="nc" id="L270">        contentStream.fill();</span>
+<span class="nc" id="L271">    }</span>
+
+    private void drawTag(final PDAppearanceContentStream contentStream) throws IOException
+    {
+        // ty 18 is from the caller, scale 0.022 is by trial and error
+<span class="nc" id="L276">        contentStream.transform(new Matrix(0.022f, 0, 0, -0.022f, 0f, 18f));</span>
+
+        // Source: https://www.svgrepo.com/svg/29652/tag
+        // License: CC0
+<span class="nc" id="L280">        contentStream.saveGraphicsState();</span>
+<span class="nc" id="L281">        contentStream.transform(Matrix.getTranslateInstance(209.26f, 128.32f));</span>
+<span class="nc" id="L282">        contentStream.moveTo(0f, 0f);</span>
+<span class="nc" id="L283">        contentStream.curveTo(-44.73f, 0f, -80.64f, 36.23f, -80.64f, 80.64f);</span>
+<span class="nc" id="L284">        contentStream.curveTo(-80.64f, 125.2f, -44.57f, 161.27f, 0f, 161.27f);</span>
+<span class="nc" id="L285">        contentStream.curveTo(44.56f, 161.27f, 80.47f, 125.04f, 80.47f, 80.64f);</span>
+<span class="nc" id="L286">        contentStream.curveTo(80.63f, 36.07f, 44.56f, 0f, 0f, 0f);</span>
+<span class="nc" id="L287">        contentStream.closePath();</span>
+<span class="nc" id="L288">        contentStream.moveTo(0f, 132.74f);</span>
+<span class="nc" id="L289">        contentStream.curveTo(-28.7f, 132.74f, -52.1f, 109.33f, -52.1f, 80.64f);</span>
+<span class="nc" id="L290">        contentStream.curveTo(-52.1f, 51.94f, -28.7f, 28.54f, 0f, 28.54f);</span>
+<span class="nc" id="L291">        contentStream.curveTo(28.69f, 28.54f, 51.93f, 51.94f, 51.93f, 80.64f);</span>
+<span class="nc" id="L292">        contentStream.curveTo(51.93f, 109.33f, 28.85f, 132.74f, 0f, 132.74f);</span>
+<span class="nc" id="L293">        contentStream.closePath();</span>
+<span class="nc" id="L294">        contentStream.fill();</span>
+<span class="nc" id="L295">        contentStream.restoreGraphicsState();</span>
+<span class="nc" id="L296">        contentStream.saveGraphicsState();</span>
+<span class="nc" id="L297">        contentStream.transform(Matrix.getTranslateInstance(382.22f, 79.91f));</span>
+<span class="nc" id="L298">        contentStream.moveTo(0f, 0f);</span>
+<span class="nc" id="L299">        contentStream.curveTo(-14.58f, -16.19f, -35.1f, -24.85f, -57.22f, -24.85f);</span>
+<span class="nc" id="L300">        contentStream.lineTo(-208.23f, -26.45f);</span>
+<span class="nc" id="L301">        contentStream.curveTo(-240.45f, -26.45f, -271.23f, -14.75f, -293.35f, 8.66f);</span>
+<span class="nc" id="L302">        contentStream.curveTo(-316.76f, 30.78f, -328.46f, 61.56f, -328.46f, 93.78f);</span>
+<span class="nc" id="L303">        contentStream.lineTo(-327.02f, 244.95f);</span>
+<span class="nc" id="L304">        contentStream.curveTo(-325.57f, 265.47f, -318.2f, 285.98f, -302.17f, 302.18f);</span>
+<span class="nc" id="L305">        contentStream.lineTo(58.68f, 663.02f);</span>
+<span class="nc" id="L306">        contentStream.lineTo(360.85f, 360.69f);</span>
+<span class="nc" id="L307">        contentStream.lineTo(0f, 0f);</span>
+<span class="nc" id="L308">        contentStream.lineTo(0f, 0f);</span>
+<span class="nc" id="L309">        contentStream.closePath();</span>
+<span class="nc" id="L310">        contentStream.moveTo(57.23f, 621.82f);</span>
+<span class="nc" id="L311">        contentStream.lineTo(-283.09f, 281.5f);</span>
+<span class="nc" id="L312">        contentStream.curveTo(-293.35f, 271.24f, -299.12f, 258.09f, -299.12f, 243.34f);</span>
+<span class="nc" id="L313">        contentStream.lineTo(-300.57f, 93.78f);</span>
+<span class="nc" id="L314">        contentStream.curveTo(-300.57f, 70.38f, -290.31f, 46.81f, -274.12f, 29.34f);</span>
+<span class="nc" id="L315">        contentStream.curveTo(-256.64f, 11.7f, -233.08f, 1.44f, -208.23f, 1.44f);</span>
+<span class="nc" id="L316">        contentStream.lineTo(-58.67f, 2.89f);</span>
+<span class="nc" id="L317">        contentStream.curveTo(-44.08f, 2.89f, -30.77f, 8.66f, -20.51f, 19.08f);</span>
+<span class="nc" id="L318">        contentStream.lineTo(319.81f, 359.4f);</span>
+<span class="nc" id="L319">        contentStream.lineTo(57.23f, 621.82f);</span>
+<span class="nc" id="L320">        contentStream.closePath();</span>
+<span class="nc" id="L321">        contentStream.fill();</span>
+<span class="nc" id="L322">        contentStream.restoreGraphicsState();</span>
+<span class="nc" id="L323">    }</span>
+
+    @Override
+    public void generateRolloverAppearance()
+    {
+        // No rollover appearance generated
+<span class="nc" id="L329">    }</span>
+
+    @Override
+    public void generateDownAppearance()
+    {
+        // No down appearance generated
+<span class="nc" id="L335">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

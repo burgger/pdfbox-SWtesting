@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDMeshBasedShadingType.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.shading</a> &gt; <span class="el_source">PDMeshBasedShadingType.java</span></div><h1>PDMeshBasedShadingType.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.shading;
+
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.pdmodel.common.PDRange;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * Common resources for shading types 6 and 7
+ */
+abstract class PDMeshBasedShadingType extends PDShadingType4
+{
+
+<span class="nc" id="L45">    private static final Logger LOG = LogManager.getLogger(PDMeshBasedShadingType.class);</span>
+
+    PDMeshBasedShadingType(COSDictionary shadingDictionary)
+    {
+<span class="nc" id="L49">        super(shadingDictionary);</span>
+<span class="nc" id="L50">    }</span>
+
+    /**
+     * Create a patch list from a data stream, the returned list contains all the patches contained in the data stream.
+     *
+     * @param xform transformation for user to device space
+     * @param matrix the pattern matrix concatenated with that of the parent content stream
+     * @param controlPoints number of control points, 12 for type 6 shading and 16 for type 7 shading
+     * @return the obtained patch list
+     * @throws IOException when something went wrong
+     */
+    @SuppressWarnings({ &quot;squid:S2583&quot;, &quot;squid:S1166&quot; })
+    final List&lt;Patch&gt; collectPatches(AffineTransform xform, Matrix matrix, int controlPoints)
+            throws IOException
+    {
+<span class="nc" id="L65">        COSDictionary dict = getCOSObject();</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (!(dict instanceof COSStream))</span>
+        {
+<span class="nc" id="L68">            return Collections.emptyList();</span>
+        }
+<span class="nc" id="L70">        PDRange rangeX = getDecodeForParameter(0);</span>
+<span class="nc" id="L71">        PDRange rangeY = getDecodeForParameter(1);</span>
+<span class="nc bnc" id="L72" title="All 4 branches missed.">        if (rangeX == null || rangeY == null ||</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">            Float.compare(rangeX.getMin(), rangeX.getMax()) == 0 ||</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">            Float.compare(rangeY.getMin(), rangeY.getMax()) == 0)</span>
+        {
+<span class="nc" id="L76">            return Collections.emptyList();</span>
+        }
+<span class="nc" id="L78">        int bitsPerFlag = getBitsPerFlag();</span>
+<span class="nc" id="L79">        PDRange[] colRange = new PDRange[getNumberOfColorComponents()];</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        for (int i = 0; i &lt; colRange.length; ++i)</span>
+        {
+<span class="nc" id="L82">            colRange[i] = getDecodeForParameter(2 + i);</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">            if (colRange[i] == null)</span>
+            {
+<span class="nc" id="L85">                throw new IOException(&quot;Range missing in shading /Decode entry&quot;);</span>
+            }
+        }
+<span class="nc" id="L88">        List&lt;Patch&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L89">        long maxSrcCoord = (long) Math.pow(2, getBitsPerCoordinate()) - 1;</span>
+<span class="nc" id="L90">        long maxSrcColor = (long) Math.pow(2, getBitsPerComponent()) - 1;</span>
+
+        // MemoryCacheImageInputStream doesn't close the wrapped stream
+<span class="nc" id="L93">        try (InputStream imageStream = ((COSStream) dict).createInputStream())</span>
+        {
+<span class="nc" id="L95">            try (ImageInputStream mciis = new MemoryCacheImageInputStream(imageStream))</span>
+            {
+<span class="nc" id="L97">                Point2D[] implicitEdge = new Point2D[4];</span>
+<span class="nc" id="L98">                float[][] implicitCornerColor = new float[2][colRange.length];</span>
+<span class="nc" id="L99">                byte flag = 0;</span>
+    
+                try
+                {
+<span class="nc" id="L103">                    flag = (byte) (mciis.readBits(bitsPerFlag) &amp; 3);</span>
+                }
+<span class="nc" id="L105">                catch (EOFException ex)</span>
+                {
+<span class="nc" id="L107">                    LOG.error(ex);</span>
+<span class="nc" id="L108">                    return list;</span>
+<span class="nc" id="L109">                }</span>
+    
+<span class="nc" id="L111">                boolean eof = false;</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">                while (!eof)</span>
+                {
+                    try
+                    {
+<span class="nc bnc" id="L116" title="All 2 branches missed.">                        boolean isFree = (flag == 0);</span>
+<span class="nc" id="L117">                        Patch current = readPatch(mciis, isFree, implicitEdge, implicitCornerColor,</span>
+                                maxSrcCoord, maxSrcColor, rangeX, rangeY, colRange, matrix, xform,
+                                controlPoints);
+<span class="nc bnc" id="L120" title="All 2 branches missed.">                        if (current == null)</span>
+                        {
+<span class="nc" id="L122">                            break;</span>
+                        }
+<span class="nc" id="L124">                        list.add(current);</span>
+<span class="nc" id="L125">                        flag = (byte) (mciis.readBits(bitsPerFlag) &amp; 3);</span>
+<span class="nc bnc" id="L126" title="All 5 branches missed.">                        switch (flag)</span>
+                        {
+                        case 0:
+<span class="nc" id="L129">                            break;</span>
+                        case 1:
+<span class="nc" id="L131">                            implicitEdge = current.getFlag1Edge();</span>
+<span class="nc" id="L132">                            implicitCornerColor = current.getFlag1Color();</span>
+<span class="nc" id="L133">                            break;</span>
+                        case 2:
+<span class="nc" id="L135">                            implicitEdge = current.getFlag2Edge();</span>
+<span class="nc" id="L136">                            implicitCornerColor = current.getFlag2Color();</span>
+<span class="nc" id="L137">                            break;</span>
+                        case 3:
+<span class="nc" id="L139">                            implicitEdge = current.getFlag3Edge();</span>
+<span class="nc" id="L140">                            implicitCornerColor = current.getFlag3Color();</span>
+<span class="nc" id="L141">                            break;</span>
+                        default:
+<span class="nc" id="L143">                            LOG.warn(&quot;bad flag: {}&quot;, flag);</span>
+                            break;
+                        }
+                    }
+<span class="nc" id="L147">                    catch (EOFException ex)</span>
+                    {
+<span class="nc" id="L149">                        eof = true;</span>
+<span class="nc" id="L150">                    }</span>
+                }
+<span class="nc" id="L152">            }</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        }</span>
+<span class="nc" id="L154">        return list;</span>
+    }
+
+    /**
+     * Read a single patch from a data stream, a patch contains information of its coordinates and color parameters.
+     *
+     * @param input the image source data stream
+     * @param isFree whether this is a free patch
+     * @param implicitEdge implicit edge when a patch is not free, otherwise it's not used
+     * @param implicitCornerColor implicit colors when a patch is not free, otherwise it's not used
+     * @param maxSrcCoord the maximum coordinate value calculated from source data
+     * @param maxSrcColor the maximum color value calculated from source data
+     * @param rangeX range for coordinate x
+     * @param rangeY range for coordinate y
+     * @param colRange range for color
+     * @param matrix the pattern matrix concatenated with that of the parent content stream
+     * @param xform transformation for user to device space
+     * @param controlPoints number of control points, 12 for type 6 shading and 16 for type 7 shading
+     * @return a single patch
+     * @throws IOException when something went wrong
+     */
+    protected Patch readPatch(ImageInputStream input, boolean isFree, Point2D[] implicitEdge,
+            float[][] implicitCornerColor, long maxSrcCoord, long maxSrcColor, PDRange rangeX,
+            PDRange rangeY, PDRange[] colRange, Matrix matrix, AffineTransform xform,
+            int controlPoints) throws IOException
+    {
+<span class="nc" id="L180">        int numberOfColorComponents = getNumberOfColorComponents();</span>
+<span class="nc" id="L181">        float[][] color = new float[4][numberOfColorComponents];</span>
+<span class="nc" id="L182">        Point2D[] points = new Point2D[controlPoints];</span>
+<span class="nc" id="L183">        int pStart = 4;</span>
+<span class="nc" id="L184">        int cStart = 2;</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">        if (isFree)</span>
+        {
+<span class="nc" id="L187">            pStart = 0;</span>
+<span class="nc" id="L188">            cStart = 0;</span>
+        }
+        else
+        {
+<span class="nc" id="L192">            points[0] = implicitEdge[0];</span>
+<span class="nc" id="L193">            points[1] = implicitEdge[1];</span>
+<span class="nc" id="L194">            points[2] = implicitEdge[2];</span>
+<span class="nc" id="L195">            points[3] = implicitEdge[3];</span>
+
+<span class="nc bnc" id="L197" title="All 2 branches missed.">            for (int i = 0; i &lt; numberOfColorComponents; i++)</span>
+            {
+<span class="nc" id="L199">                color[0][i] = implicitCornerColor[0][i];</span>
+<span class="nc" id="L200">                color[1][i] = implicitCornerColor[1][i];</span>
+            }
+        }
+
+        try
+        {
+<span class="nc" id="L206">            int bitsPerCoordinate = getBitsPerCoordinate();</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">            for (int i = pStart; i &lt; controlPoints; i++)</span>
+            {
+<span class="nc" id="L209">                long x = input.readBits(bitsPerCoordinate);</span>
+<span class="nc" id="L210">                long y = input.readBits(bitsPerCoordinate);</span>
+<span class="nc" id="L211">                float px = interpolate(x, maxSrcCoord, rangeX.getMin(), rangeX.getMax());</span>
+<span class="nc" id="L212">                float py = interpolate(y, maxSrcCoord, rangeY.getMin(), rangeY.getMax());</span>
+<span class="nc" id="L213">                Point2D p = matrix.transformPoint(px, py);</span>
+<span class="nc" id="L214">                xform.transform(p, p);</span>
+<span class="nc" id="L215">                points[i] = p;</span>
+            }
+<span class="nc" id="L217">            int bitsPerComponent = getBitsPerComponent();</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">            for (int i = cStart; i &lt; 4; i++)</span>
+            {
+<span class="nc bnc" id="L220" title="All 2 branches missed.">                for (int j = 0; j &lt; numberOfColorComponents; j++)</span>
+                {
+<span class="nc" id="L222">                    long c = input.readBits(bitsPerComponent);</span>
+<span class="nc" id="L223">                    color[i][j] = interpolate(c, maxSrcColor, colRange[j].getMin(),</span>
+<span class="nc" id="L224">                            colRange[j].getMax());</span>
+                }
+            }
+        }
+<span class="nc" id="L228">        catch (EOFException ex)</span>
+        {
+<span class="nc" id="L230">            LOG.debug(&quot;EOF&quot;, ex);</span>
+<span class="nc" id="L231">            return null;</span>
+<span class="nc" id="L232">        }</span>
+<span class="nc" id="L233">        return generatePatch(points, color);</span>
+    }
+
+    /**
+     * Create a patch using control points and 4 corner color values, in Type6ShadingContext, a CoonsPatch is returned;
+     * in Type6ShadingContext, a TensorPatch is returned.
+     *
+     * @param points 12 or 16 control points
+     * @param color 4 corner colors
+     * @return a patch instance
+     */
+    abstract Patch generatePatch(Point2D[] points, float[][] color);
+
+    @Override
+    public abstract Rectangle2D getBounds(AffineTransform xform, Matrix matrix) throws IOException;
+
+    Rectangle2D getBounds(AffineTransform xform, Matrix matrix, int controlPoints)
+            throws IOException
+    {
+<span class="nc" id="L252">        Rectangle2D bounds = null;</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">        for (Patch patch : collectPatches(xform, matrix, controlPoints))</span>
+        {
+<span class="nc bnc" id="L255" title="All 2 branches missed.">            for (ShadedTriangle shadedTriangle : patch.listOfTriangles)</span>
+            {
+<span class="nc bnc" id="L257" title="All 2 branches missed.">                if (bounds == null)</span>
+                {
+<span class="nc" id="L259">                    bounds = new Rectangle2D.Double(shadedTriangle.corner[0].getX(),</span>
+<span class="nc" id="L260">                            shadedTriangle.corner[0].getY(), 0, 0);</span>
+                }
+<span class="nc" id="L262">                bounds.add(shadedTriangle.corner[0]);</span>
+<span class="nc" id="L263">                bounds.add(shadedTriangle.corner[1]);</span>
+<span class="nc" id="L264">                bounds.add(shadedTriangle.corner[2]);</span>
+<span class="nc" id="L265">            }</span>
+<span class="nc" id="L266">        }</span>
+<span class="nc" id="L267">        return bounds;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

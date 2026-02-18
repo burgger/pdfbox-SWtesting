@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SecurityHandlerFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.encryption</a> &gt; <span class="el_source">SecurityHandlerFactory.java</span></div><h1>SecurityHandlerFactory.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.encryption;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Manages security handlers for the application.
+ * It follows the singleton pattern.
+ * To be usable, security managers must be registered in it.
+ * Security managers are retrieved by the application when necessary.
+ *
+ * @author Benoit Guillon
+ * @author John Hewson
+ */
+public final class SecurityHandlerFactory
+{
+    /** Singleton instance */
+<span class="fc" id="L37">    public static final SecurityHandlerFactory INSTANCE = new SecurityHandlerFactory();</span>
+
+<span class="fc" id="L39">    private final Map&lt;String, Class&lt;? extends SecurityHandler&gt;&gt; nameToHandler = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L41">    private final Map&lt;Class&lt;? extends ProtectionPolicy&gt;,</span>
+                      Class&lt;? extends SecurityHandler&gt;&gt; policyToHandler = new HashMap&lt;&gt;();
+
+    private SecurityHandlerFactory()
+<span class="fc" id="L45">    {</span>
+<span class="fc" id="L46">        registerHandler(StandardSecurityHandler.FILTER,</span>
+                        StandardSecurityHandler.class,
+                        StandardProtectionPolicy.class);
+
+<span class="fc" id="L50">        registerHandler(PublicKeySecurityHandler.FILTER,</span>
+                        PublicKeySecurityHandler.class,
+                        PublicKeyProtectionPolicy.class);
+<span class="fc" id="L53">    }</span>
+
+    /**
+     * Registers a security handler.
+     *
+     * If the security handler was already registered an exception is thrown.
+     * If another handler was previously registered for the same filter name or
+     * for the same policy name, an exception is thrown
+     *
+     * @param name the name of the filter
+     * @param securityHandler security handler class to register
+     * @param protectionPolicy protection policy class to register
+     */
+    public void registerHandler(String name,
+                                Class&lt;? extends SecurityHandler&gt; securityHandler,
+                                Class&lt;? extends ProtectionPolicy&gt; protectionPolicy)
+    {
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (nameToHandler.containsKey(name))</span>
+        {
+<span class="nc" id="L72">            throw new IllegalStateException(&quot;The security handler name is already registered&quot;);</span>
+        }
+
+<span class="fc" id="L75">        nameToHandler.put(name, securityHandler);</span>
+<span class="fc" id="L76">        policyToHandler.put(protectionPolicy, securityHandler);</span>
+<span class="fc" id="L77">    }</span>
+
+    /**
+     * Returns a new security handler for the given protection policy, or null none is available.
+     * @param policy the protection policy for which to create a security handler
+     * @return a new SecurityHandler instance, or null if none is available
+     */
+    public SecurityHandler&lt;ProtectionPolicy&gt; newSecurityHandlerForPolicy(ProtectionPolicy policy)
+    {
+<span class="fc" id="L86">        Class&lt;? extends SecurityHandler&gt; handlerClass = policyToHandler.get(policy.getClass());</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        if (handlerClass == null)</span>
+        {
+<span class="nc" id="L89">            return null;</span>
+        }
+
+<span class="fc" id="L92">        Class&lt;?&gt;[] argsClasses = { policy.getClass() };</span>
+<span class="fc" id="L93">        Object[] args = { policy };</span>
+<span class="fc" id="L94">        return newSecurityHandler(handlerClass, argsClasses, args);</span>
+    }
+
+    /**
+     * Returns a new security handler for the given Filter name, or null none is available.
+     * @param name the Filter name from the PDF encryption dictionary
+     * @return a new SecurityHandler instance, or null if none is available
+     */
+    public SecurityHandler&lt;ProtectionPolicy&gt; newSecurityHandlerForFilter(String name)
+    {
+<span class="fc" id="L104">        Class&lt;? extends SecurityHandler&gt; handlerClass = nameToHandler.get(name);</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        if (handlerClass == null)</span>
+        {
+<span class="nc" id="L107">            return null;</span>
+        }
+
+<span class="fc" id="L110">        Class&lt;?&gt;[] argsClasses = { };</span>
+<span class="fc" id="L111">        Object[] args = { };</span>
+<span class="fc" id="L112">        return newSecurityHandler(handlerClass, argsClasses, args);</span>
+    }
+
+    /* Returns a new security handler for the given parameters, or null none is available.
+     *
+     * @param handlerClass the handler class.
+     * @param argsClasses the parameter array.
+     * @param args array of objects to be passed as arguments to the constructor call.
+     * @return a new SecurityHandler instance, or null if none is available.
+     */
+    private SecurityHandler&lt;ProtectionPolicy&gt; newSecurityHandler(Class&lt;? extends SecurityHandler&gt; handlerClass, 
+            Class&lt;?&gt;[] argsClasses, Object[] args)
+    {
+        try
+        {
+<span class="fc" id="L127">            Constructor&lt;? extends SecurityHandler&gt; ctor =</span>
+<span class="fc" id="L128">                    handlerClass.getDeclaredConstructor(argsClasses);</span>
+<span class="fc" id="L129">            return ctor.newInstance(args);</span>
+        }
+<span class="nc" id="L131">        catch(NoSuchMethodException | IllegalAccessException | InstantiationException |</span>
+                InvocationTargetException e)
+        {
+            // should not happen in normal operation
+<span class="nc" id="L135">            throw new RuntimeException(e);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

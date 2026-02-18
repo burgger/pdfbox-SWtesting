@@ -1,0 +1,631 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDEncryption.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.encryption</a> &gt; <span class="el_source">PDEncryption.java</span></div><h1>PDEncryption.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.encryption;
+
+import java.io.IOException;
+import java.util.Arrays;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * This class is a specialized view of the encryption dictionary of a PDF document.
+ * It contains a low level dictionary (COSDictionary) and provides the methods to
+ * manage its fields.
+ *
+ * The available fields are the ones who are involved by standard security handler
+ * and public key security handler.
+ *
+ * @author Ben Litchfield
+ * @author Benoit Guillon
+ */
+public class PDEncryption implements COSObjectable
+{
+    /**
+     * See PDF Reference 1.4 Table 3.13.
+     */
+    public static final int VERSION0_UNDOCUMENTED_UNSUPPORTED = 0;
+    /**
+     * See PDF Reference 1.4 Table 3.13.
+     */
+    public static final int VERSION1_40_BIT_ALGORITHM = 1;
+    /**
+     * See PDF Reference 1.4 Table 3.13.
+     */
+    public static final int VERSION2_VARIABLE_LENGTH_ALGORITHM = 2;
+    /**
+     * See PDF Reference 1.4 Table 3.13.
+     */
+    public static final int VERSION3_UNPUBLISHED_ALGORITHM = 3;
+    /**
+     * See PDF Reference 1.4 Table 3.13.
+     */
+    public static final int VERSION4_SECURITY_HANDLER = 4;
+
+    /**
+     * The default security handler.
+     */
+    public static final String DEFAULT_NAME = &quot;Standard&quot;;
+
+    /**
+     * The default length for the encryption key.
+     */
+    public static final int DEFAULT_LENGTH = 40;
+
+    /**
+     * The default version, according to the PDF Reference.
+     */
+    public static final int DEFAULT_VERSION = VERSION0_UNDOCUMENTED_UNSUPPORTED;
+
+    private final COSDictionary dictionary;
+    private SecurityHandler&lt;ProtectionPolicy&gt; securityHandler;
+
+    /**
+     * creates a new empty encryption dictionary.
+     */
+    public PDEncryption()
+<span class="fc" id="L85">    {</span>
+<span class="fc" id="L86">        dictionary = new COSDictionary();</span>
+<span class="fc" id="L87">    }</span>
+
+    /**
+     * creates a new encryption dictionary from the low level dictionary provided.
+     * @param dictionary a COS encryption dictionary
+     */
+    public PDEncryption(COSDictionary dictionary)
+<span class="fc" id="L94">    {</span>
+<span class="fc" id="L95">        this.dictionary = dictionary;</span>
+<span class="fc" id="L96">        securityHandler = SecurityHandlerFactory.INSTANCE.newSecurityHandlerForFilter(getFilter());</span>
+<span class="fc" id="L97">    }</span>
+
+    /**
+     * Returns the security handler specified in the dictionary's Filter entry.
+     * @return a security handler instance
+     * @throws IOException if there is no security handler available which matches the Filter
+     */
+    public SecurityHandler&lt;ProtectionPolicy&gt; getSecurityHandler() throws IOException
+    {
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        if (securityHandler == null)</span>
+        {
+            // Don't change this text, it's used by Apache Tika (TIKA-4082)
+<span class="nc" id="L109">            throw new IOException(&quot;No security handler for filter &quot; + getFilter());</span>
+        }
+<span class="fc" id="L111">        return securityHandler;</span>
+    }
+
+    /**
+     * Sets the security handler used in this encryption dictionary
+     * @param securityHandler new security handler
+     */
+    public void setSecurityHandler(SecurityHandler&lt;ProtectionPolicy&gt; securityHandler)
+    {
+<span class="fc" id="L120">        this.securityHandler = securityHandler;</span>
+        // TODO set Filter (currently this is done by the security handlers)
+<span class="fc" id="L122">    }</span>
+
+    /**
+     * Returns true if the security handler specified in the dictionary's Filter is available.
+     * @return true if the security handler is available
+     */
+    public boolean hasSecurityHandler()
+    {
+<span class="nc bnc" id="L130" title="All 2 branches missed.">        return securityHandler == null;</span>
+    }
+
+    /**
+     * This will get the dictionary associated with this encryption dictionary.
+     *
+     * @return The COS dictionary that this object wraps.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="fc" id="L141">        return dictionary;</span>
+    }
+
+    /**
+     * Sets the filter entry of the encryption dictionary.
+     *
+     * @param filter The filter name.
+     */
+    public void setFilter(String filter)
+    {
+<span class="fc" id="L151">        dictionary.setItem(COSName.FILTER, COSName.getPDFName(filter));</span>
+<span class="fc" id="L152">    }</span>
+
+    /**
+     * Get the name of the filter.
+     *
+     * @return The filter name contained in this encryption dictionary.
+     */
+    public final String getFilter()
+    {
+<span class="fc" id="L161">        return dictionary.getNameAsString( COSName.FILTER );</span>
+    }
+
+    /**
+     * Get the name of the subfilter.
+     *
+     * @return The subfilter name contained in this encryption dictionary.
+     */
+    public String getSubFilter()
+    {
+<span class="nc" id="L171">        return dictionary.getNameAsString( COSName.SUB_FILTER );</span>
+    }
+
+    /**
+     * Set the subfilter entry of the encryption dictionary.
+     *
+     * @param subfilter The value of the subfilter field.
+     */
+    public void setSubFilter(String subfilter)
+    {
+<span class="fc" id="L181">        dictionary.setName(COSName.SUB_FILTER, subfilter);</span>
+<span class="fc" id="L182">    }</span>
+
+    /**
+     * This will set the V entry of the encryption dictionary.&lt;br&gt;&lt;br&gt;
+     * See PDF Reference 1.4 Table 3.13.  &lt;br&gt;&lt;br&gt;
+     * &lt;b&gt;Note: This value is used to decrypt the pdf document.  If you change this when
+     * the document is encrypted then decryption will fail!.&lt;/b&gt;
+     *
+     * @param version The new encryption version.
+     */
+    public void setVersion(int version)
+    {
+<span class="fc" id="L194">        dictionary.setInt(COSName.V, version);</span>
+<span class="fc" id="L195">    }</span>
+
+    /**
+     * This will return the V entry of the encryption dictionary.&lt;br&gt;&lt;br&gt;
+     * See PDF Reference 1.4 Table 3.13.
+     *
+     * @return The encryption version to use.
+     */
+    public int getVersion()
+    {
+<span class="fc" id="L205">        return dictionary.getInt( COSName.V, 0 );</span>
+    }
+
+    /**
+     * This will set the number of bits to use for the encryption algorithm.
+     *
+     * @param length The new key length.
+     */
+    public void setLength(int length)
+    {
+<span class="fc" id="L215">        dictionary.setInt(COSName.LENGTH, length);</span>
+<span class="fc" id="L216">    }</span>
+
+    /**
+     * This will return the Length entry of the encryption dictionary.&lt;br&gt;&lt;br&gt;
+     * The length in &lt;b&gt;bits&lt;/b&gt; for the encryption algorithm.  This will return a multiple of 8.
+     *
+     * @return The length in bits for the encryption algorithm
+     */
+    public int getLength()
+    {
+<span class="fc" id="L226">        return dictionary.getInt( COSName.LENGTH, 40 );</span>
+    }
+
+    /**
+     * This will set the R entry of the encryption dictionary.&lt;br&gt;&lt;br&gt;
+     * See PDF Reference 1.4 Table 3.14.  &lt;br&gt;&lt;br&gt;
+     *
+     * &lt;b&gt;Note: This value is used to decrypt the pdf document.  If you change this when
+     * the document is encrypted then decryption will fail!.&lt;/b&gt;
+     *
+     * @param revision The new encryption version.
+     */
+    public void setRevision(int revision)
+    {
+<span class="fc" id="L240">        dictionary.setInt(COSName.R, revision);</span>
+<span class="fc" id="L241">    }</span>
+
+    /**
+     * This will return the R entry of the encryption dictionary.&lt;br&gt;&lt;br&gt;
+     * See PDF Reference 1.4 Table 3.14.
+     *
+     * @return The encryption revision to use.
+     */
+    public int getRevision()
+    {
+<span class="fc" id="L251">        return dictionary.getInt( COSName.R, DEFAULT_VERSION );</span>
+    }
+
+     /**
+     * This will set the O entry in the standard encryption dictionary.
+     *
+     * @param o A 32 byte array or null if there is no owner key.
+     *
+     * @throws IOException If there is an error setting the data.
+     */
+    public void setOwnerKey(byte[] o) throws IOException
+    {
+<span class="fc" id="L263">        dictionary.setItem(COSName.O, new COSString(o));</span>
+<span class="fc" id="L264">    }</span>
+
+    /**
+     * This will get the O entry in the standard encryption dictionary.
+     *
+     * @return A 32 byte array or null if there is no owner key.
+     *
+     * @throws IOException If there is an error accessing the data.
+     */
+    public byte[] getOwnerKey() throws IOException
+    {
+<span class="fc" id="L275">        byte[] o = null;</span>
+<span class="fc" id="L276">        COSString owner = (COSString) dictionary.getDictionaryObject( COSName.O );</span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">        if( owner != null )</span>
+        {
+<span class="fc" id="L279">            o = owner.getBytes();</span>
+<span class="fc" id="L280">            int r = getRevision();</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">            if (r &lt;= 4)</span>
+            {
+<span class="fc" id="L283">                o = Arrays.copyOf(o, 32);</span>
+            }
+<span class="pc bpc" id="L285" title="1 of 4 branches missed.">            else if (r == 5 || r == 6)</span>
+            {
+<span class="fc" id="L287">                o = Arrays.copyOf(o, 48);</span>
+            }
+        }
+<span class="fc" id="L290">        return o;</span>
+    }
+
+    /**
+     * This will set the U entry in the standard encryption dictionary.
+     *
+     * @param u A 32 byte array.
+     *
+     * @throws IOException If there is an error setting the data.
+     */
+    public void setUserKey(byte[] u) throws IOException
+    {
+<span class="fc" id="L302">        dictionary.setItem(COSName.U, new COSString(u));</span>
+<span class="fc" id="L303">    }</span>
+
+    /**
+     * This will get the U entry in the standard encryption dictionary.
+     *
+     * @return A 32 byte array or null if there is no user key.
+     *
+     * @throws IOException If there is an error accessing the data.
+     */
+    public byte[] getUserKey() throws IOException
+    {
+<span class="fc" id="L314">        byte[] u = null;</span>
+<span class="fc" id="L315">        COSString user = (COSString) dictionary.getDictionaryObject( COSName.U );</span>
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">        if( user != null )</span>
+        {
+<span class="fc" id="L318">            u = user.getBytes();</span>
+<span class="fc" id="L319">            int r = getRevision();</span>
+<span class="fc bfc" id="L320" title="All 2 branches covered.">            if (r &lt;= 4)</span>
+            {
+<span class="fc" id="L322">                u = Arrays.copyOf(u, 32);</span>
+            }
+<span class="pc bpc" id="L324" title="1 of 4 branches missed.">            else if (r == 5 || r == 6)</span>
+            {
+<span class="fc" id="L326">                u = Arrays.copyOf(u, 48);</span>
+            }
+        }
+<span class="fc" id="L329">        return u;</span>
+    }
+
+    /**
+     * This will set the OE entry in the standard encryption dictionary.
+     *
+     * @param oe A 32 byte array or null if there is no owner encryption key.
+     *
+     * @throws IOException If there is an error setting the data.
+     */
+    public void setOwnerEncryptionKey(byte[] oe) throws IOException
+    {
+<span class="fc" id="L341">        dictionary.setItem( COSName.OE, new COSString(oe) );</span>
+<span class="fc" id="L342">    }</span>
+
+    /**
+     * This will get the OE entry in the standard encryption dictionary.
+     *
+     * @return A 32 byte array or null if there is no owner encryption key.
+     *
+     * @throws IOException If there is an error accessing the data.
+     */
+    public byte[] getOwnerEncryptionKey() throws IOException
+    {
+<span class="fc" id="L353">        byte[] oe = null;</span>
+<span class="fc" id="L354">        COSString ownerEncryptionKey = (COSString)dictionary.getDictionaryObject( COSName.OE );</span>
+<span class="pc bpc" id="L355" title="1 of 2 branches missed.">        if( ownerEncryptionKey != null )</span>
+        {
+<span class="fc" id="L357">            oe = Arrays.copyOf(ownerEncryptionKey.getBytes(), 32);</span>
+        }
+<span class="fc" id="L359">        return oe;</span>
+    }
+
+    /**
+     * This will set the UE entry in the standard encryption dictionary.
+     *
+     * @param ue A 32 byte array or null if there is no user encryption key.
+     *
+     * @throws IOException If there is an error setting the data.
+     */
+    public void setUserEncryptionKey(byte[] ue) throws IOException
+    {
+<span class="fc" id="L371">        dictionary.setItem( COSName.UE, new COSString(ue) );</span>
+<span class="fc" id="L372">    }</span>
+
+    /**
+     * This will get the UE entry in the standard encryption dictionary.
+     *
+     * @return A 32 byte array or null if there is no user encryption key.
+     *
+     * @throws IOException If there is an error accessing the data.
+     */
+    public byte[] getUserEncryptionKey() throws IOException
+    {
+<span class="fc" id="L383">        byte[] ue = null;</span>
+<span class="fc" id="L384">        COSString userEncryptionKey = (COSString)dictionary.getDictionaryObject( COSName.UE );</span>
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">        if( userEncryptionKey != null )</span>
+        {
+<span class="fc" id="L387">            ue = Arrays.copyOf(userEncryptionKey.getBytes(), 32);</span>
+        }
+<span class="fc" id="L389">        return ue;</span>
+    }
+
+    /**
+     * This will set the permissions bit mask.
+     *
+     * @param permissions The new permissions bit mask
+     */
+    public void setPermissions(int permissions)
+    {
+<span class="fc" id="L399">        dictionary.setInt(COSName.P, permissions);</span>
+<span class="fc" id="L400">    }</span>
+
+    /**
+     * This will get the permissions bit mask.
+     *
+     * @return The permissions bit mask.
+     */
+    public int getPermissions()
+    {
+<span class="fc" id="L409">        return dictionary.getInt( COSName.P, 0 );</span>
+    }
+
+    /**
+     * Will get the EncryptMetaData dictionary info.
+     * 
+     * @return true if EncryptMetaData is explicitly set to false (the default is true)
+     */
+    public boolean isEncryptMetaData()
+    {
+        // default is true (see 7.6.3.2 Standard Encryption Dictionary PDF 32000-1:2008)
+<span class="fc" id="L420">        return dictionary.getBoolean(COSName.ENCRYPT_META_DATA, true);</span>
+    }
+    
+    /**
+     * This will set the Recipients field of the dictionary. This field contains an array
+     * of string.
+     * @param recipients the array of bytes arrays to put in the Recipients field.
+     * @throws IOException If there is an error setting the data.
+     */
+    public void setRecipients(byte[][] recipients) throws IOException
+    {
+<span class="fc" id="L431">        COSArray array = new COSArray();</span>
+<span class="fc bfc" id="L432" title="All 2 branches covered.">        for (byte[] recipient : recipients)</span>
+        {
+<span class="fc" id="L434">            COSString recip = new COSString(recipient);</span>
+<span class="fc" id="L435">            array.add(recip);</span>
+        }
+<span class="fc" id="L437">        dictionary.setItem(COSName.RECIPIENTS, array);</span>
+<span class="fc" id="L438">        array.setDirect(true);</span>
+<span class="fc" id="L439">    }</span>
+
+    /**
+     * Returns the number of recipients contained in the Recipients field of the dictionary.
+     *
+     * @return the number of recipients contained in the Recipients field.
+     */
+    public int getRecipientsLength()
+    {
+<span class="nc" id="L448">        COSArray array = (COSArray) dictionary.getItem(COSName.RECIPIENTS);</span>
+<span class="nc" id="L449">        return array.size();</span>
+    }
+
+    /**
+     * returns the COSString contained in the Recipients field at position i.
+     *
+     * @param i the position in the Recipients field array.
+     *
+     * @return a COSString object containing information about the recipient number i.
+     */
+    public COSString getRecipientStringAt(int i)
+    {
+<span class="nc" id="L461">        COSArray array = (COSArray) dictionary.getItem(COSName.RECIPIENTS);</span>
+<span class="nc" id="L462">        return (COSString)array.get(i);</span>
+    }
+    
+    /**
+     * Returns the standard crypt filter.
+     * 
+     * @return the standard crypt filter if available.
+     */
+    public PDCryptFilterDictionary getStdCryptFilterDictionary() 
+    {
+<span class="fc" id="L472">        return getCryptFilterDictionary(COSName.STD_CF);</span>
+    }
+
+    /**
+     * Returns the default crypt filter (for public-key security handler).
+     * 
+     * @return the default crypt filter if available.
+     */
+    public PDCryptFilterDictionary getDefaultCryptFilterDictionary() 
+    {
+<span class="fc" id="L482">        return getCryptFilterDictionary(COSName.DEFAULT_CRYPT_FILTER);</span>
+    }
+
+    /**
+     * Returns the crypt filter with the given name.
+     * 
+     * @param cryptFilterName the name of the crypt filter
+     * 
+     * @return the crypt filter with the given name if available
+     */
+    public PDCryptFilterDictionary getCryptFilterDictionary(COSName cryptFilterName)
+    {
+        // See CF in &quot;Table 20 – Entries common to all encryption dictionaries&quot;
+<span class="fc" id="L495">        COSDictionary cfDict = dictionary.getCOSDictionary(COSName.CF);</span>
+<span class="fc bfc" id="L496" title="All 2 branches covered.">        if (cfDict != null)</span>
+        {
+<span class="fc" id="L498">            COSDictionary cryptDict = cfDict.getCOSDictionary(cryptFilterName);</span>
+<span class="pc bpc" id="L499" title="1 of 2 branches missed.">            if (cryptDict != null)</span>
+            {
+<span class="fc" id="L501">                return new PDCryptFilterDictionary(cryptDict);</span>
+            }
+        }
+<span class="fc" id="L504">        return null;</span>
+    }
+
+    /**
+     * Sets the crypt filter with the given name.
+     * 
+     * @param cryptFilterName the name of the crypt filter
+     * @param cryptFilterDictionary the crypt filter to set
+     */
+    public void setCryptFilterDictionary(COSName cryptFilterName, PDCryptFilterDictionary cryptFilterDictionary)
+    {
+<span class="fc" id="L515">        COSDictionary cfDictionary = dictionary.getCOSDictionary(COSName.CF);</span>
+<span class="pc bpc" id="L516" title="1 of 2 branches missed.">        if (cfDictionary == null)</span>
+        {
+<span class="fc" id="L518">            cfDictionary = new COSDictionary();</span>
+<span class="fc" id="L519">            dictionary.setItem(COSName.CF, cfDictionary);</span>
+        }
+<span class="fc" id="L521">        cfDictionary.setDirect(true); // PDFBOX-4436 direct obj needed for Adobe Reader on Android</span>
+<span class="fc" id="L522">        cfDictionary.setItem(cryptFilterName, cryptFilterDictionary.getCOSObject());</span>
+<span class="fc" id="L523">    }</span>
+    
+    /**
+     * Sets the standard crypt filter.
+     * 
+     * @param cryptFilterDictionary the standard crypt filter to set
+     */
+    public void setStdCryptFilterDictionary(PDCryptFilterDictionary cryptFilterDictionary)
+    {
+<span class="fc" id="L532">        cryptFilterDictionary.getCOSObject().setDirect(true); // PDFBOX-4436</span>
+<span class="fc" id="L533">        setCryptFilterDictionary(COSName.STD_CF, cryptFilterDictionary);</span>
+<span class="fc" id="L534">    }</span>
+
+    /**
+     * Sets the default crypt filter (for public-key security handler).
+     *
+     * @param defaultFilterDictionary the standard crypt filter to set
+     */
+    public void setDefaultCryptFilterDictionary(PDCryptFilterDictionary defaultFilterDictionary)
+    {
+<span class="fc" id="L543">        defaultFilterDictionary.getCOSObject().setDirect(true); // PDFBOX-4436</span>
+<span class="fc" id="L544">        setCryptFilterDictionary(COSName.DEFAULT_CRYPT_FILTER, defaultFilterDictionary);</span>
+<span class="fc" id="L545">    }</span>
+
+    /**
+     * Returns the name of the filter which is used for de/encrypting streams.
+     * Default value is &quot;Identity&quot;.
+     * 
+     * @return the name of the filter
+     */
+    public COSName getStreamFilterName() 
+    {
+<span class="fc" id="L555">        COSName stmF = dictionary.getCOSName(COSName.STM_F);</span>
+<span class="pc bpc" id="L556" title="1 of 2 branches missed.">        return stmF == null ? COSName.IDENTITY : stmF;</span>
+    }
+
+    /**
+     * Sets the name of the filter which is used for de/encrypting streams.
+     * 
+     * @param streamFilterName the name of the filter
+     */
+    public void setStreamFilterName(COSName streamFilterName)
+    {
+<span class="fc" id="L566">        dictionary.setItem(COSName.STM_F, streamFilterName);</span>
+<span class="fc" id="L567">    }</span>
+
+    /**
+     * Returns the name of the filter which is used for de/encrypting strings.
+     * Default value is &quot;Identity&quot;.
+     * 
+     * @return the name of the filter
+     */
+    public COSName getStringFilterName() 
+    {
+<span class="fc" id="L577">        COSName strF = dictionary.getCOSName(COSName.STR_F);</span>
+<span class="pc bpc" id="L578" title="1 of 2 branches missed.">        return strF == null ? COSName.IDENTITY : strF;</span>
+    }
+
+    /**
+     * Sets the name of the filter which is used for de/encrypting strings.
+     * 
+     * @param stringFilterName the name of the filter
+     */
+    public void setStringFilterName(COSName stringFilterName)
+    {
+<span class="fc" id="L588">        dictionary.setItem(COSName.STR_F, stringFilterName);</span>
+<span class="fc" id="L589">    }</span>
+
+    /**
+     * Set the Perms entry in the encryption dictionary.
+     *
+     * @param perms A 16 byte array.
+     *
+     * @throws IOException If there is an error setting the data.
+     */
+    public void setPerms(byte[] perms) throws IOException
+    {
+<span class="fc" id="L600">        dictionary.setItem( COSName.PERMS, new COSString(perms) );</span>
+<span class="fc" id="L601">    }</span>
+
+    /**
+     * Get the Perms entry in the encryption dictionary.
+     *
+     * @return A 16 byte array or null if there is no Perms entry.
+     *
+     * @throws IOException If there is an error accessing the data.
+     */
+    public byte[] getPerms() throws IOException
+    {
+<span class="fc" id="L612">        byte[] perms = null;</span>
+<span class="fc" id="L613">        COSString permsCosString = (COSString)dictionary.getDictionaryObject( COSName.PERMS );</span>
+<span class="pc bpc" id="L614" title="1 of 2 branches missed.">        if( permsCosString != null )</span>
+        {
+<span class="fc" id="L616">            perms = permsCosString.getBytes();</span>
+        }
+<span class="fc" id="L618">        return perms;</span>
+    }
+
+    /**
+     * remove CF, StmF, and StrF entries. This is to be called if V is not 4 or 5.
+     */
+    public void removeV45filters()
+    {
+<span class="fc" id="L626">        dictionary.setItem(COSName.CF, null);</span>
+<span class="fc" id="L627">        dictionary.setItem(COSName.STM_F, null);</span>
+<span class="fc" id="L628">        dictionary.setItem(COSName.STR_F, null);</span>
+<span class="fc" id="L629">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

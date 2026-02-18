@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>COSIncrement.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.cos</a> &gt; <span class="el_source">COSIncrement.java</span></div><h1>COSIncrement.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.cos;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+/**
+ * A {@link COSIncrement} starts at a given {@link COSUpdateInfo} to collect updates, that have been made to a
+ * {@link COSDocument} and therefore should be added to it´s next increment.
+ *
+ * @author Christian Appl
+ * @see COSUpdateState
+ * @see COSUpdateInfo
+ */
+public class COSIncrement implements Iterable&lt;COSBase&gt;
+{
+    
+    /**
+     * Contains the {@link COSBase}s, that shall be added to the increment at top level.
+     */
+<span class="fc" id="L39">    private final Set&lt;COSBase&gt; objects = new LinkedHashSet&lt;&gt;();</span>
+    /**
+     * Contains the direct {@link COSBase}s, that are either contained written directly by structures contained in
+     * {@link #objects} or that must be excluded from being written as indirect {@link COSObject}s for other reasons.
+     */
+<span class="fc" id="L44">    private final Set&lt;COSBase&gt; excluded = new HashSet&lt;&gt;();</span>
+    /**
+     * Contains all {@link COSObject}s, that have already been processed by this {@link COSIncrement} and shall not be
+     * processed again.
+     */
+<span class="fc" id="L49">    private final Set&lt;COSObject&gt; processedObjects = new HashSet&lt;&gt;();</span>
+    /**
+     * Contains the {@link COSUpdateInfo} that this {@link COSIncrement} creates an increment for.
+     */
+    private final COSUpdateInfo incrementOrigin;
+    /**
+     * Whether this {@link COSIncrement} has already been determined, or must still be evaluated.
+     */
+<span class="fc" id="L57">    private boolean initialized = false;</span>
+    
+    /**
+     * Creates a new {@link COSIncrement} for the given {@link COSUpdateInfo}, the increment will use it´s
+     * {@link COSDocumentState} as it´s own origin and shall collect all updates contained in the given
+     * {@link COSUpdateInfo}.&lt;br&gt;
+     * Should the given object be {@code null}, the resulting increment shall be empty.
+     *
+     * @param incrementOrigin The {@link COSUpdateInfo} serving as an update source for this {@link COSIncrement}.
+     */
+    public COSIncrement(COSUpdateInfo incrementOrigin)
+<span class="fc" id="L68">    {</span>
+<span class="fc" id="L69">        this.incrementOrigin = incrementOrigin;</span>
+<span class="fc" id="L70">    }</span>
+    
+    /**
+     * Collect all updates made to the given {@link COSBase} and it's contained structures.&lt;br&gt;
+     * This shall forward all {@link COSUpdateInfo} objects to the proper specialized collection methods.
+     *
+     * @param base The {@link COSBase} updates shall be collected for.
+     * @return Returns {@code true}, if the {@link COSBase} represents a direct child structure, that would require it´s
+     * parent to be updated instead.
+     * @see #collect(COSDictionary)
+     * @see #collect(COSArray)
+     * @see #collect(COSObject)
+     */
+    private boolean collect(COSBase base)
+    {
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">        if(contains(base))</span>
+        {
+<span class="nc" id="L87">            return false;</span>
+        }
+        // handle updatable objects:
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if(base instanceof COSDictionary)</span>
+        {
+<span class="fc" id="L92">            return collect((COSDictionary) base);</span>
+        }
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        else if(base instanceof COSObject)</span>
+        {
+<span class="fc" id="L96">            return collect((COSObject) base);</span>
+        }
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        else if(base instanceof COSArray)</span>
+        {
+<span class="fc" id="L100">            return collect((COSArray) base);</span>
+        }
+<span class="nc" id="L102">        return false;</span>
+    }
+    
+    /**
+     * Collect all updates made to the given {@link COSDictionary} and it's contained structures.
+     *
+     * @param dictionary The {@link COSDictionary} updates shall be collected for.
+     * @return Returns {@code true}, if the {@link COSDictionary} represents a direct child structure, that would
+     * require it´s parent to be updated instead.
+     */
+    private boolean collect(COSDictionary dictionary)
+    {
+<span class="fc" id="L114">        COSUpdateState updateState = dictionary.getUpdateState();</span>
+        // Is definitely part of the increment?
+<span class="pc bpc" id="L116" title="2 of 6 branches missed.">        if(!isExcluded(dictionary) &amp;&amp; !contains(dictionary) &amp;&amp; updateState.isUpdated())</span>
+        {
+<span class="fc" id="L118">            add(dictionary);</span>
+        }
+<span class="fc" id="L120">        boolean childDemandsParentUpdate = false;</span>
+        // Collect children:
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        for(COSBase entry : dictionary.getValues())</span>
+        {
+            // Primitives can not be part of an increment. (on top level)
+<span class="fc bfc" id="L125" title="All 4 branches covered.">            if(!(entry instanceof COSUpdateInfo) || contains(entry))</span>
+            {
+<span class="fc" id="L127">                continue;</span>
+            }
+<span class="fc" id="L129">            COSUpdateInfo updatableEntry = (COSUpdateInfo) entry;</span>
+<span class="fc" id="L130">            COSUpdateState entryUpdateState = updatableEntry.getUpdateState();</span>
+            // Entries with different document origin must be part of the increment!
+<span class="fc" id="L132">            updateDifferentOrigin(entryUpdateState);</span>
+            // Always attempt to write COSArrays as direct objects.
+<span class="fc bfc" id="L134" title="All 4 branches covered.">            if(updatableEntry.isNeedToBeUpdated() &amp;&amp;</span>
+<span class="pc bpc" id="L135" title="1 of 4 branches missed.">                ((!(entry instanceof COSObject) &amp;&amp; entry.isDirect()) || entry instanceof COSArray))</span>
+            {
+                // Exclude direct entries from the increment!
+<span class="fc" id="L138">                exclude(entry);</span>
+<span class="fc" id="L139">                childDemandsParentUpdate = true;</span>
+            }
+            // Collect descendants:
+<span class="fc bfc" id="L142" title="All 4 branches covered.">            childDemandsParentUpdate = collect(entry) || childDemandsParentUpdate;</span>
+<span class="fc" id="L143">        }</span>
+        
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        if(isExcluded(dictionary))</span>
+        {
+<span class="fc" id="L147">            return childDemandsParentUpdate;</span>
+        }
+        else
+        {
+<span class="pc bpc" id="L151" title="1 of 4 branches missed.">            if(childDemandsParentUpdate &amp;&amp; !contains(dictionary))</span>
+            {
+<span class="nc" id="L153">                add(dictionary);</span>
+            }
+<span class="fc" id="L155">            return false;</span>
+        }
+    }
+    
+    /**
+     * Collect all updates made to the given {@link COSArray} and it's contained structures.
+     *
+     * @param array The {@link COSDictionary} updates shall be collected for.
+     * @return Returns {@code true}, if the {@link COSArray}´s elements changed. A {@link COSArray} shall always be
+     * treated as a direct structure, that would require it´s parent to be updated instead.
+     */
+    private boolean collect(COSArray array)
+    {
+<span class="fc" id="L168">        COSUpdateState updateState = array.getUpdateState();</span>
+<span class="fc" id="L169">        boolean childDemandsParentUpdate = updateState.isUpdated();</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        for(COSBase entry : array)</span>
+        {
+            // Primitives can not be part of an increment. (on top level)
+<span class="fc bfc" id="L173" title="All 4 branches covered.">            if(!(entry instanceof COSUpdateInfo) || contains(entry))</span>
+            {
+<span class="fc" id="L175">                continue;</span>
+            }
+<span class="fc" id="L177">            COSUpdateState entryUpdateState = ((COSUpdateInfo) entry).getUpdateState();</span>
+            // Entries with different document origin must be part of the increment!
+<span class="fc" id="L179">            updateDifferentOrigin(entryUpdateState);</span>
+            // Collect descendants:
+<span class="fc bfc" id="L181" title="All 4 branches covered.">            childDemandsParentUpdate = collect(entry) || childDemandsParentUpdate;</span>
+<span class="fc" id="L182">        }</span>
+<span class="fc" id="L183">        return childDemandsParentUpdate;</span>
+    }
+    
+    /**
+     * Collect all updates made to the given {@link COSObject} and it's contained structures.
+     *
+     * @param object The {@link COSObject} updates shall be collected for.
+     * @return Always returns {@code false}. {@link COSObject}s by definition are indirect and shall never cause a
+     * parent structure to be updated.
+     */
+    private boolean collect(COSObject object)
+    {
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">        if(contains(object))</span>
+        {
+<span class="nc" id="L197">            return false;</span>
+        }
+<span class="fc" id="L199">        addProcessedObject(object);</span>
+<span class="fc" id="L200">        COSUpdateState updateState = object.getUpdateState();</span>
+        // Objects with different document origin must be part of the increment!
+<span class="fc" id="L202">        updateDifferentOrigin(updateState);</span>
+        // determine actual, if necessary or possible without dereferencing:
+<span class="fc" id="L204">        COSUpdateInfo actual = null;</span>
+<span class="fc bfc" id="L205" title="All 4 branches covered.">        if(updateState.isUpdated() || object.isDereferenced())</span>
+        {
+<span class="fc" id="L207">            COSBase base = object.getObject();</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">            if(base instanceof COSUpdateInfo)</span>
+            {
+<span class="fc" id="L210">                actual = (COSUpdateInfo) base;</span>
+            }
+        }
+        // Skip?
+<span class="pc bpc" id="L214" title="1 of 4 branches missed.">        if(actual == null || contains(actual.getCOSObject()))</span>
+        {
+<span class="fc" id="L216">            return false;</span>
+        }
+<span class="fc" id="L218">        boolean childDemandsParentUpdate = false;</span>
+<span class="fc" id="L219">        COSUpdateState actualUpdateState = actual.getUpdateState();</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        if(actualUpdateState.isUpdated())</span>
+        {
+<span class="fc" id="L222">            childDemandsParentUpdate = true;</span>
+        }
+<span class="fc" id="L224">        exclude(actual.getCOSObject());</span>
+<span class="fc bfc" id="L225" title="All 4 branches covered.">        childDemandsParentUpdate = collect(actual.getCOSObject()) || childDemandsParentUpdate;</span>
+<span class="fc bfc" id="L226" title="All 4 branches covered.">        if(updateState.isUpdated() || childDemandsParentUpdate)</span>
+        {
+<span class="fc" id="L228">            add(actual.getCOSObject());</span>
+        }
+<span class="fc" id="L230">        return false;</span>
+    }
+    
+    /**
+     * Returns {@code true}, if the given {@link COSBase} is already known to and has been processed by this
+     * {@link COSIncrement}.
+     *
+     * @param base The {@link COSBase} to check.
+     * @return {@code true}, if the given {@link COSBase} is already known to and has been processed by this
+     * {@link COSIncrement}.
+     * @see #objects
+     * @see #processedObjects
+     */
+    public boolean contains(COSBase base)
+    {
+<span class="fc bfc" id="L245" title="All 6 branches covered.">        return objects.contains(base) || (base instanceof COSObject &amp;&amp; processedObjects.contains((COSObject) base));</span>
+    }
+    
+    /**
+     * Check whether the given {@link COSUpdateState}´s {@link COSDocumentState} differs from the {@link COSIncrement}´s
+     * known {@link #incrementOrigin}.&lt;br&gt;
+     * Should that be the case, the {@link COSUpdateState} originates from another {@link COSDocument} and must be added
+     * to the {@link COSIncrement}, hence call {@link COSUpdateState#update()}.
+     *
+     * @param updateState The {@link COSUpdateState} that shall be updated, if it's originating from another
+     *                    {@link COSDocument}.
+     * @see #incrementOrigin
+     */
+    private void updateDifferentOrigin(COSUpdateState updateState)
+    {
+<span class="pc bpc" id="L260" title="2 of 4 branches missed.">        if(incrementOrigin != null &amp;&amp; updateState != null &amp;&amp;</span>
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">            incrementOrigin.getUpdateState().getOriginDocumentState() != updateState.getOriginDocumentState())</span>
+        {
+<span class="nc" id="L263">            updateState.update();</span>
+        }
+<span class="fc" id="L265">    }</span>
+    
+    /**
+     * The given object and actual {COSBase}s shall be part of the increment and must be added to {@link #objects},
+     * if possible.&lt;br&gt;
+     * {@code null} values shall be skipped.
+     *
+     * @param object The {@link COSBase} to add to {@link #objects}.
+     * @see #objects
+     */
+    private void add(COSBase object)
+    {
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">        if(object != null)</span>
+        {
+<span class="fc" id="L279">            objects.add(object);</span>
+        }
+<span class="fc" id="L281">    }</span>
+    
+    /**
+     * The given {@link COSObject} has been processed, or is being processed. It shall be added to
+     * {@link #processedObjects} to skip it, should it be encountered again.&lt;br&gt;
+     * {@code null} values shall be ignored.
+     *
+     * @param base The {@link COSObject} to add to {@link #processedObjects}.
+     * @see #processedObjects
+     */
+    private void addProcessedObject(COSObject base)
+    {
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">        if(base != null)</span>
+        {
+<span class="fc" id="L295">            processedObjects.add(base);</span>
+        }
+<span class="fc" id="L297">    }</span>
+    
+    /**
+     * The given {@link COSBase}s are not fit for inclusion in an increment and shall be added to {@link #excluded}.&lt;br&gt;
+     * {@code null} values shall be ignored.
+     *
+     * @param base The {@link COSBase}s to add to {@link #excluded}.
+     * @return The {@link COSIncrement} itself, to allow method chaining.
+     * @see #excluded
+     */
+    public COSIncrement exclude(COSBase... base)
+    {
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">        if(base != null)</span>
+        {
+<span class="fc" id="L311">            excluded.addAll(Arrays.asList(base));</span>
+        }
+<span class="fc" id="L313">        return this;</span>
+    }
+    
+    /**
+     * Returns {@code true}, if the given {@link COSBase} has been excluded from the increment, and hence is contained
+     * in {@link #excluded}.
+     *
+     * @param base The {@link COSBase} to check for exclusion.
+     * @return {@code true}, if the given {@link COSBase} has been excluded from the increment, and hence is contained
+     * in {@link #excluded}.
+     * @see #excluded
+     */
+    private boolean isExcluded(COSBase base)
+    {
+<span class="fc" id="L327">        return excluded.contains(base);</span>
+    }
+    
+    /**
+     * Returns all indirect {@link COSBase}s, that shall be written to an increment as top level {@link COSObject}s.&lt;br&gt;
+     * Calling this method will cause the increment to be initialized.
+     *
+     * @return All indirect {@link COSBase}s, that shall be written to an increment as top level {@link COSObject}s.
+     * @see #objects
+     */
+    public Set&lt;COSBase&gt; getObjects()
+    {
+<span class="pc bpc" id="L339" title="2 of 4 branches missed.">        if(!initialized &amp;&amp; incrementOrigin != null)</span>
+        {
+<span class="fc" id="L341">            collect(incrementOrigin.getCOSObject());</span>
+<span class="fc" id="L342">            initialized = true;</span>
+        }
+<span class="fc" id="L344">        return objects;</span>
+    }
+    
+    /**
+     * Return an iterator for the determined {@link #objects} contained in this {@link COSIncrement}.
+     *
+     * @return An iterator for the determined {@link #objects} contained in this {@link COSIncrement}.
+     */
+    @Override
+    public Iterator&lt;COSBase&gt; iterator()
+    {
+<span class="fc" id="L355">        return getObjects().iterator();</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

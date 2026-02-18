@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDRange.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.common</a> &gt; <span class="el_source">PDRange.java</span></div><h1>PDRange.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.common;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSNumber;
+
+/**
+ * This class will be used to signify a range.  a(min) &amp;lt;= a* &amp;lt;= a(max)
+ *
+ * @author Ben Litchfield
+ */
+public class PDRange implements COSObjectable
+{
+    private final COSArray rangeArray;
+    private int startingIndex;
+
+    /**
+     * Constructor with an initial range of 0..1.
+     */
+    public PDRange()
+<span class="fc" id="L38">    {</span>
+<span class="fc" id="L39">        rangeArray = new COSArray();</span>
+<span class="fc" id="L40">        rangeArray.add(COSFloat.ZERO);</span>
+<span class="fc" id="L41">        rangeArray.add(COSFloat.ONE);</span>
+<span class="fc" id="L42">        startingIndex = 0;</span>
+<span class="fc" id="L43">    }</span>
+
+    /**
+     * Constructor assumes a starting index of 0.
+     *
+     * @param range The array that describes the range.
+     */
+    public PDRange( COSArray range )
+<span class="nc" id="L51">    {</span>
+<span class="nc" id="L52">        rangeArray = range;</span>
+<span class="nc" id="L53">    }</span>
+
+    /**
+     * Constructor with an index into an array.  Because some arrays specify
+     * multiple ranges ie [ 0,1,  0,2,  2,3 ] It is convenient for this
+     * class to take an index into an array.  So if you want this range to
+     * represent 0,2 in the above example then you would say &lt;code&gt;new PDRange( array, 1 )&lt;/code&gt;.
+     *
+     * @param range The array that describes the index
+     * @param index The range index into the array for the start of the range.
+     */
+    public PDRange( COSArray range, int index )
+<span class="fc" id="L65">    {</span>
+<span class="fc" id="L66">        rangeArray = range;</span>
+<span class="fc" id="L67">        startingIndex = index;</span>
+<span class="fc" id="L68">    }</span>
+
+    /**
+     * Convert this standard java object to a COS object.
+     *
+     * @return The cos object that matches this Java object.
+     */
+    @Override
+    public COSBase getCOSObject()
+    {
+<span class="nc" id="L78">        return rangeArray;</span>
+    }
+
+    /**
+     * This will get the underlying array value.
+     *
+     * @return The cos object that this object wraps.
+     */
+    public COSArray getCOSArray()
+    {
+<span class="nc" id="L88">        return rangeArray;</span>
+    }
+
+    /**
+     * This will get the minimum value of the range.
+     *
+     * @return The min value.
+     */
+    public float getMin()
+    {
+<span class="fc" id="L98">        COSNumber min = (COSNumber)rangeArray.getObject( startingIndex*2 );</span>
+<span class="fc" id="L99">        return min.floatValue();</span>
+    }
+
+    /**
+     * This will set the minimum value for the range.
+     *
+     * @param min The new minimum for the range.
+     */
+    public void setMin( float min )
+    {
+<span class="fc" id="L109">        rangeArray.set( startingIndex*2, new COSFloat( min ) );</span>
+<span class="fc" id="L110">    }</span>
+
+    /**
+     * This will get the maximum value of the range.
+     *
+     * @return The max value.
+     */
+    public float getMax()
+    {
+<span class="fc" id="L119">        COSNumber max = (COSNumber)rangeArray.getObject( startingIndex*2+1 );</span>
+<span class="fc" id="L120">        return max.floatValue();</span>
+    }
+
+    /**
+     * This will set the maximum value for the range.
+     *
+     * @param max The new maximum for the range.
+     */
+    public void setMax( float max )
+    {
+<span class="fc" id="L130">        rangeArray.set( startingIndex*2+1, new COSFloat( max ) );</span>
+<span class="fc" id="L131">    }</span>
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L139">        return &quot;PDRange{&quot; + getMin() + &quot;, &quot; + getMax() + '}';</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

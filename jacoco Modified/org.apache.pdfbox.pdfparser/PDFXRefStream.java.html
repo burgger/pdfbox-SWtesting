@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFXRefStream.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdfparser</a> &gt; <span class="el_source">PDFXRefStream.java</span></div><h1>PDFXRefStream.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdfparser;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSDocument;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.pdfparser.xref.FreeXReference;
+import org.apache.pdfbox.pdfparser.xref.XReferenceEntry;
+
+/**
+ * @author Alexander Funk
+ */
+public class PDFXRefStream
+{
+
+<span class="fc" id="L44">    private final List&lt;XReferenceEntry&gt; streamData = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L46">    private final Set&lt;Long&gt; objectNumbers = new TreeSet&lt;&gt;();</span>
+
+    private final COSStream stream;
+
+<span class="fc" id="L50">    private long size = -1;</span>
+
+    /**
+     * Create a fresh XRef stream like for a fresh file or an incremental update.
+     * 
+     * @param cosDocument the COSDocument to be used to create a new COSStream
+     */
+    public PDFXRefStream(COSDocument cosDocument)
+<span class="fc" id="L58">    {</span>
+<span class="fc" id="L59">        stream = cosDocument.createCOSStream();</span>
+<span class="fc" id="L60">    }</span>
+
+    /**
+     * Returns the stream of the XRef.
+     * @return the XRef stream
+     * @throws IOException if something went wrong
+     */
+    public COSStream getStream() throws IOException
+    {
+<span class="fc" id="L69">        stream.setItem(COSName.TYPE, COSName.XREF);</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (size == -1)</span>
+        {
+<span class="nc" id="L72">            throw new IllegalArgumentException(&quot;size is not set in xrefstream&quot;);</span>
+        }
+<span class="fc" id="L74">        stream.setLong(COSName.SIZE, size);</span>
+    
+<span class="fc" id="L76">        List&lt;Long&gt; indexEntry = getIndexEntry();</span>
+<span class="fc" id="L77">        COSArray indexAsArray = new COSArray();</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        for ( Long i : indexEntry )</span>
+        {
+<span class="fc" id="L80">            indexAsArray.add(COSInteger.get(i));</span>
+<span class="fc" id="L81">        }</span>
+<span class="fc" id="L82">        stream.setItem(COSName.INDEX, indexAsArray);</span>
+
+<span class="fc" id="L84">        int[] wEntry = getWEntry();</span>
+<span class="fc" id="L85">        COSArray wAsArray = new COSArray();</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        for (int j : wEntry)</span>
+        {
+<span class="fc" id="L88">            wAsArray.add(COSInteger.get(j));</span>
+        }
+<span class="fc" id="L90">        stream.setItem(COSName.W, wAsArray);</span>
+        
+<span class="fc" id="L92">        try (OutputStream outputStream = this.stream.createOutputStream(COSName.FLATE_DECODE))</span>
+        {
+<span class="fc" id="L94">            writeStreamData(outputStream, wEntry);</span>
+<span class="fc" id="L95">            outputStream.flush();</span>
+        }
+    
+<span class="fc" id="L98">        Set&lt;COSName&gt; keySet = this.stream.keySet();</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        for ( COSName cosName : keySet )</span>
+        {
+            // &quot;Other cross-reference stream entries not listed in Table 17 may be indirect; in fact, 
+            // some (such as Root in Table 15) shall be indirect.&quot;
+<span class="fc bfc" id="L103" title="All 6 branches covered.">            if (COSName.ROOT.equals(cosName) || COSName.INFO.equals(cosName) || COSName.PREV.equals(cosName))</span>
+            {
+<span class="fc" id="L105">                continue;</span>
+            }
+            // this one too, because it has already been written in COSWriter.doWriteBody()
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            if (COSName.ENCRYPT.equals(cosName))</span>
+            {
+<span class="fc" id="L110">                continue;</span>
+            }
+<span class="fc" id="L112">            COSBase dictionaryObject = this.stream.getDictionaryObject(cosName);</span>
+<span class="fc" id="L113">            dictionaryObject.setDirect(true);</span>
+<span class="fc" id="L114">        }</span>
+<span class="fc" id="L115">        return this.stream;</span>
+    }
+
+    /**
+     * Copy all Trailer Information to this file.
+     * 
+     * @param trailerDict dictionary to be added as trailer info
+     */
+    public void addTrailerInfo(COSDictionary trailerDict)
+    {
+<span class="fc" id="L125">        trailerDict.forEach((key, value) -&gt;</span>
+        {
+<span class="fc bfc" id="L127" title="All 6 branches covered.">            if (COSName.INFO.equals(key) || COSName.ROOT.equals(key) || COSName.ENCRYPT.equals(key) </span>
+<span class="fc bfc" id="L128" title="All 4 branches covered.">                    || COSName.ID.equals(key) || COSName.PREV.equals(key))</span>
+            {
+<span class="fc" id="L130">                stream.setItem(key, value);</span>
+            }
+<span class="fc" id="L132">        });</span>
+<span class="fc" id="L133">    }</span>
+
+    /**
+     * Add an new entry to the XRef stream.
+     * 
+     * @param entry new entry to be added
+     */
+    public void addEntry(XReferenceEntry entry)
+    {
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">        if (objectNumbers.contains(entry.getReferencedKey().getNumber()))</span>
+        {
+<span class="nc" id="L144">            return;</span>
+        }
+<span class="fc" id="L146">        objectNumbers.add(entry.getReferencedKey().getNumber());</span>
+<span class="fc" id="L147">        streamData.add(entry);</span>
+<span class="fc" id="L148">    }</span>
+
+    /**
+     * determines the minimal length required for all the lengths.
+     * 
+     * @return the length information
+     */
+    private int[] getWEntry()
+    {
+<span class="fc" id="L157">        long[] wMax = new long[3];</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        for (XReferenceEntry entry : streamData)</span>
+        {
+<span class="fc" id="L160">            wMax[0] = Math.max(wMax[0], entry.getFirstColumnValue());</span>
+<span class="fc" id="L161">            wMax[1] = Math.max(wMax[1], entry.getSecondColumnValue());</span>
+<span class="fc" id="L162">            wMax[2] = Math.max(wMax[2], entry.getThirdColumnValue());</span>
+<span class="fc" id="L163">        }</span>
+        // find the max bytes needed to display that column
+<span class="fc" id="L165">        int[] w = new int[3];</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        for ( int i = 0; i &lt; w.length; i++ )</span>
+        {
+<span class="fc bfc" id="L168" title="All 2 branches covered.">            while (wMax[i] &gt; 0)</span>
+            {
+<span class="fc" id="L170">                w[i]++;</span>
+<span class="fc" id="L171">                wMax[i] &gt;&gt;= 8;</span>
+            }
+        }
+<span class="fc" id="L174">        return w;</span>
+    }
+
+    /**
+     * Set the size of the XRef stream.
+     * 
+     * @param streamSize size to bet set as stream size
+     */
+    public void setSize(long streamSize)
+    {
+<span class="fc" id="L184">        this.size = streamSize;</span>
+<span class="fc" id="L185">    }</span>
+
+    private List&lt;Long&gt; getIndexEntry()
+    {
+<span class="fc" id="L189">        LinkedList&lt;Long&gt; linkedList = new LinkedList&lt;&gt;();</span>
+<span class="fc" id="L190">        Long first = null;</span>
+<span class="fc" id="L191">        Long length = null;</span>
+<span class="fc" id="L192">        Set&lt;Long&gt; objNumbers = new TreeSet&lt;&gt;();</span>
+        // add object number 0 to the set
+<span class="fc" id="L194">        objNumbers.add(0L);</span>
+<span class="fc" id="L195">        objNumbers.addAll(objectNumbers);</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">        for ( Long objNumber : objNumbers )</span>
+        {
+<span class="fc bfc" id="L198" title="All 2 branches covered.">            if (first == null)</span>
+            {
+<span class="fc" id="L200">                first = objNumber;</span>
+<span class="fc" id="L201">                length = 1L;</span>
+            }
+<span class="fc bfc" id="L203" title="All 2 branches covered.">            if (first + length == objNumber)</span>
+            {
+<span class="fc" id="L205">                length += 1;</span>
+            }
+<span class="fc bfc" id="L207" title="All 2 branches covered.">            if (first + length &lt; objNumber)</span>
+            {
+<span class="fc" id="L209">                linkedList.add(first);</span>
+<span class="fc" id="L210">                linkedList.add(length);</span>
+<span class="fc" id="L211">                first = objNumber;</span>
+<span class="fc" id="L212">                length = 1L;</span>
+            }
+<span class="fc" id="L214">        }</span>
+<span class="fc" id="L215">        linkedList.add(first);</span>
+<span class="fc" id="L216">        linkedList.add(length);</span>
+
+<span class="fc" id="L218">        return linkedList;</span>
+    }
+
+    private void writeNumber(OutputStream os, long number, int bytes) throws IOException
+    {
+<span class="fc" id="L223">        byte[] buffer = new byte[bytes];</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">        for ( int i = 0; i &lt; bytes; i++ )</span>
+        {
+<span class="fc" id="L226">            buffer[i] = (byte)(number &amp; 0xff);</span>
+<span class="fc" id="L227">            number &gt;&gt;= 8;</span>
+        }
+
+<span class="fc bfc" id="L230" title="All 2 branches covered.">        for ( int i = 0; i &lt; bytes; i++ )</span>
+        {
+<span class="fc" id="L232">            os.write(buffer[bytes-i-1]);</span>
+        }
+<span class="fc" id="L234">    }</span>
+
+    private void writeStreamData(OutputStream os, int[] w) throws IOException
+    {
+<span class="fc" id="L238">        Collections.sort(streamData);</span>
+<span class="fc" id="L239">        FreeXReference nullEntry = FreeXReference.NULL_ENTRY;</span>
+<span class="fc" id="L240">        writeNumber(os, nullEntry.getFirstColumnValue(), w[0]);</span>
+<span class="fc" id="L241">        writeNumber(os, nullEntry.getSecondColumnValue(), w[1]);</span>
+<span class="fc" id="L242">        writeNumber(os, nullEntry.getThirdColumnValue(), w[2]);</span>
+        // iterate over all streamData and write it in the required format
+<span class="fc bfc" id="L244" title="All 2 branches covered.">        for (XReferenceEntry entry : streamData)</span>
+        {
+<span class="fc" id="L246">            writeNumber(os, entry.getFirstColumnValue(), w[0]);</span>
+<span class="fc" id="L247">            writeNumber(os, entry.getSecondColumnValue(), w[1]);</span>
+<span class="fc" id="L248">            writeNumber(os, entry.getThirdColumnValue(), w[2]);</span>
+<span class="fc" id="L249">        }</span>
+<span class="fc" id="L250">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

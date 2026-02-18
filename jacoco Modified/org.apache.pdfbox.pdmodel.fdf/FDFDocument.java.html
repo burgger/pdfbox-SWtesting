@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FDFDocument.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.fdf</a> &gt; <span class="el_source">FDFDocument.java</span></div><h1>FDFDocument.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.fdf;
+
+import java.io.BufferedWriter;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSDocument;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.io.IOUtils;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.pdfwriter.COSWriter;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+/**
+ * This is the in-memory representation of the FDF document. You need to call close() on this object when you are done
+ * using it!!
+ *
+ * @author Ben Litchfield
+ */
+public class FDFDocument implements Closeable
+{
+<span class="fc" id="L50">    private static final Logger LOG = LogManager.getLogger(FDFDocument.class);</span>
+
+    private final COSDocument document;
+
+    private final RandomAccessRead fdfSource;
+
+    /**
+     * Constructor, creates a new FDF document.
+     *
+     */
+    public FDFDocument()
+<span class="fc" id="L61">    {</span>
+<span class="fc" id="L62">        fdfSource = null;</span>
+<span class="fc" id="L63">        document = new COSDocument();</span>
+<span class="fc" id="L64">        document.getDocumentState().setParsing(false);</span>
+<span class="fc" id="L65">        document.setVersion(1.2f);</span>
+
+        // First we need a trailer
+<span class="fc" id="L68">        document.setTrailer(new COSDictionary());</span>
+
+        // Next we need the root dictionary.
+<span class="fc" id="L71">        FDFCatalog catalog = new FDFCatalog();</span>
+<span class="fc" id="L72">        setCatalog(catalog);</span>
+<span class="fc" id="L73">    }</span>
+
+    /**
+     * Constructor that uses an existing document. The COSDocument that is passed in must be valid.
+     *
+     * @param doc The COSDocument that this document wraps.
+     * @param source The source that will be closed when this document gets closed, can be null.
+     */
+    public FDFDocument(COSDocument doc, RandomAccessRead source)
+<span class="fc" id="L82">    {</span>
+<span class="fc" id="L83">        document = doc;</span>
+<span class="fc" id="L84">        document.getDocumentState().setParsing(false);</span>
+<span class="fc" id="L85">        fdfSource = source;</span>
+<span class="fc" id="L86">    }</span>
+
+    /**
+     * This will create an FDF document from an XFDF XML document.
+     *
+     * @param doc The XML document that contains the XFDF data.
+     * @throws IOException If there is an error reading from the dom.
+     */
+    public FDFDocument(Document doc) throws IOException
+    {
+<span class="fc" id="L96">        this();</span>
+<span class="fc" id="L97">        Element xfdf = doc.getDocumentElement();</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        if (!xfdf.getNodeName().equals(&quot;xfdf&quot;))</span>
+        {
+<span class="nc" id="L100">            throw new IOException(&quot;Error while importing xfdf document, &quot;</span>
+<span class="nc" id="L101">                    + &quot;root should be 'xfdf' and not '&quot; + xfdf.getNodeName() + &quot;'&quot;);</span>
+        }
+<span class="fc" id="L103">        FDFCatalog cat = new FDFCatalog(xfdf);</span>
+<span class="fc" id="L104">        setCatalog(cat);</span>
+<span class="fc" id="L105">    }</span>
+
+    /**
+     * This will write this element as an XML document.
+     *
+     * @param output The stream to write the xml to.
+     *
+     * @throws IOException If there is an error writing the XML.
+     */
+    public void writeXML(Writer output) throws IOException
+    {
+<span class="fc" id="L116">        output.write(&quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;\n&quot;);</span>
+<span class="fc" id="L117">        output.write(&quot;&lt;xfdf xmlns=\&quot;http://ns.adobe.com/xfdf/\&quot; xml:space=\&quot;preserve\&quot;&gt;\n&quot;);</span>
+
+<span class="fc" id="L119">        getCatalog().writeXML(output);</span>
+
+<span class="fc" id="L121">        output.write(&quot;&lt;/xfdf&gt;\n&quot;);</span>
+<span class="fc" id="L122">    }</span>
+
+    /**
+     * This will get the low level document.
+     *
+     * @return The document that this layer sits on top of.
+     */
+    public COSDocument getDocument()
+    {
+<span class="fc" id="L131">        return document;</span>
+    }
+
+    /**
+     * This will get the FDF Catalog. This is guaranteed to not return null.
+     *
+     * @return The documents /Root dictionary
+     */
+    public FDFCatalog getCatalog()
+    {
+        FDFCatalog retval;
+<span class="fc" id="L142">        COSDictionary trailer = document.getTrailer();</span>
+<span class="fc" id="L143">        COSDictionary root = trailer.getCOSDictionary(COSName.ROOT);</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">        if (root == null)</span>
+        {
+<span class="nc" id="L146">            retval = new FDFCatalog();</span>
+<span class="nc" id="L147">            setCatalog(retval);</span>
+        }
+        else
+        {
+<span class="fc" id="L151">            retval = new FDFCatalog(root);</span>
+        }
+<span class="fc" id="L153">        return retval;</span>
+    }
+
+    /**
+     * This will set the FDF catalog for this FDF document.
+     *
+     * @param cat The FDF catalog.
+     */
+    public final void setCatalog(FDFCatalog cat)
+    {
+<span class="fc" id="L163">        COSDictionary trailer = document.getTrailer();</span>
+<span class="fc" id="L164">        trailer.setItem(COSName.ROOT, cat);</span>
+<span class="fc" id="L165">    }</span>
+
+    /**
+     * This will save this document to the filesystem.
+     *
+     * @param fileName The file to save as.
+     *
+     * @throws IOException If there is an error saving the document.
+     */
+    public void save(File fileName) throws IOException
+    {
+<span class="nc" id="L176">        try (FileOutputStream fos = new FileOutputStream(fileName))</span>
+        {
+<span class="nc" id="L178">            save(fos);</span>
+        }
+<span class="nc" id="L180">    }</span>
+
+    /**
+     * This will save this document to the filesystem.
+     *
+     * @param fileName The file to save as.
+     *
+     * @throws IOException If there is an error saving the document.
+     */
+    public void save(String fileName) throws IOException
+    {
+<span class="nc" id="L191">        save(new File(fileName));</span>
+<span class="nc" id="L192">    }</span>
+
+    /**
+     * This will save the document to an output stream.
+     *
+     * @param output The stream to write to.
+     *
+     * @throws IOException If there is an error writing the document.
+     */
+    public void save(OutputStream output) throws IOException
+    {
+<span class="nc" id="L203">        COSWriter writer = new COSWriter(output);</span>
+<span class="nc" id="L204">        writer.write(this);</span>
+<span class="nc" id="L205">    }</span>
+
+    /**
+     * This will save this document to the filesystem.
+     *
+     * @param fileName The file to save as.
+     *
+     * @throws IOException If there is an error saving the document.
+     */
+    public void saveXFDF(File fileName) throws IOException
+    {
+<span class="nc" id="L216">        try (BufferedWriter writer = new BufferedWriter(</span>
+                new OutputStreamWriter(new FileOutputStream(fileName), StandardCharsets.UTF_8)))
+        {
+<span class="nc" id="L219">            saveXFDF(writer);</span>
+        }
+<span class="nc" id="L221">    }</span>
+
+    /**
+     * This will save this document to the filesystem.
+     *
+     * @param fileName The file to save as.
+     *
+     * @throws IOException If there is an error saving the document.
+     */
+    public void saveXFDF(String fileName) throws IOException
+    {
+<span class="nc" id="L232">        saveXFDF(new File(fileName));</span>
+<span class="nc" id="L233">    }</span>
+
+    /**
+     * This will save the document to an output stream and close the stream.
+     *
+     * @param output The stream to write to.
+     *
+     * @throws IOException If there is an error writing the document.
+     */
+    public void saveXFDF(Writer output) throws IOException
+    {
+        try
+        {
+<span class="fc" id="L246">            writeXML(output);</span>
+        }
+        finally
+        {
+<span class="pc bpc" id="L250" title="1 of 2 branches missed.">            if (output != null)</span>
+            {
+<span class="fc" id="L252">                output.close();</span>
+            }
+        }
+<span class="fc" id="L255">    }</span>
+
+    /**
+     * This will close the underlying COSDocument object.
+     *
+     * @throws IOException If there is an error releasing resources.
+     */
+    @Override
+    public void close() throws IOException
+    {
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">        if (!document.isClosed())</span>
+        {
+<span class="fc" id="L267">            IOException firstException = null;</span>
+
+            // close all intermediate I/O streams
+<span class="fc" id="L270">            firstException = IOUtils.closeAndLogException(document, LOG, &quot;COSDocument&quot;, firstException);</span>
+
+            // close the source PDF stream, if we read from one
+<span class="fc bfc" id="L273" title="All 2 branches covered.">            if (fdfSource != null)</span>
+            {
+<span class="fc" id="L275">                firstException = IOUtils.closeAndLogException(fdfSource, LOG, &quot;RandomAccessRead pdfSource&quot;, firstException);</span>
+            }
+
+            // rethrow first exception to keep method contract
+<span class="pc bpc" id="L279" title="1 of 2 branches missed.">            if (firstException != null)</span>
+            {
+<span class="nc" id="L281">                throw firstException;</span>
+            }
+        }
+<span class="fc" id="L284">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

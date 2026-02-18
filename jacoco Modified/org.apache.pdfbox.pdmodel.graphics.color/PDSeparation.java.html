@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDSeparation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.color</a> &gt; <span class="el_source">PDSeparation.java</span></div><h1>PDSeparation.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.color;
+
+import java.awt.Point;
+import java.awt.color.ColorSpace;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
+import java.awt.image.Raster;
+import java.awt.image.WritableRaster;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNull;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.common.function.PDFunction;
+
+/**
+ * A Separation color space used to specify either additional colorants or for isolating the
+ * control of individual colour components of a device colour space for a subtractive device.
+ * When such a space is the current colour space, the current colour shall be a single-component
+ * value, called a tint, that controls the given colorant or colour components only.
+ *
+ * @author Ben Litchfield
+ * @author John Hewson
+ */
+public class PDSeparation extends PDSpecialColorSpace
+{
+<span class="pc" id="L47">    private final PDColor initialColor = new PDColor(new float[] { 1 }, this);</span>
+
+    // array indexes
+    private static final int COLORANT_NAMES = 1;
+    private static final int ALTERNATE_CS = 2;
+    private static final int TINT_TRANSFORM = 3;
+
+    // fields
+<span class="pc" id="L55">    private PDColorSpace alternateColorSpace = null;</span>
+<span class="pc" id="L56">    private PDFunction tintTransform = null;</span>
+
+    /**
+     * Map used to speed up {@link #toRGB(float[])}. Note that this class contains three maps (this
+     * and the two in {@link #toRGBImage(java.awt.image.WritableRaster) } and {@link #toRGBImage2(java.awt.image.WritableRaster)
+     * }. The maps use different key intervals. This map here is needed for shading, which produce
+     * more than 256 different float values, which we cast to int so that the map can work.
+     */
+<span class="pc" id="L64">    private Map&lt;Integer, float[]&gt; toRGBMap = null;</span>
+
+    /**
+     * Creates a new Separation color space.
+     */
+    public PDSeparation()
+<span class="nc" id="L70">    {</span>
+<span class="nc" id="L71">        array = new COSArray();</span>
+<span class="nc" id="L72">        array.add(COSName.SEPARATION);</span>
+<span class="nc" id="L73">        array.add(COSName.getPDFName(&quot;&quot;));</span>
+        // add some placeholder
+<span class="nc" id="L75">        array.add(COSNull.NULL);</span>
+<span class="nc" id="L76">        array.add(COSNull.NULL);</span>
+<span class="nc" id="L77">    }</span>
+
+    /**
+     * Creates a new Separation color space from a PDF color space array.
+     * @param separation an array containing all separation information.
+     * @param resources resources, can be null.
+     * @throws IOException if the color space or the function could not be created.
+     */
+    public PDSeparation(COSArray separation, PDResources resources) throws IOException
+<span class="fc" id="L86">    {</span>
+<span class="fc" id="L87">        array = separation;</span>
+<span class="fc" id="L88">        alternateColorSpace = PDColorSpace.create(array.getObject(ALTERNATE_CS), resources);</span>
+<span class="fc" id="L89">        tintTransform = PDFunction.create(array.getObject(TINT_TRANSFORM));</span>
+<span class="fc" id="L90">        int numberOfOutputParameters = tintTransform.getNumberOfOutputParameters();</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (numberOfOutputParameters &gt; 0 &amp;&amp;</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">                numberOfOutputParameters &lt; alternateColorSpace.getNumberOfComponents())</span>
+        {
+<span class="nc" id="L94">            throw new IOException(&quot;The tint transform function has less output parameters (&quot; +</span>
+<span class="nc" id="L95">                    tintTransform.getNumberOfOutputParameters() + &quot;) than the alternate colorspace &quot; +</span>
+<span class="nc" id="L96">                    alternateColorSpace + &quot; (&quot; + alternateColorSpace.getNumberOfComponents() + &quot;)&quot;);</span>
+        }
+<span class="fc" id="L98">    }</span>
+
+    @Override
+    public String getName()
+    {
+<span class="nc" id="L103">        return COSName.SEPARATION.getName();</span>
+    }
+
+    @Override
+    public int getNumberOfComponents()
+    {
+<span class="fc" id="L109">        return 1;</span>
+    }
+
+    @Override
+    public float[] getDefaultDecode(int bitsPerComponent)
+    {
+<span class="nc" id="L115">        return new float[] { 0, 1 };</span>
+    }
+
+    @Override
+    public PDColor getInitialColor()
+    {
+<span class="fc" id="L121">        return initialColor;</span>
+    }
+
+    @Override
+    public float[] toRGB(float[] value) throws IOException
+    {
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        if (toRGBMap == null)</span>
+        {
+<span class="fc" id="L129">            toRGBMap = new HashMap&lt;&gt;();</span>
+        }
+<span class="fc" id="L131">        int key = (int) (value[0] * 255);</span>
+<span class="fc" id="L132">        float[] retval = toRGBMap.get(key);</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        if (retval != null)</span>
+        {
+<span class="fc" id="L135">            return retval;</span>
+        }
+<span class="fc" id="L137">        float[] altColor = tintTransform.eval(value);</span>
+<span class="fc" id="L138">        retval = alternateColorSpace.toRGB(altColor);</span>
+<span class="fc" id="L139">        toRGBMap.put(key, retval);</span>
+<span class="fc" id="L140">        return retval;</span>
+    }
+
+    //
+    // WARNING: this method is performance sensitive, modify with care!
+    //
+    @Override
+    public BufferedImage toRGBImage(WritableRaster raster) throws IOException
+    {
+<span class="nc bnc" id="L149" title="All 2 branches missed.">        if (alternateColorSpace instanceof PDLab)</span>
+        {
+            // PDFBOX-3622 - regular converter fails for Lab colorspaces
+<span class="nc" id="L152">            return toRGBImage2(raster);</span>
+        }
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        else if (alternateColorSpace instanceof PDICCBased)</span>
+        {
+            // PDFBOX-5778 - same problem if Lab-based ICC colorspace
+<span class="nc" id="L157">            PDColorSpace iccAlternateColorSpace =</span>
+<span class="nc" id="L158">                    ((PDICCBased) alternateColorSpace).getAlternateColorSpace();</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">            if (iccAlternateColorSpace instanceof PDLab)</span>
+            {
+<span class="nc" id="L161">                return toRGBImage2(raster);</span>
+            }
+        }
+
+<span class="nc" id="L165">        int numAltComponents = alternateColorSpace.getNumberOfComponents();</span>
+
+        // use the tint transform to convert the sample into
+        // the alternate color space (this is usually 1:many)
+<span class="nc" id="L169">        WritableRaster altRaster = Raster.createBandedRaster(DataBuffer.TYPE_BYTE,</span>
+<span class="nc" id="L170">                raster.getWidth(), raster.getHeight(), numAltComponents, new Point(0, 0));</span>
+
+<span class="nc" id="L172">        int width = raster.getWidth();</span>
+<span class="nc" id="L173">        int height = raster.getHeight();</span>
+<span class="nc" id="L174">        float[] samples = new float[1];</span>
+
+<span class="nc" id="L176">        Map&lt;Integer, int[]&gt; calculatedValues = new HashMap&lt;&gt;();</span>
+        Integer hash;
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        for (int y = 0; y &lt; height; y++)</span>
+        {
+<span class="nc bnc" id="L180" title="All 2 branches missed.">            for (int x = 0; x &lt; width; x++)</span>
+            {
+<span class="nc" id="L182">                raster.getPixel(x, y, samples);</span>
+<span class="nc" id="L183">                hash = Float.floatToIntBits(samples[0]);</span>
+<span class="nc" id="L184">                int[] alt = calculatedValues.get(hash);</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">                if (alt == null)</span>
+                {
+<span class="nc" id="L187">                    alt = new int[numAltComponents];</span>
+<span class="nc" id="L188">                    tintTransform(samples, alt);</span>
+<span class="nc" id="L189">                    calculatedValues.put(hash, alt);</span>
+                }
+<span class="nc" id="L191">                altRaster.setPixel(x, y, alt);</span>
+            }
+        }
+
+        // convert the alternate color space to RGB
+<span class="nc" id="L196">        return alternateColorSpace.toRGBImage(altRaster);</span>
+    }
+
+    // converter that works without using super implementation of toRGBImage()
+    private BufferedImage toRGBImage2(WritableRaster raster) throws IOException
+    {
+<span class="nc" id="L202">        int width = raster.getWidth();</span>
+<span class="nc" id="L203">        int height = raster.getHeight();</span>
+<span class="nc" id="L204">        BufferedImage rgbImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);</span>
+<span class="nc" id="L205">        WritableRaster rgbRaster = rgbImage.getRaster();</span>
+<span class="nc" id="L206">        float[] samples = new float[1];</span>
+
+<span class="nc" id="L208">        Map&lt;Integer, int[]&gt; calculatedValues = new HashMap&lt;&gt;();</span>
+        Integer hash;
+<span class="nc bnc" id="L210" title="All 2 branches missed.">        for (int y = 0; y &lt; height; y++)</span>
+        {
+<span class="nc bnc" id="L212" title="All 2 branches missed.">            for (int x = 0; x &lt; width; x++)</span>
+            {
+<span class="nc" id="L214">                raster.getPixel(x, y, samples);</span>
+<span class="nc" id="L215">                hash = Float.floatToIntBits(samples[0]);</span>
+<span class="nc" id="L216">                int[] rgb = calculatedValues.get(hash);</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">                if (rgb == null)</span>
+                {
+<span class="nc" id="L219">                    samples[0] /= 255;</span>
+<span class="nc" id="L220">                    float[] altColor = tintTransform.eval(samples);</span>
+<span class="nc" id="L221">                    float[] fltab = alternateColorSpace.toRGB(altColor);</span>
+<span class="nc" id="L222">                    rgb = new int[3];</span>
+<span class="nc" id="L223">                    rgb[0] = (int) (fltab[0] * 255);</span>
+<span class="nc" id="L224">                    rgb[1] = (int) (fltab[1] * 255);</span>
+<span class="nc" id="L225">                    rgb[2] = (int) (fltab[2] * 255);</span>
+<span class="nc" id="L226">                    calculatedValues.put(hash, rgb);</span>
+                }
+<span class="nc" id="L228">                rgbRaster.setPixel(x, y, rgb);</span>
+            }
+        }
+<span class="nc" id="L231">        return rgbImage;</span>
+    }
+
+    protected void tintTransform(float[] samples, int[] alt) throws IOException
+    {
+<span class="nc" id="L236">        samples[0] /= 255; // 0..1</span>
+<span class="nc" id="L237">        float[] result = tintTransform.eval(samples);</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">        for (int s = 0; s &lt; alt.length; s++)</span>
+        {
+            // scale to 0..255
+<span class="nc" id="L241">            alt[s] = (int) (result[s] * 255);</span>
+        }
+<span class="nc" id="L243">    }</span>
+
+    @Override
+    public BufferedImage toRawImage(WritableRaster raster)
+    {
+<span class="nc" id="L248">        return toRawImage(raster, ColorSpace.getInstance(ColorSpace.CS_GRAY));</span>
+    }
+
+    /**
+     * Returns the colorant name.
+     * @return the name of the colorant
+     */
+    public PDColorSpace getAlternateColorSpace()
+    {
+<span class="nc" id="L257">       return alternateColorSpace;</span>
+    }
+
+    /**
+     * Returns the colorant name.
+     * @return the name of the colorant
+     */
+    public String getColorantName()
+    {
+<span class="fc" id="L266">        COSName name = (COSName)array.getObject(COLORANT_NAMES);</span>
+<span class="fc" id="L267">        return name.getName();</span>
+    }
+
+    /**
+     * Sets the colorant name.
+     * @param name the name of the colorant
+     */
+    public void setColorantName(String name)
+    {
+<span class="nc" id="L276">        array.set(1, COSName.getPDFName(name));</span>
+<span class="nc" id="L277">    }</span>
+
+    /**
+     * Sets the alternate color space.
+     * @param colorSpace The alternate color space.
+     */
+    public void setAlternateColorSpace(PDColorSpace colorSpace)
+    {
+<span class="nc" id="L285">        alternateColorSpace = colorSpace;</span>
+<span class="nc" id="L286">        COSBase space = null;</span>
+<span class="nc bnc" id="L287" title="All 2 branches missed.">        if (colorSpace != null)</span>
+        {
+<span class="nc" id="L289">            space = colorSpace.getCOSObject();</span>
+        }
+<span class="nc" id="L291">        array.set(ALTERNATE_CS, space);</span>
+<span class="nc" id="L292">    }</span>
+
+    /**
+     * Sets the tint transform function.
+     * @param tint the tint transform function
+     */
+    public void setTintTransform(PDFunction tint)
+    {
+<span class="nc" id="L300">        tintTransform = tint;</span>
+<span class="nc" id="L301">        array.set(TINT_TRANSFORM, tint);</span>
+<span class="nc" id="L302">    }</span>
+
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L307">        return getName() + &quot;{&quot; +</span>
+<span class="nc" id="L308">                &quot;\&quot;&quot; + getColorantName() + &quot;\&quot;&quot; + &quot; &quot; +</span>
+<span class="nc" id="L309">                alternateColorSpace.getName() + &quot; &quot; +</span>
+                tintTransform + &quot;}&quot;;
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

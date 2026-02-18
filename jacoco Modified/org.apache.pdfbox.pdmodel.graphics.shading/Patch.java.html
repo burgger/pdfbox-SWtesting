@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Patch.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.shading</a> &gt; <span class="el_source">Patch.java</span></div><h1>Patch.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2014 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.shading;
+
+import java.awt.geom.Point2D;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Patch is extended by CoonsPatch and TensorPatch. This was done as part of
+ * GSoC2014, Tilman Hausherr is the mentor.
+ *
+ * @author Shaola Ren
+ */
+abstract class Patch
+{
+    protected Point2D[][] controlPoints;
+    protected final float[][] cornerColor;
+
+    /*
+     level = {levelU, levelV}, levelU defines the patch's u direction edges should be 
+     divided into 2^levelU parts, level V defines the patch's v direction edges should
+     be divided into 2^levelV parts
+     */
+    protected int[] level;
+    protected List&lt;ShadedTriangle&gt; listOfTriangles;
+
+    /**
+     * Constructor of Patch.
+     *
+     * @param color 4 corner's colors
+     */
+    Patch(float[][] color)
+<span class="nc" id="L47">    {</span>
+<span class="nc" id="L48">        cornerColor = color.clone();</span>
+<span class="nc" id="L49">    }</span>
+
+    /**
+     * Get the implicit edge for flag = 1.
+     *
+     * @return implicit control points
+     */
+    protected abstract Point2D[] getFlag1Edge();
+
+    /**
+     * Get the implicit edge for flag = 2.
+     *
+     * @return implicit control points
+     */
+    protected abstract Point2D[] getFlag2Edge();
+
+    /**
+     * Get the implicit edge for flag = 3.
+     *
+     * @return implicit control points
+     */
+    protected abstract Point2D[] getFlag3Edge();
+
+    /**
+     * Get the implicit color for flag = 1.
+     *
+     * @return color
+     */
+    protected float[][] getFlag1Color()
+    {
+<span class="nc" id="L79">        int numberOfColorComponents = cornerColor[0].length;</span>
+<span class="nc" id="L80">        float[][] implicitCornerColor = new float[2][numberOfColorComponents];</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        for (int i = 0; i &lt; numberOfColorComponents; i++)</span>
+        {
+<span class="nc" id="L83">            implicitCornerColor[0][i] = cornerColor[1][i];</span>
+<span class="nc" id="L84">            implicitCornerColor[1][i] = cornerColor[2][i];</span>
+        }
+<span class="nc" id="L86">        return implicitCornerColor;</span>
+    }
+
+    /**
+     * Get implicit color for flag = 2.
+     *
+     * @return color
+     */
+    protected float[][] getFlag2Color()
+    {
+<span class="nc" id="L96">        int numberOfColorComponents = cornerColor[0].length;</span>
+<span class="nc" id="L97">        float[][] implicitCornerColor = new float[2][numberOfColorComponents];</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        for (int i = 0; i &lt; numberOfColorComponents; i++)</span>
+        {
+<span class="nc" id="L100">            implicitCornerColor[0][i] = cornerColor[2][i];</span>
+<span class="nc" id="L101">            implicitCornerColor[1][i] = cornerColor[3][i];</span>
+        }
+<span class="nc" id="L103">        return implicitCornerColor;</span>
+    }
+
+    /**
+     * Get implicit color for flag = 3.
+     *
+     * @return color
+     */
+    protected float[][] getFlag3Color()
+    {
+<span class="nc" id="L113">        int numberOfColorComponents = cornerColor[0].length;</span>
+<span class="nc" id="L114">        float[][] implicitCornerColor = new float[2][numberOfColorComponents];</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        for (int i = 0; i &lt; numberOfColorComponents; i++)</span>
+        {
+<span class="nc" id="L117">            implicitCornerColor[0][i] = cornerColor[3][i];</span>
+<span class="nc" id="L118">            implicitCornerColor[1][i] = cornerColor[0][i];</span>
+        }
+<span class="nc" id="L120">        return implicitCornerColor;</span>
+    }
+
+    /**
+     * Calculate the distance from point ps to point pe.
+     *
+     * @param ps one end of a line
+     * @param pe the other end of the line
+     * @return length of the line
+     */
+    protected double getLen(Point2D ps, Point2D pe)
+    {
+<span class="nc" id="L132">        double x = pe.getX() - ps.getX();</span>
+<span class="nc" id="L133">        double y = pe.getY() - ps.getY();</span>
+<span class="nc" id="L134">        return Math.sqrt(x * x + y * y);</span>
+    }
+
+    /**
+     * Whether the for control points are on a line.
+     *
+     * @param ctl an edge's control points, the size of ctl is 4
+     * @return true when 4 control points are on a line, otherwise false
+     */
+    protected boolean isEdgeALine(Point2D[] ctl)
+    {
+<span class="nc" id="L145">        double ctl1 = Math.abs(edgeEquationValue(ctl[1], ctl[0], ctl[3]));</span>
+<span class="nc" id="L146">        double ctl2 = Math.abs(edgeEquationValue(ctl[2], ctl[0], ctl[3]));</span>
+<span class="nc" id="L147">        double x = Math.abs(ctl[0].getX() - ctl[3].getX());</span>
+<span class="nc" id="L148">        double y = Math.abs(ctl[0].getY() - ctl[3].getY());</span>
+<span class="nc bnc" id="L149" title="All 8 branches missed.">        return (ctl1 &lt;= x &amp;&amp; ctl2 &lt;= x) || (ctl1 &lt;= y &amp;&amp; ctl2 &lt;= y);</span>
+    }
+
+    /**
+     * A line from point p1 to point p2 defines an equation, adjust the form of
+     * the equation to let the rhs equals 0, then calculate the lhs value by
+     * plugging the coordinate of p in the lhs expression.
+     *
+     * @param p target point
+     * @param p1 one end of a line
+     * @param p2 the other end of a line
+     * @return calculated value
+     */
+    protected double edgeEquationValue(Point2D p, Point2D p1, Point2D p2)
+    {
+<span class="nc" id="L164">        return (p2.getY() - p1.getY()) * (p.getX() - p1.getX()) - (p2.getX() - p1.getX()) * (p.getY() - p1.getY());</span>
+    }
+
+    /**
+     * An assistant method to accomplish type 6 and type 7 shading.
+     *
+     * @param patchCC all the crossing point coordinates and color of a grid
+     * @return a ShadedTriangle list which can compose the grid patch
+     */
+    protected List&lt;ShadedTriangle&gt; getShadedTriangles(CoordinateColorPair[][] patchCC)
+    {
+<span class="nc" id="L175">        List&lt;ShadedTriangle&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L176">        int szV = patchCC.length;</span>
+<span class="nc" id="L177">        int szU = patchCC[0].length;</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        for (int i = 1; i &lt; szV; i++)</span>
+        {
+<span class="nc bnc" id="L180" title="All 2 branches missed.">            for (int j = 1; j &lt; szU; j++)</span>
+            {
+<span class="nc" id="L182">                Point2D p0 = patchCC[i - 1][j - 1].coordinate;</span>
+<span class="nc" id="L183">                Point2D p1 = patchCC[i - 1][j].coordinate;</span>
+<span class="nc" id="L184">                Point2D p2 = patchCC[i][j].coordinate;</span>
+<span class="nc" id="L185">                Point2D p3 = patchCC[i][j - 1].coordinate;</span>
+<span class="nc" id="L186">                boolean ll = true;</span>
+<span class="nc bnc" id="L187" title="All 4 branches missed.">                if (overlaps(p0, p1) || overlaps(p0, p3))</span>
+                {
+<span class="nc" id="L189">                    ll = false;</span>
+                }
+                else
+                {
+                    // p0, p1 and p3 are in counter clock wise order, p1 has priority over p0, p3 has priority over p1
+<span class="nc" id="L194">                    Point2D[] llCorner =</span>
+                    {
+                        p0, p1, p3
+                    };
+<span class="nc" id="L198">                    float[][] llColor =</span>
+                    {
+                        patchCC[i - 1][j - 1].color, patchCC[i - 1][j].color, patchCC[i][j - 1].color
+                    };
+<span class="nc" id="L202">                    ShadedTriangle tmpll = new ShadedTriangle(llCorner, llColor); // lower left triangle</span>
+<span class="nc" id="L203">                    list.add(tmpll);</span>
+                }
+<span class="nc bnc" id="L205" title="All 6 branches missed.">                if (ll &amp;&amp; (overlaps(p2, p1) || overlaps(p2, p3)))</span>
+                {
+                }
+                else
+                {
+                    // p3, p1 and p2 are in counter clock wise order, p1 has priority over p3, p2 has priority over p1
+<span class="nc" id="L211">                    Point2D[] urCorner =</span>
+                    {
+                        p3, p1, p2
+                    };
+<span class="nc" id="L215">                    float[][] urColor =</span>
+                    {
+                        patchCC[i][j - 1].color, patchCC[i - 1][j].color, patchCC[i][j].color
+                    };
+<span class="nc" id="L219">                    ShadedTriangle tmpur = new ShadedTriangle(urCorner, urColor); // upper right triangle</span>
+<span class="nc" id="L220">                    list.add(tmpur);</span>
+                }
+            }
+        }
+<span class="nc" id="L224">        return list;</span>
+    }
+
+    // whether two points p0 and p1 are degenerated into one point within the coordinates' accuracy 0.001
+    private boolean overlaps(Point2D p0, Point2D p1)
+    {
+<span class="nc bnc" id="L230" title="All 4 branches missed.">        return Math.abs(p0.getX() - p1.getX()) &lt; 0.001 &amp;&amp; Math.abs(p0.getY() - p1.getY()) &lt; 0.001;</span>
+    }
+
+    static Point2D[] clonedPoint2DArray(Point2D[] input)
+    {
+<span class="nc" id="L235">        Point2D[] cloned = new Point2D[input.length];</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">        for (int i = 0; i &lt; input.length; ++i)</span>
+        {
+<span class="nc" id="L238">            cloned[i] = (Point2D) input[i].clone();</span>
+        }
+<span class="nc" id="L240">        return cloned;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

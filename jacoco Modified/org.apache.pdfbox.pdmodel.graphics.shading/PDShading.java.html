@@ -1,0 +1,447 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDShading.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.shading</a> &gt; <span class="el_source">PDShading.java</span></div><h1>PDShading.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.shading;
+
+import java.awt.Paint;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Rectangle2D;
+import java.io.IOException;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.common.function.PDFunction;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * A Shading Resource.
+ *
+ */
+public abstract class PDShading implements COSObjectable
+{
+    private final COSDictionary dictionary;
+<span class="pc" id="L40">    private COSArray background = null;</span>
+<span class="pc" id="L41">    private PDRectangle bBox = null;</span>
+<span class="pc" id="L42">    private PDColorSpace colorSpace = null;</span>
+<span class="pc" id="L43">    private PDFunction function = null;</span>
+<span class="pc" id="L44">    private PDFunction[] functionArray = null;</span>
+
+    /**
+     * shading type 1 = function based shading.
+     */
+    public static final int SHADING_TYPE1 = 1;
+
+    /**
+     * shading type 2 = axial shading.
+     */
+    public static final int SHADING_TYPE2 = 2;
+
+    /**
+     * shading type 3 = radial shading.
+     */
+    public static final int SHADING_TYPE3 = 3;
+
+    /**
+     * shading type 4 = Free-Form Gouraud-Shaded Triangle Meshes.
+     */
+    public static final int SHADING_TYPE4 = 4;
+
+    /**
+     * shading type 5 = Lattice-Form Gouraud-Shaded Triangle Meshes.
+     */
+    public static final int SHADING_TYPE5 = 5;
+
+    /**
+     * shading type 6 = Coons Patch Meshes.
+     */
+    public static final int SHADING_TYPE6 = 6;
+
+    /**
+     * shading type 7 = Tensor-Product Patch Meshes.
+     */
+    public static final int SHADING_TYPE7 = 7;
+
+    /**
+     * Default constructor.
+     */
+    protected PDShading()
+<span class="nc" id="L85">    {</span>
+<span class="nc" id="L86">        dictionary = new COSDictionary();</span>
+<span class="nc" id="L87">    }</span>
+
+    /**
+     * Constructor using the given shading dictionary.
+     *
+     * @param shadingDictionary the dictionary for this shading
+     */
+    protected PDShading(COSDictionary shadingDictionary)
+<span class="fc" id="L95">    {</span>
+<span class="fc" id="L96">        dictionary = shadingDictionary;</span>
+<span class="fc" id="L97">    }</span>
+
+    /**
+     * This will get the underlying dictionary.
+     *
+     * @return the dictionary for this shading.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L107">        return dictionary;</span>
+    }
+
+    /**
+     * This will return the type.
+     *
+     * @return the type of object that this is
+     */
+    public String getType()
+    {
+<span class="nc" id="L117">        return COSName.SHADING.getName();</span>
+    }
+
+    /**
+     * This will set the shading type.
+     *
+     * @param shadingType the new shading type
+     */
+    public void setShadingType(int shadingType)
+    {
+<span class="nc" id="L127">        dictionary.setInt(COSName.SHADING_TYPE, shadingType);</span>
+<span class="nc" id="L128">    }</span>
+
+    /**
+     * This will return the shading type.
+     *
+     * @return the shading typ
+     */
+    public abstract int getShadingType();
+
+    /**
+     * This will set the background.
+     *
+     * @param newBackground the new background
+     */
+    public void setBackground(COSArray newBackground)
+    {
+<span class="nc" id="L144">        background = newBackground;</span>
+<span class="nc" id="L145">        dictionary.setItem(COSName.BACKGROUND, newBackground);</span>
+<span class="nc" id="L146">    }</span>
+
+    /**
+     * This will return the background.
+     *
+     * @return the background
+     */
+    public COSArray getBackground()
+    {
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        if (background == null)</span>
+        {
+<span class="nc" id="L157">            background = dictionary.getCOSArray(COSName.BACKGROUND);</span>
+        }
+<span class="nc" id="L159">        return background;</span>
+    }
+
+    /**
+     * An array of four numbers in the form coordinate system (see below),
+     * giving the coordinates of the left, bottom, right, and top edges,
+     * respectively, of the shading's bounding box.
+     *
+     * @return the BBox of the form
+     */
+    public PDRectangle getBBox()
+    {
+<span class="nc bnc" id="L171" title="All 2 branches missed.">        if (bBox == null)</span>
+        {
+<span class="nc" id="L173">            COSArray array = dictionary.getCOSArray(COSName.BBOX);</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">            if (array != null)</span>
+            {
+<span class="nc" id="L176">                bBox = new PDRectangle(array);</span>
+            }
+        }
+<span class="nc" id="L179">        return bBox;</span>
+    }
+
+    /**
+     * This will set the BBox (bounding box) for this Shading.
+     *
+     * @param newBBox the new BBox
+     */
+    public void setBBox(PDRectangle newBBox)
+    {
+<span class="nc" id="L189">        bBox = newBBox;</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">        if (bBox == null)</span>
+        {
+<span class="nc" id="L192">            dictionary.removeItem(COSName.BBOX);</span>
+        }
+        else
+        {
+<span class="nc" id="L196">            dictionary.setItem(COSName.BBOX, bBox.getCOSArray());</span>
+        }
+<span class="nc" id="L198">    }</span>
+
+    /**
+     * Calculate a bounding rectangle around the areas of this shading context.
+     * 
+     * @param xform the affine transformation
+     * @param matrix the pattern matrix
+     * @return Bounding rectangle or null, if not supported by this shading type.
+     * @throws java.io.IOException if the bounds could not be created
+     */
+    public Rectangle2D getBounds(AffineTransform xform, Matrix matrix) throws IOException
+    {
+<span class="nc" id="L210">        return null;</span>
+    }
+
+    /**
+     * This will set the AntiAlias value.
+     *
+     * @param antiAlias the new AntiAlias value
+     */
+    public void setAntiAlias(boolean antiAlias)
+    {
+<span class="nc" id="L220">        dictionary.setBoolean(COSName.ANTI_ALIAS, antiAlias);</span>
+<span class="nc" id="L221">    }</span>
+
+    /**
+     * This will return the AntiAlias value.
+     *
+     * @return the AntiAlias value
+     */
+    public boolean getAntiAlias()
+    {
+<span class="nc" id="L230">        return dictionary.getBoolean(COSName.ANTI_ALIAS, false);</span>
+    }
+
+    /**
+     * This will get the color space or null if none exists.
+     *
+     * @return the color space for the shading
+     * @throws IOException if there is an error getting the color space
+     */
+    public PDColorSpace getColorSpace() throws IOException
+    {
+<span class="nc bnc" id="L241" title="All 2 branches missed.">        if (colorSpace == null)</span>
+        {
+<span class="nc" id="L243">            COSBase colorSpaceDictionary = dictionary.getDictionaryObject(COSName.CS, COSName.COLORSPACE);</span>
+<span class="nc" id="L244">            colorSpace = PDColorSpace.create(colorSpaceDictionary);</span>
+        }
+<span class="nc" id="L246">        return colorSpace;</span>
+    }
+
+    /**
+     * This will set the color space for the shading.
+     *
+     * @param colorSpace the color space
+     */
+    public void setColorSpace(PDColorSpace colorSpace)
+    {
+<span class="nc" id="L256">        this.colorSpace = colorSpace;</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">        if (colorSpace != null)</span>
+        {
+<span class="nc" id="L259">            dictionary.setItem(COSName.COLORSPACE, colorSpace.getCOSObject());</span>
+        }
+        else
+        {
+<span class="nc" id="L263">            dictionary.removeItem(COSName.COLORSPACE);</span>
+        }
+<span class="nc" id="L265">    }</span>
+
+    /**
+     * Create the correct PD Model shading based on the COS base shading.
+     *
+     * @param shadingDictionary the COS shading dictionary
+     * @return the newly created shading resources object
+     * @throws IOException if we are unable to create the PDShading object
+     */
+    public static PDShading create(COSDictionary shadingDictionary) throws IOException
+    {
+<span class="nc" id="L276">        PDShading shading = null;</span>
+<span class="nc" id="L277">        int shadingType = shadingDictionary.getInt(COSName.SHADING_TYPE, 0);</span>
+<span class="nc bnc" id="L278" title="All 8 branches missed.">        switch (shadingType)</span>
+        {
+            case SHADING_TYPE1:
+<span class="nc" id="L281">                shading = new PDShadingType1(shadingDictionary);</span>
+<span class="nc" id="L282">                break;</span>
+            case SHADING_TYPE2:
+<span class="nc" id="L284">                shading = new PDShadingType2(shadingDictionary);</span>
+<span class="nc" id="L285">                break;</span>
+            case SHADING_TYPE3:
+<span class="nc" id="L287">                shading = new PDShadingType3(shadingDictionary);</span>
+<span class="nc" id="L288">                break;</span>
+            case SHADING_TYPE4:
+<span class="nc" id="L290">                shading = new PDShadingType4(shadingDictionary);</span>
+<span class="nc" id="L291">                break;</span>
+            case SHADING_TYPE5:
+<span class="nc" id="L293">                shading = new PDShadingType5(shadingDictionary);</span>
+<span class="nc" id="L294">                break;</span>
+            case SHADING_TYPE6:
+<span class="nc" id="L296">                shading = new PDShadingType6(shadingDictionary);</span>
+<span class="nc" id="L297">                break;</span>
+            case SHADING_TYPE7:
+<span class="nc" id="L299">                shading = new PDShadingType7(shadingDictionary);</span>
+<span class="nc" id="L300">                break;</span>
+            default:
+<span class="nc" id="L302">                throw new IOException(&quot;Error: Unknown shading type &quot; + shadingType);</span>
+        }
+<span class="nc" id="L304">        return shading;</span>
+    }
+
+    /**
+     * This will set the function for the color conversion.
+     *
+     * @param newFunction the new function
+     */
+    public void setFunction(PDFunction newFunction)
+    {
+<span class="nc" id="L314">        functionArray = null;</span>
+<span class="nc" id="L315">        function = newFunction;</span>
+<span class="nc" id="L316">        getCOSObject().setItem(COSName.FUNCTION, newFunction);</span>
+<span class="nc" id="L317">    }</span>
+
+    /**
+     * This will set the functions COSArray for the color conversion.
+     *
+     * @param newFunctions the new COSArray containing all functions
+     */
+    public void setFunction(COSArray newFunctions)
+    {
+<span class="nc" id="L326">        functionArray = null;</span>
+<span class="nc" id="L327">        function = null;</span>
+<span class="nc" id="L328">        getCOSObject().setItem(COSName.FUNCTION, newFunctions);</span>
+<span class="nc" id="L329">    }</span>
+
+    /**
+     * This will return the function used to convert the color values.
+     *
+     * @return the function
+     * @throws java.io.IOException if we were not able to create the function.
+     */
+    public PDFunction getFunction() throws IOException
+    {
+<span class="nc bnc" id="L339" title="All 2 branches missed.">        if (function == null)</span>
+        {
+<span class="nc" id="L341">            COSBase dictionaryFunctionObject = getCOSObject().getDictionaryObject(COSName.FUNCTION);</span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">            if (dictionaryFunctionObject != null)</span>
+            {
+<span class="nc" id="L344">                function = PDFunction.create(dictionaryFunctionObject);</span>
+            }
+        }
+<span class="nc" id="L347">        return function;</span>
+    }
+
+    /**
+     * Provide the function(s) of the shading dictionary as array.
+     *
+     * @return an array containing the function(s).
+     * @throws IOException if we were unable to create a function.
+     */
+    private PDFunction[] getFunctionsArray() throws IOException
+    {
+<span class="nc bnc" id="L358" title="All 2 branches missed.">        if (functionArray == null)</span>
+        {
+<span class="nc" id="L360">            COSBase functionObject = getCOSObject().getDictionaryObject(COSName.FUNCTION);</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">            if (functionObject instanceof COSDictionary)</span>
+            {
+<span class="nc" id="L363">                functionArray = new PDFunction[1];</span>
+<span class="nc" id="L364">                functionArray[0] = PDFunction.create(functionObject);</span>
+            }
+<span class="nc bnc" id="L366" title="All 2 branches missed.">            else if (functionObject instanceof COSArray)</span>
+            {
+<span class="nc" id="L368">                COSArray functionCOSArray = (COSArray) functionObject;</span>
+<span class="nc" id="L369">                int numberOfFunctions = functionCOSArray.size();</span>
+<span class="nc" id="L370">                functionArray = new PDFunction[numberOfFunctions];</span>
+<span class="nc bnc" id="L371" title="All 2 branches missed.">                for (int i = 0; i &lt; numberOfFunctions; i++)</span>
+                {
+<span class="nc" id="L373">                    functionArray[i] = PDFunction.create(functionCOSArray.get(i));</span>
+                }
+<span class="nc" id="L375">            }</span>
+            else
+            {
+<span class="nc" id="L378">                throw new IOException(&quot;mandatory /Function element must be a dictionary or an array&quot;);</span>
+            }
+        }
+<span class="nc" id="L381">        return functionArray;</span>
+    }
+
+    /**
+     * Convert the input value using the functions of the shading dictionary.
+     *
+     * @param inputValue the input value
+     * @return the output values
+     * @throws IOException thrown if something went wrong
+     */
+    public float[] evalFunction(float inputValue) throws IOException
+    {
+<span class="nc" id="L393">        return evalFunction(new float[] { inputValue });</span>
+    }
+
+    /**
+     * Convert the input values using the functions of the shading dictionary.
+     *
+     * @param input the input values
+     * @return the output values
+     * @throws IOException thrown if something went wrong
+     */
+    public float[] evalFunction(float[] input) throws IOException
+    {
+<span class="nc" id="L405">        PDFunction[] functions = getFunctionsArray();</span>
+<span class="nc" id="L406">        int numberOfFunctions = functions.length;</span>
+        float[] returnValues;
+<span class="nc bnc" id="L408" title="All 2 branches missed.">        if (numberOfFunctions == 1)</span>
+        {
+<span class="nc" id="L410">            returnValues = functions[0].eval(input);</span>
+        }
+        else
+        {
+<span class="nc" id="L414">            returnValues = new float[numberOfFunctions];</span>
+<span class="nc bnc" id="L415" title="All 2 branches missed.">            for (int i = 0; i &lt; numberOfFunctions; i++)</span>
+            {
+<span class="nc" id="L417">                float[] newValue = functions[i].eval(input);</span>
+<span class="nc" id="L418">                returnValues[i] = newValue[0];</span>
+            }
+        }
+        // From the PDF spec:
+        // &quot;If the value returned by the function for a given colour component 
+        // is out of range, it shall be adjusted to the nearest valid value.&quot;
+<span class="nc bnc" id="L424" title="All 2 branches missed.">        for (int i = 0; i &lt; returnValues.length; ++i)</span>
+        {
+<span class="nc bnc" id="L426" title="All 2 branches missed.">            if (returnValues[i] &lt; 0)</span>
+            {
+<span class="nc" id="L428">                returnValues[i] = 0;</span>
+            }
+<span class="nc bnc" id="L430" title="All 2 branches missed.">            else if (returnValues[i] &gt; 1)</span>
+            {
+<span class="nc" id="L432">                returnValues[i] = 1;</span>
+            }
+        }
+<span class="nc" id="L435">        return returnValues;</span>
+    }
+
+    /**
+     * Returns an AWT paint which corresponds to this shading
+     *
+     * @param matrix the pattern matrix concatenated with that of the parent content stream,
+     *               this matrix which maps the pattern's internal coordinate system to user space
+     * @return an AWT Paint instance
+     */
+    public abstract Paint toPaint(Matrix matrix);
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

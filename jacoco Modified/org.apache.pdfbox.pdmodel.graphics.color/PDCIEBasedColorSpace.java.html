@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDCIEBasedColorSpace.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.color</a> &gt; <span class="el_source">PDCIEBasedColorSpace.java</span></div><h1>PDCIEBasedColorSpace.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.color;
+
+import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
+import java.io.IOException;
+
+/**
+ * CIE-based colour spaces specify colours in a way that is independent of the characteristics
+ * of any particular output device. They are based on an international standard for colour
+ * specification created by the Commission Internationale de l'Éclairage (CIE).
+ *
+ * @author John Hewson
+ */
+<span class="fc" id="L30">public abstract class PDCIEBasedColorSpace extends PDColorSpace</span>
+{
+    //
+    // WARNING: this method is performance sensitive, modify with care!
+    //
+    @Override
+    public BufferedImage toRGBImage(WritableRaster raster) throws IOException
+    {
+        // This method calls toRGB to convert images one pixel at a time. For matrix-based
+        // CIE color spaces this is fast enough. However, it should not be used with any
+        // color space which uses an ICC Profile as it will be far too slow.
+
+<span class="fc" id="L42">        int width = raster.getWidth();</span>
+<span class="fc" id="L43">        int height = raster.getHeight();</span>
+
+<span class="fc" id="L45">        BufferedImage rgbImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);</span>
+<span class="fc" id="L46">        WritableRaster rgbRaster = rgbImage.getRaster();</span>
+
+        // always three components: ABC
+<span class="fc" id="L49">        float[] abc = new float[3];</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        for (int y = 0; y &lt; height; y++)</span>
+        {
+<span class="fc bfc" id="L52" title="All 2 branches covered.">            for (int x = 0; x &lt; width; x++)</span>
+            {
+<span class="fc" id="L54">                raster.getPixel(x, y, abc);</span>
+
+                // 0..255 -&gt; 0..1
+<span class="fc" id="L57">                abc[0] /= 255;</span>
+<span class="fc" id="L58">                abc[1] /= 255;</span>
+<span class="fc" id="L59">                abc[2] /= 255;</span>
+
+<span class="fc" id="L61">                float[] rgb = toRGB(abc);</span>
+
+                // 0..1 -&gt; 0..255
+<span class="fc" id="L64">                rgb[0] *= 255;</span>
+<span class="fc" id="L65">                rgb[1] *= 255;</span>
+<span class="fc" id="L66">                rgb[2] *= 255;</span>
+
+<span class="fc" id="L68">                rgbRaster.setPixel(x, y, rgb);</span>
+            }
+        }
+
+<span class="fc" id="L72">        return rgbImage;</span>
+    }
+
+    @Override
+    public BufferedImage toRawImage(WritableRaster raster) throws IOException
+    {
+        // There is no direct equivalent of a CIE colorspace in Java. So we can
+        // not do anything here.
+<span class="nc" id="L80">        return null;</span>
+    }
+
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L86">        return getName();   // TODO return more info</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

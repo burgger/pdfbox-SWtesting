@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Encoding.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font.encoding</a> &gt; <span class="el_source">Encoding.java</span></div><h1>Encoding.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.font.encoding;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * A PostScript encoding vector, maps character codes to glyph names.
+ * 
+ * @author Ben Litchfield
+ */
+<span class="fc" id="L31">public abstract class Encoding implements COSObjectable</span>
+{
+    protected static final int CHAR_CODE = 0;
+    protected static final int CHAR_NAME = 1;
+
+    /**
+     * This will get an encoding by name. May return null.
+     *
+     * @param name The name of the encoding to get.
+     * @return The encoding that matches the name.
+     */
+    public static Encoding getInstance(COSName name)
+    {
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (COSName.STANDARD_ENCODING.equals(name))</span>
+        {
+<span class="fc" id="L46">            return StandardEncoding.INSTANCE;</span>
+        }
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        else if (COSName.WIN_ANSI_ENCODING.equals(name))</span>
+        {
+<span class="fc" id="L50">            return WinAnsiEncoding.INSTANCE;</span>
+        }
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        else if (COSName.MAC_ROMAN_ENCODING.equals(name))</span>
+        {
+<span class="fc" id="L54">            return MacRomanEncoding.INSTANCE;</span>
+        }
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        else if (COSName.MAC_EXPERT_ENCODING.equals(name))</span>
+        {
+<span class="nc" id="L58">            return MacExpertEncoding.INSTANCE;</span>
+        }
+        else
+        {
+<span class="nc" id="L62">            return null;</span>
+        }
+    }
+
+    /**
+     * code-to-name map. Derived classes should not modify the map after class construction.
+     */
+<span class="fc" id="L69">    protected final Map&lt;Integer, String&gt; codeToName = new HashMap&lt;&gt;(250);</span>
+
+    /**
+     * name-to-code map. Derived classes should not modify the map after class construction.
+     */
+<span class="fc" id="L74">    protected final Map&lt;String, Integer&gt; inverted = new HashMap&lt;&gt;(250);</span>
+
+    /**
+     * Returns an unmodifiable view of the code -&amp;gt; name mapping.
+     * 
+     * @return the code -&amp;gt; name map
+     */
+    public Map&lt;Integer, String&gt; getCodeToNameMap()
+    {
+<span class="fc" id="L83">        return Collections.unmodifiableMap(codeToName);</span>
+    }
+
+    /**
+     * Returns an unmodifiable view of the name -&amp;gt; code mapping. More than one name may map to
+     * the same code.
+     *
+     * @return the name -&amp;gt; code map
+     */
+    public Map&lt;String, Integer&gt; getNameToCodeMap()
+    {
+<span class="fc" id="L94">        return Collections.unmodifiableMap(inverted);</span>
+    }
+
+    /**
+     * This will add a character encoding. An already existing mapping is preserved when creating
+     * the reverse mapping. Should only be used during construction of the class.
+     * 
+     * @see #overwrite(int, String)
+     * 
+     * @param code character code
+     * @param name PostScript glyph name
+     */
+    protected void add(int code, String name)
+    {
+<span class="fc" id="L108">        codeToName.put(code, name);</span>
+<span class="fc" id="L109">        inverted.putIfAbsent(name, code);</span>
+<span class="fc" id="L110">    }</span>
+
+    /**
+     * This will add a character encoding. An already existing mapping is overwritten when creating
+     * the reverse mapping. Should only be used during construction of the class.
+     *
+     * @see Encoding#add(int, String)
+     *
+     * @param code character code
+     * @param name PostScript glyph name
+     */
+    protected void overwrite(int code, String name)
+    {
+        // remove existing reverse mapping first
+<span class="fc" id="L124">        String oldName = codeToName.get(code);</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        if (oldName != null)</span>
+        {
+<span class="fc" id="L127">            Integer oldCode = inverted.get(oldName);</span>
+<span class="pc bpc" id="L128" title="1 of 4 branches missed.">            if (oldCode != null &amp;&amp; oldCode == code)</span>
+            {
+<span class="fc" id="L130">                inverted.remove(oldName);</span>
+            }
+        }
+<span class="fc" id="L133">        inverted.put(name, code);</span>
+<span class="fc" id="L134">        codeToName.put(code, name);</span>
+<span class="fc" id="L135">    }</span>
+
+    /**
+     * Determines if the encoding has a mapping for the given name value.
+     * 
+     * @param name PostScript glyph name
+     * @return true if the encoding has a mapping for the given name value
+     */
+    public boolean contains(String name)
+    {
+<span class="fc" id="L145">        return inverted.containsKey(name);</span>
+    }
+
+    /**
+     * Determines if the encoding has a mapping for the given code value.
+     * 
+     * @param code character code
+     * @return if the encoding has a mapping for the given code value
+     * 
+     */
+    public boolean contains(int code)
+    {
+<span class="nc" id="L157">        return codeToName.containsKey(code);</span>
+    }
+
+    /**
+     * This will take a character code and get the name from the code.
+     * 
+     * @param code character code
+     * @return PostScript glyph name
+     */
+    public String getName(int code)
+    {
+<span class="fc" id="L168">        return codeToName.getOrDefault(code, &quot;.notdef&quot;);</span>
+    }
+
+    /**
+     * Returns the name of this encoding.
+     * 
+     * @return the name of the encoding
+     */
+    public abstract String getEncodingName();
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

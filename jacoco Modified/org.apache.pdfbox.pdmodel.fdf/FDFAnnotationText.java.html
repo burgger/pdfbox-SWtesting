@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FDFAnnotationText.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.fdf</a> &gt; <span class="el_source">FDFAnnotationText.java</span></div><h1>FDFAnnotationText.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.fdf;
+
+import java.io.IOException;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationText;
+import org.w3c.dom.Element;
+
+/**
+ * This represents a Text FDF annotation.
+ *
+ * @author Ben Litchfield
+ * @author Johanneke Lamberink
+ */
+public class FDFAnnotationText extends FDFAnnotation
+{
+    /**
+     * COS Model value for SubType entry.
+     */
+    public static final String SUBTYPE = &quot;Text&quot;;
+
+    /**
+     * Default constructor.
+     */
+    public FDFAnnotationText()
+    {
+<span class="nc" id="L44">        super();</span>
+<span class="nc" id="L45">        annot.setName(COSName.SUBTYPE, SUBTYPE);</span>
+<span class="nc" id="L46">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param a An existing FDF Annotation.
+     */
+    public FDFAnnotationText(COSDictionary a)
+    {
+<span class="fc" id="L55">        super(a);</span>
+<span class="fc" id="L56">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param element An XFDF element.
+     *
+     * @throws IOException If there is an error extracting information from the element.
+     */
+    public FDFAnnotationText(Element element) throws IOException
+    {
+<span class="fc" id="L67">        super(element);</span>
+<span class="fc" id="L68">        annot.setName(COSName.SUBTYPE, SUBTYPE);</span>
+<span class="fc" id="L69">        String icon = element.getAttribute(&quot;icon&quot;);</span>
+<span class="pc bpc" id="L70" title="2 of 4 branches missed.">        if (icon != null &amp;&amp; !icon.isEmpty())</span>
+        {
+<span class="fc" id="L72">            setIcon(element.getAttribute(&quot;icon&quot;));</span>
+        }
+<span class="fc" id="L74">        String state = element.getAttribute(&quot;state&quot;);</span>
+<span class="pc bpc" id="L75" title="2 of 4 branches missed.">        if (state != null &amp;&amp; !state.isEmpty())</span>
+        {
+<span class="nc" id="L77">            String statemodel = element.getAttribute(&quot;statemodel&quot;);</span>
+<span class="nc bnc" id="L78" title="All 4 branches missed.">            if (statemodel != null &amp;&amp; !statemodel.isEmpty())</span>
+            {
+<span class="nc" id="L80">                setState(element.getAttribute(&quot;state&quot;));</span>
+<span class="nc" id="L81">                setStateModel(element.getAttribute(&quot;statemodel&quot;));</span>
+            }
+        }
+<span class="fc" id="L84">    }</span>
+
+    /**
+     * This will set the icon (and hence appearance, AP taking precedence) For this annotation. See the
+     * PDAnnotationText.NAME_XXX constants for valid values.
+     *
+     * @param icon The name of the annotation
+     */
+    public final void setIcon(String icon)
+    {
+<span class="fc" id="L94">        annot.setName(COSName.NAME, icon);</span>
+<span class="fc" id="L95">    }</span>
+
+    /**
+     * This will retrieve the icon (and hence appearance, AP taking precedence) For this annotation. The default is
+     * NOTE.
+     *
+     * @return The name of this annotation, see the PDAnnotationText.NAME_XXX constants.
+     */
+    public String getIcon()
+    {
+<span class="nc" id="L105">        return annot.getNameAsString(COSName.NAME, PDAnnotationText.NAME_NOTE);</span>
+    }
+
+    /**
+     * This will retrieve the annotation state.
+     * 
+     * @return the annotation state
+     */
+    public String getState()
+    {
+<span class="nc" id="L115">        return annot.getString(COSName.STATE);</span>
+    }
+
+    /**
+     * This will set the annotation state.
+     * 
+     * @param state the annotation state
+     */
+    public final void setState(String state)
+    {
+<span class="nc" id="L125">        annot.setString(COSName.STATE, state);</span>
+<span class="nc" id="L126">    }</span>
+
+    /**
+     * This will retrieve the annotation state model.
+     * 
+     * @return the annotation state model
+     */
+    public String getStateModel()
+    {
+<span class="nc" id="L135">        return annot.getString(COSName.STATE_MODEL);</span>
+    }
+
+    /**
+     * This will set the annotation state model. Allowed values are &quot;Marked&quot; and &quot;Review&quot;
+     * 
+     * @param stateModel the annotation state model
+     */
+    public final void setStateModel(String stateModel)
+    {
+<span class="nc" id="L145">        annot.setString(COSName.STATE_MODEL, stateModel);</span>
+<span class="nc" id="L146">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

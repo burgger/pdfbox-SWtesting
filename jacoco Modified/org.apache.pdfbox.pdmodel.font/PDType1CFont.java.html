@@ -1,0 +1,493 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDType1CFont.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font</a> &gt; <span class="el_source">PDType1CFont.java</span></div><h1>PDType1CFont.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.font;
+
+import java.awt.geom.AffineTransform;
+import java.awt.geom.GeneralPath;
+import java.awt.geom.Point2D;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.fontbox.EncodedFont;
+import org.apache.fontbox.FontBoxFont;
+import org.apache.fontbox.cff.CFFFont;
+import org.apache.fontbox.cff.CFFParser;
+import org.apache.fontbox.cff.CFFType1Font;
+import org.apache.fontbox.util.BoundingBox;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+import org.apache.pdfbox.pdmodel.font.encoding.Encoding;
+import org.apache.pdfbox.pdmodel.font.encoding.StandardEncoding;
+import org.apache.pdfbox.pdmodel.font.encoding.Type1Encoding;
+import org.apache.pdfbox.util.Matrix;
+
+
+import static org.apache.pdfbox.pdmodel.font.UniUtil.getUniNameOfCodePoint;
+
+/**
+ * Type 1-equivalent CFF font.
+ *
+ * @author Villu Ruusmann
+ * @author John Hewson
+ */
+public class PDType1CFont extends PDSimpleFont implements PDVectorFont
+{
+<span class="fc" id="L57">    private static final Logger LOG = LogManager.getLogger(PDType1CFont.class);</span>
+
+<span class="fc" id="L59">    private final Map&lt;String, Float&gt; glyphHeights = new HashMap&lt;&gt;();</span>
+    private final AffineTransform fontMatrixTransform;
+    private final CFFType1Font cffFont; // embedded font
+    private final FontBoxFont genericFont; // embedded or system font for rendering
+    private final boolean isEmbedded;
+    private final boolean isDamaged;
+<span class="fc" id="L65">    private Float avgWidth = null;</span>
+    private Matrix fontMatrix;
+    private BoundingBox fontBBox;
+
+    /**
+     * Constructor.
+     * 
+     * @param fontDictionary the corresponding dictionary
+     * @throws IOException it something went wrong
+     */
+    public PDType1CFont(COSDictionary fontDictionary) throws IOException
+    {
+<span class="fc" id="L77">        super(fontDictionary);</span>
+
+<span class="fc" id="L79">        boolean fontIsDamaged = false;</span>
+<span class="fc" id="L80">        CFFType1Font cffEmbedded = null;</span>
+<span class="fc" id="L81">        PDFontDescriptor fd = getFontDescriptor();</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        if (fd != null)</span>
+        {
+<span class="fc" id="L84">            PDStream ff3Stream = fd.getFontFile3();</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">            if (ff3Stream != null)</span>
+            {
+<span class="fc" id="L87">                try (RandomAccessRead randomAccessRead = ff3Stream.getCOSObject()</span>
+<span class="fc" id="L88">                        .createView())</span>
+                {
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">                    if (randomAccessRead.length() == 0)</span>
+                    {
+<span class="nc" id="L92">                        LOG.error(&quot;Invalid data for embedded Type1C font {}&quot;, getName());</span>
+                    }
+                    else
+                    {
+                        // note: this could be an OpenType file, fortunately CFFParser can handle that
+<span class="fc" id="L97">                        CFFParser cffParser = new CFFParser();</span>
+<span class="fc" id="L98">                        CFFFont parsedCffFont = cffParser.parse(randomAccessRead).get(0);</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">                        if (parsedCffFont instanceof CFFType1Font)</span>
+                        {
+<span class="fc" id="L101">                            cffEmbedded = (CFFType1Font) parsedCffFont;</span>
+                        }
+                        else
+                        {
+<span class="nc" id="L105">                            LOG.error(&quot;Expected CFFType1Font, got {}&quot;,</span>
+<span class="nc" id="L106">                                    parsedCffFont.getClass().getSimpleName());</span>
+<span class="nc" id="L107">                            fontIsDamaged = true;</span>
+                        }
+                    }
+                }
+<span class="fc" id="L111">                catch (IOException e)</span>
+                {
+<span class="fc" id="L113">                    LOG.error(() -&gt; &quot;Can't read the embedded Type1C font &quot; + getName(), e);</span>
+<span class="fc" id="L114">                    fontIsDamaged = true;</span>
+<span class="fc" id="L115">                }</span>
+            }
+        }
+<span class="fc" id="L118">        isDamaged = fontIsDamaged;</span>
+<span class="fc" id="L119">        cffFont = cffEmbedded;</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        if (cffFont != null)</span>
+        {
+<span class="fc" id="L122">            genericFont = cffFont;</span>
+<span class="fc" id="L123">            isEmbedded = true;</span>
+        }
+        else
+        {
+<span class="fc" id="L127">            String baseFont = getBaseFont();</span>
+<span class="fc" id="L128">            FontMapping&lt;FontBoxFont&gt; mapping = FontMappers.instance()</span>
+<span class="fc" id="L129">                                                          .getFontBoxFont(baseFont, fd);</span>
+<span class="fc" id="L130">            genericFont = mapping.getFont();</span>
+            
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">            if (mapping.isFallback())</span>
+            {
+<span class="fc" id="L134">                LOG.warn(&quot;Using fallback font {} for {}&quot;, genericFont.getName(), baseFont);</span>
+            }
+<span class="fc" id="L136">            isEmbedded = false;</span>
+        }
+<span class="fc" id="L138">        readEncoding();</span>
+<span class="fc" id="L139">        fontMatrixTransform = getFontMatrix().createAffineTransform();</span>
+<span class="fc" id="L140">        fontMatrixTransform.scale(1000, 1000);</span>
+<span class="fc" id="L141">    }</span>
+    
+    @Override
+    public FontBoxFont getFontBoxFont()
+    {
+<span class="nc" id="L146">        return genericFont;</span>
+    }
+
+    /**
+     * Returns the PostScript name of the font.
+     * 
+     * @return the PostScript name of the font
+     */
+    public final String getBaseFont()
+    {
+<span class="fc" id="L156">        return dict.getNameAsString(COSName.BASE_FONT);</span>
+    }
+
+    @Override
+    public GeneralPath getPath(String name) throws IOException
+    {
+        // Acrobat only draws .notdef for embedded or &quot;Standard 14&quot; fonts, see PDFBOX-2372
+<span class="pc bpc" id="L163" title="5 of 6 branches missed.">        if (name.equals(&quot;.notdef&quot;) &amp;&amp; !isEmbedded() &amp;&amp; !isStandard14())</span>
+        {
+<span class="nc" id="L165">            return new GeneralPath();</span>
+        }
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">        if (&quot;sfthyphen&quot;.equals(name))</span>
+        {
+<span class="nc" id="L169">            return genericFont.getPath(&quot;hyphen&quot;);</span>
+        }
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">        if (&quot;nbspace&quot;.equals(name))</span>
+        {
+<span class="nc bnc" id="L173" title="All 2 branches missed.">            if (!hasGlyph(&quot;space&quot;))</span>
+            {
+<span class="nc" id="L175">                return new GeneralPath();</span>
+            }
+<span class="nc" id="L177">            return genericFont.getPath(&quot;space&quot;);</span>
+        }
+<span class="fc" id="L179">        return genericFont.getPath(name);</span>
+    }
+
+    @Override
+    public boolean hasGlyph(int code) throws IOException
+    {
+<span class="fc" id="L185">        String name = getEncoding().getName(code);</span>
+<span class="fc" id="L186">        name = getNameInFont(name);</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        if (&quot;sfthyphen&quot;.equals(name))</span>
+        {
+<span class="nc" id="L189">            return hasGlyph(&quot;hyphen&quot;);</span>
+        }
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">        if (&quot;nbspace&quot;.equals(name))</span>
+        {
+<span class="nc" id="L193">            return hasGlyph(&quot;space&quot;);</span>
+        }
+<span class="fc" id="L195">        return hasGlyph(name);</span>
+    }
+
+    @Override
+    public GeneralPath getPath(int code) throws IOException
+    {
+<span class="nc" id="L201">        String name = getEncoding().getName(code);</span>
+<span class="nc" id="L202">        name = getNameInFont(name);</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">        if (&quot;sfthyphen&quot;.equals(name))</span>
+        {
+<span class="nc" id="L205">            return getPath(&quot;hyphen&quot;);</span>
+        }
+<span class="nc bnc" id="L207" title="All 2 branches missed.">        if (&quot;nbspace&quot;.equals(name))</span>
+        {
+<span class="nc bnc" id="L209" title="All 2 branches missed.">            if (!hasGlyph(&quot;space&quot;))</span>
+            {
+<span class="nc" id="L211">                return new GeneralPath();</span>
+            }
+<span class="nc" id="L213">            return getPath(&quot;space&quot;);</span>
+        }
+<span class="nc" id="L215">        return getPath(name);</span>
+    }
+
+    @Override
+    public GeneralPath getNormalizedPath(int code) throws IOException
+    {
+<span class="fc" id="L221">        String name = getEncoding().getName(code);</span>
+<span class="fc" id="L222">        name = getNameInFont(name);</span>
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">        if (&quot;nbspace&quot;.equals(name))</span>
+        {
+<span class="nc bnc" id="L225" title="All 2 branches missed.">            if (!hasGlyph(&quot;space&quot;))</span>
+            {
+<span class="nc" id="L227">                return new GeneralPath();</span>
+            }
+<span class="nc" id="L229">            name = &quot;space&quot;;</span>
+        }
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">        else if (&quot;sfthyphen&quot;.equals(name))</span>
+        {
+<span class="nc" id="L233">            name = &quot;hyphen&quot;;</span>
+        }
+<span class="fc" id="L235">        GeneralPath path = getPath(name);</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">        if (path == null)</span>
+        {
+<span class="nc" id="L238">            return getPath(&quot;.notdef&quot;);</span>
+        }
+<span class="fc" id="L240">        return path;</span>
+    }
+
+    @Override
+    public boolean hasGlyph(String name) throws IOException
+    {
+<span class="fc" id="L246">        return genericFont.hasGlyph(name);</span>
+    }
+
+    @Override
+    public final String getName()
+    {
+<span class="fc" id="L252">        return getBaseFont();</span>
+    }
+
+    @Override
+    public BoundingBox getBoundingBox() throws IOException
+    {
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        if (fontBBox == null)</span>
+        {
+<span class="fc" id="L260">            fontBBox = generateBoundingBox();</span>
+        }
+<span class="fc" id="L262">        return fontBBox;</span>
+    }
+
+    private BoundingBox generateBoundingBox() throws IOException
+    {
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">        if (getFontDescriptor() != null) {</span>
+<span class="fc" id="L268">            PDRectangle bbox = getFontDescriptor().getFontBoundingBox();</span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">            if (isNonZeroBoundingBox(bbox))</span>
+            {
+<span class="fc" id="L271">                return new BoundingBox(bbox.getLowerLeftX(), bbox.getLowerLeftY(),</span>
+<span class="fc" id="L272">                                       bbox.getUpperRightX(), bbox.getUpperRightY());</span>
+            }
+        }
+<span class="nc" id="L275">        return genericFont.getFontBBox();</span>
+    }
+
+    //@Override
+    public String codeToName(int code)
+    {
+<span class="fc" id="L281">        return getEncoding().getName(code);</span>
+    }
+
+    @Override
+    protected Encoding readEncodingFromFont() throws IOException
+    {
+<span class="pc bpc" id="L287" title="3 of 4 branches missed.">        if (!isEmbedded() &amp;&amp; getStandard14AFM() != null)</span>
+        {
+            // read from AFM
+<span class="nc" id="L290">            return new Type1Encoding(getStandard14AFM());</span>
+        }
+        else
+        {
+            // extract from Type1 font/substitute
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">            if (genericFont instanceof EncodedFont)</span>
+            {
+<span class="fc" id="L297">                return Type1Encoding.fromFontBox(((EncodedFont) genericFont).getEncoding());</span>
+            }
+            else
+            {
+                // default (only happens with TTFs)
+<span class="nc" id="L302">                return StandardEncoding.INSTANCE;</span>
+            }
+        }
+    }
+    
+    @Override
+    public int readCode(InputStream in) throws IOException
+    {
+<span class="fc" id="L310">        return in.read();</span>
+    }
+
+    @Override
+    public final Matrix getFontMatrix()
+    {
+<span class="fc bfc" id="L316" title="All 2 branches covered.">        if (fontMatrix == null)</span>
+        {
+<span class="fc" id="L318">            List&lt;Number&gt; numbers = null;</span>
+            try
+            {
+<span class="fc" id="L321">                numbers = genericFont.getFontMatrix();</span>
+            }
+<span class="nc" id="L323">            catch (IOException e)</span>
+            {
+<span class="nc" id="L325">                LOG.debug(&quot;Couldn't get font matrix - returning default value&quot;, e);</span>
+<span class="nc" id="L326">                fontMatrix = DEFAULT_FONT_MATRIX;</span>
+<span class="fc" id="L327">            }</span>
+
+<span class="pc bpc" id="L329" title="2 of 4 branches missed.">            if (numbers != null &amp;&amp; numbers.size() == 6)</span>
+            {
+<span class="fc" id="L331">                fontMatrix = new Matrix(</span>
+<span class="fc" id="L332">                        numbers.get(0).floatValue(), numbers.get(1).floatValue(),</span>
+<span class="fc" id="L333">                        numbers.get(2).floatValue(), numbers.get(3).floatValue(),</span>
+<span class="fc" id="L334">                        numbers.get(4).floatValue(), numbers.get(5).floatValue());</span>
+            }
+            else
+            {
+<span class="nc" id="L338">                return super.getFontMatrix();</span>
+            }
+        }
+<span class="fc" id="L341">        return fontMatrix;</span>
+    }
+
+    @Override
+    public boolean isDamaged()
+    {
+<span class="fc" id="L347">        return isDamaged;</span>
+    }
+
+    @Override
+    public float getWidthFromFont(int code) throws IOException
+    {
+<span class="fc" id="L353">        String name = codeToName(code);</span>
+<span class="fc" id="L354">        name = getNameInFont(name);</span>
+<span class="fc" id="L355">        float width = genericFont.getWidth(name);</span>
+
+<span class="fc" id="L357">        Point2D p = new Point2D.Float(width, 0);</span>
+<span class="fc" id="L358">        fontMatrixTransform.transform(p, p);</span>
+<span class="fc" id="L359">        return (float)p.getX();</span>
+    }
+
+    @Override
+    public boolean isEmbedded()
+    {
+<span class="fc" id="L365">        return isEmbedded;</span>
+    }
+
+    @Override
+    public float getHeight(int code) throws IOException
+    {
+<span class="fc" id="L371">        String name = codeToName(code);</span>
+        float height;
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">        if (!glyphHeights.containsKey(name))</span>
+        {
+<span class="pc bpc" id="L375" title="1 of 2 branches missed.">            if (cffFont == null)</span>
+            {
+<span class="fc" id="L377">                LOG.warn(&quot;No embedded CFF font, returning 0&quot;);</span>
+<span class="fc" id="L378">                return 0;</span>
+            }
+<span class="nc" id="L380">            height = (float) cffFont.getType1CharString(name).getBounds().getHeight();</span>
+<span class="nc" id="L381">            glyphHeights.put(name, height);</span>
+        }
+        else
+        {
+<span class="nc" id="L385">            height = glyphHeights.get(name);</span>
+        }
+<span class="nc" id="L387">        return height;</span>
+    }
+
+    @Override
+    protected byte[] encode(int unicode) throws IOException
+    {
+<span class="nc" id="L393">        String name = getGlyphList().codePointToName(unicode);</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">        if (!encoding.contains(name))</span>
+        {
+<span class="nc" id="L396">            throw new IllegalArgumentException(</span>
+<span class="nc" id="L397">                    String.format(&quot;U+%04X ('%s') is not available in font %s encoding: %s&quot;,</span>
+<span class="nc" id="L398">                                  unicode, name, getName(), encoding.getEncodingName()));</span>
+        }
+
+<span class="nc" id="L401">        String nameInFont = getNameInFont(name);</span>
+        
+<span class="nc" id="L403">        Map&lt;String, Integer&gt; inverted = encoding.getNameToCodeMap();</span>
+
+<span class="nc bnc" id="L405" title="All 4 branches missed.">        if (nameInFont.equals(&quot;.notdef&quot;) || !genericFont.hasGlyph(nameInFont))</span>
+        {
+<span class="nc" id="L407">            throw new IllegalArgumentException(</span>
+<span class="nc" id="L408">                    String.format(&quot;No glyph for U+%04X in font %s&quot;, unicode, getName()));</span>
+        }
+
+<span class="nc" id="L411">        int code = inverted.get(name);</span>
+<span class="nc" id="L412">        return new byte[] { (byte)code };</span>
+    }
+
+    @Override
+    public float getStringWidth(String string) throws IOException
+    {
+<span class="fc bfc" id="L418" title="All 2 branches covered.">        if (cffFont == null)</span>
+        {
+<span class="fc" id="L420">            LOG.warn(&quot;No embedded CFF font, returning 0&quot;);</span>
+<span class="fc" id="L421">            return 0;</span>
+        }
+<span class="fc" id="L423">        float width = 0;</span>
+<span class="fc bfc" id="L424" title="All 2 branches covered.">        for (int i = 0; i &lt; string.length(); i++)</span>
+        {
+<span class="fc" id="L426">            int codePoint = string.codePointAt(i);</span>
+<span class="fc" id="L427">            String name = getGlyphList().codePointToName(codePoint);</span>
+<span class="fc bfc" id="L428" title="All 2 branches covered.">            if (!cffFont.hasGlyph(name))</span>
+            {
+<span class="fc" id="L430">                throw new IllegalArgumentException(</span>
+<span class="fc" id="L431">                    String.format(&quot;U+%04X ('%s') is not available in font %s&quot;,</span>
+<span class="fc" id="L432">                                  codePoint, name, getName()));</span>
+            }
+<span class="fc" id="L434">            width += cffFont.getType1CharString(name).getWidth();</span>
+        }
+<span class="fc" id="L436">        return width;</span>
+    }
+    
+    @Override
+    public float getAverageFontWidth()
+    {
+<span class="pc bpc" id="L442" title="1 of 2 branches missed.">        if (avgWidth == null)</span>
+        {
+<span class="fc" id="L444">            avgWidth = getAverageCharacterWidth();</span>
+        }
+<span class="fc" id="L446">        return avgWidth;</span>
+    }
+
+    /**
+     * Returns the embedded Type 1-equivalent CFF font.
+     * 
+     * @return the cffFont
+     */
+    public CFFType1Font getCFFType1Font()
+    {
+<span class="nc" id="L456">        return cffFont;</span>
+    }
+
+    // todo: this is a replacement for FontMetrics method
+    private float getAverageCharacterWidth()
+    {
+        // todo: not implemented, highly suspect
+<span class="fc" id="L463">        return 500;</span>
+    }
+
+    /**
+     * Maps a PostScript glyph name to the name in the underlying font, for example when
+     * using a TTF font we might map &quot;W&quot; to &quot;uni0057&quot;.
+     */
+    private String getNameInFont(String name) throws IOException
+    {
+<span class="pc bpc" id="L472" title="3 of 4 branches missed.">        if (isEmbedded() || genericFont.hasGlyph(name))</span>
+        {
+<span class="fc" id="L474">            return name;</span>
+        }
+        else
+        {
+            // try unicode name
+<span class="nc" id="L479">            String unicodes = getGlyphList().toUnicode(name);</span>
+<span class="nc bnc" id="L480" title="All 4 branches missed.">            if (unicodes != null &amp;&amp; unicodes.length() == 1)</span>
+            {
+<span class="nc" id="L482">                String uniName = getUniNameOfCodePoint(unicodes.codePointAt(0));</span>
+<span class="nc bnc" id="L483" title="All 2 branches missed.">                if (genericFont.hasGlyph(uniName))</span>
+                {
+<span class="nc" id="L485">                    return uniName;</span>
+                }
+            }
+        }
+<span class="nc" id="L489">        return &quot;.notdef&quot;;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

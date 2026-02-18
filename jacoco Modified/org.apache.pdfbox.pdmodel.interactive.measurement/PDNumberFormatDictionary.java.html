@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDNumberFormatDictionary.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.measurement</a> &gt; <span class="el_source">PDNumberFormatDictionary.java</span></div><h1>PDNumberFormatDictionary.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.measurement;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * This class represents a number format dictionary.
+ * 
+ */
+public class PDNumberFormatDictionary implements COSObjectable
+{
+
+    /**
+     * The type of the dictionary.
+     */
+    public static final String TYPE = &quot;NumberFormat&quot;;
+
+    /**
+     * Constant indicating that the label specified by U is a suffix to the value.
+     */
+    public static final String LABEL_SUFFIX_TO_VALUE = &quot;S&quot;;
+    /**
+     * Constant indicating that the label specified by U is a postfix to the value.
+     */
+    public static final String LABEL_PREFIX_TO_VALUE = &quot;P&quot;;
+
+    /**
+     * Constant for showing a fractional value as decimal to the precision specified by the D entry.
+     */
+    public static final String FRACTIONAL_DISPLAY_DECIMAL = &quot;D&quot;;
+    /**
+     * Constant for showing a fractional value as a fraction with denominator specified by the D entry.
+     */
+    public static final String FRACTIONAL_DISPLAY_FRACTION = &quot;F&quot;;
+    /**
+     * Constant for showing a fractional value without fractional part; round to the nearest whole unit.
+     */
+    public static final String FRACTIONAL_DISPLAY_ROUND = &quot;R&quot;;
+    /**
+     * Constant for showing a fractional value without fractional part; truncate to achieve whole units.
+     */
+    public static final String FRACTIONAL_DISPLAY_TRUNCATE = &quot;T&quot;;
+
+    private final COSDictionary numberFormatDictionary;
+
+    /**
+     * Constructor.
+     */
+    public PDNumberFormatDictionary()
+<span class="nc" id="L67">    {</span>
+<span class="nc" id="L68">        this.numberFormatDictionary = new COSDictionary();</span>
+<span class="nc" id="L69">        this.numberFormatDictionary.setName(COSName.TYPE, TYPE);</span>
+<span class="nc" id="L70">    }</span>
+
+    /**
+     * Constructor.
+     * 
+     * @param dictionary the corresponding dictionary
+     */
+    public PDNumberFormatDictionary(COSDictionary dictionary)
+<span class="nc" id="L78">    {</span>
+<span class="nc" id="L79">        this.numberFormatDictionary = dictionary;</span>
+<span class="nc" id="L80">    }</span>
+
+    /**
+     * This will return the dictionary.
+     * 
+     * @return the number format dictionary
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L90">        return this.numberFormatDictionary;</span>
+    }
+
+    /**
+     * This will return the type of the number format dictionary.
+     * It must be &quot;NumberFormat&quot;
+     * 
+     * @return the type
+     */
+    public String getType()
+    {
+<span class="nc" id="L101">        return TYPE;</span>
+    }
+
+    /**
+     * This will return the label for the units.
+     * 
+     * @return the label for the units
+     */
+    public String getUnits()
+    {
+<span class="nc" id="L111">        return this.getCOSObject().getString(&quot;U&quot;);</span>
+    }
+
+    /**
+     * This will set the label for the units.
+     * 
+     * @param units the label for the units
+     */
+    public void setUnits(String units)
+    {
+<span class="nc" id="L121">        this.getCOSObject().setString(&quot;U&quot;, units);</span>
+<span class="nc" id="L122">    }</span>
+
+    /**
+     * This will return the conversion factor.
+     * 
+     * @return the conversion factor
+     */
+    public float getConversionFactor()
+    {
+<span class="nc" id="L131">        return this.getCOSObject().getFloat(&quot;C&quot;);</span>
+    }
+
+    /**
+     * This will set the conversion factor.
+     * 
+     * @param conversionFactor the conversion factor
+     */
+    public void setConversionFactor(float conversionFactor)
+    {
+<span class="nc" id="L141">        this.getCOSObject().setFloat(&quot;C&quot;, conversionFactor);</span>
+<span class="nc" id="L142">    }</span>
+
+    /** 
+     * This will return the value for the manner to display a fractional value.
+     *  
+     * @return the manner to display a fractional value
+     */
+    public String getFractionalDisplay()
+    {
+<span class="nc" id="L151">        return this.getCOSObject().getString(&quot;F&quot;, FRACTIONAL_DISPLAY_DECIMAL);</span>
+    }
+
+    /** 
+     * This will set the value for the manner to display a fractional value.
+     * Allowed values are &quot;D&quot;, &quot;F&quot;, &quot;R&quot;, &quot;T&quot; and null.
+     * 
+     * @param fractionalDisplay the manner to display a fractional value
+     */
+    public void setFractionalDisplay(String fractionalDisplay)
+    {
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        if ((fractionalDisplay == null)</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">            || FRACTIONAL_DISPLAY_DECIMAL.equals(fractionalDisplay)</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">            || FRACTIONAL_DISPLAY_FRACTION.equals(fractionalDisplay)</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">            || FRACTIONAL_DISPLAY_ROUND.equals(fractionalDisplay)</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">            || FRACTIONAL_DISPLAY_TRUNCATE.equals(fractionalDisplay))</span>
+        {
+<span class="nc" id="L168">            this.getCOSObject().setString(&quot;F&quot;, fractionalDisplay);</span>
+        }
+        else
+        {
+<span class="nc" id="L172">            throw new IllegalArgumentException(&quot;Value must be \&quot;D\&quot;, \&quot;F\&quot;, \&quot;R\&quot;, or \&quot;T\&quot;, (or null).&quot;);</span>
+        }
+<span class="nc" id="L174">    }</span>
+
+    /**
+     * This will return the precision or denominator of a fractional amount.
+     * 
+     * @return the precision or denominator
+     */
+    public int getDenominator()
+    {
+<span class="nc" id="L183">        return this.getCOSObject().getInt(&quot;D&quot;);</span>
+    }
+
+    /**
+     * This will set the precision or denominator of a fractional amount.
+     * 
+     * @param denominator the precision or denominator
+     */
+    public void setDenominator(int denominator)
+    {
+<span class="nc" id="L193">        this.getCOSObject().setInt(&quot;D&quot;, denominator);</span>
+<span class="nc" id="L194">    }</span>
+
+    /**
+     * This will return the value indication if the denominator of the fractional value is reduced/truncated .
+     * 
+     * @return fd
+     */
+    public boolean isFD()
+    {
+<span class="nc" id="L203">        return this.getCOSObject().getBoolean(&quot;FD&quot;, false);</span>
+    }
+
+    /**
+     * This will set the value indication if the denominator of the fractional value is reduced/truncated .
+     * The denominator may not be reduced/truncated if true
+     * @param fd fd
+     */
+    public void setFD(boolean fd)
+    {
+<span class="nc" id="L213">        this.getCOSObject().setBoolean(&quot;FD&quot;, fd);</span>
+<span class="nc" id="L214">    }</span>
+
+    /**
+     * This will return the text to be used between orders of thousands in display of numerical values.
+     * 
+     * @return thousands separator
+     */
+    public String getThousandsSeparator()
+    {
+<span class="nc" id="L223">        return this.getCOSObject().getString(&quot;RT&quot;, &quot;,&quot;);</span>
+    }
+
+    /**
+     * This will set the text to be used between orders of thousands in display of numerical values.
+     * 
+     * @param thousandsSeparator thousands separator
+     */
+    public void setThousandsSeparator(String thousandsSeparator)
+    {
+<span class="nc" id="L233">        this.getCOSObject().setString(&quot;RT&quot;, thousandsSeparator);</span>
+<span class="nc" id="L234">    }</span>
+
+    /**
+     * This will return the text to be used as the decimal point in displaying numerical values.
+     * 
+     * @return decimal separator
+     */
+    public String getDecimalSeparator()
+    {
+<span class="nc" id="L243">        return this.getCOSObject().getString(&quot;RD&quot;, &quot;.&quot;);</span>
+    }
+
+    /**
+     * This will set the text to be used as the decimal point in displaying numerical values.
+     * 
+     * @param decimalSeparator decimal separator
+     */
+    public void setDecimalSeparator(String decimalSeparator)
+    {
+<span class="nc" id="L253">        this.getCOSObject().setString(&quot;RD&quot;, decimalSeparator);</span>
+<span class="nc" id="L254">    }</span>
+
+    /**
+     * This will return the text to be concatenated to the left of the label specified by U.
+     * @return label prefix
+     */
+    public String getLabelPrefixString()
+    {
+<span class="nc" id="L262">        return this.getCOSObject().getString(&quot;PS&quot;, &quot; &quot;);</span>
+    }
+
+    /**
+     * This will set the text to be concatenated to the left of the label specified by U.
+     * @param labelPrefixString label prefix
+     */
+    public void setLabelPrefixString(String labelPrefixString)
+    {
+<span class="nc" id="L271">        this.getCOSObject().setString(&quot;PS&quot;, labelPrefixString);</span>
+<span class="nc" id="L272">    }</span>
+
+    /**
+     * This will return the text to be concatenated after the label specified by U.
+     * 
+     * @return label suffix
+     */
+    public String getLabelSuffixString()
+    {
+<span class="nc" id="L281">        return this.getCOSObject().getString(&quot;SS&quot;, &quot; &quot;);</span>
+    }
+
+    /**
+     * This will set the text to be concatenated after the label specified by U.
+     * 
+     * @param labelSuffixString label suffix
+     */
+    public void setLabelSuffixString(String labelSuffixString)
+    {
+<span class="nc" id="L291">        this.getCOSObject().setString(&quot;SS&quot;, labelSuffixString);</span>
+<span class="nc" id="L292">    }</span>
+
+    /**
+     * This will return a value indicating the ordering of the label specified by U to the calculated unit value.
+     * 
+     * @return label position 
+     */
+    public String getLabelPositionToValue()
+    {
+<span class="nc" id="L301">        return this.getCOSObject().getString(&quot;O&quot;, LABEL_SUFFIX_TO_VALUE);</span>
+    }
+
+    /**
+     * This will set the value indicating the ordering of the label specified by U to the calculated
+     * unit value. Possible values are &quot;S&quot;, &quot;P&quot; and null.
+     *
+     * @param labelPositionToValue label position 
+     */
+    public void setLabelPositionToValue(String labelPositionToValue)
+    {
+<span class="nc bnc" id="L312" title="All 2 branches missed.">        if ((labelPositionToValue == null)</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">            || LABEL_PREFIX_TO_VALUE.equals(labelPositionToValue)</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">            || LABEL_SUFFIX_TO_VALUE.equals(labelPositionToValue))</span>
+        {
+<span class="nc" id="L316">            this.getCOSObject().setString(&quot;O&quot;, labelPositionToValue);</span>
+        }
+        else
+        {
+<span class="nc" id="L320">            throw new IllegalArgumentException(&quot;Value must be \&quot;S\&quot;, or \&quot;P\&quot; (or null).&quot;);</span>
+        }
+<span class="nc" id="L322">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

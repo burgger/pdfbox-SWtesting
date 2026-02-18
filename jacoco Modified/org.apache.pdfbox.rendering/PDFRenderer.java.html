@@ -1,0 +1,590 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFRenderer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.rendering</a> &gt; <span class="el_source">PDFRenderer.java</span></div><h1>PDFRenderer.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.rendering;
+
+import java.awt.Color;
+import java.awt.DisplayMode;
+import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsDevice;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageTree;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.blend.BlendMode;
+import org.apache.pdfbox.pdmodel.graphics.optionalcontent.PDOptionalContentGroup;
+import org.apache.pdfbox.pdmodel.graphics.optionalcontent.PDOptionalContentProperties;
+import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
+import org.apache.pdfbox.pdmodel.interactive.annotation.AnnotationFilter;
+
+/**
+ * Renders a PDF document to an AWT BufferedImage.
+ * This class may be overridden in order to perform custom rendering.
+ *
+ * @author John Hewson
+ */
+public class PDFRenderer
+{
+    protected final PDDocument document;
+    // TODO keep rendering state such as caches here
+    
+    /**
+    * Default annotations filter, returns all annotations
+    */
+<span class="fc" id="L53">    private AnnotationFilter annotationFilter = annotation -&gt; true;</span>
+
+<span class="fc" id="L55">    private boolean subsamplingAllowed = false;</span>
+
+    private RenderDestination defaultDestination;
+
+<span class="fc" id="L59">    private RenderingHints renderingHints = null;</span>
+
+    private BufferedImage pageImage;
+
+<span class="fc" id="L63">    private float imageDownscalingOptimizationThreshold = 0.5f;</span>
+
+    private final PDPageTree pageTree;
+
+    /**
+     * Creates a new PDFRenderer.
+     * @param document the document to render
+     */
+    public PDFRenderer(PDDocument document)
+<span class="fc" id="L72">    {</span>
+<span class="fc" id="L73">        this.document = document;</span>
+<span class="fc" id="L74">        this.pageTree = document.getPages();</span>
+<span class="fc" id="L75">    }</span>
+
+    /**
+     * Return the AnnotationFilter.
+     * 
+     * @return the AnnotationFilter
+     */
+    public AnnotationFilter getAnnotationsFilter()
+    {
+<span class="nc" id="L84">        return annotationFilter;</span>
+    }
+
+    /**
+     * Set the AnnotationFilter.
+     * 
+     * &lt;p&gt;Allows to only render annotation accepted by the filter.
+     * 
+     * @param annotationsFilter the AnnotationFilter
+     */
+    public void setAnnotationsFilter(AnnotationFilter annotationsFilter)
+    {
+<span class="nc" id="L96">        this.annotationFilter = annotationsFilter;</span>
+<span class="nc" id="L97">    }</span>
+
+    /**
+     * Value indicating if the renderer is allowed to subsample images before drawing, according to
+     * image dimensions and requested scale.
+     *
+     * Subsampling may be faster and less memory-intensive in some cases, but it may also lead to
+     * loss of quality, especially in images with high spatial frequency.
+     *
+     * @return true if subsampling of images is allowed, false otherwise.
+     */
+    public boolean isSubsamplingAllowed()
+    {
+<span class="nc" id="L110">        return subsamplingAllowed;</span>
+    }
+
+    /**
+     * Sets a value instructing the renderer whether it is allowed to subsample images before
+     * drawing. The subsampling frequency is determined according to image size and requested scale.
+     *
+     * Subsampling may be faster and less memory-intensive in some cases, but it may also lead to
+     * loss of quality, especially in images with high spatial frequency.
+     *
+     * @param subsamplingAllowed The new value indicating if subsampling is allowed.
+     */
+    public void setSubsamplingAllowed(boolean subsamplingAllowed)
+    {
+<span class="nc" id="L124">        this.subsamplingAllowed = subsamplingAllowed;</span>
+<span class="nc" id="L125">    }</span>
+
+    /**
+     * @return the defaultDestination
+     */
+    public RenderDestination getDefaultDestination()
+    {
+<span class="nc" id="L132">        return defaultDestination;</span>
+    }
+
+    /**
+     * @param defaultDestination the defaultDestination to set
+     */
+    public void setDefaultDestination(RenderDestination defaultDestination)
+    {
+<span class="nc" id="L140">        this.defaultDestination = defaultDestination;</span>
+<span class="nc" id="L141">    }</span>
+
+    /**
+     * Get the rendering hints.
+     *
+     * @return the rendering hints or null if none are set.
+     */
+    public RenderingHints getRenderingHints()
+    {
+<span class="nc" id="L150">        return renderingHints;</span>
+    }
+
+    /**
+     * Set the rendering hints. Use this to influence rendering quality and speed. If you don't set them yourself or
+     * pass null, PDFBox will decide &lt;b&gt;&lt;u&gt;at runtime&lt;/u&gt;&lt;/b&gt; depending on the destination.
+     *
+     * @param renderingHints rendering hints to be used to influence rendering quality and speed
+     */
+    public void setRenderingHints(RenderingHints renderingHints)
+    {
+<span class="nc" id="L161">        this.renderingHints = renderingHints;</span>
+<span class="nc" id="L162">    }</span>
+
+    /**
+     *
+     * @return get the image downscaling optimization threshold. See
+     * {@link #getImageDownscalingOptimizationThreshold()} for details.
+     */
+    public float getImageDownscalingOptimizationThreshold()
+    {
+<span class="nc" id="L171">        return imageDownscalingOptimizationThreshold;</span>
+    }
+
+    /**
+     * Set the image downscaling optimization threshold. This must be a value between 0 and 1. When rendering downscaled
+     * images and rendering hints are set to bicubic+quality and the scaling is smaller than the threshold, a more
+     * quality-optimized but slower method will be used. The default is 0.5 which is a good compromise.
+     *
+     * @param imageDownscalingOptimizationThreshold image downscaling optimization threshold
+     */
+    public void setImageDownscalingOptimizationThreshold(float imageDownscalingOptimizationThreshold)
+    {
+<span class="nc" id="L183">        this.imageDownscalingOptimizationThreshold = imageDownscalingOptimizationThreshold;</span>
+<span class="nc" id="L184">    }</span>
+
+    /**
+     * Returns the given page as an RGB image at 72 DPI
+     * @param pageIndex the zero-based index of the page to be converted.
+     * @return the rendered page image
+     * @throws IOException if the PDF cannot be read
+     * @throws IllegalStateException if the requested index isn't found or doesn't point to a valid
+     * page dictionary
+     * @throws IndexOutOfBoundsException if the requested index is higher than the page count
+     */
+    public BufferedImage renderImage(int pageIndex) throws IOException
+    {
+<span class="fc" id="L197">        return renderImage(pageIndex, 1);</span>
+    }
+
+    /**
+     * Returns the given page as an RGB image at the given scale.
+     * A scale of 1 will render at 72 DPI.
+     * @param pageIndex the zero-based index of the page to be converted
+     * @param scale the scaling factor, where 1 = 72 DPI
+     * @return the rendered page image
+     * @throws IOException if the PDF cannot be read
+     * @throws IllegalStateException if the requested index isn't found or doesn't point to a valid
+     * page dictionary
+     * @throws IndexOutOfBoundsException if the requested index is higher than the page count
+     */
+    public BufferedImage renderImage(int pageIndex, float scale) throws IOException
+    {
+<span class="fc" id="L213">        return renderImage(pageIndex, scale, ImageType.RGB);</span>
+    }
+
+    /**
+     * Returns the given page as an RGB image at the given DPI.
+     * @param pageIndex the zero-based index of the page to be converted
+     * @param dpi the DPI (dots per inch) to render at
+     * @return the rendered page image
+     * @throws IOException if the PDF cannot be read
+     * @throws IllegalStateException if the requested index isn't found or doesn't point to a valid
+     * page dictionary
+     * @throws IndexOutOfBoundsException if the requested index is higher than the page count
+     */
+    public BufferedImage renderImageWithDPI(int pageIndex, float dpi) throws IOException
+    {
+<span class="fc" id="L228">        return renderImage(pageIndex, dpi / 72f, ImageType.RGB);</span>
+    }
+
+    /**
+     * Returns the given page as an RGB image at the given DPI.
+     * @param pageIndex the zero-based index of the page to be converted
+     * @param dpi the DPI (dots per inch) to render at
+     * @param imageType the type of image to return
+     * @return the rendered page image
+     * @throws IOException if the PDF cannot be read
+     * @throws IllegalStateException if the requested index isn't found or doesn't point to a valid
+     * page dictionary
+     * @throws IndexOutOfBoundsException if the requested index is higher than the page count
+     */
+    public BufferedImage renderImageWithDPI(int pageIndex, float dpi, ImageType imageType)
+            throws IOException
+    {
+<span class="nc" id="L245">        return renderImage(pageIndex, dpi / 72f, imageType);</span>
+    }
+
+    /**
+     * Returns the given page as an RGB or ARGB image at the given scale.
+     * @param pageIndex the zero-based index of the page to be converted
+     * @param scale the scaling factor, where 1 = 72 DPI
+     * @param imageType the type of image to return
+     * @return the rendered page image
+     * @throws IOException if the PDF cannot be read
+     * @throws IllegalStateException if the requested index isn't found or doesn't point to a valid
+     * page dictionary
+     * @throws IndexOutOfBoundsException if the requested index is higher than the page count
+     */
+    public BufferedImage renderImage(int pageIndex, float scale, ImageType imageType)
+            throws IOException
+    {
+<span class="fc" id="L262">        return renderImage(pageIndex, scale, imageType, </span>
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">                           defaultDestination == null ? RenderDestination.EXPORT : defaultDestination);</span>
+    }
+
+    /**
+     * Returns the given page as an RGB or ARGB image at the given scale.
+     * @param pageIndex the zero-based index of the page to be converted
+     * @param scale the scaling factor, where 1 = 72 DPI
+     * @param imageType the type of image to return
+     * @param destination controlling visibility of optional content groups
+     * @return the rendered page image
+     * @throws IOException if the PDF cannot be read
+     * @throws IllegalStateException if the requested index isn't found or doesn't point to a valid
+     * page dictionary
+     * @throws IndexOutOfBoundsException if the requested index is higher than the page count
+     */
+    public BufferedImage renderImage(int pageIndex, float scale, ImageType imageType, RenderDestination destination)
+            throws IOException
+    {
+<span class="fc" id="L281">        PDPage page = pageTree.get(pageIndex);</span>
+
+<span class="fc" id="L283">        PDRectangle cropBox = page.getCropBox();</span>
+<span class="fc" id="L284">        float widthPt = cropBox.getWidth();</span>
+<span class="fc" id="L285">        float heightPt = cropBox.getHeight();</span>
+
+        // PDFBOX-4306 avoid single blank pixel line on the right or on the bottom
+<span class="fc" id="L288">        int widthPx = (int) Math.max(Math.floor(widthPt * scale), 1);</span>
+<span class="fc" id="L289">        int heightPx = (int) Math.max(Math.floor(heightPt * scale), 1);</span>
+
+        // PDFBOX-4518 the maximum size (w*h) of a buffered image is limited to Integer.MAX_VALUE
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">        if ((long) widthPx * (long) heightPx &gt; Integer.MAX_VALUE)</span>
+        {
+<span class="nc" id="L294">            throw new IOException(&quot;Maximum size of image exceeded (w * h * scale ^ 2) = &quot;//</span>
+                    + widthPt + &quot; * &quot; + heightPt + &quot; * &quot; + scale + &quot; ^ 2 &gt; &quot; + Integer.MAX_VALUE);
+        }
+
+<span class="fc" id="L298">        int rotationAngle = page.getRotation();</span>
+
+        int bimType;
+<span class="pc bpc" id="L301" title="2 of 4 branches missed.">        if (imageType != ImageType.ARGB &amp;&amp; hasBlendMode(page))</span>
+        {
+            // PDFBOX-4095: if the PDF has blending on the top level, draw on transparent background
+            // Inspired from PDF.js: if a PDF page uses any blend modes other than Normal, 
+            // PDF.js renders everything on a fully transparent RGBA canvas. 
+            // Finally when the page has been rendered, PDF.js draws the RGBA canvas on a white canvas.
+<span class="nc" id="L307">            bimType = BufferedImage.TYPE_INT_ARGB;</span>
+        }
+        else
+        {
+<span class="fc" id="L311">            bimType = imageType.toBufferedImageType();</span>
+        }
+
+        // swap width and height
+        BufferedImage image;
+<span class="fc bfc" id="L316" title="All 4 branches covered.">        if (rotationAngle == 90 || rotationAngle == 270)</span>
+        {
+<span class="fc" id="L318">            image = new BufferedImage(heightPx, widthPx, bimType);</span>
+        }
+        else
+        {
+<span class="fc" id="L322">            image = new BufferedImage(widthPx, heightPx, bimType);</span>
+        }
+
+<span class="fc" id="L325">        pageImage = image;</span>
+
+        // use a transparent background if the image type supports alpha
+<span class="fc" id="L328">        Graphics2D g = image.createGraphics();</span>
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">        if (image.getType() == BufferedImage.TYPE_INT_ARGB)</span>
+        {
+<span class="nc" id="L331">            g.setBackground(new Color(0, 0, 0, 0));</span>
+        }
+        else
+        {
+<span class="fc" id="L335">            g.setBackground(Color.WHITE);</span>
+        }
+<span class="fc" id="L337">        g.clearRect(0, 0, image.getWidth(), image.getHeight());</span>
+        
+<span class="fc" id="L339">        transform(g, page.getRotation(), cropBox, scale, scale);</span>
+
+        // the end-user may provide a custom PageDrawer
+        RenderingHints actualRenderingHints =
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">                renderingHints == null ? createDefaultRenderingHints(g) : renderingHints;</span>
+<span class="fc" id="L344">        PageDrawerParameters parameters =</span>
+                new PageDrawerParameters(this, page, subsamplingAllowed, destination,
+                        actualRenderingHints, imageDownscalingOptimizationThreshold);
+<span class="fc" id="L347">        PageDrawer drawer = createPageDrawer(parameters);</span>
+<span class="fc" id="L348">        drawer.drawPage(g, cropBox);</span>
+        
+<span class="fc" id="L350">        g.dispose();</span>
+
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">        if (image.getType() != imageType.toBufferedImageType())</span>
+        {
+            // PDFBOX-4095: draw temporary transparent image on white background
+<span class="nc" id="L355">            BufferedImage newImage = </span>
+<span class="nc" id="L356">                    new BufferedImage(image.getWidth(), image.getHeight(), imageType.toBufferedImageType());</span>
+<span class="nc" id="L357">            Graphics2D dstGraphics = newImage.createGraphics();</span>
+<span class="nc" id="L358">            dstGraphics.setBackground(Color.WHITE);</span>
+<span class="nc" id="L359">            dstGraphics.clearRect(0, 0, image.getWidth(), image.getHeight());</span>
+<span class="nc" id="L360">            dstGraphics.drawImage(image, 0, 0, null);</span>
+<span class="nc" id="L361">            dstGraphics.dispose();</span>
+<span class="nc" id="L362">            image = newImage;</span>
+        }
+
+<span class="fc" id="L365">        return image;</span>
+    }
+
+    /**
+     * Renders a given page to an AWT Graphics2D instance at 72 DPI.
+     * &lt;p&gt;
+     * Read {@link #renderPageToGraphics(int, java.awt.Graphics2D, float, float, org.apache.pdfbox.rendering.RenderDestination) renderPageToGraphics(int, Graphics2D, float, float, RenderDestination)}
+     * before using this.
+     *
+     * @param pageIndex the zero-based index of the page to be converted
+     * @param graphics the Graphics2D on which to draw the page
+     * @throws IOException if the PDF cannot be read
+     */
+    public void renderPageToGraphics(int pageIndex, Graphics2D graphics) throws IOException
+    {
+<span class="nc" id="L380">        renderPageToGraphics(pageIndex, graphics, 1);</span>
+<span class="nc" id="L381">    }</span>
+
+    /**
+     * Renders a given page to an AWT Graphics2D instance.
+     * &lt;p&gt;
+     * Read {@link #renderPageToGraphics(int, java.awt.Graphics2D, float, float, org.apache.pdfbox.rendering.RenderDestination) renderPageToGraphics(int, Graphics2D, float, float, RenderDestination)}
+     * before using this.
+     *
+     * @param pageIndex the zero-based index of the page to be converted
+     * @param graphics the Graphics2D on which to draw the page
+     * @param scale the scaling factor, where 1 = 72 DPI
+     * @throws IOException if the PDF cannot be read
+     */
+    public void renderPageToGraphics(int pageIndex, Graphics2D graphics, float scale)
+            throws IOException
+    {
+<span class="nc" id="L397">        renderPageToGraphics(pageIndex, graphics, scale, scale);</span>
+<span class="nc" id="L398">    }</span>
+
+    /**
+     * Renders a given page to an AWT Graphics2D instance.
+     * &lt;p&gt;
+     * Read {@link #renderPageToGraphics(int, java.awt.Graphics2D, float, float, org.apache.pdfbox.rendering.RenderDestination) renderPageToGraphics(int, Graphics2D, float, float, RenderDestination)}
+     * before using this.
+     *
+     * @param pageIndex the zero-based index of the page to be converted
+     * @param graphics the Graphics2D on which to draw the page
+     * @param scaleX the scale to draw the page at for the x-axis, where 1 = 72 DPI
+     * @param scaleY the scale to draw the page at for the y-axis, where 1 = 72 DPI
+     * @throws IOException if the PDF cannot be read
+     */
+    public void renderPageToGraphics(int pageIndex, Graphics2D graphics, float scaleX, float scaleY)
+            throws IOException
+    {
+<span class="nc" id="L415">        renderPageToGraphics(pageIndex, graphics, scaleX, scaleY, </span>
+<span class="nc bnc" id="L416" title="All 2 branches missed.">                             defaultDestination == null ? RenderDestination.VIEW : defaultDestination);</span>
+<span class="nc" id="L417">    }</span>
+
+    /**
+     * Renders a given page to an AWT Graphics2D instance.
+     * &lt;p&gt;
+     * Known problems:
+     * &lt;ul&gt;
+     * &lt;li&gt;rendering of PDF files with transparencies is not supported on Ubuntu, see
+     * &lt;a href=&quot;https://issues.apache.org/jira/browse/PDFBOX-4581&quot;&gt;PDFBOX-4581&lt;/a&gt; and
+     * &lt;a href=&quot;https://bugs.openjdk.java.net/browse/JDK-6689349&quot;&gt;JDK-6689349&lt;/a&gt;. Rendering will
+     * not abort, but the pages will be rendered incorrectly.&lt;/li&gt;
+     * &lt;li&gt;Clipping the Graphics2D will not work properly, see
+     * &lt;a href=&quot;https://issues.apache.org/jira/browse/PDFBOX-4583&quot;&gt;PDFBOX-4583&lt;/a&gt;.&lt;/li&gt;
+     * &lt;/ul&gt;
+     * If you encounter these problems, then you should render into an image by using the
+     * {@link #renderImage(int) renderImage} methods.
+     * 
+     * @param pageIndex the zero-based index of the page to be converted
+     * @param graphics the Graphics2D on which to draw the page
+     * @param scaleX the scale to draw the page at for the x-axis, where 1 = 72 DPI
+     * @param scaleY the scale to draw the page at for the y-axis, where 1 = 72 DPI
+     * @param destination controlling visibility of optional content groups
+     * @throws IOException if the PDF cannot be read
+     * @throws IllegalStateException if the requested index isn't found or doesn't point to a valid
+     * page dictionary
+     * @throws IndexOutOfBoundsException if the requested index is higher than the page count
+     */
+    public void renderPageToGraphics(int pageIndex, Graphics2D graphics, float scaleX, float scaleY, RenderDestination destination)
+            throws IOException
+    {
+<span class="nc" id="L447">        PDPage page = pageTree.get(pageIndex);</span>
+        // TODO need width/height calculations? should these be in PageDrawer?
+
+<span class="nc" id="L450">        PDRectangle cropBox = page.getCropBox();</span>
+<span class="nc" id="L451">        transform(graphics, page.getRotation(), cropBox, scaleX, scaleY);</span>
+<span class="nc" id="L452">        graphics.clearRect(0, 0, (int) cropBox.getWidth(), (int) cropBox.getHeight());</span>
+
+        // the end-user may provide a custom PageDrawer
+        RenderingHints actualRenderingHints =
+<span class="nc bnc" id="L456" title="All 2 branches missed.">                renderingHints == null ? createDefaultRenderingHints(graphics) : renderingHints;</span>
+<span class="nc" id="L457">        PageDrawerParameters parameters =</span>
+                new PageDrawerParameters(this, page, subsamplingAllowed, destination,
+                        actualRenderingHints, imageDownscalingOptimizationThreshold);
+<span class="nc" id="L460">        PageDrawer drawer = createPageDrawer(parameters);</span>
+<span class="nc" id="L461">        drawer.drawPage(graphics, cropBox);</span>
+<span class="nc" id="L462">    }</span>
+
+    /**
+     * Indicates whether an optional content group is enabled.
+     * @param group the group
+     * @return true if the group is enabled
+     */
+    public boolean isGroupEnabled(PDOptionalContentGroup group)
+    {
+<span class="fc" id="L471">        PDOptionalContentProperties ocProperties = document.getDocumentCatalog().getOCProperties();</span>
+<span class="pc bpc" id="L472" title="1 of 4 branches missed.">        return ocProperties == null || ocProperties.isGroupEnabled(group);</span>
+    }
+
+    // scale rotate translate
+    private void transform(Graphics2D graphics, int rotationAngle, PDRectangle cropBox, float scaleX, float scaleY)
+    {
+<span class="fc" id="L478">        graphics.scale(scaleX, scaleY);</span>
+
+        // TODO should we be passing the scale to PageDrawer rather than messing with Graphics?
+<span class="fc bfc" id="L481" title="All 2 branches covered.">        if (rotationAngle != 0)</span>
+        {
+<span class="fc" id="L483">            float translateX = 0;</span>
+<span class="fc" id="L484">            float translateY = 0;</span>
+<span class="pc bpc" id="L485" title="1 of 4 branches missed.">            switch (rotationAngle)</span>
+            {
+                case 90:
+<span class="fc" id="L488">                    translateX = cropBox.getHeight();</span>
+<span class="fc" id="L489">                    break;</span>
+                case 270:
+<span class="fc" id="L491">                    translateY = cropBox.getWidth();</span>
+<span class="fc" id="L492">                    break;</span>
+                case 180:
+<span class="fc" id="L494">                    translateX = cropBox.getWidth();</span>
+<span class="fc" id="L495">                    translateY = cropBox.getHeight();</span>
+<span class="fc" id="L496">                    break;</span>
+                default:
+                    break;
+            }
+<span class="fc" id="L500">            graphics.translate(translateX, translateY);</span>
+<span class="fc" id="L501">            graphics.rotate(Math.toRadians(rotationAngle));</span>
+        }
+<span class="fc" id="L503">    }</span>
+
+    private boolean isBitonal(Graphics2D graphics)
+    {
+<span class="fc" id="L507">        GraphicsConfiguration deviceConfiguration = graphics.getDeviceConfiguration();</span>
+<span class="pc bpc" id="L508" title="1 of 2 branches missed.">        if (deviceConfiguration == null)</span>
+        {
+<span class="nc" id="L510">            return false;</span>
+        }
+<span class="fc" id="L512">        GraphicsDevice device = deviceConfiguration.getDevice();</span>
+<span class="pc bpc" id="L513" title="1 of 2 branches missed.">        if (device == null)</span>
+        {
+<span class="nc" id="L515">            return false;</span>
+        }
+<span class="fc" id="L517">        DisplayMode displayMode = device.getDisplayMode();</span>
+<span class="pc bpc" id="L518" title="1 of 2 branches missed.">        if (displayMode == null)</span>
+        {
+<span class="nc" id="L520">            return false;</span>
+        }
+<span class="pc bpc" id="L522" title="1 of 2 branches missed.">        return displayMode.getBitDepth() == 1;</span>
+    }
+
+    private RenderingHints createDefaultRenderingHints(Graphics2D graphics)
+    {
+<span class="fc" id="L527">        boolean isBitonal = isBitonal(graphics);</span>
+<span class="fc" id="L528">        RenderingHints r = new RenderingHints(null);</span>
+<span class="pc bpc" id="L529" title="1 of 2 branches missed.">        r.put(RenderingHints.KEY_INTERPOLATION, isBitonal ?</span>
+<span class="nc" id="L530">                RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR :</span>
+<span class="fc" id="L531">                RenderingHints.VALUE_INTERPOLATION_BICUBIC);</span>
+<span class="fc" id="L532">        r.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);</span>
+<span class="pc bpc" id="L533" title="1 of 2 branches missed.">        r.put(RenderingHints.KEY_ANTIALIASING, isBitonal ?</span>
+<span class="nc" id="L534">                                        RenderingHints.VALUE_ANTIALIAS_OFF :</span>
+<span class="fc" id="L535">                                        RenderingHints.VALUE_ANTIALIAS_ON);</span>
+<span class="fc" id="L536">        return r;</span>
+    }
+
+    /**
+     * Returns a new PageDrawer instance, using the given parameters. May be overridden.
+     * 
+     * @param parameters parameters to be used when creating the PageDrawer instance
+     * @return a new PageDrawer instance
+     * 
+     * @throws IOException id the PageDrawer instance could not be created
+     */
+    protected PageDrawer createPageDrawer(PageDrawerParameters parameters) throws IOException
+    {
+<span class="fc" id="L549">        PageDrawer pageDrawer = new PageDrawer(parameters);</span>
+<span class="fc" id="L550">        pageDrawer.setAnnotationFilter(annotationFilter);</span>
+<span class="fc" id="L551">        return pageDrawer;</span>
+    }
+
+    private boolean hasBlendMode(PDPage page)
+    {
+        // check the current resources for blend modes
+<span class="fc" id="L557">        PDResources resources = page.getResources();</span>
+<span class="fc bfc" id="L558" title="All 2 branches covered.">        if (resources == null)</span>
+        {
+<span class="fc" id="L560">            return false;</span>
+        }
+<span class="fc bfc" id="L562" title="All 2 branches covered.">        for (COSName name : resources.getExtGStateNames())</span>
+        {
+<span class="fc" id="L564">            PDExtendedGraphicsState extGState = resources.getExtGState(name);</span>
+<span class="fc bfc" id="L565" title="All 2 branches covered.">            if (extGState != null)</span>
+            {
+                // extGState null can happen if key exists but no value 
+                // see PDFBOX-3950-23EGDHXSBBYQLKYOKGZUOVYVNE675PRD.pdf
+<span class="fc" id="L569">                BlendMode blendMode = extGState.getBlendMode();</span>
+<span class="pc bpc" id="L570" title="1 of 2 branches missed.">                if (blendMode != BlendMode.NORMAL)</span>
+                {
+<span class="nc" id="L572">                    return true;</span>
+                }
+            }
+<span class="fc" id="L575">        }</span>
+<span class="fc" id="L576">        return false;</span>
+    }
+
+    /**
+     * Returns the image to which the current page is being rendered.
+     * May be null if the page is rendered to a Graphics2D object
+     * instead of a BufferedImage.
+     */
+    BufferedImage getPageImage()
+    {
+<span class="nc" id="L586">        return pageImage;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

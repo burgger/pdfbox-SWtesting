@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFPageable.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.printing</a> &gt; <span class="el_source">PDFPageable.java</span></div><h1>PDFPageable.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.printing;
+
+import java.awt.RenderingHints;
+import java.awt.print.Book;
+import java.awt.print.PageFormat;
+import java.awt.print.Paper;
+import java.awt.print.Printable;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+
+/**
+ * Prints a PDF document using its original paper size.
+ *
+ * @author John Hewson
+ */
+public final class PDFPageable extends Book
+{
+    private final PDDocument document;
+    private final int numberOfPages;
+    private final boolean showPageBorder;
+    private final float dpi;
+    private final boolean center;
+    private final Orientation orientation;
+<span class="nc" id="L42">    private boolean subsamplingAllowed = false;</span>
+<span class="nc" id="L43">    private RenderingHints renderingHints = null;</span>
+
+    /**
+     * Creates a new PDFPageable.
+     *
+     * @param document the document to print
+     */
+    public PDFPageable(PDDocument document)
+    {
+<span class="nc" id="L52">        this(document, Orientation.AUTO, false, 0, true);</span>
+<span class="nc" id="L53">    }</span>
+    
+    /**
+     * Creates a new PDFPageable with the given page orientation.
+     *
+     * @param document the document to print
+     * @param orientation page orientation policy
+     */
+    public PDFPageable(PDDocument document, Orientation orientation)
+    {
+<span class="nc" id="L63">        this(document, orientation, false, 0, true);</span>
+<span class="nc" id="L64">    }</span>
+    
+    /**
+     * Creates a new PDFPageable with the given page orientation and with optional page borders
+     * shown.
+     *
+     * @param document the document to print
+     * @param orientation page orientation policy
+     * @param showPageBorder true if page borders are to be printed
+     */
+    public PDFPageable(PDDocument document, Orientation orientation, boolean showPageBorder)
+    {
+<span class="nc" id="L76">        this(document, orientation, showPageBorder, 0, true);</span>
+<span class="nc" id="L77">    }</span>
+
+    /**
+     * Creates a new PDFPageable with the given page orientation and with optional page borders
+     * shown. The image will be rasterized at the given DPI before being sent to the printer if
+     * non-zero.
+     *
+     * @param document the document to print
+     * @param orientation page orientation policy
+     * @param showPageBorder true if page borders are to be printed
+     * @param dpi if non-zero then the image will be rasterized at the given DPI
+     */
+    public PDFPageable(PDDocument document, Orientation orientation, boolean showPageBorder,
+                       float dpi)
+    {
+<span class="nc" id="L92">        this(document, orientation, showPageBorder, dpi, true);</span>
+<span class="nc" id="L93">    }</span>
+
+    /**
+     * Creates a new PDFPageable with the given page orientation and with optional page borders
+     * shown. The image will be rasterized at the given DPI before being sent to the printer if
+     * non-zero, and optionally be centered.
+     *
+     * @param document the document to print
+     * @param orientation page orientation policy
+     * @param showPageBorder true if page borders are to be printed
+     * @param dpi if non-zero then the image will be rasterized at the given DPI
+     * @param center true if the content is to be centered on the page (otherwise top-left).
+     */
+    public PDFPageable(PDDocument document, Orientation orientation, boolean showPageBorder,
+                       float dpi, boolean center)
+<span class="nc" id="L108">    {</span>
+<span class="nc" id="L109">        this.document = document;</span>
+<span class="nc" id="L110">        this.orientation = orientation;</span>
+<span class="nc" id="L111">        this.showPageBorder = showPageBorder;</span>
+<span class="nc" id="L112">        this.dpi = dpi;</span>
+<span class="nc" id="L113">        this.center = center;</span>
+<span class="nc" id="L114">        numberOfPages = document.getNumberOfPages();</span>
+<span class="nc" id="L115">    }</span>
+
+    /**
+     * Get the rendering hints.
+     *
+     * @return the rendering hints or null if none are set.
+     */
+    public RenderingHints getRenderingHints()
+    {
+<span class="nc" id="L124">        return renderingHints;</span>
+    }
+
+    /**
+     * Set the rendering hints. Use this to influence rendering quality and speed. If you don't set them yourself or
+     * pass null, PDFBox will decide &lt;b&gt;&lt;u&gt;at runtime&lt;/u&gt;&lt;/b&gt; depending on the destination.
+     *
+     * @param renderingHints rendering hints to be used to influence rendering quality and speed
+     */
+    public void setRenderingHints(RenderingHints renderingHints)
+    {
+<span class="nc" id="L135">        this.renderingHints = renderingHints;</span>
+<span class="nc" id="L136">    }</span>
+
+    /**
+     * Value indicating if the renderer is allowed to subsample images before drawing, according to
+     * image dimensions and requested scale.
+     *
+     * Subsampling may be faster and less memory-intensive in some cases, but it may also lead to
+     * loss of quality, especially in images with high spatial frequency.
+     *
+     * @return true if subsampling of images is allowed, false otherwise.
+     */
+    public boolean isSubsamplingAllowed()
+    {
+<span class="nc" id="L149">        return subsamplingAllowed;</span>
+    }
+
+    /**
+     * Sets a value instructing the renderer whether it is allowed to subsample images before
+     * drawing. The subsampling frequency is determined according to image size and requested scale.
+     *
+     * Subsampling may be faster and less memory-intensive in some cases, but it may also lead to
+     * loss of quality, especially in images with high spatial frequency.
+     *
+     * @param subsamplingAllowed The new value indicating if subsampling is allowed.
+     */
+    public void setSubsamplingAllowed(boolean subsamplingAllowed)
+    {
+<span class="nc" id="L163">        this.subsamplingAllowed = subsamplingAllowed;</span>
+<span class="nc" id="L164">    }</span>
+
+    @Override
+    public int getNumberOfPages()
+    {
+<span class="nc" id="L169">        return numberOfPages;</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * Returns the actual physical size of the pages in the PDF file. May not fit the local printer.
+     */
+    @Override
+    public PageFormat getPageFormat(int pageIndex)
+    {
+<span class="nc" id="L180">        PDPage page = document.getPage(pageIndex);</span>
+<span class="nc" id="L181">        PDRectangle mediaBox = PDFPrintable.getRotatedMediaBox(page);</span>
+<span class="nc" id="L182">        PDRectangle cropBox = PDFPrintable.getRotatedCropBox(page);</span>
+        
+        // Java does not seem to understand landscape paper sizes, i.e. where width &gt; height, it
+        // always crops the imageable area as if the page were in portrait. I suspect that this is
+        // a JDK bug but it might be by design, see PDFBOX-2922.
+        //
+        // As a workaround, we normalise all Page(s) to be portrait, then flag them as landscape in
+        // the PageFormat.
+        Paper paper;
+        boolean isLandscape;
+<span class="nc bnc" id="L192" title="All 2 branches missed.">        if (mediaBox.getWidth() &gt; mediaBox.getHeight())</span>
+        {
+            // rotate
+<span class="nc" id="L195">            paper = new Paper();</span>
+<span class="nc" id="L196">            paper.setSize(mediaBox.getHeight(), mediaBox.getWidth());</span>
+<span class="nc" id="L197">            paper.setImageableArea(cropBox.getLowerLeftY(), cropBox.getLowerLeftX(),</span>
+<span class="nc" id="L198">                    cropBox.getHeight(), cropBox.getWidth());</span>
+<span class="nc" id="L199">            isLandscape = true;</span>
+        }
+        else
+        {
+<span class="nc" id="L203">            paper = new Paper();</span>
+<span class="nc" id="L204">            paper.setSize(mediaBox.getWidth(), mediaBox.getHeight());</span>
+<span class="nc" id="L205">            paper.setImageableArea(cropBox.getLowerLeftX(), cropBox.getLowerLeftY(),</span>
+<span class="nc" id="L206">                    cropBox.getWidth(), cropBox.getHeight());</span>
+<span class="nc" id="L207">            isLandscape = false;</span>
+        }
+
+<span class="nc" id="L210">        PageFormat format = new PageFormat();</span>
+<span class="nc" id="L211">        format.setPaper(paper);</span>
+        
+        // auto portrait/landscape
+<span class="nc bnc" id="L214" title="All 5 branches missed.">        switch (orientation)</span>
+        {
+            case AUTO:
+<span class="nc bnc" id="L217" title="All 2 branches missed.">                format.setOrientation(isLandscape ? PageFormat.LANDSCAPE : PageFormat.PORTRAIT);</span>
+<span class="nc" id="L218">                break;</span>
+            case LANDSCAPE:
+<span class="nc" id="L220">                format.setOrientation(PageFormat.LANDSCAPE);</span>
+<span class="nc" id="L221">                break;</span>
+            case REVERSE_LANDSCAPE:
+<span class="nc" id="L223">                format.setOrientation(PageFormat.REVERSE_LANDSCAPE);</span>
+<span class="nc" id="L224">                break;</span>
+            case PORTRAIT:
+<span class="nc" id="L226">                format.setOrientation(PageFormat.PORTRAIT);</span>
+<span class="nc" id="L227">                break;</span>
+            default:
+                break;
+        }
+        
+<span class="nc" id="L232">        return format;</span>
+    }
+    
+    @Override
+    public Printable getPrintable(int i)
+    {
+<span class="nc bnc" id="L238" title="All 2 branches missed.">        if (i &gt;= numberOfPages)</span>
+        {
+<span class="nc" id="L240">            throw new IndexOutOfBoundsException(i + &quot; &gt;= &quot; + numberOfPages);</span>
+        }
+<span class="nc" id="L242">        PDFPrintable printable = new PDFPrintable(document, Scaling.ACTUAL_SIZE, showPageBorder, dpi, center);</span>
+<span class="nc" id="L243">        printable.setSubsamplingAllowed(subsamplingAllowed);</span>
+<span class="nc" id="L244">        printable.setRenderingHints(renderingHints);</span>
+<span class="nc" id="L245">        return printable;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

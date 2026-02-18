@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDDocumentInformation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel</a> &gt; <span class="el_source">PDDocumentInformation.java</span></div><h1>PDDocumentInformation.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel;
+
+import java.util.Calendar;
+import java.util.Set;
+import java.util.TreeSet;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * This is the document metadata.  Each getXXX method will return the entry if
+ * it exists or null if it does not exist.  If you pass in null for the setXXX
+ * method then it will clear the value.
+ *
+ * @author Ben Litchfield
+ * @author Gerardo Ortiz
+ *
+ */
+public class PDDocumentInformation implements COSObjectable
+{
+    private final COSDictionary info;
+
+    /**
+     * Default Constructor.
+     */
+    public PDDocumentInformation()
+<span class="nc" id="L45">    {</span>
+<span class="nc" id="L46">        info = new COSDictionary();</span>
+<span class="nc" id="L47">    }</span>
+
+    /**
+     * Constructor that is used for a preexisting dictionary.
+     *
+     * @param dic The underlying dictionary.
+     */
+    public PDDocumentInformation( COSDictionary dic )
+<span class="fc" id="L55">    {</span>
+<span class="fc" id="L56">        info = dic;</span>
+<span class="fc" id="L57">    }</span>
+
+    /**
+     * This will get the underlying dictionary that this object wraps.
+     *
+     * @return The underlying info dictionary.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="fc" id="L67">        return info;</span>
+    }    
+    
+    /**
+     * Return the properties String value.
+     * &lt;p&gt;
+     * Allows to retrieve the
+     * low level date for validation purposes.
+     * &lt;/p&gt; 
+     * 
+     * @param propertyKey the dictionaries key
+     * @return the properties value
+     */
+     public Object getPropertyStringValue(String propertyKey)
+     {
+<span class="nc" id="L82">         return info.getString(propertyKey);</span>
+     }    
+
+    /**
+     * This will get the title of the document.  This will return null if no title exists.
+     *
+     * @return The title of the document.
+     */
+    public String getTitle()
+    {
+<span class="fc" id="L92">        return info.getString( COSName.TITLE );</span>
+    }
+
+    /**
+     * This will set the title of the document.
+     *
+     * @param title The new title for the document.
+     */
+    public void setTitle( String title )
+    {
+<span class="nc" id="L102">        info.setString( COSName.TITLE, title );</span>
+<span class="nc" id="L103">    }</span>
+
+    /**
+     * This will get the author of the document.  This will return null if no author exists.
+     *
+     * @return The author of the document.
+     */
+    public String getAuthor()
+    {
+<span class="fc" id="L112">        return info.getString( COSName.AUTHOR );</span>
+    }
+
+    /**
+     * This will set the author of the document.
+     *
+     * @param author The new author for the document.
+     */
+    public void setAuthor( String author )
+    {
+<span class="nc" id="L122">        info.setString( COSName.AUTHOR, author );</span>
+<span class="nc" id="L123">    }</span>
+
+    /**
+     * This will get the subject of the document.  This will return null if no subject exists.
+     *
+     * @return The subject of the document.
+     */
+    public String getSubject()
+    {
+<span class="fc" id="L132">        return info.getString( COSName.SUBJECT );</span>
+    }
+
+    /**
+     * This will set the subject of the document.
+     *
+     * @param subject The new subject for the document.
+     */
+    public void setSubject( String subject )
+    {
+<span class="nc" id="L142">        info.setString( COSName.SUBJECT, subject );</span>
+<span class="nc" id="L143">    }</span>
+
+    /**
+     * This will get the keywords of the document.  This will return null if no keywords exists.
+     *
+     * @return The keywords of the document.
+     */
+    public String getKeywords()
+    {
+<span class="fc" id="L152">        return info.getString( COSName.KEYWORDS );</span>
+    }
+
+    /**
+     * This will set the keywords of the document.
+     *
+     * @param keywords The new keywords for the document.
+     */
+    public void setKeywords( String keywords )
+    {
+<span class="nc" id="L162">        info.setString( COSName.KEYWORDS, keywords );</span>
+<span class="nc" id="L163">    }</span>
+
+    /**
+     * This will get the creator of the document.  This will return null if no creator exists.
+     *
+     * @return The creator of the document.
+     */
+    public String getCreator()
+    {
+<span class="fc" id="L172">        return info.getString( COSName.CREATOR );</span>
+    }
+
+    /**
+     * This will set the creator of the document.
+     *
+     * @param creator The new creator for the document.
+     */
+    public void setCreator( String creator )
+    {
+<span class="nc" id="L182">        info.setString( COSName.CREATOR, creator );</span>
+<span class="nc" id="L183">    }</span>
+
+    /**
+     * This will get the producer of the document.  This will return null if no producer exists.
+     *
+     * @return The producer of the document.
+     */
+    public String getProducer()
+    {
+<span class="fc" id="L192">        return info.getString( COSName.PRODUCER );</span>
+    }
+
+    /**
+     * This will set the producer of the document.
+     *
+     * @param producer The new producer for the document.
+     */
+    public void setProducer( String producer )
+    {
+<span class="nc" id="L202">        info.setString( COSName.PRODUCER, producer );</span>
+<span class="nc" id="L203">    }</span>
+
+    /**
+     * This will get the creation date of the document.  This will return null if no creation date exists.
+     *
+     * @return The creation date of the document.
+     */
+    public Calendar getCreationDate()
+    {
+<span class="fc" id="L212">        return info.getDate( COSName.CREATION_DATE );</span>
+    }
+
+    /**
+     * This will set the creation date of the document.
+     *
+     * @param date The new creation date for the document.
+     */
+    public void setCreationDate( Calendar date )
+    {
+<span class="nc" id="L222">        info.setDate( COSName.CREATION_DATE, date );</span>
+<span class="nc" id="L223">    }</span>
+
+    /**
+     * This will get the modification date of the document.  This will return null if no modification date exists.
+     *
+     * @return The modification date of the document.
+     */
+    public Calendar getModificationDate()
+    {
+<span class="fc" id="L232">        return info.getDate( COSName.MOD_DATE );</span>
+    }
+
+    /**
+     * This will set the modification date of the document.
+     *
+     * @param date The new modification date for the document.
+     */
+    public void setModificationDate( Calendar date )
+    {
+<span class="nc" id="L242">        info.setDate( COSName.MOD_DATE, date );</span>
+<span class="nc" id="L243">    }</span>
+
+    /**
+     * This will get the trapped value for the document.
+     * This will return null if one is not found.
+     *
+     * @return The trapped value for the document.
+     */
+    public String getTrapped()
+    {
+<span class="fc" id="L253">        return info.getNameAsString( COSName.TRAPPED );</span>
+    }
+
+    /**
+     * This will get the keys of all metadata information fields for the document.
+     *
+     * @return all metadata key strings.
+     * @since Apache PDFBox 1.3.0
+     */
+    public Set&lt;String&gt; getMetadataKeys()
+    {
+<span class="fc" id="L264">        Set&lt;String&gt; keys = new TreeSet&lt;&gt;();</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">        for (COSName key : info.keySet())</span>
+        {
+<span class="fc" id="L267">            keys.add(key.getName());</span>
+<span class="fc" id="L268">        }</span>
+<span class="fc" id="L269">        return keys;</span>
+    }
+
+    /**
+     *  This will get the value of a custom metadata information field for the document.
+     *  This will return null if one is not found.
+     *
+     * @param fieldName Name of custom metadata field from pdf document.
+     *
+     * @return String Value of metadata field
+     */
+    public String getCustomMetadataValue(String fieldName)
+    {
+<span class="fc" id="L282">        return info.getString( fieldName );</span>
+    }
+
+    /**
+     * Set the custom metadata value.
+     *
+     * @param fieldName The name of the custom metadata field.
+     * @param fieldValue The value to the custom metadata field.
+     */
+    public void setCustomMetadataValue( String fieldName, String fieldValue )
+    {
+<span class="nc" id="L293">        info.setString( fieldName, fieldValue );</span>
+<span class="nc" id="L294">    }</span>
+
+    /**
+     * This will set the trapped of the document.  This will be
+     * 'True', 'False', or 'Unknown'.
+     *
+     * @param value The new trapped value for the document.
+     * 
+     * @throws IllegalArgumentException if the parameter is invalid.
+     */
+    public void setTrapped( String value )
+    {
+<span class="nc bnc" id="L306" title="All 2 branches missed.">        if( value != null &amp;&amp;</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">            !value.equals( &quot;True&quot; ) &amp;&amp;</span>
+<span class="nc bnc" id="L308" title="All 2 branches missed.">            !value.equals( &quot;False&quot; ) &amp;&amp;</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">            !value.equals( &quot;Unknown&quot; ) )</span>
+        {
+<span class="nc" id="L311">            throw new IllegalArgumentException( &quot;Valid values for trapped are &quot; +</span>
+                                        &quot;'True', 'False', or 'Unknown'&quot; );
+        }
+
+<span class="nc" id="L315">        info.setName( COSName.TRAPPED, value );</span>
+<span class="nc" id="L316">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

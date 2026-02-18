@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.common.function</a> &gt; <span class="el_source">PDFunction.java</span></div><h1>PDFunction.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.common.function;
+
+import java.io.IOException;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.common.PDRange;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+
+/**
+ * This class represents a function in a PDF document.
+ *
+ * @author Ben Litchfield
+ * 
+ */
+public abstract class PDFunction implements COSObjectable
+{
+
+<span class="fc" id="L40">    private PDStream functionStream = null;</span>
+<span class="fc" id="L41">    private COSDictionary functionDictionary = null;</span>
+<span class="fc" id="L42">    private COSArray domain = null;</span>
+<span class="fc" id="L43">    private COSArray range = null;</span>
+<span class="fc" id="L44">    private int numberOfInputValues = -1;</span>
+<span class="fc" id="L45">    private int numberOfOutputValues = -1;</span>
+
+    /**
+     * Constructor.
+     *
+     * @param function The function stream.
+     * 
+     */
+    protected PDFunction( COSBase function )
+<span class="fc" id="L54">    {</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (function instanceof COSStream)</span>
+        {
+<span class="fc" id="L57">            functionStream = new PDStream( (COSStream)function );</span>
+<span class="fc" id="L58">            functionStream.getCOSObject().setItem( COSName.TYPE, COSName.FUNCTION );</span>
+        }
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">        else if (function instanceof COSDictionary)</span>
+        {
+<span class="fc" id="L62">            functionDictionary = (COSDictionary)function;</span>
+        }
+<span class="fc" id="L64">    }</span>
+
+    /**
+     * Returns the function type.
+     * 
+     * Possible values are:
+     * 
+     * 0 - Sampled function
+     * 2 - Exponential interpolation function
+     * 3 - Stitching function
+     * 4 - PostScript calculator function
+     * 
+     * @return the function type.
+     */
+    public abstract int getFunctionType();
+    
+    /**
+     * Returns the stream.
+     * @return The stream for this object.
+     */
+    @Override
+    public final COSDictionary getCOSObject()
+    {
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (functionStream != null)</span>
+        {
+<span class="fc" id="L89">            return functionStream.getCOSObject();</span>
+        }
+        else 
+        {
+<span class="fc" id="L93">            return functionDictionary;</span>
+        }
+    }
+
+    /**
+     * Returns the underlying PDStream.
+     * @return The stream.
+     */
+    protected PDStream getPDStream()
+    {
+<span class="fc" id="L103">        return functionStream;</span>
+    }
+
+    /**
+     * Create the correct PD Model function based on the COS base function.
+     *
+     * @param function The COS function dictionary.
+     *
+     * @return The PDModel Function object, never null.
+     *
+     * @throws IOException If we are unable to create the PDFunction object.
+     */
+    public static PDFunction create( COSBase function ) throws IOException
+    {
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if (function == COSName.IDENTITY)</span>
+        {
+<span class="nc" id="L119">            return new PDFunctionTypeIdentity(null);</span>
+        }
+        
+<span class="fc" id="L122">        COSBase base = function;</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (function instanceof COSObject)</span>
+        {
+<span class="nc" id="L125">            base = ((COSObject) function).getObject();</span>
+        }
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        if (!(base instanceof COSDictionary))</span>
+        {
+<span class="nc" id="L129">            throw new IOException(&quot;Error: Function must be a Dictionary, but is &quot; +</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">                    (base == null ? &quot;(null)&quot; : base.getClass().getSimpleName()));</span>
+        }
+<span class="fc" id="L132">        COSDictionary functionDictionary = (COSDictionary) base;</span>
+<span class="fc" id="L133">        int functionType = functionDictionary.getInt(COSName.FUNCTION_TYPE);</span>
+<span class="pc bpc" id="L134" title="4 of 5 branches missed.">        switch (functionType)</span>
+        {
+            case 0:
+<span class="nc" id="L137">                return new PDFunctionType0(functionDictionary);</span>
+            case 2:
+<span class="fc" id="L139">                return new PDFunctionType2(functionDictionary);</span>
+            case 3:
+<span class="nc" id="L141">                return new PDFunctionType3(functionDictionary);</span>
+            case 4:
+<span class="nc" id="L143">                return new PDFunctionType4(functionDictionary);</span>
+            default:
+<span class="nc" id="L145">                throw new IOException(&quot;Error: Unknown function type &quot; + functionType);</span>
+        }
+    }
+
+    /**
+     * This will get the number of output parameters that
+     * have a range specified.  A range for output parameters
+     * is optional so this may return zero for a function
+     * that does have output parameters, this will simply return the
+     * number that have the range specified.
+     *
+     * @return The number of output parameters that have a range
+     * specified.
+     */
+    public int getNumberOfOutputParameters()
+    {
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        if (numberOfOutputValues == -1)</span>
+        {
+<span class="fc" id="L163">            COSArray rangeValues = getRangeValues();</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">            if (rangeValues == null)</span>
+            {
+<span class="nc" id="L166">                numberOfOutputValues = 0;</span>
+            }
+            else
+            {
+<span class="fc" id="L170">                numberOfOutputValues = rangeValues.size() / 2;</span>
+            }
+        }
+<span class="fc" id="L173">        return numberOfOutputValues;</span>
+    }
+
+    /**
+     * This will get the range for a certain output parameters.  This is will never
+     * return null.  If it is not present then the range 0 to 0 will
+     * be returned.
+     *
+     * @param n The output parameter number to get the range for.
+     *
+     * @return The range for this component.
+     */
+    public PDRange getRangeForOutput(int n)
+    {
+<span class="fc" id="L187">        COSArray rangeValues = getRangeValues();</span>
+<span class="fc" id="L188">        return new PDRange( rangeValues, n );</span>
+    }
+
+    /**
+     * This will set the range values.
+     *
+     * @param rangeValues The new range values.
+     */
+    public void setRangeValues(COSArray rangeValues)
+    {
+<span class="nc" id="L198">        range = rangeValues;</span>
+<span class="nc" id="L199">        getCOSObject().setItem(COSName.RANGE, rangeValues);</span>
+<span class="nc" id="L200">    }</span>
+
+    /**
+     * This will get the number of input parameters that
+     * have a domain specified.
+     *
+     * @return The number of input parameters that have a domain
+     * specified.
+     */
+    public int getNumberOfInputParameters()
+    {
+<span class="nc bnc" id="L211" title="All 2 branches missed.">        if (numberOfInputValues == -1)</span>
+        {
+<span class="nc" id="L213">            COSArray array = getDomainValues();</span>
+<span class="nc" id="L214">            numberOfInputValues = array.size() / 2;</span>
+        }
+<span class="nc" id="L216">        return numberOfInputValues;</span>
+    }
+
+    /**
+     * This will get the range for a certain input parameter.  This is will never
+     * return null.  If it is not present then the range 0 to 0 will
+     * be returned.
+     *
+     * @param n The parameter number to get the domain for.
+     *
+     * @return The domain range for this component.
+     */
+    public PDRange getDomainForInput(int n) 
+    {
+<span class="fc" id="L230">        COSArray domainValues = getDomainValues();</span>
+<span class="fc" id="L231">        return new PDRange( domainValues, n );</span>
+    }
+
+    /**
+     * This will set the domain values.
+     *
+     * @param domainValues The new domain values.
+     */
+    public void setDomainValues(COSArray domainValues)
+    {
+<span class="nc" id="L241">        domain = domainValues;</span>
+<span class="nc" id="L242">        getCOSObject().setItem(COSName.DOMAIN, domainValues);</span>
+<span class="nc" id="L243">    }</span>
+
+    /**
+     * Evaluates the function at the given input.
+     * ReturnValue = f(input)
+     *
+     * @param input The array of input values for the function. 
+     * In many cases will be an array of a single value, but not always.
+     * 
+     * @return The of outputs the function returns based on those inputs. 
+     * In many cases will be an array of a single value, but not always.
+     * 
+     * @throws IOException if something went wrong processing the function.  
+     */
+    public abstract float[] eval(float[] input) throws IOException;
+    
+    /**
+     * Returns all ranges for the output values as COSArray .
+     * Required for type 0 and type 4 functions
+     * @return the ranges array. 
+     */
+    protected COSArray getRangeValues() 
+    {
+<span class="fc bfc" id="L266" title="All 2 branches covered.">        if (range == null) </span>
+        {
+<span class="fc" id="L268">            range = getCOSObject().getCOSArray(COSName.RANGE);</span>
+        }
+<span class="fc" id="L270">        return range;</span>
+    }
+
+    /**
+     * Returns all domains for the input values as COSArray.
+     * Required for all function types.
+     * @return the domains array. 
+     */
+    private COSArray getDomainValues()
+    {
+<span class="fc bfc" id="L280" title="All 2 branches covered.">        if (domain == null)</span>
+        {
+<span class="fc" id="L282">            domain = getCOSObject().getCOSArray(COSName.DOMAIN);</span>
+        }
+<span class="fc" id="L284">        return domain;</span>
+    }
+
+    /**
+     * Clip the given input values to the ranges.
+     * 
+     * @param inputValues the input values
+     * @return the clipped values
+     */
+    protected float[] clipToRange(float[] inputValues) 
+    {
+<span class="fc" id="L295">        COSArray rangesArray = getRangeValues();</span>
+        float[] result;
+<span class="pc bpc" id="L297" title="2 of 4 branches missed.">        if (rangesArray != null &amp;&amp; !rangesArray.isEmpty())</span>
+        {
+<span class="fc" id="L299">            float[] rangeValues = rangesArray.toFloatArray();</span>
+<span class="fc" id="L300">            int numberOfRanges = rangeValues.length/2;</span>
+<span class="fc" id="L301">            result = new float[numberOfRanges];</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">            for (int i=0; i&lt;numberOfRanges; i++)</span>
+            {
+<span class="fc" id="L304">                int index = i &lt;&lt; 1;</span>
+<span class="fc" id="L305">                result[i] = clipToRange(inputValues[i], rangeValues[index], rangeValues[index + 1]);</span>
+            }
+<span class="fc" id="L307">        }</span>
+        else
+        {
+<span class="nc" id="L310">            result = inputValues;</span>
+        }
+<span class="fc" id="L312">        return result;</span>
+    }
+
+    /**
+     * Clip the given input value to the given range.
+     * 
+     * @param x the input value
+     * @param rangeMin the min value of the range
+     * @param rangeMax the max value of the range
+
+     * @return the clipped value
+     */
+    protected float clipToRange(float x, float rangeMin, float rangeMax) 
+    {
+<span class="pc bpc" id="L326" title="1 of 2 branches missed.">        if (x &lt; rangeMin)</span>
+        {
+<span class="nc" id="L328">            return rangeMin;</span>
+        }
+<span class="fc bfc" id="L330" title="All 2 branches covered.">        else if (x &gt; rangeMax)</span>
+        {
+<span class="fc" id="L332">            return rangeMax;</span>
+        }
+<span class="fc" id="L334">        return x;</span>
+    }
+
+    /**
+     * For a given value of x, interpolate calculates the y value 
+     * on the line defined by the two points (xRangeMin , xRangeMax ) 
+     * and (yRangeMin , yRangeMax ).
+     * 
+     * @param x the to be interpolated value.
+     * @param xRangeMin the min value of the x range
+     * @param xRangeMax the max value of the x range
+     * @param yRangeMin the min value of the y range
+     * @param yRangeMax the max value of the y range
+     * @return the interpolated y value
+     */
+    protected float interpolate(float x, float xRangeMin, float xRangeMax, float yRangeMin, float yRangeMax) 
+    {
+<span class="nc bnc" id="L351" title="All 2 branches missed.">        if (xRangeMax == xRangeMin)</span>
+        {
+            // PDFBOX-5593 / PR #162
+<span class="nc" id="L354">            return yRangeMin;</span>
+        }
+<span class="nc" id="L356">        return yRangeMin + ((x - xRangeMin) * (yRangeMax - yRangeMin)/(xRangeMax - xRangeMin));</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L365">        return &quot;FunctionType&quot; + getFunctionType();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

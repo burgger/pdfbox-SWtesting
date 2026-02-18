@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FDFAnnotationLine.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.fdf</a> &gt; <span class="el_source">FDFAnnotationLine.java</span></div><h1>FDFAnnotationLine.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.fdf;
+
+import java.awt.Color;
+import java.io.IOException;
+import java.util.Arrays;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationLine;
+import org.w3c.dom.Element;
+
+/**
+ * This represents a Line FDF annotation.
+ *
+ * @author Ben Litchfield
+ * @author Johanneke Lamberink
+ */
+public class FDFAnnotationLine extends FDFAnnotation
+{
+    /**
+     * COS Model value for SubType entry.
+     */
+    public static final String SUBTYPE = &quot;Line&quot;;
+
+    /**
+     * Default constructor.
+     */
+    public FDFAnnotationLine()
+<span class="nc" id="L47">    {</span>
+<span class="nc" id="L48">        annot.setName(COSName.SUBTYPE, SUBTYPE);</span>
+<span class="nc" id="L49">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param a An existing FDF Annotation.
+     */
+    public FDFAnnotationLine(COSDictionary a)
+    {
+<span class="fc" id="L58">        super(a);</span>
+<span class="fc" id="L59">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param element An XFDF element.
+     *
+     * @throws IOException If there is an error extracting information from the element.
+     */
+    public FDFAnnotationLine(Element element) throws IOException
+    {
+<span class="fc" id="L70">        super(element);</span>
+<span class="fc" id="L71">        annot.setName(COSName.SUBTYPE, SUBTYPE);</span>
+
+<span class="fc" id="L73">        String startCoords = element.getAttribute(&quot;start&quot;);</span>
+<span class="pc bpc" id="L74" title="2 of 4 branches missed.">        if (startCoords == null || startCoords.isEmpty())</span>
+        {
+<span class="nc" id="L76">            throw new IOException(&quot;Error: missing attribute 'start'&quot;);</span>
+        }
+<span class="fc" id="L78">        String endCoords = element.getAttribute(&quot;end&quot;);</span>
+<span class="pc bpc" id="L79" title="2 of 4 branches missed.">        if (endCoords == null || endCoords.isEmpty())</span>
+        {
+<span class="nc" id="L81">            throw new IOException(&quot;Error: missing attribute 'end'&quot;);</span>
+        }
+<span class="fc" id="L83">        String line = startCoords + &quot;,&quot; + endCoords;</span>
+<span class="fc" id="L84">        float[] values = parseRectangleAttributes(</span>
+                line, &quot;Error: wrong amount of line coordinates&quot;);
+<span class="fc" id="L86">        setLine(values);</span>
+
+<span class="fc" id="L88">        String leaderLine = element.getAttribute(&quot;leaderLength&quot;);</span>
+<span class="pc bpc" id="L89" title="2 of 4 branches missed.">        if (leaderLine != null &amp;&amp; !leaderLine.isEmpty())</span>
+        {
+<span class="nc" id="L91">            setLeaderLength(Float.parseFloat(leaderLine));</span>
+        }
+
+<span class="fc" id="L94">        String leaderLineExtension = element.getAttribute(&quot;leaderExtend&quot;);</span>
+<span class="pc bpc" id="L95" title="2 of 4 branches missed.">        if (leaderLineExtension != null &amp;&amp; !leaderLineExtension.isEmpty())</span>
+        {
+<span class="nc" id="L97">            setLeaderExtend(Float.parseFloat(leaderLineExtension));</span>
+        }
+
+<span class="fc" id="L100">        String leaderLineOffset = element.getAttribute(&quot;leaderOffset&quot;);</span>
+<span class="pc bpc" id="L101" title="2 of 4 branches missed.">        if (leaderLineOffset != null &amp;&amp; !leaderLineOffset.isEmpty())</span>
+        {
+<span class="nc" id="L103">            setLeaderOffset(Float.parseFloat(leaderLineOffset));</span>
+        }
+
+<span class="fc" id="L106">        String startStyle = element.getAttribute(&quot;head&quot;);</span>
+<span class="pc bpc" id="L107" title="2 of 4 branches missed.">        if (startStyle != null &amp;&amp; !startStyle.isEmpty())</span>
+        {
+<span class="fc" id="L109">            setStartPointEndingStyle(startStyle);</span>
+        }
+<span class="fc" id="L111">        String endStyle = element.getAttribute(&quot;tail&quot;);</span>
+<span class="pc bpc" id="L112" title="2 of 4 branches missed.">        if (endStyle != null &amp;&amp; !endStyle.isEmpty())</span>
+        {
+<span class="fc" id="L114">            setEndPointEndingStyle(endStyle);</span>
+        }
+
+<span class="fc" id="L117">        String color = element.getAttribute(&quot;interior-color&quot;);</span>
+<span class="pc bpc" id="L118" title="3 of 6 branches missed.">        if (color != null &amp;&amp; color.length() == 7 &amp;&amp; color.charAt(0) == '#')</span>
+        {
+<span class="fc" id="L120">            int colorValue = Integer.parseInt(color.substring(1, 7), 16);</span>
+<span class="fc" id="L121">            setInteriorColor(new Color(colorValue));</span>
+        }
+
+<span class="fc" id="L124">        String caption = element.getAttribute(&quot;caption&quot;);</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (&quot;yes&quot;.equals(caption))</span>
+        {
+<span class="nc" id="L127">            setCaption(true);</span>
+
+<span class="nc" id="L129">            String captionH = element.getAttribute(&quot;caption-offset-h&quot;);</span>
+<span class="nc bnc" id="L130" title="All 4 branches missed.">            if (captionH != null &amp;&amp; !captionH.isEmpty())</span>
+            {
+<span class="nc" id="L132">                setCaptionHorizontalOffset(Float.parseFloat(captionH));</span>
+            }
+
+<span class="nc" id="L135">            String captionV = element.getAttribute(&quot;caption-offset-v&quot;);</span>
+<span class="nc bnc" id="L136" title="All 4 branches missed.">            if (captionV != null &amp;&amp; !captionV.isEmpty())</span>
+            {
+<span class="nc" id="L138">                setCaptionVerticalOffset(Float.parseFloat(captionV));</span>
+            }
+
+<span class="nc" id="L141">            String captionStyle = element.getAttribute(&quot;caption-style&quot;);</span>
+<span class="nc bnc" id="L142" title="All 4 branches missed.">            if (captionStyle != null &amp;&amp; !captionStyle.isEmpty())</span>
+            {
+<span class="nc" id="L144">                setCaptionStyle(captionStyle);</span>
+            }
+        }
+<span class="fc" id="L147">    }</span>
+
+    /**
+     * This will set start and end coordinates of the line (or leader line if LL entry is set).
+     *
+     * @param line array of 4 floats [x1, y1, x2, y2] line start and end points in default user space.
+     */
+    public final void setLine(float[] line)
+    {
+<span class="fc" id="L156">        annot.setItem(COSName.L, COSArray.of(line));</span>
+<span class="fc" id="L157">    }</span>
+
+    /**
+     * This will retrieve the start and end coordinates of the line (or leader line if LL entry is set).
+     *
+     * @return array of floats [x1, y1, x2, y2] line start and end points in default user space.
+     */
+    public float[] getLine()
+    {
+<span class="nc" id="L166">        COSArray array = annot.getCOSArray(COSName.L);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">        return array != null ? array.toFloatArray() : null;</span>
+    }
+
+    /**
+     * This will set the line ending style for the start point, see the LE_ constants for the possible values.
+     *
+     * @param style The new style.
+     */
+    public final void setStartPointEndingStyle(String style)
+    {
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">        String actualStyle = style == null ? PDAnnotationLine.LE_NONE : style;</span>
+<span class="fc" id="L178">        COSArray array = annot.getCOSArray(COSName.LE);</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">        if (array == null)</span>
+        {
+<span class="fc" id="L181">            array = new COSArray(Arrays.asList(</span>
+<span class="fc" id="L182">                COSName.getPDFName(actualStyle),</span>
+<span class="fc" id="L183">                COSName.getPDFName(PDAnnotationLine.LE_NONE)</span>
+            ));
+<span class="fc" id="L185">            annot.setItem(COSName.LE, array);</span>
+        }
+        else
+        {
+<span class="nc" id="L189">            array.setName(0, actualStyle);</span>
+        }
+<span class="fc" id="L191">    }</span>
+
+    /**
+     * This will retrieve the line ending style for the start point, possible values shown in the LE_ constants section.
+     *
+     * @return The ending style for the start point.
+     */
+    public String getStartPointEndingStyle()
+    {
+<span class="nc" id="L200">        COSArray array = annot.getCOSArray(COSName.LE);</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        return array != null ? array.getName(0) : PDAnnotationLine.LE_NONE;</span>
+    }
+
+    /**
+     * This will set the line ending style for the end point, see the LE_ constants for the possible values.
+     *
+     * @param style The new style.
+     */
+    public final void setEndPointEndingStyle(String style)
+    {
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">        String actualStyle = style == null ? PDAnnotationLine.LE_NONE : style;</span>
+<span class="fc" id="L212">        COSArray array = annot.getCOSArray(COSName.LE);</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">        if (array == null)</span>
+        {
+<span class="nc" id="L215">            array = new COSArray(Arrays.asList(</span>
+<span class="nc" id="L216">                COSName.getPDFName(PDAnnotationLine.LE_NONE),</span>
+<span class="nc" id="L217">                COSName.getPDFName(actualStyle)</span>
+            ));
+<span class="nc" id="L219">            annot.setItem(COSName.LE, array);</span>
+        }
+        else
+        {
+<span class="fc" id="L223">            array.setName(1, actualStyle);</span>
+        }
+<span class="fc" id="L225">    }</span>
+
+    /**
+     * This will retrieve the line ending style for the end point, possible values shown in the LE_ constants section.
+     *
+     * @return The ending style for the end point.
+     */
+    public String getEndPointEndingStyle()
+    {
+<span class="nc" id="L234">        COSArray array = annot.getCOSArray(COSName.LE);</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">        return array != null ? array.getName(1) : PDAnnotationLine.LE_NONE;</span>
+    }
+
+    /**
+     * This will set interior color of the line endings defined in the LE entry.
+     *
+     * @param color The interior color of the line endings.
+     */
+    public final void setInteriorColor(Color color)
+    {
+<span class="fc" id="L245">        COSArray array = null;</span>
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">        if (color != null)</span>
+        {
+<span class="fc" id="L248">            array = COSArray.of(color.getRGBColorComponents(null));</span>
+        }
+<span class="fc" id="L250">        annot.setItem(COSName.IC, array);</span>
+<span class="fc" id="L251">    }</span>
+
+    /**
+     * This will retrieve the interior color of the line endings defined in the LE entry.
+     *
+     * @return object representing the color.
+     */
+    public Color getInteriorColor()
+    {
+<span class="nc" id="L260">        return getColor(COSName.IC);</span>
+    }
+
+    /**
+     * This will set if the contents are shown as a caption to the line.
+     *
+     * @param cap Boolean value.
+     */
+    public final void setCaption(boolean cap)
+    {
+<span class="nc" id="L270">        annot.setBoolean(COSName.CAP, cap);</span>
+<span class="nc" id="L271">    }</span>
+
+    /**
+     * This will retrieve if the contents are shown as a caption or not.
+     *
+     * @return boolean if the content is shown as a caption.
+     */
+    public boolean getCaption()
+    {
+<span class="nc" id="L280">        return annot.getBoolean(COSName.CAP, false);</span>
+    }
+
+    /**
+     * This will retrieve the length of the leader line.
+     * 
+     * @return the length of the leader line
+     */
+    public float getLeaderLength()
+    {
+<span class="nc" id="L290">        return annot.getFloat(COSName.LL);</span>
+    }
+
+    /**
+     * This will set the length of the leader line.
+     * 
+     * @param leaderLength length of the leader line
+     */
+    public final void setLeaderLength(float leaderLength)
+    {
+<span class="nc" id="L300">        annot.setFloat(COSName.LL, leaderLength);</span>
+<span class="nc" id="L301">    }</span>
+
+    /**
+     * This will retrieve the length of the leader line extensions.
+     * 
+     * @return the length of the leader line extensions
+     */
+    public float getLeaderExtend()
+    {
+<span class="nc" id="L310">        return annot.getFloat(COSName.LLE);</span>
+    }
+
+    /**
+     * This will set the length of the leader line extensions.
+     * 
+     * @param leaderExtend length of the leader line extensions
+     */
+    public final void setLeaderExtend(float leaderExtend)
+    {
+<span class="nc" id="L320">        annot.setFloat(COSName.LLE, leaderExtend);</span>
+<span class="nc" id="L321">    }</span>
+
+    /**
+     * This will retrieve the length of the leader line offset.
+     * 
+     * @return the length of the leader line offset
+     */
+    public float getLeaderOffset()
+    {
+<span class="nc" id="L330">        return annot.getFloat(COSName.LLO);</span>
+    }
+
+    /**
+     * This will set the length of the leader line offset.
+     * 
+     * @param leaderOffset length of the leader line offset
+     */
+    public final void setLeaderOffset(float leaderOffset)
+    {
+<span class="nc" id="L340">        annot.setFloat(COSName.LLO, leaderOffset);</span>
+<span class="nc" id="L341">    }</span>
+
+    /**
+     * This will retrieve the caption positioning.
+     * 
+     * @return the caption positioning
+     */
+    public String getCaptionStyle()
+    {
+<span class="nc" id="L350">        return annot.getString(COSName.CP);</span>
+    }
+
+    /**
+     * This will set the caption positioning. Allowed values are: &quot;Inline&quot; and &quot;Top&quot;
+     * 
+     * @param captionStyle caption positioning
+     */
+    public final void setCaptionStyle(String captionStyle)
+    {
+<span class="nc" id="L360">        annot.setString(COSName.CP, captionStyle);</span>
+<span class="nc" id="L361">    }</span>
+
+    /**
+     * This will set the horizontal offset of the caption.
+     * 
+     * @param offset the horizontal offset of the caption
+     */
+    public final void setCaptionHorizontalOffset(float offset)
+    {
+<span class="nc" id="L370">        COSArray array = annot.getCOSArray(COSName.CO);</span>
+<span class="nc bnc" id="L371" title="All 2 branches missed.">        if (array == null)</span>
+        {
+<span class="nc" id="L373">            array = COSArray.of(offset, 0.f);</span>
+<span class="nc" id="L374">            annot.setItem(COSName.CO, array);</span>
+        }
+        else
+        {
+<span class="nc" id="L378">            array.set(0, new COSFloat(offset));</span>
+        }
+<span class="nc" id="L380">    }</span>
+
+    /**
+     * This will retrieve the horizontal offset of the caption.
+     * 
+     * @return the horizontal offset of the caption
+     */
+    public float getCaptionHorizontalOffset()
+    {
+<span class="nc" id="L389">        COSArray array = annot.getCOSArray(COSName.CO);</span>
+<span class="nc bnc" id="L390" title="All 2 branches missed.">        return array != null ? array.toFloatArray()[0] : 0.f;</span>
+    }
+
+    /**
+     * This will set the vertical offset of the caption.
+     * 
+     * @param offset vertical offset of the caption
+     */
+    public final void setCaptionVerticalOffset(float offset)
+    {
+<span class="nc" id="L400">        COSArray array = annot.getCOSArray(COSName.CO);</span>
+<span class="nc bnc" id="L401" title="All 2 branches missed.">        if (array == null)</span>
+        {
+<span class="nc" id="L403">            annot.setItem(COSName.CO, COSArray.of(0.f, offset));</span>
+        }
+        else
+        {
+<span class="nc" id="L407">            array.set(1, new COSFloat(offset));</span>
+        }
+<span class="nc" id="L409">    }</span>
+
+    /**
+     * This will retrieve the vertical offset of the caption.
+     * 
+     * @return the vertical offset of the caption
+     */
+    public float getCaptionVerticalOffset()
+    {
+<span class="nc" id="L418">        COSArray array = annot.getCOSArray(COSName.CO);</span>
+<span class="nc bnc" id="L419" title="All 2 branches missed.">        return array != null ? array.toFloatArray()[1] : 0.f;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

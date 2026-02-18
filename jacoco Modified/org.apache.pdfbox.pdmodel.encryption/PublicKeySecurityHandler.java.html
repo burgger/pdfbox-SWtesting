@@ -1,0 +1,558 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PublicKeySecurityHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.encryption</a> &gt; <span class="el_source">PublicKeySecurityHandler.java</span></div><h1>PublicKeySecurityHandler.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.encryption;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.security.AlgorithmParameterGenerator;
+import java.security.AlgorithmParameters;
+import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.Provider;
+import java.security.SecureRandom;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
+import java.util.Collection;
+import java.util.Iterator;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.KeyGenerator;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.bouncycastle.asn1.ASN1Encoding;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.ASN1Set;
+import org.bouncycastle.asn1.DEROctetString;
+import org.bouncycastle.asn1.DERSet;
+import org.bouncycastle.asn1.cms.ContentInfo;
+import org.bouncycastle.asn1.cms.EncryptedContentInfo;
+import org.bouncycastle.asn1.cms.EnvelopedData;
+import org.bouncycastle.asn1.cms.IssuerAndSerialNumber;
+import org.bouncycastle.asn1.cms.KeyTransRecipientInfo;
+import org.bouncycastle.asn1.cms.RecipientIdentifier;
+import org.bouncycastle.asn1.cms.RecipientInfo;
+import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.TBSCertificate;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cms.CMSEnvelopedData;
+import org.bouncycastle.cms.CMSException;
+import org.bouncycastle.cms.KeyTransRecipientId;
+import org.bouncycastle.cms.RecipientId;
+import org.bouncycastle.cms.RecipientInformation;
+import org.bouncycastle.cms.jcajce.JceKeyTransEnvelopedRecipient;
+import org.bouncycastle.util.Arrays;
+
+/**
+ * This class implements the public key security handler described in the PDF specification.
+ *
+ * @see PublicKeyProtectionPolicy to see how to protect document with this security handler.
+ * @author Benoit Guillon
+ */
+public final class PublicKeySecurityHandler extends SecurityHandler&lt;PublicKeyProtectionPolicy&gt;
+{
+    /** The filter name. */
+    public static final String FILTER = &quot;Adobe.PubSec&quot;;
+
+    private static final String SUBFILTER4 = &quot;adbe.pkcs7.s4&quot;;
+    private static final String SUBFILTER5 = &quot;adbe.pkcs7.s5&quot;;
+
+    /**
+     * Constructor.
+     */
+    public PublicKeySecurityHandler()
+<span class="fc" id="L92">    {</span>
+<span class="fc" id="L93">    }</span>
+
+    /**
+     * Constructor used for encryption.
+     *
+     * @param publicKeyProtectionPolicy The protection policy.
+     */
+    public PublicKeySecurityHandler(PublicKeyProtectionPolicy publicKeyProtectionPolicy)
+    {
+<span class="fc" id="L102">        super(publicKeyProtectionPolicy);</span>
+<span class="fc" id="L103">    }</span>
+
+    /**
+     * Prepares everything to decrypt the document.
+     *
+     * @param encryption encryption dictionary, can be retrieved via
+     * {@link PDDocument#getEncryption()}
+     * @param documentIDArray document id which is returned via
+     * {@link org.apache.pdfbox.cos.COSDocument#getDocumentID()} (not used by
+     * this handler)
+     * @param decryptionMaterial Information used to decrypt the document.
+     *
+     * @throws IOException If there is an error accessing data. If verbose mode
+     * is enabled, the exception message will provide more details why the
+     * match wasn't successful.
+     */
+    @Override
+    public void prepareForDecryption(PDEncryption encryption, COSArray documentIDArray,
+            DecryptionMaterial decryptionMaterial)
+            throws IOException
+    {
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">        if (!(decryptionMaterial instanceof PublicKeyDecryptionMaterial))</span>
+        {
+<span class="nc" id="L126">            throw new IOException(</span>
+                    &quot;Provided decryption material is not compatible with the document - &quot;
+                            + &quot;did you pass a null keyStore?&quot;);
+        }
+
+<span class="fc" id="L131">        PDCryptFilterDictionary defaultCryptFilterDictionary = encryption.getDefaultCryptFilterDictionary();</span>
+<span class="pc bpc" id="L132" title="1 of 4 branches missed.">        if (defaultCryptFilterDictionary != null &amp;&amp; defaultCryptFilterDictionary.getLength() != 0)</span>
+        {
+<span class="fc" id="L134">            setKeyLength(defaultCryptFilterDictionary.getLength());</span>
+<span class="fc" id="L135">            setDecryptMetadata(defaultCryptFilterDictionary.isEncryptMetaData());</span>
+        }
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        else if (encryption.getLength() != 0)</span>
+        {
+<span class="fc" id="L139">            setKeyLength(encryption.getLength());</span>
+<span class="fc" id="L140">            setDecryptMetadata(encryption.isEncryptMetaData());</span>
+        }
+
+<span class="fc" id="L143">        PublicKeyDecryptionMaterial material = (PublicKeyDecryptionMaterial) decryptionMaterial;</span>
+
+        try
+        {
+<span class="fc" id="L147">            boolean foundRecipient = false;</span>
+
+<span class="fc" id="L149">            X509Certificate certificate = material.getCertificate();</span>
+<span class="fc" id="L150">            X509CertificateHolder materialCert = null;</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">            if (certificate != null)</span>
+            {
+<span class="fc" id="L153">                materialCert = new X509CertificateHolder(certificate.getEncoded());</span>
+            }
+
+            // the decrypted content of the enveloped data that match
+            // the certificate in the decryption material provided
+<span class="fc" id="L158">            byte[] envelopedData = null;</span>
+
+            // the bytes of each recipient in the recipients array
+<span class="fc" id="L161">            COSArray array = encryption.getCOSObject().getCOSArray(COSName.RECIPIENTS);</span>
+<span class="pc bpc" id="L162" title="1 of 4 branches missed.">            if (array == null &amp;&amp; defaultCryptFilterDictionary != null)</span>
+            {
+<span class="fc" id="L164">                array = defaultCryptFilterDictionary.getCOSObject().getCOSArray(COSName.RECIPIENTS);</span>
+            }
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">            if (array == null)</span>
+            {
+<span class="nc" id="L168">                throw new IOException(&quot;/Recipients entry is missing in encryption dictionary&quot;);</span>
+            }
+<span class="fc" id="L170">            byte[][] recipientFieldsBytes = new byte[array.size()][];</span>
+            //TODO encryption.getRecipientsLength() and getRecipientStringAt() should be deprecated
+
+<span class="fc" id="L173">            int recipientFieldsLength = 0;</span>
+<span class="fc" id="L174">            StringBuilder extraInfo = new StringBuilder();</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            for (int i = 0; i &lt; array.size(); i++)</span>
+            {
+<span class="fc" id="L177">                COSString recipientFieldString = (COSString) array.getObject(i);</span>
+<span class="fc" id="L178">                byte[] recipientBytes = recipientFieldString.getBytes();</span>
+<span class="fc" id="L179">                CMSEnvelopedData data = new CMSEnvelopedData(recipientBytes);</span>
+<span class="fc" id="L180">                Collection&lt;RecipientInformation&gt; recipCertificatesIt = data.getRecipientInfos()</span>
+<span class="fc" id="L181">                        .getRecipients();</span>
+<span class="fc" id="L182">                int j = 0;</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">                for (RecipientInformation ri : recipCertificatesIt)</span>
+                {
+                    // Impl: if a matching certificate was previously found it is an error,
+                    // here we just don't care about it
+<span class="fc" id="L187">                    RecipientId rid = ri.getRID();</span>
+<span class="fc bfc" id="L188" title="All 4 branches covered.">                    if (!foundRecipient &amp;&amp; rid.match(materialCert))</span>
+                    {
+<span class="fc" id="L190">                        foundRecipient = true;</span>
+<span class="fc" id="L191">                        PrivateKey privateKey = (PrivateKey) material.getPrivateKey();</span>
+                        // might need to call setContentProvider() if we use PKI token, see
+                        // http://bouncy-castle.1462172.n4.nabble.com/CMSException-exception-unwrapping-key-key-invalid-unknown-key-type-passed-to-RSA-td4658109.html
+<span class="fc" id="L194">                        envelopedData = ri.getContent(new JceKeyTransEnvelopedRecipient(privateKey));</span>
+<span class="fc" id="L195">                        break;</span>
+                    }
+<span class="fc" id="L197">                    j++;</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">                    if (certificate != null)</span>
+                    {
+<span class="fc" id="L200">                        extraInfo.append('\n');</span>
+<span class="fc" id="L201">                        extraInfo.append(j);</span>
+<span class="fc" id="L202">                        extraInfo.append(&quot;: &quot;);</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">                        if (rid instanceof KeyTransRecipientId)</span>
+                        {
+<span class="fc" id="L205">                            appendCertInfo(extraInfo, (KeyTransRecipientId) rid, certificate, materialCert);</span>
+                        }
+                    }
+<span class="fc" id="L208">                }</span>
+<span class="fc" id="L209">                recipientFieldsBytes[i] = recipientBytes;</span>
+<span class="fc" id="L210">                recipientFieldsLength += recipientBytes.length;</span>
+            }
+<span class="pc bpc" id="L212" title="1 of 4 branches missed.">            if (!foundRecipient || envelopedData == null)</span>
+            {
+<span class="fc" id="L214">                throw new IOException(&quot;The certificate matches none of &quot; + array.size()</span>
+                        + &quot; recipient entries&quot; + extraInfo);
+            }
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">            if (envelopedData.length != 24)</span>
+            {
+<span class="nc" id="L219">                throw new IOException(&quot;The enveloped data does not contain 24 bytes&quot;);</span>
+            }
+            // now envelopedData contains:
+            // - the 20 bytes seed
+            // - the 4 bytes of permission for the current user
+
+<span class="fc" id="L225">            byte[] accessBytes = new byte[4];</span>
+<span class="fc" id="L226">            System.arraycopy(envelopedData, 20, accessBytes, 0, 4);</span>
+
+<span class="fc" id="L228">            AccessPermission currentAccessPermission = new AccessPermission(accessBytes);</span>
+<span class="fc" id="L229">            currentAccessPermission.setReadOnly();</span>
+<span class="fc" id="L230">            setCurrentAccessPermission(currentAccessPermission);</span>
+
+            // what we will put in the SHA1 = the seed + each byte contained in the recipients array
+<span class="fc" id="L233">            byte[] sha1Input = new byte[recipientFieldsLength + 20];</span>
+
+            // put the seed in the sha1 input
+<span class="fc" id="L236">            System.arraycopy(envelopedData, 0, sha1Input, 0, 20);</span>
+
+            // put each bytes of the recipients array in the sha1 input
+<span class="fc" id="L239">            int sha1InputOffset = 20;</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">            for (byte[] recipientFieldsByte : recipientFieldsBytes)</span>
+            {
+<span class="fc" id="L242">                System.arraycopy(recipientFieldsByte, 0, sha1Input, sha1InputOffset,</span>
+                        recipientFieldsByte.length);
+<span class="fc" id="L244">                sha1InputOffset += recipientFieldsByte.length;</span>
+            }
+
+            byte[] mdResult;
+<span class="fc bfc" id="L248" title="All 4 branches covered.">            if (encryption.getVersion() == 4 || encryption.getVersion() == 5)</span>
+            {
+<span class="fc bfc" id="L250" title="All 2 branches covered.">                if (!isDecryptMetadata())</span>
+                {
+                    // &quot;4 bytes with the value 0xFF if the key being generated is intended for use in
+                    // document-level encryption and the document metadata is being left as plaintext&quot;
+<span class="fc" id="L254">                    sha1Input = Arrays.copyOf(sha1Input, sha1Input.length + 4);</span>
+<span class="fc" id="L255">                    System.arraycopy(new byte[]{ (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff}, 0, sha1Input, sha1Input.length - 4, 4);</span>
+                }
+<span class="fc bfc" id="L257" title="All 2 branches covered.">                if (encryption.getVersion() == 4)</span>
+                {
+<span class="fc" id="L259">                    mdResult = MessageDigests.getSHA1().digest(sha1Input);</span>
+                }
+                else
+                {
+<span class="fc" id="L263">                    mdResult = MessageDigests.getSHA256().digest(sha1Input);</span>
+                }
+
+                // detect whether AES encryption is used. This assumes that the encryption algo is 
+                // stored in the PDCryptFilterDictionary
+                // However, crypt filters are used only when V is 4 or 5.
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">                if (defaultCryptFilterDictionary != null)</span>
+                {
+<span class="fc" id="L271">                    COSName cryptFilterMethod = defaultCryptFilterDictionary.getCryptFilterMethod();</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">                    setAES(COSName.AESV2.equals(cryptFilterMethod) ||</span>
+<span class="pc bpc" id="L273" title="1 of 2 branches missed.">                           COSName.AESV3.equals(cryptFilterMethod));</span>
+<span class="fc" id="L274">                }</span>
+            }
+            else
+            {
+<span class="fc" id="L278">                mdResult = MessageDigests.getSHA1().digest(sha1Input);</span>
+            }
+
+            // we have the encryption key ...
+<span class="fc" id="L282">            setEncryptionKey(new byte[getKeyLength() / 8]);</span>
+<span class="fc" id="L283">            System.arraycopy(mdResult, 0, getEncryptionKey(), 0, getKeyLength() / 8);</span>
+        }
+<span class="nc" id="L285">        catch (CMSException | KeyStoreException | CertificateEncodingException e)</span>
+        {
+<span class="nc" id="L287">            throw new IOException(e);</span>
+<span class="fc" id="L288">        }</span>
+<span class="fc" id="L289">    }</span>
+
+    private void appendCertInfo(StringBuilder extraInfo, KeyTransRecipientId ktRid, 
+            X509Certificate certificate, X509CertificateHolder materialCert)
+    {
+<span class="fc" id="L294">        BigInteger ridSerialNumber = ktRid.getSerialNumber();</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">        if (ridSerialNumber != null)</span>
+        {
+<span class="fc" id="L297">            String certSerial = &quot;unknown&quot;;</span>
+<span class="fc" id="L298">            BigInteger certSerialNumber = certificate.getSerialNumber();</span>
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">            if (certSerialNumber != null)</span>
+            {
+<span class="fc" id="L301">                certSerial = certSerialNumber.toString(16);</span>
+            }
+<span class="fc" id="L303">            extraInfo.append(&quot;serial-#: rid &quot;);</span>
+<span class="fc" id="L304">            extraInfo.append(ridSerialNumber.toString(16));</span>
+<span class="fc" id="L305">            extraInfo.append(&quot; vs. cert &quot;);</span>
+<span class="fc" id="L306">            extraInfo.append(certSerial);</span>
+<span class="fc" id="L307">            extraInfo.append(&quot; issuer: rid '&quot;);</span>
+<span class="fc" id="L308">            extraInfo.append(ktRid.getIssuer());</span>
+<span class="fc" id="L309">            extraInfo.append(&quot;' vs. cert '&quot;);</span>
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">            extraInfo.append(materialCert == null ? &quot;null&quot; : materialCert.getIssuer());</span>
+<span class="fc" id="L311">            extraInfo.append(&quot;' &quot;);</span>
+        }
+<span class="fc" id="L313">    }</span>
+    
+    /**
+     * Prepare the document for encryption.
+     *
+     * @param doc The document that will be encrypted.
+     *
+     * @throws IOException If there is an error while encrypting.
+     */
+    @Override
+    public void prepareDocumentForEncryption(PDDocument doc) throws IOException
+    {
+        try
+        {
+<span class="fc" id="L327">            PDEncryption dictionary = doc.getEncryption();</span>
+<span class="pc bpc" id="L328" title="1 of 2 branches missed.">            if (dictionary == null) </span>
+            {
+<span class="nc" id="L330">                dictionary = new PDEncryption();</span>
+            }
+
+<span class="fc" id="L333">            dictionary.setFilter(FILTER);</span>
+<span class="fc" id="L334">            dictionary.setLength(getKeyLength());</span>
+<span class="fc" id="L335">            int version = computeVersionNumber();</span>
+<span class="fc" id="L336">            dictionary.setVersion(version);</span>
+
+            // remove CF, StmF, and StrF entries that may be left from a previous encryption
+<span class="fc" id="L339">            dictionary.removeV45filters();</span>
+
+            // create the 20 bytes seed
+<span class="fc" id="L342">            byte[] seed = new byte[20];</span>
+
+            KeyGenerator key;
+            try
+            {
+<span class="fc" id="L347">                key = KeyGenerator.getInstance(&quot;AES&quot;);</span>
+            }
+<span class="nc" id="L349">            catch (NoSuchAlgorithmException e)</span>
+            {
+                // should never happen
+<span class="nc" id="L352">                throw new RuntimeException(e);</span>
+<span class="fc" id="L353">            }</span>
+
+<span class="fc" id="L355">            key.init(192, new SecureRandom());</span>
+<span class="fc" id="L356">            SecretKey sk = key.generateKey();</span>
+
+            // create the 20 bytes seed
+<span class="fc" id="L359">            System.arraycopy(sk.getEncoded(), 0, seed, 0, 20);</span>
+
+<span class="fc" id="L361">            byte[][] recipientsFields = computeRecipientsField(seed);</span>
+
+<span class="fc" id="L363">            int shaInputLength = seed.length;</span>
+
+<span class="fc bfc" id="L365" title="All 2 branches covered.">            for (byte[] field : recipientsFields)</span>
+            {
+<span class="fc" id="L367">                shaInputLength += field.length;</span>
+            }
+
+<span class="fc" id="L370">            byte[] shaInput = new byte[shaInputLength];</span>
+
+<span class="fc" id="L372">            System.arraycopy(seed, 0, shaInput, 0, 20);</span>
+
+<span class="fc" id="L374">            int shaInputOffset = 20;</span>
+
+<span class="fc bfc" id="L376" title="All 2 branches covered.">            for (byte[] recipientsField : recipientsFields)</span>
+            {
+<span class="fc" id="L378">                System.arraycopy(recipientsField, 0, shaInput, shaInputOffset, recipientsField.length);</span>
+<span class="fc" id="L379">                shaInputOffset += recipientsField.length;</span>
+            }
+
+            byte[] mdResult;
+<span class="pc bpc" id="L383" title="1 of 3 branches missed.">            switch (version)</span>
+            {
+                case 4:
+<span class="nc" id="L386">                    dictionary.setSubFilter(SUBFILTER5);</span>
+<span class="nc" id="L387">                    mdResult = MessageDigests.getSHA1().digest(shaInput);</span>
+<span class="nc" id="L388">                    prepareEncryptionDictAES(dictionary, COSName.AESV2, recipientsFields);</span>
+<span class="nc" id="L389">                    break;</span>
+                case 5:
+<span class="fc" id="L391">                    dictionary.setSubFilter(SUBFILTER5);</span>
+<span class="fc" id="L392">                    mdResult = MessageDigests.getSHA256().digest(shaInput);</span>
+<span class="fc" id="L393">                    prepareEncryptionDictAES(dictionary, COSName.AESV3, recipientsFields);</span>
+<span class="fc" id="L394">                    break;</span>
+                default:
+<span class="fc" id="L396">                    dictionary.setSubFilter(SUBFILTER4);</span>
+<span class="fc" id="L397">                    mdResult = MessageDigests.getSHA1().digest(shaInput);</span>
+<span class="fc" id="L398">                    dictionary.setRecipients(recipientsFields);</span>
+                    break;
+            }
+
+<span class="fc" id="L402">            setEncryptionKey(new byte[getKeyLength() / 8]);</span>
+<span class="fc" id="L403">            System.arraycopy(mdResult, 0, getEncryptionKey(), 0, getKeyLength() / 8);</span>
+
+<span class="fc" id="L405">            doc.setEncryptionDictionary(dictionary);</span>
+<span class="fc" id="L406">            doc.getDocument().setEncryptionDictionary(dictionary.getCOSObject());</span>
+        }
+<span class="nc" id="L408">        catch(GeneralSecurityException e)</span>
+        {
+<span class="nc" id="L410">            throw new IOException(e);</span>
+<span class="fc" id="L411">        }</span>
+<span class="fc" id="L412">    }</span>
+
+    private void prepareEncryptionDictAES(PDEncryption encryptionDictionary, COSName aesVName, byte[][] recipients)
+    {
+<span class="fc" id="L416">        PDCryptFilterDictionary cryptFilterDictionary = new PDCryptFilterDictionary();</span>
+<span class="fc" id="L417">        cryptFilterDictionary.setCryptFilterMethod(aesVName);</span>
+<span class="fc" id="L418">        cryptFilterDictionary.setLength(getKeyLength());</span>
+<span class="fc" id="L419">        COSArray array = new COSArray();</span>
+<span class="fc bfc" id="L420" title="All 2 branches covered.">        for (byte[] recipient : recipients)</span>
+        {
+<span class="fc" id="L422">            array.add(new COSString(recipient));</span>
+        }
+<span class="fc" id="L424">        cryptFilterDictionary.getCOSObject().setItem(COSName.RECIPIENTS, array);</span>
+<span class="fc" id="L425">        array.setDirect(true);</span>
+<span class="fc" id="L426">        encryptionDictionary.setDefaultCryptFilterDictionary(cryptFilterDictionary);</span>
+<span class="fc" id="L427">        encryptionDictionary.setStreamFilterName(COSName.DEFAULT_CRYPT_FILTER);</span>
+<span class="fc" id="L428">        encryptionDictionary.setStringFilterName(COSName.DEFAULT_CRYPT_FILTER);</span>
+<span class="fc" id="L429">        cryptFilterDictionary.getCOSObject().setDirect(true);</span>
+<span class="fc" id="L430">        setAES(true);</span>
+<span class="fc" id="L431">    }</span>
+
+    private byte[][] computeRecipientsField(byte[] seed) throws GeneralSecurityException, IOException
+    {
+<span class="fc" id="L435">        PublicKeyProtectionPolicy protectionPolicy = getProtectionPolicy();</span>
+<span class="fc" id="L436">        byte[][] recipientsField = new byte[protectionPolicy.getNumberOfRecipients()][];</span>
+<span class="fc" id="L437">        Iterator&lt;PublicKeyRecipient&gt; it = protectionPolicy.getRecipientsIterator();</span>
+<span class="fc" id="L438">        int i = 0;</span>
+        
+<span class="fc bfc" id="L440" title="All 2 branches covered.">        while(it.hasNext())</span>
+        {
+<span class="fc" id="L442">            PublicKeyRecipient recipient = it.next();</span>
+<span class="fc" id="L443">            X509Certificate certificate = recipient.getX509();</span>
+<span class="fc" id="L444">            int permission = recipient.getPermission().getPermissionBytesForPublicKey();</span>
+            
+<span class="fc" id="L446">            byte[] pkcs7input = new byte[24];</span>
+<span class="fc" id="L447">            byte one = (byte)(permission);</span>
+<span class="fc" id="L448">            byte two = (byte)(permission &gt;&gt;&gt; 8);</span>
+<span class="fc" id="L449">            byte three = (byte)(permission &gt;&gt;&gt; 16);</span>
+<span class="fc" id="L450">            byte four = (byte)(permission &gt;&gt;&gt; 24);</span>
+
+            // put this seed in the pkcs7 input
+<span class="fc" id="L453">            System.arraycopy(seed, 0, pkcs7input, 0, 20);</span>
+
+<span class="fc" id="L455">            pkcs7input[20] = four;</span>
+<span class="fc" id="L456">            pkcs7input[21] = three;</span>
+<span class="fc" id="L457">            pkcs7input[22] = two;</span>
+<span class="fc" id="L458">            pkcs7input[23] = one;</span>
+
+<span class="fc" id="L460">            ASN1Primitive obj = createDERForRecipient(pkcs7input, certificate);</span>
+<span class="fc" id="L461">            ByteArrayOutputStream baos = new ByteArrayOutputStream();</span>
+<span class="fc" id="L462">            obj.encodeTo(baos, ASN1Encoding.DER);</span>
+
+<span class="fc" id="L464">            recipientsField[i] = baos.toByteArray();</span>
+
+<span class="fc" id="L466">            i++;</span>
+<span class="fc" id="L467">        }</span>
+<span class="fc" id="L468">        return recipientsField;</span>
+    }
+
+    private ASN1Primitive createDERForRecipient(byte[] in, X509Certificate cert)
+            throws IOException, GeneralSecurityException
+    {
+<span class="fc" id="L474">        String algorithm = PKCSObjectIdentifiers.RC2_CBC.getId();</span>
+        AlgorithmParameterGenerator apg;
+        KeyGenerator keygen;
+        Cipher cipher;
+        try
+        {
+<span class="fc" id="L480">            Provider provider = SecurityProvider.getProvider();</span>
+<span class="fc" id="L481">            apg = AlgorithmParameterGenerator.getInstance(algorithm, provider);</span>
+<span class="fc" id="L482">            keygen = KeyGenerator.getInstance(algorithm, provider);</span>
+<span class="fc" id="L483">            cipher = Cipher.getInstance(algorithm, provider);</span>
+        }
+<span class="nc" id="L485">        catch (NoSuchAlgorithmException e)</span>
+        {
+            // happens when using the command line app .jar file
+<span class="nc" id="L488">            throw new IOException(&quot;Could not find a suitable javax.crypto provider for algorithm &quot; + </span>
+                    algorithm + &quot;; possible reason: using an unsigned .jar file&quot;, e);
+        }
+<span class="nc" id="L491">        catch (NoSuchPaddingException e)</span>
+        {
+            // should never happen, if this happens throw IOException instead
+<span class="nc" id="L494">            throw new RuntimeException(&quot;Could not find a suitable javax.crypto provider&quot;, e);</span>
+<span class="fc" id="L495">        }</span>
+
+<span class="fc" id="L497">        AlgorithmParameters parameters = apg.generateParameters();</span>
+
+        ASN1Primitive object;
+<span class="fc" id="L500">        try (ASN1InputStream input = new ASN1InputStream(parameters.getEncoded(&quot;ASN.1&quot;)))</span>
+        {
+<span class="fc" id="L502">            object = input.readObject();</span>
+        }
+
+<span class="fc" id="L505">        keygen.init(128);</span>
+<span class="fc" id="L506">        SecretKey secretkey = keygen.generateKey();</span>
+
+<span class="fc" id="L508">        cipher.init(1, secretkey, parameters);</span>
+<span class="fc" id="L509">        byte[] bytes = cipher.doFinal(in);</span>
+
+<span class="fc" id="L511">        KeyTransRecipientInfo recipientInfo = computeRecipientInfo(cert, secretkey.getEncoded());</span>
+<span class="fc" id="L512">        DERSet set = new DERSet(new RecipientInfo(recipientInfo));</span>
+
+<span class="fc" id="L514">        AlgorithmIdentifier algorithmId = new AlgorithmIdentifier(new ASN1ObjectIdentifier(algorithm), object);</span>
+<span class="fc" id="L515">        EncryptedContentInfo encryptedInfo = </span>
+                new EncryptedContentInfo(PKCSObjectIdentifiers.data, algorithmId, new DEROctetString(bytes));
+<span class="fc" id="L517">        EnvelopedData enveloped = new EnvelopedData(null, set, encryptedInfo, (ASN1Set) null);</span>
+
+<span class="fc" id="L519">        ContentInfo contentInfo = new ContentInfo(PKCSObjectIdentifiers.envelopedData, enveloped);</span>
+<span class="fc" id="L520">        return contentInfo.toASN1Primitive();</span>
+    }
+
+    private KeyTransRecipientInfo computeRecipientInfo(X509Certificate x509certificate, byte[] abyte0)
+        throws IOException, CertificateEncodingException, InvalidKeyException,
+            BadPaddingException, IllegalBlockSizeException
+    {
+        TBSCertificate certificate;
+<span class="fc" id="L528">        try (ASN1InputStream input = new ASN1InputStream(x509certificate.getTBSCertificate()))</span>
+        {
+<span class="fc" id="L530">            certificate = TBSCertificate.getInstance(input.readObject());</span>
+        }
+
+<span class="fc" id="L533">        AlgorithmIdentifier algorithmId = certificate.getSubjectPublicKeyInfo().getAlgorithm();</span>
+
+<span class="fc" id="L535">        IssuerAndSerialNumber serial = new IssuerAndSerialNumber(</span>
+<span class="fc" id="L536">                certificate.getIssuer(),</span>
+<span class="fc" id="L537">                certificate.getSerialNumber().getValue());</span>
+
+        Cipher cipher;
+        try
+        {
+<span class="fc" id="L542">            cipher = Cipher.getInstance(algorithmId.getAlgorithm().getId(),</span>
+<span class="fc" id="L543">                    SecurityProvider.getProvider());</span>
+        }
+<span class="nc" id="L545">        catch (NoSuchAlgorithmException | NoSuchPaddingException e)</span>
+        {
+            // should never happen, if this happens throw IOException instead
+<span class="nc" id="L548">            throw new RuntimeException(&quot;Could not find a suitable javax.crypto provider&quot;, e);</span>
+<span class="fc" id="L549">        }</span>
+
+<span class="fc" id="L551">        cipher.init(1, x509certificate.getPublicKey());</span>
+
+<span class="fc" id="L553">        DEROctetString octets = new DEROctetString(cipher.doFinal(abyte0));</span>
+<span class="fc" id="L554">        RecipientIdentifier recipientId = new RecipientIdentifier(serial);</span>
+<span class="fc" id="L555">        return new KeyTransRecipientInfo(recipientId, algorithmId, octets);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

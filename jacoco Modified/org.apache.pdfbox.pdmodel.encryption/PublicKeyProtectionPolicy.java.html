@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PublicKeyProtectionPolicy.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.encryption</a> &gt; <span class="el_source">PublicKeyProtectionPolicy.java</span></div><h1>PublicKeyProtectionPolicy.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.encryption;
+
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+/**
+ * The protection policy to use to protect a document with the public key security handler.
+ *
+ * PDF documents are encrypted so that they can be decrypted by
+ * one or more recipients. Each recipient have its own access permission.
+ *
+ * The following code sample shows how to protect a document using
+ * the public key security handler. In this code sample, &lt;code&gt;doc&lt;/code&gt; is
+ * a &lt;code&gt;PDDocument&lt;/code&gt; object.
+ *
+ * &lt;pre&gt;
+ * PublicKeyProtectionPolicy policy = new PublicKeyProtectionPolicy();
+ * PublicKeyRecipient recip = new PublicKeyRecipient();
+ * AccessPermission ap = new AccessPermission();
+ * ap.setCanModify(false);
+ * recip.setPermission(ap);
+ *
+ * // load the recipient's certificate
+ * InputStream inStream = new FileInputStream(certificate_path);
+ * CertificateFactory cf = CertificateFactory.getInstance(&quot;X.509&quot;);
+ * X509Certificate certificate = (X509Certificate)cf.generateCertificate(inStream);
+ * inStream.close();
+ *
+ * recip.setX509(certificate); // set the recipient's certificate
+ * policy.addRecipient(recip);
+ * policy.setEncryptionKeyLength(128); // the document will be encrypted with 128 bits secret key
+ * doc.protect(policy);
+ * doc.save(out);
+ * &lt;/pre&gt;
+ *
+ * @see org.apache.pdfbox.pdmodel.PDDocument#protect(ProtectionPolicy)
+ * @see AccessPermission
+ * @see PublicKeyRecipient
+ * @author Benoit Guillon
+ */
+public final class PublicKeyProtectionPolicy extends ProtectionPolicy
+{
+<span class="fc" id="L62">    private final List&lt;PublicKeyRecipient&gt; recipients = new ArrayList&lt;&gt;();</span>
+    private X509Certificate decryptionCertificate;
+
+    /**
+     * Creates a new PublicKeyProtectionPolicy with an empty recipients list.
+     */
+    public PublicKeyProtectionPolicy()
+<span class="fc" id="L69">    {</span>
+<span class="fc" id="L70">    }</span>
+
+    /**
+     * Adds a new recipient to the recipients list.
+     * @param recipient A new recipient.
+     */
+    public void addRecipient(PublicKeyRecipient recipient)
+    {
+<span class="fc" id="L78">        recipients.add(recipient);</span>
+<span class="fc" id="L79">    }</span>
+
+    /**
+     * Removes a recipient from the recipients list.
+     * @param recipient The recipient to remove.
+     * @return true If a recipient was found and removed.
+     */
+    public boolean removeRecipient(PublicKeyRecipient recipient)
+    {
+<span class="nc" id="L88">        return recipients.remove(recipient);</span>
+    }
+
+    /**
+     * Returns an iterator to browse the list of recipients.
+     * Object found in this iterator are &lt;code&gt;PublicKeyRecipient&lt;/code&gt;.
+     * @return The recipients list iterator.
+     */
+    public Iterator&lt;PublicKeyRecipient&gt; getRecipientsIterator()
+    {
+<span class="fc" id="L98">        return recipients.iterator();</span>
+    }
+
+    /**
+     * Returns the decryption certificate.
+     * @return the decryption certificate
+     */
+    public X509Certificate getDecryptionCertificate()
+    {
+<span class="nc" id="L107">        return decryptionCertificate;</span>
+    }
+
+    /**
+     * Sets the decryption certificate
+     * @param decryptionCertificate the new decryption certificate.
+     */
+    public void setDecryptionCertificate(X509Certificate decryptionCertificate)
+    {
+<span class="nc" id="L116">        this.decryptionCertificate = decryptionCertificate;</span>
+<span class="nc" id="L117">    }</span>
+
+    /**
+     * Returns the number of recipients
+     * @return the number of recipients
+     */
+    public int getNumberOfRecipients()
+    {
+<span class="fc" id="L125">        return recipients.size();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDTrueTypeFontEmbedder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font</a> &gt; <span class="el_source">PDTrueTypeFontEmbedder.java</span></div><h1>PDTrueTypeFontEmbedder.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.font;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.fontbox.ttf.HorizontalMetricsTable;
+import org.apache.fontbox.ttf.TrueTypeFont;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.font.encoding.Encoding;
+import org.apache.pdfbox.pdmodel.font.encoding.GlyphList;
+
+/**
+ * Embedded PDTrueTypeFont builder. Helper class to populate a PDTrueTypeFont from a TTF.
+ *
+ * @author John Hewson
+ * @author Ben Litchfield
+ */
+final class PDTrueTypeFontEmbedder extends TrueTypeEmbedder
+{
+    private final Encoding fontEncoding;
+
+    /**
+     * Creates a new TrueType font embedder for the given TTF as a PDTrueTypeFont.
+     *
+     * @param document The parent document
+     * @param dict Font dictionary
+     * @param ttf TrueType font
+     * @param encoding The PostScript encoding vector to be used for embedding.
+     * @throws IOException if the TTF could not be read
+     */
+    PDTrueTypeFontEmbedder(PDDocument document, COSDictionary dict, TrueTypeFont ttf,
+                           Encoding encoding) throws IOException
+    {
+<span class="fc" id="L59">        super(document, dict, ttf, false);</span>
+<span class="fc" id="L60">        dict.setItem(COSName.SUBTYPE, COSName.TRUE_TYPE);</span>
+        
+<span class="fc" id="L62">        GlyphList glyphList = GlyphList.getAdobeGlyphList();</span>
+<span class="fc" id="L63">        this.fontEncoding = encoding;</span>
+<span class="fc" id="L64">        dict.setItem(COSName.ENCODING, encoding.getCOSObject());</span>
+<span class="fc" id="L65">        fontDescriptor.setSymbolic(false);</span>
+<span class="fc" id="L66">        fontDescriptor.setNonSymbolic(true);</span>
+        
+        // add the font descriptor
+<span class="fc" id="L69">        dict.setItem(COSName.FONT_DESC, fontDescriptor);</span>
+
+        // set the glyph widths
+<span class="fc" id="L72">        setWidths(dict, glyphList);</span>
+<span class="fc" id="L73">    }</span>
+
+    /**
+     * Sets the glyph widths in the font dictionary.
+     */
+    private void setWidths(COSDictionary font, GlyphList glyphList) throws IOException
+    {
+<span class="fc" id="L80">        float scaling = 1000f / ttf.getHeader().getUnitsPerEm();</span>
+<span class="fc" id="L81">        HorizontalMetricsTable hmtx = ttf.getHorizontalMetrics();</span>
+
+<span class="fc" id="L83">        Map&lt;Integer, String&gt; codeToName = getFontEncoding().getCodeToNameMap();</span>
+<span class="fc" id="L84">        Set&lt;Integer&gt; codes = codeToName.keySet();</span>
+<span class="fc" id="L85">        int firstChar = Collections.min(codes);</span>
+<span class="fc" id="L86">        int lastChar = Collections.max(codes);</span>
+
+<span class="fc" id="L88">        List&lt;Integer&gt; widths = new ArrayList&lt;&gt;(lastChar - firstChar + 1);</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        for (int i = 0; i &lt; lastChar - firstChar + 1; i++)</span>
+        {
+<span class="fc" id="L91">            widths.add(0);</span>
+        }
+
+        // a character code is mapped to a glyph name via the provided font encoding
+        // afterwards, the glyph name is translated to a glyph ID.
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, String&gt; entry : codeToName.entrySet())</span>
+        {
+<span class="fc" id="L98">            int code = entry.getKey();</span>
+<span class="fc" id="L99">            String name = entry.getValue();</span>
+
+<span class="pc bpc" id="L101" title="2 of 4 branches missed.">            if (code &gt;= firstChar &amp;&amp; code &lt;= lastChar)</span>
+            {
+<span class="fc" id="L103">                String uni = glyphList.toUnicode(name);</span>
+<span class="fc" id="L104">                int gid = 0;</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">                if (uni != null)</span>
+                {
+<span class="fc" id="L107">                    int charCode = uni.codePointAt(0);</span>
+<span class="fc" id="L108">                    gid = cmapLookup.getGlyphId(charCode);</span>
+                }
+<span class="fc" id="L110">                widths.set(entry.getKey() - firstChar,</span>
+<span class="fc" id="L111">                           Math.round(hmtx.getAdvanceWidth(gid) * scaling));</span>
+            }
+<span class="fc" id="L113">        }</span>
+
+<span class="fc" id="L115">        font.setInt(COSName.FIRST_CHAR, firstChar);</span>
+<span class="fc" id="L116">        font.setInt(COSName.LAST_CHAR, lastChar);</span>
+<span class="fc" id="L117">        font.setItem(COSName.WIDTHS, COSArray.ofCOSIntegers(widths));</span>
+<span class="fc" id="L118">    }</span>
+
+    /**
+     * Returns the font's encoding.
+     */
+    public Encoding getFontEncoding()
+    {
+<span class="fc" id="L125">        return fontEncoding;</span>
+    }
+
+    @Override
+    protected void buildSubset(InputStream ttfSubset, String tag,
+                            Map&lt;Integer, Integer&gt; gidToCid) throws IOException
+    {
+        // use PDType0Font instead
+<span class="nc" id="L133">        throw new UnsupportedOperationException();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

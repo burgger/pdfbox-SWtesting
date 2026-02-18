@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDAnnotationCircle.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation</a> &gt; <span class="el_source">PDAnnotationCircle.java</span></div><h1>PDAnnotationCircle.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2018 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.interactive.annotation;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.interactive.annotation.handlers.PDAppearanceHandler;
+import org.apache.pdfbox.pdmodel.interactive.annotation.handlers.PDCircleAppearanceHandler;
+
+/**
+ * @author Paul King
+ */
+public class PDAnnotationCircle extends PDAnnotationSquareCircle
+{
+    /**
+     * The type of annotation.
+     */
+    public static final String SUB_TYPE = &quot;Circle&quot;;
+
+    private PDAppearanceHandler customAppearanceHandler;
+
+    public PDAnnotationCircle()
+    {
+<span class="fc" id="L38">        super(SUB_TYPE);</span>
+<span class="fc" id="L39">    }</span>
+
+    /**
+     * Creates a circle annotation from a COSDictionary, expected to be a correct object definition.
+     *
+     * @param field the PDF object to represent as a field.
+     */
+    public PDAnnotationCircle(COSDictionary field)
+    {
+<span class="fc" id="L48">        super(field);</span>
+<span class="fc" id="L49">    }</span>
+
+    /**
+     * Set a custom appearance handler for generating the annotations appearance streams.
+     * 
+     * @param appearanceHandler custom appearance handler
+     */
+    public void setCustomAppearanceHandler(PDAppearanceHandler appearanceHandler)
+    {
+<span class="nc" id="L58">        customAppearanceHandler = appearanceHandler;</span>
+<span class="nc" id="L59">    }</span>
+
+    @Override
+    public void constructAppearances()
+    {
+<span class="nc" id="L64">        this.constructAppearances(null);</span>
+<span class="nc" id="L65">    }</span>
+
+    @Override
+    public void constructAppearances(PDDocument document)
+    {
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (customAppearanceHandler == null)</span>
+        {
+<span class="nc" id="L72">            PDCircleAppearanceHandler appearanceHandler = new PDCircleAppearanceHandler(this, document);</span>
+<span class="nc" id="L73">            appearanceHandler.generateAppearanceStreams();</span>
+<span class="nc" id="L74">        }</span>
+        else
+        {
+<span class="nc" id="L77">            customAppearanceHandler.generateAppearanceStreams();</span>
+        }
+<span class="nc" id="L79">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

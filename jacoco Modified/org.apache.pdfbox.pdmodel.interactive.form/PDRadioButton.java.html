@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDRadioButton.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.form</a> &gt; <span class="el_source">PDRadioButton.java</span></div><h1>PDRadioButton.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.form;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+
+/**
+ * Radio button fields contain a set of related buttons that can each be on or off.
+ *
+ * @author sug
+ */
+public final class PDRadioButton extends PDButton
+{
+    /**
+     * A Ff flag.
+     */
+    private static final int FLAG_NO_TOGGLE_TO_OFF = 1 &lt;&lt; 14;
+    
+    /**
+     * @see PDField#PDField(PDAcroForm)
+     *
+     * @param acroForm The acroform.
+     */
+    public PDRadioButton(PDAcroForm acroForm)
+    {
+<span class="fc" id="L45">        super(acroForm);</span>
+<span class="fc" id="L46">        getCOSObject().setFlag(COSName.FF, FLAG_RADIO, true);</span>
+<span class="fc" id="L47">    }</span>
+    
+    /**
+     * Constructor.
+     * 
+     * @param acroForm The form that this field is part of.
+     * @param field the PDF object to represent as a field.
+     * @param parent the parent node of the node
+     */
+    PDRadioButton(PDAcroForm acroForm, COSDictionary field, PDNonTerminalField parent)
+    {
+<span class="fc" id="L58">        super(acroForm, field, parent);</span>
+<span class="fc" id="L59">    }</span>
+
+    /**
+     * From the PDF Spec &lt;br&gt;
+     * If set, a group of radio buttons within a radio button field that use the same value for the on state will turn
+     * on and off in unison; that is if one is checked, they are all checked. If clear, the buttons are mutually
+     * exclusive (the same behavior as HTML radio buttons).
+     *
+     * @param radiosInUnison The new flag for radiosInUnison.
+     */
+    public void setRadiosInUnison(boolean radiosInUnison)
+    {
+<span class="nc" id="L71">        getCOSObject().setFlag(COSName.FF, FLAG_RADIOS_IN_UNISON, radiosInUnison);</span>
+<span class="nc" id="L72">    }</span>
+
+    /**
+     *
+     * @return true If the flag is set for radios in unison.
+     */
+    public boolean isRadiosInUnison()
+    {
+<span class="fc" id="L80">        return getCOSObject().getFlag(COSName.FF, FLAG_RADIOS_IN_UNISON);</span>
+    }
+
+    /**
+     * This will get the selected index.
+     * &lt;p&gt;
+     * A RadioButton might have multiple same value options which are not selected jointly if
+     * they are not set in unison {@link #isRadiosInUnison()}.&lt;/p&gt;
+     * 
+     * &lt;p&gt;
+     * The method will return the first selected index or -1 if no option is selected.&lt;/p&gt;
+     * 
+     * @return the first selected index or -1.
+     */
+    public int getSelectedIndex()
+    {
+<span class="fc" id="L96">        int idx = 0;</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        for (PDAnnotationWidget widget : getWidgets())</span>
+        {
+<span class="fc bfc" id="L99" title="All 2 branches covered.">            if (!COSName.Off.equals(widget.getAppearanceState()))</span>
+            {
+<span class="fc" id="L101">                return idx;</span>
+            }
+<span class="fc" id="L103">            idx ++;</span>
+<span class="fc" id="L104">        }</span>
+<span class="fc" id="L105">        return -1;</span>
+    }
+
+    /**
+     * This will get the selected export values.
+     * &lt;p&gt;
+     * A RadioButton might have an export value to allow field values
+     * which can not be encoded as PDFDocEncoding or for the same export value 
+     * being assigned to multiple RadioButtons in a group.&lt;br&gt;
+     * To define an export value the RadioButton must define options {@link #setExportValues(List)}
+     * which correspond to the individual items within the RadioButton.&lt;/p&gt;
+     * &lt;p&gt;
+     * The method will either return the corresponding values from the options entry or in case there
+     * is no such entry the fields value&lt;/p&gt;
+     * 
+     * @return the export value of the field.
+     */
+    public List&lt;String&gt; getSelectedExportValues()
+    {
+<span class="fc" id="L124">        List&lt;String&gt; exportValues = getExportValues();</span>
+<span class="fc" id="L125">        List&lt;String&gt; selectedExportValues = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        if (exportValues.isEmpty())</span>
+        {
+<span class="fc" id="L128">            selectedExportValues.add(getValue());</span>
+<span class="fc" id="L129">            return selectedExportValues;</span>
+        }
+        else
+        {
+<span class="fc" id="L133">            String fieldValue = getValue();</span>
+<span class="fc" id="L134">            int idx = 0;</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">            for (String onValue : getOnValues())</span>
+            {
+<span class="fc bfc" id="L137" title="All 2 branches covered.">                if (onValue.compareTo(fieldValue) == 0)</span>
+                {
+<span class="fc" id="L139">                    selectedExportValues.add(exportValues.get(idx));</span>
+                }
+<span class="fc" id="L141">                ++idx;</span>
+<span class="fc" id="L142">            }</span>
+<span class="fc" id="L143">            return selectedExportValues;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

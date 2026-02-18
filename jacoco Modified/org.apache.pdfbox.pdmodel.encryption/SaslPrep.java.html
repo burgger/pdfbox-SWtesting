@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SaslPrep.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.encryption</a> &gt; <span class="el_source">SaslPrep.java</span></div><h1>SaslPrep.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.encryption;
+
+import java.nio.CharBuffer;
+import java.text.Normalizer;
+
+/**
+ * Copied from https://github.com/tombentley/saslprep/blob/master/src/main/java/SaslPrep.java on
+ * 30.5.2019, commit 2e30daa.
+ *
+ * @author Tom Bentley
+ */
+class SaslPrep
+{
+
+    private SaslPrep()
+    {
+    }
+
+    /**
+     * Return the {@code SASLPrep}-canonicalised version of the given {@code str} for use as a query
+     * string. This implements the {@code SASLPrep} algorithm defined in
+     * &lt;a href=&quot;https://tools.ietf.org/html/rfc4013&quot;&gt;RFC 4013&lt;/a&gt;.
+     *
+     * @param str The string to canonicalise.
+     * @return The canonicalised string.
+     * @throws IllegalArgumentException if the string contained prohibited codepoints, or broke the
+     * requirements for bidirectional character handling.
+     * @see &lt;a href=&quot;https://tools.ietf.org/html/rfc3454#section-7&quot;&gt;RFC 3454, Section 7&lt;/a&gt; for
+     * discussion of what a query string is.
+     */
+    static String saslPrepQuery(String str)
+    {
+<span class="fc" id="L50">        return saslPrep(str, true);</span>
+    }
+
+    /**
+     * Return the {@code SASLPrep}-canonicalised version of the given
+     * @code str} for use as a stored string. This implements the {@code SASLPrep} algorithm defined
+     * in
+     * &lt;a href=&quot;https://tools.ietf.org/html/rfc4013&quot;&gt;RFC 4013&lt;/a&gt;.
+     *
+     * @param str The string to canonicalise.
+     * @return The canonicalised string.
+     * @throws IllegalArgumentException if the string contained prohibited codepoints, or broke the
+     * requirements for bidirectional character handling.
+     * @see &lt;a href=&quot;https://tools.ietf.org/html/rfc3454#section-7&quot;&gt;RFC 3454, Section 7&lt;/a&gt; for
+     * discussion of what a stored string is.
+     */
+    static String saslPrepStored(String str)
+    {
+<span class="fc" id="L68">        return saslPrep(str, false);</span>
+    }
+
+    private static String saslPrep(String str, boolean allowUnassigned)
+    {
+<span class="fc" id="L73">        char[] chars = str.toCharArray();</span>
+
+        // 1. Map
+        // non-ASCII space chars mapped to space
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        for (int i = 0; i &lt; str.length(); i++)</span>
+        {
+<span class="fc" id="L79">            char ch = str.charAt(i);</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">            if (nonAsciiSpace(ch))</span>
+            {
+<span class="nc" id="L82">                chars[i] = ' ';</span>
+            }
+        }
+
+<span class="fc" id="L86">        int length = 0;</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        for (int i = 0; i &lt; str.length(); i++)</span>
+        {
+<span class="fc" id="L89">            char ch = chars[i];</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">            if (!mappedToNothing(ch))</span>
+            {
+<span class="fc" id="L92">                chars[length++] = ch;</span>
+            }
+        }
+
+        // 2. Normalize
+<span class="fc" id="L97">        String normalized = Normalizer.normalize(CharBuffer.wrap(chars, 0, length), Normalizer.Form.NFKC);</span>
+
+<span class="fc" id="L99">        boolean containsRandALCat = false;</span>
+<span class="fc" id="L100">        boolean containsLCat = false;</span>
+<span class="fc" id="L101">        boolean initialRandALCat = false;</span>
+<span class="fc" id="L102">        int i = 0;</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        while (i &lt; normalized.length())</span>
+        {
+<span class="fc" id="L105">            final int codepoint = normalized.codePointAt(i);</span>
+            // 3. Prohibit
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">            if (prohibited(codepoint))</span>
+            {
+<span class="nc" id="L109">                throw new IllegalArgumentException(&quot;Prohibited character '&quot; +</span>
+<span class="nc" id="L110">                        Character.getName(codepoint) + &quot;' at position &quot; + i);</span>
+            }
+
+            // 4. Check bidi
+<span class="fc" id="L114">            final byte directionality = Character.getDirectionality(codepoint);</span>
+<span class="pc bpc" id="L115" title="2 of 4 branches missed.">            final boolean isRandALcat = directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT</span>
+                    || directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC;
+<span class="fc" id="L117">            containsRandALCat |= isRandALcat;</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">            containsLCat |= directionality == Character.DIRECTIONALITY_LEFT_TO_RIGHT;</span>
+
+<span class="pc bpc" id="L120" title="1 of 4 branches missed.">            initialRandALCat |= i == 0 &amp;&amp; isRandALcat;</span>
+<span class="pc bpc" id="L121" title="1 of 4 branches missed.">            if (!allowUnassigned &amp;&amp; !Character.isDefined(codepoint))</span>
+            {
+<span class="nc" id="L123">                throw new IllegalArgumentException(&quot;Character at position &quot; + i + &quot; is unassigned&quot;);</span>
+            }
+
+<span class="fc" id="L126">            i += Character.charCount(codepoint);</span>
+
+<span class="pc bpc" id="L128" title="5 of 6 branches missed.">            if (initialRandALCat &amp;&amp; i &gt;= normalized.length() &amp;&amp; !isRandALcat)</span>
+            {
+<span class="nc" id="L130">                throw new IllegalArgumentException(&quot;First character is RandALCat, but last character is not&quot;);</span>
+            }
+<span class="fc" id="L132">        }</span>
+<span class="pc bpc" id="L133" title="3 of 4 branches missed.">        if (containsRandALCat &amp;&amp; containsLCat)</span>
+        {
+<span class="nc" id="L135">            throw new IllegalArgumentException(&quot;Contains both RandALCat characters and LCat characters&quot;);</span>
+        }
+<span class="fc" id="L137">        return normalized;</span>
+    }
+
+    /**
+     * Return true if the given {@code codepoint} is a prohibited character
+     * as defined by
+     * &lt;a href=&quot;https://tools.ietf.org/html/rfc4013#section-2.3&quot;&gt;RFC 4013,
+     * Section 2.3&lt;/a&gt;.
+     */
+    static boolean prohibited(int codepoint)
+    {
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">        return nonAsciiSpace((char)codepoint)</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">                || asciiControl((char)codepoint)</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">                || nonAsciiControl(codepoint)</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">                || privateUse(codepoint)</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">                || nonCharacterCodePoint(codepoint)</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">                || surrogateCodePoint(codepoint)</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">                || inappropriateForPlainText(codepoint)</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">                || inappropriateForCanonical(codepoint)</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">                || changeDisplayProperties(codepoint)</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">                || tagging(codepoint);</span>
+    }
+
+    /**
+     * Return true if the given {@code codepoint} is a tagging character
+     * as defined by
+     * &lt;a href=&quot;https://tools.ietf.org/html/rfc3454#appendix-C.9&quot;&gt;RFC 3454,
+     * Appendix C.9&lt;/a&gt;.
+     */
+    private static boolean tagging(int codepoint)
+    {
+<span class="pc bpc" id="L168" title="4 of 6 branches missed.">        return codepoint == 0xE0001</span>
+                || 0xE0020 &lt;= codepoint &amp;&amp; codepoint &lt;= 0xE007F;
+    }
+
+    /**
+     * Return true if the given {@code codepoint} is change display properties
+     * or deprecated characters as defined by
+     * &lt;a href=&quot;https://tools.ietf.org/html/rfc3454#appendix-C.8&quot;&gt;RFC 3454,
+     * Appendix C.8&lt;/a&gt;.
+     */
+    private static boolean changeDisplayProperties(int codepoint)
+    {
+<span class="pc bpc" id="L180" title="15 of 30 branches missed.">        return codepoint == 0x0340</span>
+                || codepoint == 0x0341
+                || codepoint == 0x200E
+                || codepoint == 0x200F
+                || codepoint == 0x202A
+                || codepoint == 0x202B
+                || codepoint == 0x202C
+                || codepoint == 0x202D
+                || codepoint == 0x202E
+                || codepoint == 0x206A
+                || codepoint == 0x206B
+                || codepoint == 0x206C
+                || codepoint == 0x206D
+                || codepoint == 0x206E
+                || codepoint == 0x206F
+                ;
+    }
+
+    /**
+     * Return true if the given {@code codepoint} is inappropriate for
+     * canonical representation characters as defined by
+     * &lt;a href=&quot;https://tools.ietf.org/html/rfc3454#appendix-C.7&quot;&gt;RFC 3454,
+     * Appendix C.7&lt;/a&gt;.
+     */
+    private static boolean inappropriateForCanonical(int codepoint)
+    {
+<span class="pc bpc" id="L206" title="3 of 4 branches missed.">        return 0x2FF0 &lt;= codepoint &amp;&amp; codepoint &lt;= 0x2FFB;</span>
+    }
+
+    /**
+     * Return true if the given {@code codepoint} is inappropriate for plain
+     * text characters as defined by
+     * &lt;a href=&quot;https://tools.ietf.org/html/rfc3454#appendix-C.6&quot;&gt;RFC 3454,
+     * Appendix C.6&lt;/a&gt;.
+     */
+    private static boolean inappropriateForPlainText(int codepoint)
+    {
+<span class="pc bpc" id="L217" title="5 of 10 branches missed.">        return codepoint == 0xFFF9</span>
+                || codepoint == 0xFFFA
+                || codepoint == 0xFFFB
+                || codepoint == 0xFFFC
+                || codepoint == 0xFFFD
+                ;
+    }
+
+    /**
+     * Return true if the given {@code codepoint} is a surrogate
+     * code point as defined by
+     * &lt;a href=&quot;https://tools.ietf.org/html/rfc3454#appendix-C.5&quot;&gt;RFC 3454,
+     * Appendix C.5&lt;/a&gt;.
+     */
+    private static boolean surrogateCodePoint(int codepoint)
+    {
+<span class="pc bpc" id="L233" title="3 of 4 branches missed.">        return 0xD800 &lt;= codepoint &amp;&amp; codepoint &lt;= 0xDFFF;</span>
+    }
+
+    /**
+     * Return true if the given {@code codepoint} is a non-character
+     * code point as defined by
+     * &lt;a href=&quot;https://tools.ietf.org/html/rfc3454#appendix-C.4&quot;&gt;RFC 3454,
+     * Appendix C.4&lt;/a&gt;.
+     */
+    private static boolean nonCharacterCodePoint(int codepoint)
+    {
+<span class="pc bpc" id="L244" title="54 of 72 branches missed.">        return 0xFDD0 &lt;= codepoint &amp;&amp; codepoint &lt;= 0xFDEF</span>
+                || 0xFFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0xFFFF
+                || 0x1FFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0x1FFFF
+                || 0x2FFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0x2FFFF
+                || 0x3FFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0x3FFFF
+                || 0x4FFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0x4FFFF
+                || 0x5FFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0x5FFFF
+                || 0x6FFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0x6FFFF
+                || 0x7FFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0x7FFFF
+                || 0x8FFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0x8FFFF
+                || 0x9FFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0x9FFFF
+                || 0xAFFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0xAFFFF
+                || 0xBFFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0xBFFFF
+                || 0xCFFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0xCFFFF
+                || 0xDFFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0xDFFFF
+                || 0xEFFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0xEFFFF
+                || 0xFFFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0xFFFFF
+                || 0x10FFFE &lt;= codepoint &amp;&amp; codepoint &lt;= 0x10FFFF
+                ;
+    }
+
+    /**
+     * Return true if the given {@code codepoint} is a private use character
+     * as defined by &lt;a href=&quot;https://tools.ietf.org/html/rfc3454#appendix-C.3&quot;&gt;RFC 3454,
+     * Appendix C.3&lt;/a&gt;.
+     */
+    private static boolean privateUse(int codepoint)
+    {
+<span class="pc bpc" id="L272" title="9 of 12 branches missed.">        return 0xE000 &lt;= codepoint &amp;&amp; codepoint &lt;= 0xF8FF</span>
+                || 0xF0000 &lt;= codepoint &amp;&amp; codepoint &lt;= 0xFFFFD
+                || 0x100000 &lt;= codepoint &amp;&amp; codepoint &lt;= 0x10FFFD;
+    }
+
+    /**
+     * Return true if the given {@code ch} is a non-ASCII control character
+     * as defined by &lt;a href=&quot;https://tools.ietf.org/html/rfc3454#appendix-C.2.2&quot;&gt;RFC 3454,
+     * Appendix C.2.2&lt;/a&gt;.
+     */
+    private static boolean nonAsciiControl(int codepoint)
+    {
+<span class="pc bpc" id="L284" title="24 of 40 branches missed.">        return 0x0080 &lt;= codepoint &amp;&amp; codepoint &lt;= 0x009F</span>
+                || codepoint == 0x06DD
+                || codepoint == 0x070F
+                || codepoint == 0x180E
+                || codepoint == 0x200C
+                || codepoint == 0x200D
+                || codepoint == 0x2028
+                || codepoint == 0x2029
+                || codepoint == 0x2060
+                || codepoint == 0x2061
+                || codepoint == 0x2062
+                || codepoint == 0x2063
+                || 0x206A &lt;= codepoint &amp;&amp; codepoint &lt;= 0x206F
+                || codepoint == 0xFEFF
+                || 0xFFF9 &lt;= codepoint &amp;&amp; codepoint &lt;= 0xFFFC
+                || 0x1D173 &lt;= codepoint &amp;&amp; codepoint &lt;= 0x1D17A;
+    }
+
+    /**
+     * Return true if the given {@code ch} is an ASCII control character
+     * as defined by &lt;a href=&quot;https://tools.ietf.org/html/rfc3454#appendix-C.2.1&quot;&gt;RFC 3454,
+     * Appendix C.2.1&lt;/a&gt;.
+     */
+    private static boolean asciiControl(char ch)
+    {
+<span class="pc bpc" id="L309" title="3 of 6 branches missed.">        return '\u0000' &lt;= ch &amp;&amp; ch &lt;= '\u001F' || ch == '\u007F';</span>
+    }
+
+    /**
+     * Return true if the given {@code ch} is a non-ASCII space character
+     * as defined by &lt;a href=&quot;https://tools.ietf.org/html/rfc3454#appendix-C.1.2&quot;&gt;RFC 3454,
+     * Appendix C.1.2&lt;/a&gt;.
+     */
+    private static boolean nonAsciiSpace(char ch)
+    {
+<span class="pc bpc" id="L319" title="8 of 14 branches missed.">        return ch == '\u00A0'</span>
+                || ch == '\u1680'
+                || '\u2000' &lt;= ch &amp;&amp; ch &lt;= '\u200B'
+                || ch == '\u202F'
+                || ch == '\u205F'
+                || ch == '\u3000';
+    }
+
+    /**
+     * Return true if the given {@code ch} is a &quot;commonly mapped to nothing&quot; character
+     * as defined by &lt;a href=&quot;https://tools.ietf.org/html/rfc3454#appendix-B.1&quot;&gt;RFC 3454,
+     * Appendix B.1&lt;/a&gt;.
+     */
+    private static boolean mappedToNothing(char ch)
+    {
+<span class="pc bpc" id="L334" title="14 of 26 branches missed.">        return ch == '\u00AD'</span>
+                || ch == '\u034F'
+                || ch == '\u1806'
+                || ch == '\u180B'
+                || ch == '\u180C'
+                || ch == '\u180D'
+                || ch == '\u200B'
+                || ch == '\u200C'
+                || ch == '\u200D'
+                || ch == '\u2060'
+                || '\uFE00' &lt;= ch &amp;&amp; ch &lt;= '\uFE0F'
+                || ch == '\uFEFF';
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,391 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDColorSpace.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.color</a> &gt; <span class="el_source">PDColorSpace.java</span></div><h1>PDColorSpace.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.color;
+
+import java.awt.Graphics;
+import java.awt.Transparency;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorConvertOp;
+import java.awt.image.ComponentColorModel;
+import java.awt.image.WritableRaster;
+import java.awt.color.ColorSpace;
+import java.awt.image.ColorModel;
+import java.io.IOException;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.pdmodel.MissingResourceException;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.ResourceCache;
+
+/**
+ * A color space specifies how the colours of graphics objects will be painted on the page.
+ *
+ * @author John Hewson
+ * @author Ben Litchfield
+ */
+<span class="fc" id="L45">public abstract class PDColorSpace implements COSObjectable</span>
+{
+<span class="fc" id="L47">    private final ColorConvertOp colorConvertOp = new ColorConvertOp(null);</span>
+
+    /**
+     * Creates a color space given a name or array.
+     * @param colorSpace the color space COS object
+     * @return a new color space
+     * @throws IOException if the color space is unknown or cannot be created
+     */
+    public static PDColorSpace create(COSBase colorSpace) throws IOException
+    {
+<span class="nc" id="L57">        return create(colorSpace, null);</span>
+    }
+
+    /**
+     * Creates a color space given a name or array. Abbreviated device color names are not supported
+     * here, please replace them first.
+     *
+     * @param colorSpace the color space COS object
+     * @param resources the current resources.
+     * @return a new color space
+     * @throws MissingResourceException if the color space is missing in the resources dictionary
+     * @throws IOException if the color space is unknown or cannot be created
+     */
+    public static PDColorSpace create(COSBase colorSpace,
+                                      PDResources resources)
+                                      throws IOException
+    {
+<span class="fc" id="L74">        return create(colorSpace, resources, false);</span>
+    }
+    
+    /**
+     * Creates a color space given a name or array. Abbreviated device color names are not supported
+     * here, please replace them first. This method is for PDFBox internal use only, others should
+     * use {@link #create(COSBase, PDResources)}.
+     *
+     * @param colorSpace the color space COS object
+     * @param resources the current resources.
+     * @param wasDefault if current color space was used by a default color space.
+     * @return a new color space.
+     * @throws MissingResourceException if the color space is missing in the resources dictionary
+     * @throws IOException if the color space is unknown or cannot be created.
+     */
+    public static PDColorSpace create(COSBase colorSpace,
+                                      PDResources resources,
+                                      boolean wasDefault)
+                                      throws IOException
+    {
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        if (colorSpace instanceof COSObject)</span>
+        {
+<span class="fc" id="L96">            return createFromCOSObject((COSObject) colorSpace, resources);</span>
+        }
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        else if (colorSpace instanceof COSName)</span>
+        {
+<span class="fc" id="L100">            COSName name = (COSName)colorSpace;</span>
+
+            // default color spaces
+<span class="fc bfc" id="L103" title="All 2 branches covered.">            if (resources != null)</span>
+            {
+<span class="fc" id="L105">                COSName defaultName = null;</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">                if (name.equals(COSName.DEVICECMYK) &amp;&amp;</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">                    resources.hasColorSpace(COSName.DEFAULT_CMYK))</span>
+                {
+<span class="nc" id="L109">                    defaultName = COSName.DEFAULT_CMYK;</span>
+                }
+<span class="fc bfc" id="L111" title="All 2 branches covered.">                else if (name.equals(COSName.DEVICERGB) &amp;&amp;</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">                         resources.hasColorSpace(COSName.DEFAULT_RGB))</span>
+                {
+<span class="fc" id="L114">                    defaultName = COSName.DEFAULT_RGB;</span>
+                }
+<span class="fc bfc" id="L116" title="All 2 branches covered.">                else if (name.equals(COSName.DEVICEGRAY) &amp;&amp;</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">                         resources.hasColorSpace(COSName.DEFAULT_GRAY))</span>
+                {
+<span class="nc" id="L119">                    defaultName = COSName.DEFAULT_GRAY;</span>
+                }
+
+<span class="pc bpc" id="L122" title="1 of 4 branches missed.">                if (resources.hasColorSpace(defaultName) &amp;&amp; !wasDefault)</span>
+                {
+<span class="fc" id="L124">                    return resources.getColorSpace(defaultName, true);</span>
+                }
+            }
+
+            // built-in color spaces
+<span class="fc bfc" id="L129" title="All 2 branches covered.">            if (name == COSName.DEVICECMYK)</span>
+            {
+<span class="fc" id="L131">                return PDDeviceCMYK.INSTANCE;</span>
+            }
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            else if (name == COSName.DEVICERGB)</span>
+            {
+<span class="fc" id="L135">                return PDDeviceRGB.INSTANCE;</span>
+            }
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            else if (name == COSName.DEVICEGRAY)</span>
+            {
+<span class="fc" id="L139">                return PDDeviceGray.INSTANCE;</span>
+            }
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">            else if (name == COSName.PATTERN)</span>
+            {
+<span class="nc" id="L143">                return new PDPattern(resources);</span>
+            }
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">            else if (resources != null)</span>
+            {
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">                if (!resources.hasColorSpace(name))</span>
+                {
+<span class="nc" id="L149">                    throw new MissingResourceException(&quot;Missing color space: &quot; + name.getName());</span>
+                }
+<span class="fc" id="L151">                return resources.getColorSpace(name);</span>
+            }
+            else
+            {
+<span class="nc" id="L155">                throw new MissingResourceException(&quot;Unknown color space: &quot; + name.getName());</span>
+            }
+        }
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">        else if (colorSpace instanceof COSArray)</span>
+        {
+<span class="fc" id="L160">            COSArray array = (COSArray)colorSpace;</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">            if (array.isEmpty())</span>
+            {
+<span class="nc" id="L163">                throw new IOException(&quot;Colorspace array is empty&quot;);</span>
+            }
+<span class="fc" id="L165">            COSBase base = array.getObject(0);</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">            if (!(base instanceof COSName))</span>
+            {
+<span class="nc" id="L168">                throw new IOException(&quot;First element in colorspace array must be a name&quot;);</span>
+            }
+<span class="fc" id="L170">            COSName name = (COSName) base;</span>
+
+            // TODO cache these returned color spaces?
+
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            if (name == COSName.CALGRAY)</span>
+            {
+<span class="fc" id="L176">                return new PDCalGray(array);</span>
+            }
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">            else if (name == COSName.CALRGB)</span>
+            {
+<span class="nc" id="L180">                return new PDCalRGB(array);</span>
+            }
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">            else if (name == COSName.DEVICEN)</span>
+            {
+<span class="nc" id="L184">                return new PDDeviceN(array, resources);</span>
+            }
+<span class="fc bfc" id="L186" title="All 2 branches covered.">            else if (name == COSName.INDEXED)</span>
+            {
+<span class="fc" id="L188">                return new PDIndexed(array, resources);</span>
+            }
+<span class="fc bfc" id="L190" title="All 2 branches covered.">            else if (name == COSName.SEPARATION)</span>
+            {
+<span class="fc" id="L192">                return new PDSeparation(array, resources);</span>
+            }
+<span class="fc bfc" id="L194" title="All 2 branches covered.">            else if (name == COSName.ICCBASED)</span>
+            {
+<span class="fc" id="L196">                return PDICCBased.create(array, resources);</span>
+            }
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">            else if (name == COSName.LAB)</span>
+            {
+<span class="nc" id="L200">                return new PDLab(array);</span>
+            }
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">            else if (name == COSName.PATTERN)</span>
+            {
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">                if (array.size() == 1)</span>
+                {
+<span class="fc" id="L206">                    return new PDPattern(resources);</span>
+                }
+                else
+                {
+<span class="nc" id="L210">                    return new PDPattern(resources, PDColorSpace.create(array.get(1)));</span>
+                }
+            }
+<span class="nc bnc" id="L213" title="All 6 branches missed.">            else if (name == COSName.DEVICECMYK ||</span>
+                     name == COSName.DEVICERGB ||
+                     name == COSName.DEVICEGRAY)
+            {
+                // not allowed in an array, but we sometimes encounter these regardless
+<span class="nc" id="L218">                return create(name, resources, wasDefault);</span>
+            }
+            else
+            {
+<span class="nc" id="L222">                throw new IOException(&quot;Invalid color space kind: &quot; + name);</span>
+            }
+        }
+<span class="nc bnc" id="L225" title="All 2 branches missed.">        else if (colorSpace instanceof COSDictionary &amp;&amp; </span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">                ((COSDictionary) colorSpace).containsKey(COSName.COLORSPACE))</span>
+        {
+            // PDFBOX-4833: dictionary with /ColorSpace entry
+<span class="nc" id="L229">            COSBase base = ((COSDictionary) colorSpace).getDictionaryObject(COSName.COLORSPACE);</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">            if (base == colorSpace)</span>
+            {
+                // PDFBOX-5315
+<span class="nc" id="L233">                throw new IOException(&quot;Recursion in colorspace: &quot; +</span>
+<span class="nc" id="L234">                        ((COSDictionary) colorSpace).getItem(COSName.COLORSPACE) + &quot; points to itself&quot;);</span>
+            }
+<span class="nc" id="L236">            return create(base, resources, wasDefault);</span>
+        }
+        else
+        {
+<span class="nc" id="L240">            throw new IOException(&quot;Expected a name or array but got: &quot; + colorSpace);</span>
+        }
+    }
+
+    private static PDColorSpace createFromCOSObject(COSObject colorSpace, PDResources resources)
+            throws IOException
+    {
+        PDColorSpace cs;
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">        if (resources != null)</span>
+        {
+<span class="fc" id="L250">            ResourceCache resourceCache = resources.getResourceCache();</span>
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">            if (resourceCache != null)</span>
+            {
+<span class="fc" id="L253">                cs = resourceCache.getColorSpace(colorSpace);</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">                if (cs != null)</span>
+                {
+<span class="fc" id="L256">                    return cs;</span>
+                }
+            }
+<span class="fc" id="L259">            cs = create(colorSpace.getObject(), resources);</span>
+<span class="pc bpc" id="L260" title="2 of 4 branches missed.">            if (resourceCache != null &amp;&amp; cs != null)</span>
+            {
+<span class="fc" id="L262">                resourceCache.put(colorSpace, cs);</span>
+            }
+<span class="fc" id="L264">        }</span>
+        else
+        {
+<span class="nc" id="L267">            cs = create(colorSpace.getObject());</span>
+        }
+<span class="fc" id="L269">        return cs;</span>
+    }
+
+    // array for the given parameters
+    protected COSArray array;
+
+    /**
+     * Returns the name of the color space.
+     * @return the name of the color space
+     */
+    public abstract String getName();
+
+    /**
+     * Returns the number of components in this color space
+     * @return the number of components in this color space
+     */
+    public abstract int getNumberOfComponents();
+
+    /**
+     * Returns the default decode array for this color space.
+     * @param bitsPerComponent the number of bits per component.
+     * @return the default decode array
+     */
+    public abstract float[] getDefaultDecode(int bitsPerComponent);
+
+    /**
+     * Returns the initial color value for this color space.
+     * @return the initial color value for this color space
+     */
+    public abstract PDColor getInitialColor();
+
+    /**
+     * Returns the RGB equivalent of the given color value.
+     * @param value a color value with component values between 0 and 1
+     * @return an array of R,G,B value between 0 and 255
+     * @throws IOException if the color conversion fails
+     */
+    public abstract float[] toRGB(float[] value) throws IOException;
+
+    /**
+     * Returns the (A)RGB equivalent of the given raster.
+     * @param raster the source raster
+     * @return an (A)RGB buffered image
+     * @throws IOException if the color conversion fails
+     */
+    public abstract BufferedImage toRGBImage(WritableRaster raster) throws IOException;
+
+    /**
+     * Returns the image in this colorspace or null. No conversion is performed.
+     *
+     * For special colorspaces like PDSeparation the image is returned in the gray colorspace. For undefined colorspaces
+     * like DeviceCMYK/DeviceRGB and DeviceGray null is returned.
+     *
+     * You can always fallback to {@link #toRGBImage(WritableRaster)} if this returns null.
+     *
+     * @param raster the source raster
+     * @return an buffered image in this colorspace. Or null if it is not possible to extract that image with the
+     * original colorspace without conversion.
+     * 
+     * @throws IOException if the image conversion fails
+     */
+    public abstract BufferedImage toRawImage(WritableRaster raster) throws IOException;
+
+    /**
+     * Returns the given raster as BufferedImage with the given awtColorSpace using a
+     * ComponentColorModel.
+     * @param raster the source raster
+     * @param awtColorSpace the AWT colorspace
+     * @return a BufferedImage in this colorspace
+     */
+    protected final BufferedImage toRawImage(WritableRaster raster, ColorSpace awtColorSpace)
+    {
+<span class="fc" id="L341">        ColorModel colorModel = new ComponentColorModel(awtColorSpace,</span>
+<span class="fc" id="L342">                false, false, Transparency.OPAQUE, raster.getDataBuffer().getDataType());</span>
+<span class="fc" id="L343">        return new BufferedImage(colorModel, raster, false, null);</span>
+    }
+
+    /**
+     * Returns the (A)RGB equivalent of the given raster, using the given AWT color space
+     * to perform the conversion.
+     * @param raster the source raster
+     * @param colorSpace the AWT
+     * @return an (A)RGB buffered image
+     */
+    protected BufferedImage toRGBImageAWT(WritableRaster raster, ColorSpace colorSpace)
+    {
+        //
+        // WARNING: this method is performance sensitive, modify with care!
+        //
+
+        // ICC Profile color transforms are only fast when performed using ColorConvertOp
+<span class="fc" id="L360">        ColorModel colorModel = new ComponentColorModel(colorSpace,</span>
+<span class="fc" id="L361">            false, false, Transparency.OPAQUE, raster.getDataBuffer().getDataType());</span>
+
+<span class="fc" id="L363">        BufferedImage src = new BufferedImage(colorModel, raster, false, null);</span>
+<span class="fc" id="L364">        BufferedImage dest = new BufferedImage(raster.getWidth(), raster.getHeight(),</span>
+                                               BufferedImage.TYPE_INT_RGB);
+<span class="pc bpc" id="L366" title="1 of 4 branches missed.">        if (src.getWidth() == 1 || src.getHeight() == 1)</span>
+        {
+            // PDFBOX-5051: ColorConvertOp is too slow for tiny images. But we can't use drawImage()
+            // for all images because it is slower when used for all images.
+            // Re quality &amp; speed: the quality gold standard is setRGB(getRGB()) but this is also 
+            // the slowest. drawImage() is identical in quality (but faster) except for ICC based
+            // images with 1 component. ColorConvertOp is fastest except for small images, there's
+            // somehow a slowness &quot;price&quot; paid per call and the quality is slightly flawed sometimes,
+            // and rendering hints are ignored.
+            // All the above tested with jdk8 and LCMS.
+<span class="fc" id="L376">            Graphics g2d = dest.getGraphics();</span>
+<span class="fc" id="L377">            g2d.drawImage(src, 0, 0, null);</span>
+<span class="fc" id="L378">            g2d.dispose();</span>
+<span class="fc" id="L379">            return dest;</span>
+        }
+<span class="fc" id="L381">        colorConvertOp.filter(src, dest);</span>
+<span class="fc" id="L382">        return dest;</span>
+    }
+
+    @Override
+    public COSBase getCOSObject()
+    {
+<span class="fc" id="L388">        return array;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

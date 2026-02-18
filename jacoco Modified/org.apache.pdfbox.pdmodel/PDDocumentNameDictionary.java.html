@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDDocumentNameDictionary.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel</a> &gt; <span class="el_source">PDDocumentNameDictionary.java</span></div><h1>PDDocumentNameDictionary.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * This class holds all of the name trees that are available at the document level.
+ *
+ * @author Ben Litchfield
+ */
+public class PDDocumentNameDictionary implements COSObjectable
+{
+    private final COSDictionary nameDictionary;
+    private final PDDocumentCatalog catalog;
+
+    /**
+     * Constructor.
+     *
+     * @param cat The document catalog that this dictionary is part of.
+     */
+    public PDDocumentNameDictionary( PDDocumentCatalog cat )
+<span class="nc" id="L39">    {</span>
+<span class="nc" id="L40">        COSDictionary names = cat.getCOSObject().getCOSDictionary(COSName.NAMES);</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        if (names == null)</span>
+        {
+<span class="nc" id="L43">            names = new COSDictionary();</span>
+<span class="nc" id="L44">            cat.getCOSObject().setItem(COSName.NAMES, names);</span>
+        }
+<span class="nc" id="L46">        nameDictionary = names;</span>
+<span class="nc" id="L47">        catalog = cat;</span>
+<span class="nc" id="L48">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param cat The document that this dictionary is part of.
+     * @param names The names dictionary.
+     */
+    public PDDocumentNameDictionary( PDDocumentCatalog cat, COSDictionary names )
+<span class="fc" id="L57">    {</span>
+<span class="fc" id="L58">        catalog = cat;</span>
+<span class="fc" id="L59">        nameDictionary = names;</span>
+<span class="fc" id="L60">    }</span>
+
+    /**
+     * Convert this standard java object to a COS object.
+     *
+     * @return The cos dictionary for this object.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="fc" id="L70">        return nameDictionary;</span>
+    }
+
+    /**
+     * Get the destination named tree node. The values in this name tree will be
+     * PDPageDestination objects.
+     *
+     * @return The destination name tree node.
+     */
+    public PDDestinationNameTreeNode getDests()
+    {
+<span class="fc" id="L81">        COSDictionary dic = nameDictionary.getCOSDictionary(COSName.DESTS);</span>
+        //The document catalog also contains the Dests entry sometimes
+        //so check there as well.
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if( dic == null )</span>
+        {
+<span class="nc" id="L86">            dic = catalog.getCOSObject().getCOSDictionary(COSName.DESTS);</span>
+        }
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        return dic != null ? new PDDestinationNameTreeNode(dic) : null;</span>
+    }
+
+    /**
+     * Set the named destinations that are associated with this document.
+     *
+     * @param dests The destination names.
+     */
+    public void setDests( PDDestinationNameTreeNode dests )
+    {
+<span class="nc" id="L98">        nameDictionary.setItem( COSName.DESTS, dests );</span>
+        //The dests can either be in the document catalog or in the
+        //names dictionary, PDFBox will just maintain the one in the
+        //names dictionary for now unless there is a reason to do
+        //something else.
+        //clear the potentially out of date Dests reference.
+<span class="nc" id="L104">        catalog.getCOSObject().setItem( COSName.DESTS, (COSObjectable)null);</span>
+<span class="nc" id="L105">    }</span>
+
+    /**
+     * Get the embedded files named tree node. The values in this name tree will
+     * be PDComplexFileSpecification objects.
+     *
+     * @return The embedded files name tree node.
+     */
+    public PDEmbeddedFilesNameTreeNode getEmbeddedFiles()
+    {
+<span class="fc" id="L115">        COSDictionary dic = nameDictionary.getCOSDictionary(COSName.EMBEDDED_FILES);</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        return dic != null ? new PDEmbeddedFilesNameTreeNode(dic) : null;</span>
+    }
+
+    /**
+     * Set the named embedded files that are associated with this document.
+     *
+     * @param ef The new embedded files
+     */
+    public void setEmbeddedFiles( PDEmbeddedFilesNameTreeNode ef )
+    {
+<span class="nc" id="L126">        nameDictionary.setItem( COSName.EMBEDDED_FILES, ef );</span>
+<span class="nc" id="L127">    }</span>
+
+    /**
+     * Get the document level JavaScript name tree. When the document is opened, all the JavaScript
+     * actions in it shall be executed, defining JavaScript functions for use by other scripts in
+     * the document.
+     *
+     * @return The document level JavaScript name tree.
+     */
+    public PDJavascriptNameTreeNode getJavaScript()
+    {
+<span class="nc" id="L138">        COSDictionary dic = nameDictionary.getCOSDictionary(COSName.JAVA_SCRIPT);</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">        return dic != null ? new PDJavascriptNameTreeNode(dic) : null;</span>
+    }
+
+    /**
+     * Set the named javascript entries that are associated with this document.
+     *
+     * @param js The new Javascript entries.
+     */
+    public void setJavascript( PDJavascriptNameTreeNode js )
+    {
+<span class="nc" id="L149">        nameDictionary.setItem( COSName.JAVA_SCRIPT, js );</span>
+<span class="nc" id="L150">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

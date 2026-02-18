@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDFontSetting.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics</a> &gt; <span class="el_source">PDFontSetting.java</span></div><h1>PDFontSetting.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSFloat;
+import org.apache.pdfbox.cos.COSNumber;
+
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDFontFactory;
+
+import java.io.IOException;
+
+/**
+ * This class represents a font setting used for the graphics state.  A font setting is a font and a
+ * font size.  Maybe there is a better name for this?
+ *
+ * @author Ben Litchfield
+ */
+public class PDFontSetting implements COSObjectable
+{
+<span class="nc" id="L40">    private COSArray fontSetting = null;</span>
+
+    /**
+     * Creates a blank font setting, font will be null, size will be 1.
+     */
+    public PDFontSetting()
+<span class="nc" id="L46">    {</span>
+<span class="nc" id="L47">        fontSetting = new COSArray();</span>
+<span class="nc" id="L48">        fontSetting.add( null );</span>
+<span class="nc" id="L49">        fontSetting.add( new COSFloat( 1 ) );</span>
+<span class="nc" id="L50">    }</span>
+
+    /**
+     * Constructs a font setting from an existing array.
+     *
+     * @param fs The new font setting value.
+     */
+    public PDFontSetting( COSArray fs )
+<span class="nc" id="L58">    {</span>
+<span class="nc" id="L59">        fontSetting = fs;</span>
+<span class="nc" id="L60">    }</span>
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public COSBase getCOSObject()
+    {
+<span class="nc" id="L68">        return fontSetting;</span>
+    }
+
+    /**
+     * This will get the font for this font setting.
+     *
+     * @return The font for this setting of null if one was not found.
+     *
+     * @throws IOException If there is an error getting the font.
+     */
+    public PDFont getFont() throws IOException
+    {
+<span class="nc" id="L80">        PDFont retval = null;</span>
+<span class="nc" id="L81">        COSBase font = fontSetting.getObject(0);</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">        if( font instanceof COSDictionary )</span>
+        {
+<span class="nc" id="L84">            retval = PDFontFactory.createFont( (COSDictionary)font );</span>
+        }
+<span class="nc" id="L86">        return retval;</span>
+    }
+
+    /**
+     * This will set the font for this font setting.
+     *
+     * @param font The new font.
+     */
+    public void setFont( PDFont font )
+    {
+<span class="nc" id="L96">        fontSetting.set( 0, font );</span>
+<span class="nc" id="L97">    }</span>
+
+    /**
+     * This will get the size of the font.
+     *
+     * @return The size of the font.
+     */
+    public float getFontSize()
+    {
+<span class="nc" id="L106">        COSNumber size = (COSNumber)fontSetting.get( 1 );</span>
+<span class="nc" id="L107">        return size.floatValue();</span>
+    }
+
+    /**
+     * This will set the size of the font.
+     *
+     * @param size The new size of the font.
+     */
+    public void setFontSize( float size )
+    {
+<span class="nc" id="L117">        fontSetting.set( 1, new COSFloat( size ) );</span>
+<span class="nc" id="L118">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

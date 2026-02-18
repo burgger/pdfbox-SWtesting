@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ASCII85InputStream.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.filter</a> &gt; <span class="el_source">ASCII85InputStream.java</span></div><h1>ASCII85InputStream.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.filter;
+
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+/**
+ * This class represents an ASCII85 stream.
+ *
+ * @author Ben Litchfield
+ *
+ */
+final class ASCII85InputStream extends FilterInputStream
+{
+    private int index;
+    private int n;
+    private boolean eof;
+
+    private byte[] ascii;
+    private byte[] b;
+
+    private static final char TERMINATOR = '~';
+    private static final char OFFSET = '!';
+    private static final char NEWLINE = '\n';
+    private static final char RETURN = '\r';
+    private static final char SPACE = ' ';
+    private static final char PADDING_U = 'u';
+    private static final char Z = 'z';
+
+    /**
+     * Constructor.
+     *
+     * @param is The input stream to actually read from.
+     */
+    ASCII85InputStream(InputStream is)
+    {
+<span class="fc" id="L53">        super(is);</span>
+<span class="fc" id="L54">        index = 0;</span>
+<span class="fc" id="L55">        n = 0;</span>
+<span class="fc" id="L56">        eof = false;</span>
+<span class="fc" id="L57">        ascii = new byte[5];</span>
+<span class="fc" id="L58">        b = new byte[4];</span>
+<span class="fc" id="L59">    }</span>
+
+    /**
+     * This will read the next byte from the stream.
+     *
+     * @return The next byte read from the stream.
+     *
+     * @throws IOException If there is an error reading from the wrapped stream.
+     */
+    @Override
+    public int read() throws IOException
+    {
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (index &gt;= n)</span>
+        {
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            if (eof)</span>
+            {
+<span class="fc" id="L75">                return -1;</span>
+            }
+<span class="fc" id="L77">            index = 0;</span>
+            int k;
+            byte z;
+            do
+            {
+<span class="fc" id="L82">                int zz = (byte) in.read();</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">                if (zz == -1)</span>
+                {
+<span class="nc" id="L85">                    eof = true;</span>
+<span class="nc" id="L86">                    return -1;</span>
+                }
+<span class="fc" id="L88">                z = (byte) zz;</span>
+<span class="pc bpc" id="L89" title="2 of 6 branches missed.">            } while (z == NEWLINE || z == RETURN || z == SPACE);</span>
+
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            if (z == TERMINATOR)</span>
+            {
+<span class="fc" id="L93">                eof = true;</span>
+<span class="fc" id="L94">                ascii = b = null;</span>
+<span class="fc" id="L95">                n = 0;</span>
+<span class="fc" id="L96">                return -1;</span>
+            }
+<span class="fc bfc" id="L98" title="All 2 branches covered.">            else if (z == Z)</span>
+            {
+<span class="fc" id="L100">                b[0] = b[1] = b[2] = b[3] = 0;</span>
+<span class="fc" id="L101">                n = 4;</span>
+            }
+            else
+            {
+<span class="fc" id="L105">                ascii[0] = z; // may be EOF here....</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">                for (k = 1; k &lt; 5; ++k)</span>
+                {
+                    do
+                    {
+<span class="fc" id="L110">                        int zz = (byte) in.read();</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">                        if (zz == -1)</span>
+                        {
+<span class="nc" id="L113">                            eof = true;</span>
+<span class="nc" id="L114">                            return -1;</span>
+                        }
+<span class="fc" id="L116">                        z = (byte) zz;</span>
+<span class="pc bpc" id="L117" title="2 of 6 branches missed.">                    } while (z == NEWLINE || z == RETURN || z == SPACE);</span>
+<span class="fc" id="L118">                    ascii[k] = z;</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">                    if (z == TERMINATOR)</span>
+                    {
+                        // don't include ~ as padding byte
+<span class="fc" id="L122">                        ascii[k] = (byte) PADDING_U;</span>
+<span class="fc" id="L123">                        break;</span>
+                    }
+                }
+<span class="fc" id="L126">                n = k - 1;</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">                if (n == 0)</span>
+                {
+<span class="nc" id="L129">                    eof = true;</span>
+<span class="nc" id="L130">                    ascii = null;</span>
+<span class="nc" id="L131">                    b = null;</span>
+<span class="nc" id="L132">                    return -1;</span>
+                }
+<span class="fc bfc" id="L134" title="All 2 branches covered.">                if (k &lt; 5)</span>
+                {
+<span class="fc bfc" id="L136" title="All 2 branches covered.">                    for (++k; k &lt; 5; ++k)</span>
+                    {
+                        // use 'u' for padding
+<span class="fc" id="L139">                        ascii[k] = (byte) PADDING_U;</span>
+                    }
+<span class="fc" id="L141">                    eof = true;</span>
+                }
+                // decode stream
+<span class="fc" id="L144">                long t = 0;</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">                for (k = 0; k &lt; 5; ++k)</span>
+                {
+<span class="fc" id="L147">                    z = (byte) (ascii[k] - OFFSET);</span>
+<span class="pc bpc" id="L148" title="2 of 4 branches missed.">                    if (z &lt; 0 || z &gt; 93)</span>
+                    {
+<span class="nc" id="L150">                        n = 0;</span>
+<span class="nc" id="L151">                        eof = true;</span>
+<span class="nc" id="L152">                        ascii = null;</span>
+<span class="nc" id="L153">                        b = null;</span>
+<span class="nc" id="L154">                        throw new IOException(&quot;Invalid data in Ascii85 stream&quot;);</span>
+                    }
+<span class="fc" id="L156">                    t = (t * 85L) + z;</span>
+                }
+<span class="fc bfc" id="L158" title="All 2 branches covered.">                for (k = 3; k &gt;= 0; --k)</span>
+                {
+<span class="fc" id="L160">                    b[k] = (byte) (t &amp; 0xFFL);</span>
+<span class="fc" id="L161">                    t &gt;&gt;&gt;= 8;</span>
+                }
+            }
+        }
+<span class="fc" id="L165">        return b[index++] &amp; 0xFF;</span>
+    }
+
+    /**
+     * This will read a chunk of data.
+     *
+     * @param data The buffer to write data to.
+     * @param offset The offset into the data stream.
+     * @param len The number of byte to attempt to read.
+     *
+     * @return The number of bytes actually read.
+     *
+     * @throws IOException If there is an error reading data from the underlying stream.
+     */
+    @Override
+    public int read(byte[] data, int offset, int len) throws IOException
+    {
+<span class="pc bpc" id="L182" title="1 of 4 branches missed.">        if (eof &amp;&amp; index &gt;= n)</span>
+        {
+<span class="fc" id="L184">            return -1;</span>
+        }
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        for (int i = 0; i &lt; len; i++)</span>
+        {
+<span class="fc bfc" id="L188" title="All 2 branches covered.">            if (index &lt; n)</span>
+            {
+<span class="fc" id="L190">                data[i + offset] = b[index++];</span>
+            }
+            else
+            {
+<span class="fc" id="L194">                int t = read();</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">                if (t == -1)</span>
+                {
+<span class="fc" id="L197">                    return i;</span>
+                }
+<span class="fc" id="L199">                data[i + offset] = (byte) t;</span>
+            }
+        }
+<span class="fc" id="L202">        return len;</span>
+    }
+
+    /**
+     * This will close the underlying stream and release any resources.
+     *
+     * @throws IOException If there is an error closing the underlying stream.
+     */
+    @Override
+    public void close() throws IOException
+    {
+<span class="fc" id="L213">        ascii = null;</span>
+<span class="fc" id="L214">        eof = true;</span>
+<span class="fc" id="L215">        b = null;</span>
+<span class="fc" id="L216">        super.close();</span>
+<span class="fc" id="L217">    }</span>
+
+    /**
+     * non supported interface methods.
+     *
+     * @return False always.
+     */
+    @Override
+    public boolean markSupported()
+    {
+<span class="nc" id="L227">        return false;</span>
+    }
+
+    /**
+     * Unsupported.
+     *
+     * @param nValue ignored.
+     *
+     * @return Always zero.
+     */
+    @Override
+    public long skip(long nValue)
+    {
+<span class="nc" id="L240">        return 0;</span>
+    }
+
+    /**
+     * Unsupported.
+     *
+     * @return Always zero.
+     */
+    @Override
+    public int available()
+    {
+<span class="nc" id="L251">        return 0;</span>
+    }
+
+    /**
+     * Unsupported.
+     *
+     * @param readlimit ignored.
+     */
+    @Override
+    public synchronized void mark(int readlimit)
+    {
+<span class="nc" id="L262">    }</span>
+
+    /**
+     * Unsupported.
+     *
+     * @throws IOException telling that this is an unsupported action.
+     */
+    @Override
+    public synchronized void reset() throws IOException
+    {
+<span class="nc" id="L272">        throw new IOException(&quot;Reset is not supported&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

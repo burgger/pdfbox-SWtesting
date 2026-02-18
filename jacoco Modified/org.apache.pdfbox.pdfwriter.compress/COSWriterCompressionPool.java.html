@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>COSWriterCompressionPool.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdfwriter.compress</a> &gt; <span class="el_source">COSWriterCompressionPool.java</span></div><h1>COSWriterCompressionPool.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdfwriter.compress;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.pdfbox.pdfparser.PDFXRefStream;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.cos.COSObjectKey;
+import org.apache.pdfbox.cos.COSStream;
+
+/**
+ * An instance of this class compresses the contents of a given {@link PDDocument}.
+ *
+ * @author Christian Appl
+ */
+public class COSWriterCompressionPool
+{
+
+    public static final float MINIMUM_SUPPORTED_VERSION = 1.6f;
+
+    private final PDDocument document;
+    private final CompressParameters parameters;
+
+    private final COSObjectPool objectPool;
+
+    // A list containing all objects, that shall be directly appended to the document's top level container.
+<span class="fc" id="L53">    private final List&lt;COSObjectKey&gt; topLevelObjects = new ArrayList&lt;&gt;();</span>
+    // A list containing all objects, that may be appended to an object stream.
+<span class="fc" id="L55">    private final List&lt;COSObjectKey&gt; objectStreamObjects = new ArrayList&lt;&gt;();</span>
+    // A list of all direct objects
+<span class="fc" id="L57">    private final Set&lt;COSBase&gt; allDirectObjects = new HashSet&lt;&gt;();</span>
+
+    /**
+     * &lt;p&gt;
+     * Constructs an object that can be used to compress the contents of a given {@link PDDocument}. It provides the
+     * means to:
+     * &lt;/p&gt;
+     * &lt;ul&gt;
+     * &lt;li&gt;Compress the COSStructure of the document, by streaming {@link COSBase}s to compressed
+     * {@link COSWriterObjectStream}s&lt;/li&gt;
+     * &lt;/ul&gt;
+     *
+     * @param document The document, that shall be compressed.
+     * @param parameters The configuration of the compression operations, that shall be applied.
+     * @throws IOException Shall be thrown if a compression operation failed.
+     */
+    public COSWriterCompressionPool(PDDocument document, CompressParameters parameters)
+            throws IOException
+<span class="fc" id="L75">    {</span>
+<span class="fc" id="L76">        this.document = document;</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        this.parameters = parameters != null ? parameters : new CompressParameters();</span>
+<span class="fc" id="L78">        objectPool = new COSObjectPool(document.getDocument().getHighestXRefObjectNumber());</span>
+
+        // Initialize object pool.
+<span class="fc" id="L81">        COSDictionary trailer = document.getDocument().getTrailer();</span>
+<span class="fc" id="L82">        List&lt;COSBase&gt; cosBaseList = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L83">        COSDictionary root = trailer.getCOSDictionary(COSName.ROOT);</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if (root != null)</span>
+        {
+<span class="fc" id="L86">            cosBaseList.add(root);</span>
+        }
+<span class="fc" id="L88">        COSDictionary info = trailer.getCOSDictionary(COSName.INFO);</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        if (info != null)</span>
+        {
+<span class="fc" id="L91">            cosBaseList.add(info);</span>
+        }
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        while (!cosBaseList.isEmpty())</span>
+        {
+<span class="fc" id="L95">            cosBaseList = addStructure(cosBaseList);</span>
+        }
+<span class="fc" id="L97">        allDirectObjects.clear();</span>
+
+<span class="fc" id="L99">        Collections.sort(objectStreamObjects);</span>
+<span class="fc" id="L100">        Collections.sort(topLevelObjects);</span>
+<span class="fc" id="L101">    }</span>
+
+    /**
+     * Adds the given {@link COSBase} to this pool, using the given {@link COSObjectKey} as it's referencable ID. This
+     * method shall determine an appropriate key, for yet unregistered objects, to register them. Depending on the type
+     * of object, it shall either be appended as-is or shall be appended to a compressed {@link COSWriterObjectStream}.
+     *
+     * @param key The {@link COSObjectKey} that shall be used as the {@link COSBase}s ID, if possible.
+     * @param base The {@link COSBase}, that shall be registered in this pool.
+     */
+    private COSBase addObjectToPool(COSObjectKey key, COSBase base)
+    {
+        // Drop hollow objects.
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        COSBase current = base instanceof COSObject ? ((COSObject) base).getObject() : base;</span>
+        // to avoid to mixup indirect COSInteger objects holding the same value we have to check
+        // if the given key is the same than the key which is stored for the &quot;same&quot; base object wihtin the object pool
+        // the same is always true for COSFloat, COSBoolean and COSName and under certain circumstances for the remainig
+        // types as well
+<span class="pc bpc" id="L119" title="1 of 4 branches missed.">        if (current == null //</span>
+<span class="fc bfc" id="L120" title="All 4 branches covered.">                || (key != null &amp;&amp; objectPool.contains(key)) //</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">                || (key == null &amp;&amp; objectPool.contains(current)))</span>
+        {
+<span class="fc" id="L123">            return current;</span>
+        }
+
+        // Check whether the object can not be appended to an object stream.
+        // An objectStream shall only contain generation 0 objects.
+        // It shall never contain the encryption dictionary.
+        // It shall never contain the document's root dictionary. (relevant for document encryption)
+        // It shall never contain other streams.
+<span class="pc bpc" id="L131" title="1 of 6 branches missed.">        if ((key != null &amp;&amp; key.getGeneration() != 0)</span>
+                || current instanceof COSStream
+<span class="fc bfc" id="L133" title="All 2 branches covered.">                || (document.getEncryption() != null</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">                        &amp;&amp; current == document.getEncryption().getCOSObject())</span>
+<span class="fc" id="L135">                || current == this.document.getDocument().getTrailer()</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">                        .getCOSDictionary(COSName.ROOT))</span>
+        {
+<span class="fc" id="L138">            COSObjectKey actualKey = objectPool.put(key, current);</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">            if (actualKey == null)</span>
+            {
+<span class="nc" id="L141">                return current;</span>
+            }
+            // check if the key of the indirect object matches the key of the referenced object
+            // otherwise update the key
+<span class="fc bfc" id="L145" title="All 4 branches covered.">            if (!actualKey.equals(key) &amp;&amp; base instanceof COSObject)</span>
+            {
+<span class="fc" id="L147">                base.setKey(actualKey);</span>
+            }
+<span class="fc" id="L149">            topLevelObjects.add(actualKey);</span>
+<span class="fc" id="L150">            return current;</span>
+        }
+
+        // Determine the object key.
+<span class="fc" id="L154">        COSObjectKey actualKey = objectPool.put(key, current);</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">        if (actualKey == null)</span>
+        {
+<span class="nc" id="L157">            return current;</span>
+        }
+        // check if the key of the indirect object matches the key of the referenced object
+        // otherwise update the key
+<span class="fc bfc" id="L161" title="All 4 branches covered.">        if (!actualKey.equals(key) &amp;&amp; base instanceof COSObject)</span>
+        {
+<span class="fc" id="L163">            base.setKey(actualKey);</span>
+        }
+        // Append it to an object stream.
+<span class="fc" id="L166">        this.objectStreamObjects.add(actualKey);</span>
+<span class="fc" id="L167">        return current;</span>
+    }
+
+    /**
+     * Attempts to find yet unregistered streams and dictionaries in the given structure.
+     *
+     * @param cosBaseList A list of objects to be added for compressing.
+     * @throws IOException Shall be thrown, if adding failed.
+     */
+    private List&lt;COSBase&gt; addStructure(List&lt;COSBase&gt; cosBaseList) throws IOException
+    {
+<span class="fc" id="L178">        List&lt;COSBase&gt; cosBaseListNext = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        for (COSBase cosBase : cosBaseList)</span>
+        {
+<span class="fc" id="L181">            cosBaseListNext.addAll(addStructure(cosBase));</span>
+<span class="fc" id="L182">        }</span>
+<span class="fc" id="L183">        cosBaseList.clear();</span>
+<span class="fc" id="L184">        return cosBaseListNext;</span>
+    }
+
+    /**
+     * Attempts to find yet unregistered streams and dictionaries in the given structure.
+     *
+     * @param current The object to be added for compressing.
+     * @throws IOException Shall be thrown, if compressing the object failed.
+     */
+    private List&lt;COSBase&gt; addStructure(COSBase current) throws IOException
+    {
+<span class="fc" id="L195">        COSBase base = current;</span>
+<span class="fc bfc" id="L196" title="All 4 branches covered.">        if (current instanceof COSStream</span>
+<span class="fc bfc" id="L197" title="All 4 branches covered.">                || (current instanceof COSDictionary &amp;&amp; !current.isDirect()) //</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">                || (current instanceof COSArray &amp;&amp; !current.isDirect()) //</span>
+        )
+        {
+<span class="fc" id="L201">            base = addObjectToPool(base.getKey(), current);</span>
+        }
+<span class="fc bfc" id="L203" title="All 2 branches covered.">        else if (current instanceof COSObject)</span>
+        {
+<span class="fc" id="L205">            base = ((COSObject) current).getObject();</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">            if (base != null)</span>
+            {
+<span class="fc" id="L208">                base = addObjectToPool(current.getKey(), current);</span>
+            }
+        }
+<span class="fc bfc" id="L211" title="All 2 branches covered.">        if (base instanceof COSArray)</span>
+        {
+<span class="fc" id="L213">            return getElements(((COSArray) base).toList());</span>
+        }
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        else if (base instanceof COSDictionary)</span>
+        {
+<span class="fc" id="L217">            return getElements(((COSDictionary) base).getValues());</span>
+        }
+<span class="fc" id="L219">        return Collections.emptyList();</span>
+    }
+
+    /**
+     * Collect all relevant objects from a COSDictionary/COSArray.
+     * 
+     * @param elements collection of all elements of a COSDictionary/COSArray.
+     * 
+     * @return a collection containing the relevant objects within the given Collection.
+     * @throws IOException if something went wrong.
+     */
+    private List&lt;COSBase&gt; getElements(Collection&lt;? extends COSBase&gt; elements) throws IOException
+    {
+<span class="fc" id="L232">        List&lt;COSBase&gt; relevantElements = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">        for (COSBase element : elements)</span>
+        {
+<span class="fc bfc" id="L235" title="All 2 branches covered.">            if (filterElement(element))</span>
+            {
+<span class="fc" id="L237">                relevantElements.add(element);</span>
+            }
+<span class="fc" id="L239">        }</span>
+<span class="fc" id="L240">        return relevantElements;</span>
+    }
+
+    private boolean filterElement(COSBase element) throws IOException
+    {
+<span class="fc bfc" id="L245" title="All 2 branches covered.">        if (element instanceof COSObject)</span>
+        {
+<span class="fc" id="L247">            COSObject cosObject = (COSObject) element;</span>
+<span class="fc bfc" id="L248" title="All 4 branches covered.">            if (cosObject.getKey() != null &amp;&amp; objectPool.contains(cosObject.getKey()))</span>
+            {
+                // check if the stored object matches the referenced object otherwise replace the key with a new one
+                // there may differences if some imported content uses the same object numbers than the target pdf
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">                if (objectPool.getObject(cosObject.getKey()).equals(cosObject.getObject()))</span>
+                {
+<span class="fc" id="L254">                    return false;</span>
+                }
+<span class="nc" id="L256">                cosObject.setKey(null);</span>
+            }
+<span class="fc bfc" id="L258" title="All 2 branches covered.">            if (cosObject.getObject() != null)</span>
+            {
+<span class="fc" id="L260">                return true;</span>
+            }
+<span class="fc" id="L262">        }</span>
+<span class="fc bfc" id="L263" title="All 4 branches covered.">        else if (element instanceof COSArray</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">                || (element instanceof COSDictionary &amp;&amp; !allDirectObjects.contains(element)))</span>
+        {
+<span class="fc" id="L266">            allDirectObjects.add(element);</span>
+<span class="fc" id="L267">            return true;</span>
+        }
+<span class="fc" id="L269">        return false;</span>
+    }
+
+    /**
+     * Returns all {@link COSBase}s, that must be added to the document's top level container. Those objects are not
+     * valid to be added to an object stream.
+     *
+     * @return A list of all top level {@link COSBase}s.
+     */
+    public List&lt;COSObjectKey&gt; getTopLevelObjects()
+    {
+<span class="fc" id="L280">        return topLevelObjects;</span>
+    }
+
+    /**
+     * Returns all {@link COSBase}s that can be appended to an object stream. This list is only provided to enable
+     * reflections. Contained objects should indeed be added to a compressed document via an object stream, as can be
+     * created via calling: {@link COSWriterCompressionPool#createObjectStreams()}
+     *
+     * @return A list of all {@link COSBase}s, that can be added to an object stream.
+     */
+    public List&lt;COSObjectKey&gt; getObjectStreamObjects()
+    {
+<span class="fc" id="L292">        return objectStreamObjects;</span>
+    }
+
+    /**
+     * Returns true, if the given {@link COSBase} is a registered object of this compression pool.
+     *
+     * @param object The object, that shall be checked.
+     * @return True, if the given {@link COSBase} is a registered object of this compression pool.
+     */
+    public boolean contains(COSBase object)
+    {
+<span class="fc" id="L303">        return objectPool.contains(object);</span>
+    }
+
+    /**
+     * Returns the {@link COSObjectKey}, that is registered for the given {@link COSBase} in this compression pool.
+     *
+     * @param object The {@link COSBase} a {@link COSObjectKey} is registered for in this compression pool.
+     * @return The {@link COSObjectKey}, that is registered for the given {@link COSBase} in this compression pool, if
+     * such an object is contained.
+     */
+    public COSObjectKey getKey(COSBase object)
+    {
+<span class="fc" id="L315">        return objectPool.getKey(object);</span>
+    }
+
+    /**
+     * Returns the {@link COSBase}, that is registered for the given {@link COSObjectKey} in this compression pool.
+     *
+     * @param key The {@link COSObjectKey} a {@link COSBase} is registered for in this compression pool.
+     * @return The {@link COSBase}, that is registered for the given {@link COSObjectKey} in this compression pool, if
+     * such an object is contained.
+     */
+    public COSBase getObject(COSObjectKey key)
+    {
+<span class="fc" id="L327">        return objectPool.getObject(key);</span>
+    }
+
+    /**
+     * Returns the highest object number, that is registered in this compression pool.
+     *
+     * @return The highest object number, that is registered in this compression pool.
+     */
+    public long getHighestXRefObjectNumber()
+    {
+<span class="fc" id="L337">        return objectPool.getHighestXRefObjectNumber();</span>
+    }
+
+    /**
+     * Creates {@link COSWriterObjectStream}s for all currently registered objects of this pool, that have been marked
+     * as fit for being compressed in this manner. Such object streams may be added to a PDF document and shall be
+     * declared in a document's {@link PDFXRefStream} accordingly. The objects contained in such a stream must not be
+     * added to the document separately.
+     *
+     * @return The created {@link COSWriterObjectStream}s for all currently registered compressible objects.
+     */
+    public List&lt;COSWriterObjectStream&gt; createObjectStreams()
+    {
+<span class="fc" id="L350">        List&lt;COSWriterObjectStream&gt; objectStreams = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L351">        COSWriterObjectStream objectStream = null;</span>
+<span class="fc bfc" id="L352" title="All 2 branches covered.">        for (int i = 0; i &lt; objectStreamObjects.size(); i++)</span>
+        {
+<span class="fc" id="L354">            COSObjectKey key = objectStreamObjects.get(i);</span>
+<span class="fc bfc" id="L355" title="All 4 branches covered.">            if (objectStream == null || (i % parameters.getObjectStreamSize()) == 0)</span>
+            {
+<span class="fc" id="L357">                objectStream = new COSWriterObjectStream(this);</span>
+<span class="fc" id="L358">                objectStreams.add(objectStream);</span>
+            }
+<span class="fc" id="L360">            objectStream.prepareStreamObject(key, objectPool.getObject(key));</span>
+        }
+<span class="fc" id="L362">        return objectStreams;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

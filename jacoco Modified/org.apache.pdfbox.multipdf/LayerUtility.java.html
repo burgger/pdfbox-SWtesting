@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LayerUtility.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.multipdf</a> &gt; <span class="el_source">LayerUtility.java</span></div><h1>LayerUtility.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.multipdf;
+
+import java.awt.geom.AffineTransform;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+import org.apache.fontbox.util.BoundingBox;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.PDPageContentStream.AppendMode;
+import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
+import org.apache.pdfbox.pdmodel.graphics.optionalcontent.PDOptionalContentGroup;
+import org.apache.pdfbox.pdmodel.graphics.optionalcontent.PDOptionalContentProperties;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * This class allows to import pages as Form XObjects into a document and use them to create layers
+ * (optional content groups). It should used only on loaded documents, not on generated documents
+ * because these can contain unfinished parts, e.g. font subsetting information.
+ */
+public class LayerUtility
+{
+<span class="fc" id="L56">    private static final Logger LOG = LogManager.getLogger(LayerUtility.class);</span>
+
+    private static final boolean DEBUG = true;
+
+    private final PDDocument targetDoc;
+    private final PDFCloneUtility cloner;
+
+    /**
+     * Creates a new instance.
+     * @param targetDoc the PDF document to modify
+     */
+    public LayerUtility(PDDocument targetDoc)
+<span class="fc" id="L68">    {</span>
+<span class="fc" id="L69">        this.targetDoc = targetDoc;</span>
+<span class="fc" id="L70">        this.cloner = new PDFCloneUtility(targetDoc);</span>
+<span class="fc" id="L71">    }</span>
+
+    /**
+     * Returns the PDF document we work on.
+     * @return the PDF document
+     */
+    public PDDocument getDocument()
+    {
+<span class="fc" id="L79">        return this.targetDoc;</span>
+    }
+
+    /**
+     * Some applications may not wrap their page content in a save/restore (q/Q) pair which can
+     * lead to problems with coordinate system transformations when content is appended. This
+     * method lets you add a q/Q pair around the existing page's content.
+     * @param page the page
+     * @throws IOException if an I/O error occurs
+     */
+    public void wrapInSaveRestore(PDPage page) throws IOException
+    {
+<span class="fc" id="L91">        COSStream saveGraphicsStateStream = getDocument().getDocument().createCOSStream();</span>
+<span class="fc" id="L92">        try (OutputStream saveStream = saveGraphicsStateStream.createOutputStream())</span>
+        {
+<span class="fc" id="L94">            saveStream.write(&quot;q\n&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
+        }
+
+<span class="fc" id="L97">        COSStream restoreGraphicsStateStream = getDocument().getDocument().createCOSStream();</span>
+<span class="fc" id="L98">        try (OutputStream restoreStream = restoreGraphicsStateStream.createOutputStream())</span>
+        {
+<span class="fc" id="L100">            restoreStream.write(&quot;Q\n&quot;.getBytes(StandardCharsets.ISO_8859_1));</span>
+        }
+
+        //Wrap the existing page's content in a save/restore pair (q/Q) to have a controlled
+        //environment to add additional content.
+<span class="fc" id="L105">        COSDictionary pageDictionary = page.getCOSObject();</span>
+<span class="fc" id="L106">        COSBase contents = pageDictionary.getDictionaryObject(COSName.CONTENTS);</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">        if (contents instanceof COSStream)</span>
+        {
+<span class="fc" id="L109">            COSStream contentsStream = (COSStream)contents;</span>
+
+<span class="fc" id="L111">            COSArray array = new COSArray(Arrays.asList(</span>
+                saveGraphicsStateStream,
+                contentsStream,
+                restoreGraphicsStateStream
+            ));
+
+<span class="fc" id="L117">            pageDictionary.setItem(COSName.CONTENTS, array);</span>
+<span class="fc" id="L118">        }</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">        else if( contents instanceof COSArray )</span>
+        {
+<span class="nc" id="L121">            COSArray contentsArray = (COSArray)contents;</span>
+
+<span class="nc" id="L123">            contentsArray.add(0, saveGraphicsStateStream);</span>
+<span class="nc" id="L124">            contentsArray.add(restoreGraphicsStateStream);</span>
+<span class="nc" id="L125">        }</span>
+        else
+        {
+<span class="nc" id="L128">            throw new IOException(&quot;Contents are unknown type: &quot; + contents.getClass().getName());</span>
+        }
+<span class="fc" id="L130">    }</span>
+
+    /**
+     * Imports a page from some PDF file as a Form XObject so it can be placed on another page
+     * in the target document.
+     * &lt;p&gt;
+     * You may want to call {@link #wrapInSaveRestore(PDPage) wrapInSaveRestore(PDPage)} before invoking the Form XObject to
+     * make sure that the graphics state is reset.
+     * 
+     * @param sourceDoc the source PDF document that contains the page to be copied
+     * @param pageNumber the 0-based page number of the page to be copied
+     * @return a Form XObject containing the original page's content
+     * @throws IOException if an I/O error occurs
+     */
+    public PDFormXObject importPageAsForm(PDDocument sourceDoc, int pageNumber) throws IOException
+    {
+<span class="fc" id="L146">        PDPage page = sourceDoc.getPage(pageNumber);</span>
+<span class="fc" id="L147">        return importPageAsForm(sourceDoc, page);</span>
+    }
+
+<span class="fc" id="L150">    private static final Set&lt;String&gt; PAGE_TO_FORM_FILTER =</span>
+<span class="fc" id="L151">            new HashSet&lt;&gt;(Arrays.asList(&quot;Group&quot;, &quot;LastModified&quot;, &quot;Metadata&quot;));</span>
+
+    /**
+     * Imports a page from some PDF file as a Form XObject so it can be placed on another page
+     * in the target document.
+     * &lt;p&gt;
+     * You may want to call {@link #wrapInSaveRestore(PDPage) wrapInSaveRestore(PDPage)} before invoking the Form XObject to
+     * make sure that the graphics state is reset.
+     * 
+     * @param sourceDoc the source PDF document that contains the page to be copied
+     * @param page the page in the source PDF document to be copied
+     * @return a Form XObject containing the original page's content
+     * @throws IOException if an I/O error occurs
+     */
+    public PDFormXObject importPageAsForm(PDDocument sourceDoc, PDPage page) throws IOException
+    {
+<span class="fc" id="L167">        importOcProperties(sourceDoc);</span>
+
+<span class="fc" id="L169">        PDStream newStream = new PDStream(targetDoc, page.getContents(), COSName.FLATE_DECODE);</span>
+<span class="fc" id="L170">        PDFormXObject form = new PDFormXObject(newStream);</span>
+
+        //Copy resources
+<span class="fc" id="L173">        PDResources pageRes = page.getResources();</span>
+<span class="fc" id="L174">        PDResources formRes = new PDResources();</span>
+<span class="fc" id="L175">        cloner.cloneMerge(pageRes, formRes);</span>
+<span class="fc" id="L176">        form.setResources(formRes);</span>
+
+        //Transfer some values from page to form
+<span class="fc" id="L179">        transferDict(page.getCOSObject(), form.getCOSObject(), PAGE_TO_FORM_FILTER);</span>
+
+<span class="fc" id="L181">        Matrix matrix = form.getMatrix();</span>
+<span class="fc" id="L182">        AffineTransform at = matrix.createAffineTransform();</span>
+<span class="fc" id="L183">        PDRectangle mediaBox = page.getMediaBox();</span>
+<span class="fc" id="L184">        PDRectangle cropBox = page.getCropBox();</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">        PDRectangle viewBox = (cropBox != null ? cropBox : mediaBox);</span>
+
+        //Handle the /Rotation entry on the page dict
+<span class="fc" id="L188">        int rotation = page.getRotation();</span>
+
+        //Transform to FOP's user space
+        //at.scale(1 / viewBox.getWidth(), 1 / viewBox.getHeight());
+<span class="fc" id="L192">        at.translate(mediaBox.getLowerLeftX() - viewBox.getLowerLeftX(),</span>
+<span class="fc" id="L193">                mediaBox.getLowerLeftY() - viewBox.getLowerLeftY());</span>
+<span class="pc bpc" id="L194" title="3 of 4 branches missed.">        switch (rotation)</span>
+        {
+        case 90:
+<span class="nc" id="L197">            at.scale(viewBox.getWidth() / viewBox.getHeight(), viewBox.getHeight() / viewBox.getWidth());</span>
+<span class="nc" id="L198">            at.translate(0, viewBox.getWidth());</span>
+<span class="nc" id="L199">            at.quadrantRotate(3); // 270</span>
+<span class="nc" id="L200">            break;</span>
+        case 180:
+<span class="nc" id="L202">            at.translate(viewBox.getWidth(), viewBox.getHeight());</span>
+<span class="nc" id="L203">            at.quadrantRotate(2); // 180</span>
+<span class="nc" id="L204">            break;</span>
+        case 270:
+<span class="nc" id="L206">            at.scale(viewBox.getWidth() / viewBox.getHeight(), viewBox.getHeight() / viewBox.getWidth());</span>
+<span class="nc" id="L207">            at.translate(viewBox.getHeight(), 0);</span>
+<span class="nc" id="L208">            at.quadrantRotate(1); // 90</span>
+<span class="nc" id="L209">            break;</span>
+        default:
+            //no additional transformations necessary
+        }
+        //Compensate for Crop Boxes not starting at 0,0
+<span class="fc" id="L214">        at.translate(-viewBox.getLowerLeftX(), -viewBox.getLowerLeftY());</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">        if (!at.isIdentity())</span>
+        {
+<span class="nc" id="L217">            form.setMatrix(at);</span>
+        }
+
+<span class="fc" id="L220">        BoundingBox bbox = new BoundingBox();</span>
+<span class="fc" id="L221">        bbox.setLowerLeftX(viewBox.getLowerLeftX());</span>
+<span class="fc" id="L222">        bbox.setLowerLeftY(viewBox.getLowerLeftY());</span>
+<span class="fc" id="L223">        bbox.setUpperRightX(viewBox.getUpperRightX());</span>
+<span class="fc" id="L224">        bbox.setUpperRightY(viewBox.getUpperRightY());</span>
+<span class="fc" id="L225">        form.setBBox(new PDRectangle(bbox));</span>
+
+<span class="fc" id="L227">        return form;</span>
+    }
+
+    /**
+     * Places the given form over the existing content of the indicated page (like an overlay).
+     * The form is enveloped in a marked content section to indicate that it's part of an
+     * optional content group (OCG), here used as a layer. This optional group is returned and
+     * can be enabled and disabled through methods on {@link PDOptionalContentProperties}.
+     * &lt;p&gt;
+     * You may want to call {@link #wrapInSaveRestore(PDPage) wrapInSaveRestore(PDPage)} before calling this method to make
+     * sure that the graphics state is reset.
+     *
+     * @param targetPage the target page
+     * @param form the form to place
+     * @param transform the transformation matrix that controls the placement of your form. You'll
+     * need this if your page has a crop box different than the media box, or if these have negative
+     * coordinates, or if you want to scale or adjust your form.
+     * @param layerName the name for the layer/OCG to produce
+     * @return the optional content group that was generated for the form usage
+     * @throws IOException if an I/O error occurs
+     */
+    public PDOptionalContentGroup appendFormAsLayer(PDPage targetPage,
+            PDFormXObject form, AffineTransform transform,
+            String layerName) throws IOException
+    {
+<span class="fc" id="L252">        PDDocumentCatalog catalog = targetDoc.getDocumentCatalog();</span>
+<span class="fc" id="L253">        PDOptionalContentProperties ocprops = catalog.getOCProperties();</span>
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">        if (ocprops == null)</span>
+        {
+<span class="fc" id="L256">            ocprops = new PDOptionalContentProperties();</span>
+<span class="fc" id="L257">            catalog.setOCProperties(ocprops);</span>
+        }
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">        if (ocprops.hasGroup(layerName))</span>
+        {
+<span class="nc" id="L261">            throw new IllegalArgumentException(&quot;Optional group (layer) already exists: &quot; + layerName);</span>
+        }
+
+<span class="fc" id="L264">        PDRectangle cropBox = targetPage.getCropBox();</span>
+<span class="pc bpc" id="L265" title="4 of 6 branches missed.">        if ((cropBox.getLowerLeftX() &lt; 0 || cropBox.getLowerLeftY() &lt; 0) &amp;&amp; transform.isIdentity())</span>
+        {
+            // PDFBOX-4044 
+<span class="nc" id="L268">            LOG.warn(&quot;Negative cropBox {} and identity transform may make your form invisible&quot;,</span>
+                    cropBox);
+        }
+
+<span class="fc" id="L272">        PDOptionalContentGroup layer = new PDOptionalContentGroup(layerName);</span>
+<span class="fc" id="L273">        ocprops.addGroup(layer);</span>
+
+<span class="fc" id="L275">        try (PDPageContentStream contentStream = new PDPageContentStream(</span>
+                targetDoc, targetPage, AppendMode.APPEND, !DEBUG))
+        {
+<span class="fc" id="L278">            contentStream.beginMarkedContent(COSName.OC, layer);</span>
+<span class="fc" id="L279">            contentStream.saveGraphicsState();</span>
+<span class="fc" id="L280">            contentStream.transform(new Matrix(transform));</span>
+<span class="fc" id="L281">            contentStream.drawForm(form);</span>
+<span class="fc" id="L282">            contentStream.restoreGraphicsState();</span>
+<span class="fc" id="L283">            contentStream.endMarkedContent();</span>
+        }
+
+<span class="fc" id="L286">        return layer;</span>
+    }
+
+    private void transferDict(COSDictionary orgDict, COSDictionary targetDict, Set&lt;String&gt; filter)
+            throws IOException
+    {
+<span class="fc bfc" id="L292" title="All 2 branches covered.">        for (Map.Entry&lt;COSName, COSBase&gt; entry : orgDict.entrySet())</span>
+        {
+<span class="fc" id="L294">            COSName key = entry.getKey();</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">            if (filter.contains(key.getName()))</span>
+            {
+<span class="nc" id="L297">                targetDict.setItem(key, cloner.cloneForNewDocument(entry.getValue()));</span>
+            }
+<span class="fc" id="L299">        }</span>
+<span class="fc" id="L300">    }</span>
+
+    /**
+     * Imports OCProperties from source document to target document so hidden layers can still be
+     * hidden after import.
+     *
+     * @param srcDoc The source PDF document that contains the /OCProperties to be copied.
+     * @throws IOException If an I/O error occurs.
+     */
+    private void importOcProperties(PDDocument srcDoc) throws IOException
+    {
+<span class="fc" id="L311">        PDDocumentCatalog srcCatalog = srcDoc.getDocumentCatalog();</span>
+<span class="fc" id="L312">        PDOptionalContentProperties srcOCProperties = srcCatalog.getOCProperties();</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">        if (srcOCProperties == null)</span>
+        {
+<span class="fc" id="L315">            return;</span>
+        }
+
+<span class="fc" id="L318">        PDDocumentCatalog dstCatalog = targetDoc.getDocumentCatalog();</span>
+<span class="fc" id="L319">        PDOptionalContentProperties dstOCProperties = dstCatalog.getOCProperties();</span>
+
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">        if (dstOCProperties == null)</span>
+        {
+<span class="nc" id="L323">            dstCatalog.setOCProperties(new PDOptionalContentProperties(</span>
+<span class="nc" id="L324">                    cloner.cloneForNewDocument(srcOCProperties.getCOSObject())));</span>
+        }
+        else
+        {
+<span class="fc" id="L328">            cloner.cloneMerge(srcOCProperties, dstOCProperties);</span>
+        }
+<span class="fc" id="L330">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

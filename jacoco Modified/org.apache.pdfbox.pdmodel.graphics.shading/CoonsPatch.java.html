@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CoonsPatch.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.shading</a> &gt; <span class="el_source">CoonsPatch.java</span></div><h1>CoonsPatch.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2014 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.shading;
+
+import java.awt.geom.Point2D;
+import java.util.List;
+
+/**
+ * This class is used to describe a patch for type 6 shading. This was done as
+ * part of GSoC2014, Tilman Hausherr is the mentor.
+ *
+ * @author Shaola Ren
+ */
+class CoonsPatch extends Patch
+{
+    /**
+     * Constructor of a patch for type 6 shading.
+     *
+     * @param points 12 control points
+     * @param color 4 corner colors
+     */
+    protected CoonsPatch(Point2D[] points, float[][] color)
+    {
+<span class="nc" id="L37">        super(color);</span>
+<span class="nc" id="L38">        controlPoints = reshapeControlPoints(points);</span>
+<span class="nc" id="L39">        level = calcLevel();</span>
+<span class="nc" id="L40">        listOfTriangles = getTriangles();</span>
+<span class="nc" id="L41">    }</span>
+
+    // adjust the 12 control points to 4 groups, each group defines one edge of a patch
+    private Point2D[][] reshapeControlPoints(Point2D[] points)
+    {
+<span class="nc" id="L46">        Point2D[][] fourRows = new Point2D[4][4];</span>
+<span class="nc" id="L47">        fourRows[2] = new Point2D[]</span>
+        {
+            points[0], points[1], points[2], points[3]
+        }; // d1
+<span class="nc" id="L51">        fourRows[1] = new Point2D[]</span>
+        {
+            points[3], points[4], points[5], points[6]
+        }; // c2
+<span class="nc" id="L55">        fourRows[3] = new Point2D[]</span>
+        {
+            points[9], points[8], points[7], points[6]
+        }; // d2
+<span class="nc" id="L59">        fourRows[0] = new Point2D[]</span>
+        {
+            points[0], points[11], points[10], points[9]
+        }; // c1
+<span class="nc" id="L63">        return fourRows;</span>
+    }
+
+    // calculate the dividing level from control points
+    private int[] calcLevel()
+    {
+<span class="nc" id="L69">        int[] l =</span>
+        {
+            4, 4
+        };
+        // if two opposite edges are both lines, there is a possibility to reduce the dividing level
+<span class="nc bnc" id="L74" title="All 4 branches missed.">        if (isEdgeALine(controlPoints[0]) &amp;&amp; isEdgeALine(controlPoints[1]))</span>
+        {
+<span class="nc" id="L76">            double lc1 = getLen(controlPoints[0][0], controlPoints[0][3]),</span>
+<span class="nc" id="L77">                    lc2 = getLen(controlPoints[1][0], controlPoints[1][3]);</span>
+            // determine the dividing level by the lengths of edges
+<span class="nc bnc" id="L79" title="All 4 branches missed.">            if (lc1 &gt; 800 || lc2 &gt; 800)</span>
+            {
+                // keeps init value 4
+            }
+<span class="nc bnc" id="L83" title="All 4 branches missed.">            else if (lc1 &gt; 400 || lc2 &gt; 400)</span>
+            {
+<span class="nc" id="L85">                l[0] = 3;</span>
+            }
+<span class="nc bnc" id="L87" title="All 4 branches missed.">            else if (lc1 &gt; 200 || lc2 &gt; 200)</span>
+            {
+<span class="nc" id="L89">                l[0] = 2;</span>
+            }
+            else
+            {
+<span class="nc" id="L93">                l[0] = 1;</span>
+            }
+        }
+
+        // the other two opposite edges
+<span class="nc bnc" id="L98" title="All 4 branches missed.">        if (isEdgeALine(controlPoints[2]) &amp;&amp; isEdgeALine(controlPoints[3]))</span>
+        {
+<span class="nc" id="L100">            double ld1 = getLen(controlPoints[2][0], controlPoints[2][3]),</span>
+<span class="nc" id="L101">                    ld2 = getLen(controlPoints[3][0], controlPoints[3][3]);</span>
+<span class="nc bnc" id="L102" title="All 4 branches missed.">            if (ld1 &gt; 800 || ld2 &gt; 800)</span>
+            {
+                // keeps init value 4
+            }
+<span class="nc bnc" id="L106" title="All 4 branches missed.">            else if (ld1 &gt; 400 || ld2 &gt; 400)</span>
+            {
+<span class="nc" id="L108">                l[1] = 3;</span>
+            }
+<span class="nc bnc" id="L110" title="All 4 branches missed.">            else if (ld1 &gt; 200 || ld2 &gt; 200)</span>
+            {
+<span class="nc" id="L112">                l[1] = 2;</span>
+            }
+            else
+            {
+<span class="nc" id="L116">                l[1] = 1;</span>
+            }
+        }
+<span class="nc" id="L119">        return l;</span>
+    }
+
+    // get a list of triangles which compose this coons patch
+    private List&lt;ShadedTriangle&gt; getTriangles()
+    {
+        // 4 edges are 4 cubic Bezier curves
+<span class="nc" id="L126">        CubicBezierCurve eC1 = new CubicBezierCurve(controlPoints[0], level[0]);</span>
+<span class="nc" id="L127">        CubicBezierCurve eC2 = new CubicBezierCurve(controlPoints[1], level[0]);</span>
+<span class="nc" id="L128">        CubicBezierCurve eD1 = new CubicBezierCurve(controlPoints[2], level[1]);</span>
+<span class="nc" id="L129">        CubicBezierCurve eD2 = new CubicBezierCurve(controlPoints[3], level[1]);</span>
+<span class="nc" id="L130">        CoordinateColorPair[][] patchCC = getPatchCoordinatesColor(eC1, eC2, eD1, eD2);</span>
+<span class="nc" id="L131">        return getShadedTriangles(patchCC);</span>
+    }
+
+    @Override
+    protected Point2D[] getFlag1Edge()
+    {
+<span class="nc" id="L137">        return controlPoints[1].clone();</span>
+    }
+
+    @Override
+    protected Point2D[] getFlag2Edge()
+    {
+<span class="nc" id="L143">        Point2D[] implicitEdge = new Point2D[4];</span>
+<span class="nc" id="L144">        implicitEdge[0] = controlPoints[3][3];</span>
+<span class="nc" id="L145">        implicitEdge[1] = controlPoints[3][2];</span>
+<span class="nc" id="L146">        implicitEdge[2] = controlPoints[3][1];</span>
+<span class="nc" id="L147">        implicitEdge[3] = controlPoints[3][0];</span>
+<span class="nc" id="L148">        return implicitEdge;</span>
+    }
+
+    @Override
+    protected Point2D[] getFlag3Edge()
+    {
+<span class="nc" id="L154">        Point2D[] implicitEdge = new Point2D[4];</span>
+<span class="nc" id="L155">        implicitEdge[0] = controlPoints[0][3];</span>
+<span class="nc" id="L156">        implicitEdge[1] = controlPoints[0][2];</span>
+<span class="nc" id="L157">        implicitEdge[2] = controlPoints[0][1];</span>
+<span class="nc" id="L158">        implicitEdge[3] = controlPoints[0][0];</span>
+<span class="nc" id="L159">        return implicitEdge;</span>
+    }
+
+    /*
+     dividing a patch into a grid, return a matrix of the coordinate and color at the crossing points of the grid, 
+     the rule to calculate the coordinate is defined in page 195 of PDF32000_2008.pdf, the rule to calculate the 
+     corresponding color is bilinear interpolation
+     */
+    private CoordinateColorPair[][] getPatchCoordinatesColor(CubicBezierCurve c1, CubicBezierCurve c2, CubicBezierCurve d1, CubicBezierCurve d2)
+    {
+<span class="nc" id="L169">        Point2D[] curveC1 = c1.getCubicBezierCurve();</span>
+<span class="nc" id="L170">        Point2D[] curveC2 = c2.getCubicBezierCurve();</span>
+<span class="nc" id="L171">        Point2D[] curveD1 = d1.getCubicBezierCurve();</span>
+<span class="nc" id="L172">        Point2D[] curveD2 = d2.getCubicBezierCurve();</span>
+
+<span class="nc" id="L174">        int numberOfColorComponents = cornerColor[0].length;</span>
+<span class="nc" id="L175">        int szV = curveD1.length;</span>
+<span class="nc" id="L176">        int szU = curveC1.length;</span>
+
+<span class="nc" id="L178">        CoordinateColorPair[][] patchCC = new CoordinateColorPair[szV][szU];</span>
+
+<span class="nc" id="L180">        double stepV = (double) 1 / (szV - 1);</span>
+<span class="nc" id="L181">        double stepU = (double) 1 / (szU - 1);</span>
+<span class="nc" id="L182">        double v = -stepV;</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">        for (int i = 0; i &lt; szV; i++)</span>
+        {
+            // v and u are the assistant parameters
+<span class="nc" id="L186">            v += stepV;</span>
+<span class="nc" id="L187">            double u = -stepU;</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">            for (int j = 0; j &lt; szU; j++)</span>
+            {
+<span class="nc" id="L190">                u += stepU;</span>
+<span class="nc" id="L191">                double scx = (1 - v) * curveC1[j].getX() + v * curveC2[j].getX();</span>
+<span class="nc" id="L192">                double scy = (1 - v) * curveC1[j].getY() + v * curveC2[j].getY();</span>
+<span class="nc" id="L193">                double sdx = (1 - u) * curveD1[i].getX() + u * curveD2[i].getX();</span>
+<span class="nc" id="L194">                double sdy = (1 - u) * curveD1[i].getY() + u * curveD2[i].getY();</span>
+<span class="nc" id="L195">                double sbx = (1 - v) * ((1 - u) * controlPoints[0][0].getX() + u * controlPoints[0][3].getX())</span>
+<span class="nc" id="L196">                        + v * ((1 - u) * controlPoints[1][0].getX() + u * controlPoints[1][3].getX());</span>
+<span class="nc" id="L197">                double sby = (1 - v) * ((1 - u) * controlPoints[0][0].getY() + u * controlPoints[0][3].getY())</span>
+<span class="nc" id="L198">                        + v * ((1 - u) * controlPoints[1][0].getY() + u * controlPoints[1][3].getY());</span>
+
+<span class="nc" id="L200">                double sx = scx + sdx - sbx;</span>
+<span class="nc" id="L201">                double sy = scy + sdy - sby;</span>
+                // the above code in this for loop defines the patch surface (coordinates)
+
+<span class="nc" id="L204">                Point2D tmpC = new Point2D.Double(sx, sy);</span>
+
+<span class="nc" id="L206">                float[] paramSC = new float[numberOfColorComponents];</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">                for (int ci = 0; ci &lt; numberOfColorComponents; ci++)</span>
+                {
+<span class="nc" id="L209">                    paramSC[ci] = (float) ((1 - v) * ((1 - u) * cornerColor[0][ci] + u * cornerColor[3][ci])</span>
+                            + v * ((1 - u) * cornerColor[1][ci] + u * cornerColor[2][ci])); // bilinear interpolation
+                }
+<span class="nc" id="L212">                patchCC[i][j] = new CoordinateColorPair(tmpC, paramSC);</span>
+            }
+        }
+<span class="nc" id="L215">        return patchCC;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDAnnotationPolygon.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation</a> &gt; <span class="el_source">PDAnnotationPolygon.java</span></div><h1>PDAnnotationPolygon.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2018 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.annotation;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+import org.apache.pdfbox.pdmodel.interactive.annotation.handlers.PDAppearanceHandler;
+import org.apache.pdfbox.pdmodel.interactive.annotation.handlers.PDPolygonAppearanceHandler;
+
+/**
+ *
+ * @author Paul King
+ */
+public class PDAnnotationPolygon extends PDAnnotationMarkup
+{
+    /**
+     * The type of annotation.
+     */
+    public static final String SUB_TYPE = &quot;Polygon&quot;;
+
+    private PDAppearanceHandler customAppearanceHandler;
+    
+    /**
+     * Constructor.
+     */
+    public PDAnnotationPolygon()
+<span class="nc" id="L44">    {</span>
+<span class="nc" id="L45">        getCOSObject().setName(COSName.SUBTYPE, SUB_TYPE);</span>
+<span class="nc" id="L46">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param dict The annotations dictionary.
+     */
+    public PDAnnotationPolygon(COSDictionary dict)
+    {
+<span class="nc" id="L55">        super(dict);</span>
+<span class="nc" id="L56">    }</span>
+
+    // PDF 32000 specification has &quot;the interior color with which to fill the annotation’s line endings&quot;
+    // but it is the inside of the polygon.
+    
+    /**
+     * This will set interior color.
+     *
+     * @param ic color.
+     */
+    public void setInteriorColor(PDColor ic)
+    {
+<span class="nc" id="L68">        getCOSObject().setItem(COSName.IC, ic.toCOSArray());</span>
+<span class="nc" id="L69">    }</span>
+
+    /**
+     * This will retrieve the interior color.
+     *
+     * @return object representing the color.
+     */
+    public PDColor getInteriorColor()
+    {
+<span class="nc" id="L78">        return getColor(COSName.IC);</span>
+    }
+
+    /**
+     * This will set the border effect dictionary, specifying effects to be applied when drawing the
+     * line. This is supported by PDF 1.5 and higher.
+     *
+     * @param be The border effect dictionary to set.
+     *
+     */
+    public void setBorderEffect(PDBorderEffectDictionary be)
+    {
+<span class="nc" id="L90">        getCOSObject().setItem(COSName.BE, be);</span>
+<span class="nc" id="L91">    }</span>
+
+    /**
+     * This will retrieve the border effect dictionary, specifying effects to be applied used in
+     * drawing the line.
+     *
+     * @return The border effect dictionary
+     */
+    public PDBorderEffectDictionary getBorderEffect()
+    {
+<span class="nc" id="L101">        COSDictionary be = getCOSObject().getCOSDictionary(COSName.BE);</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        return be != null ? new PDBorderEffectDictionary(be) : null;</span>
+    }
+
+    /**
+     * This will retrieve the numbers that shall represent the alternating horizontal and vertical
+     * coordinates.
+     *
+     * @return An array of floats representing the alternating horizontal and vertical coordinates.
+     */
+    public float[] getVertices()
+    {
+<span class="nc" id="L113">        COSArray array = getCOSObject().getCOSArray(COSName.VERTICES);</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        return array != null ? array.toFloatArray() : null;</span>
+    }
+
+    /**
+     * This will set the numbers that shall represent the alternating horizontal and vertical
+     * coordinates.
+     *
+     * @param points an array with the numbers that shall represent the alternating horizontal and
+     * vertical coordinates.
+     */
+    public void setVertices(float[] points)
+    {
+<span class="nc" id="L126">        getCOSObject().setItem(COSName.VERTICES, COSArray.of(points));</span>
+<span class="nc" id="L127">    }</span>
+
+    /**
+     * PDF 2.0: This will retrieve the arrays that shall represent the alternating horizontal
+     * and vertical coordinates for path building.
+     *
+     * @return An array of float arrays, each supplying the operands for a path building operator
+     * (m, l or c). The first array should have 2 elements, the others should have 2 or 6 elements.
+     */
+    public float[][] getPath()
+    {
+<span class="nc" id="L138">        COSArray array = getCOSObject().getCOSArray(COSName.PATH);</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">        if (array != null)</span>
+        {
+<span class="nc" id="L141">            float[][] pathArray = new float[array.size()][];</span>
+<span class="nc" id="L142">            float[] emptyArray = new float[0];</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">            for (int i = 0; i &lt; array.size(); ++i)</span>
+            {
+<span class="nc" id="L145">                COSBase base2 = array.getObject(i);</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">                if (base2 instanceof COSArray)</span>
+                {
+<span class="nc" id="L148">                    pathArray[i] = ((COSArray) base2).toFloatArray();</span>
+                }
+                else
+                {
+<span class="nc" id="L152">                    pathArray[i] = emptyArray;</span>
+                }
+            }
+<span class="nc" id="L155">            return pathArray;</span>
+        }
+<span class="nc" id="L157">        return null;</span>
+    }
+
+    /**
+     * Set a custom appearance handler for generating the annotations appearance streams.
+     * 
+     * @param appearanceHandler custom appearance handler
+     */
+    public void setCustomAppearanceHandler(PDAppearanceHandler appearanceHandler)
+    {
+<span class="nc" id="L167">        customAppearanceHandler = appearanceHandler;</span>
+<span class="nc" id="L168">    }</span>
+
+    @Override
+    public void constructAppearances()
+    {
+<span class="nc" id="L173">        this.constructAppearances(null);</span>
+<span class="nc" id="L174">    }</span>
+
+    @Override
+    public void constructAppearances(PDDocument document)
+    {
+<span class="nc bnc" id="L179" title="All 2 branches missed.">        if (customAppearanceHandler == null)</span>
+        {
+<span class="nc" id="L181">            PDPolygonAppearanceHandler appearanceHandler = new PDPolygonAppearanceHandler(this, document);</span>
+<span class="nc" id="L182">            appearanceHandler.generateAppearanceStreams();</span>
+<span class="nc" id="L183">        }</span>
+        else
+        {
+<span class="nc" id="L186">            customAppearanceHandler.generateAppearanceStreams();</span>
+        }
+<span class="nc" id="L188">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

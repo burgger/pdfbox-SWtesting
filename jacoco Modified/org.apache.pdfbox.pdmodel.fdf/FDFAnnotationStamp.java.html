@@ -1,0 +1,425 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FDFAnnotationStamp.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.fdf</a> &gt; <span class="el_source">FDFAnnotationStamp.java</span></div><h1>FDFAnnotationStamp.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.fdf;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBoolean;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.util.Hex;
+import org.apache.pdfbox.util.XMLUtil;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/**
+ * This represents a Stamp FDF annotation.
+ *
+ * @author Ben Litchfield
+ * @author Andrew Hung
+ */
+public class FDFAnnotationStamp extends FDFAnnotation
+{
+<span class="nc" id="L52">    private static final Logger LOG = LogManager.getLogger(FDFAnnotationStamp.class);</span>
+
+    /**
+     * COS Model value for SubType entry.
+     */
+    public static final String SUBTYPE = &quot;Stamp&quot;;
+
+    /**
+     * Default constructor.
+     */
+    public FDFAnnotationStamp()
+<span class="nc" id="L63">    {</span>
+<span class="nc" id="L64">        annot.setName(COSName.SUBTYPE, SUBTYPE);</span>
+<span class="nc" id="L65">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param a An existing FDF Annotation.
+     */
+    public FDFAnnotationStamp(COSDictionary a)
+    {
+<span class="nc" id="L74">        super(a);</span>
+<span class="nc" id="L75">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param element An XFDF element.
+     *
+     * @throws IOException If there is an error extracting information from the element.
+     */
+    public FDFAnnotationStamp(Element element) throws IOException
+    {
+<span class="nc" id="L86">        super(element);</span>
+<span class="nc" id="L87">        annot.setName(COSName.SUBTYPE, SUBTYPE);</span>
+
+        // PDFBOX-4437: Initialize the Stamp appearance from the XFDF
+        // https://www.immagic.com/eLibrary/ARCHIVES/TECH/ADOBE/A070914X.pdf
+        // appearance is only defined for stamps
+<span class="nc" id="L92">        XPath xpath = XPathFactory.newInstance().newXPath();</span>
+
+        // Set the Appearance to the annotation
+<span class="nc" id="L95">        LOG.debug(&quot;Get the DOM Document for the stamp appearance&quot;);</span>
+        String base64EncodedAppearance;
+        try
+        {
+<span class="nc" id="L99">            base64EncodedAppearance = xpath.evaluate(&quot;appearance&quot;, element);</span>
+        }
+<span class="nc" id="L101">        catch (XPathExpressionException e)</span>
+        {
+            // should not happen
+<span class="nc" id="L104">            LOG.error(() -&gt; &quot;Error while evaluating XPath expression for appearance: &quot; + e.getMessage(), e);</span>
+<span class="nc" id="L105">            return;</span>
+<span class="nc" id="L106">        }</span>
+        byte[] decodedAppearanceXML;
+        try
+        {
+<span class="nc" id="L110">            decodedAppearanceXML = Hex.decodeBase64(base64EncodedAppearance);</span>
+        }
+<span class="nc" id="L112">        catch (IllegalArgumentException ex)</span>
+        {
+<span class="nc" id="L114">            LOG.error(&quot;Bad base64 encoded appearance ignored&quot;, ex);</span>
+<span class="nc" id="L115">            return;</span>
+<span class="nc" id="L116">        }</span>
+<span class="nc bnc" id="L117" title="All 4 branches missed.">        if (base64EncodedAppearance != null &amp;&amp; !base64EncodedAppearance.isEmpty())</span>
+        {
+<span class="nc" id="L119">            LOG.debug(&quot;Decoded XML:\n====\n{}\n====&quot;, () -&gt; new String(decodedAppearanceXML, StandardCharsets.UTF_8));</span>
+
+<span class="nc" id="L121">            Document stampAppearance = XMLUtil</span>
+<span class="nc" id="L122">                    .parse(new ByteArrayInputStream(decodedAppearanceXML));</span>
+
+<span class="nc" id="L124">            Element appearanceEl = stampAppearance.getDocumentElement();</span>
+
+            // Is the root node have tag as DICT, error otherwise
+<span class="nc bnc" id="L127" title="All 2 branches missed.">            if (!&quot;dict&quot;.equalsIgnoreCase(appearanceEl.getNodeName()))</span>
+            {
+<span class="nc" id="L129">                throw new IOException(&quot;Error while reading stamp document, &quot;</span>
+<span class="nc" id="L130">                        + &quot;root should be 'dict' and not '&quot; + appearanceEl.getNodeName() + &quot;'&quot;);</span>
+            }
+<span class="nc" id="L132">            LOG.debug(&quot;Generate and set the appearance dictionary to the stamp annotation&quot;);</span>
+<span class="nc" id="L133">            annot.setItem(COSName.AP, parseStampAnnotationAppearanceXML(appearanceEl));</span>
+        }
+<span class="nc" id="L135">    }</span>
+
+    /**
+     * This will create an Appearance dictionary from an appearance XML element.
+     *
+     * @param appearanceXML The XML element that contains the appearance data.
+     */
+    private COSDictionary parseStampAnnotationAppearanceXML(Element appearanceXML) throws IOException
+    {
+<span class="nc" id="L144">        COSDictionary dictionary = new COSDictionary();</span>
+        // the N entry is required.
+<span class="nc" id="L146">        dictionary.setItem(COSName.N, new COSStream());</span>
+<span class="nc" id="L147">        LOG.debug(&quot;Build dictionary for Appearance based on the appearanceXML&quot;);</span>
+
+<span class="nc" id="L149">        NodeList nodeList = appearanceXML.getChildNodes();</span>
+<span class="nc" id="L150">        String parentAttrKey = appearanceXML.getAttribute(&quot;KEY&quot;);</span>
+<span class="nc" id="L151">        LOG.debug(&quot;Appearance Root - tag: {}, name: {}, key: {}, children: {}&quot;,</span>
+<span class="nc" id="L152">                appearanceXML::getTagName, appearanceXML::getNodeName, () -&gt; parentAttrKey,</span>
+<span class="nc" id="L153">                nodeList::getLength);</span>
+
+        // Currently only handles Appearance dictionary (AP key on the root)
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (!&quot;AP&quot;.equals(appearanceXML.getAttribute(&quot;KEY&quot;)))</span>
+        {
+<span class="nc" id="L158">            LOG.warn(&quot;{} =&gt; Not handling element: {} with key: {}&quot;, () -&gt; parentAttrKey,</span>
+<span class="nc" id="L159">                    appearanceXML::getTagName, () -&gt; appearanceXML.getAttribute(&quot;KEY&quot;));</span>
+<span class="nc" id="L160">            return dictionary;</span>
+        }
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        for (int i = 0; i &lt; nodeList.getLength(); i++)</span>
+        {
+<span class="nc" id="L164">            Node node = nodeList.item(i);</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">            if (node instanceof Element)</span>
+            {
+<span class="nc" id="L167">                Element child = (Element) node;</span>
+<span class="nc" id="L168">                String childTagName = child.getTagName();</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">                if (&quot;STREAM&quot;.equalsIgnoreCase(childTagName))</span>
+                {
+<span class="nc" id="L171">                    LOG.debug(&quot;{} =&gt; Process {} item in the dictionary after processing the {}&quot;,</span>
+<span class="nc" id="L172">                            () -&gt; parentAttrKey, () -&gt; child.getAttribute(&quot;KEY&quot;), () -&gt; childTagName);</span>
+<span class="nc" id="L173">                    dictionary.setItem(child.getAttribute(&quot;KEY&quot;), parseStreamElement(child));</span>
+<span class="nc" id="L174">                    LOG.debug(&quot;{} =&gt; Set {}&quot;, () -&gt; parentAttrKey, () -&gt; child.getAttribute(&quot;KEY&quot;));</span>
+                }
+                else
+                {
+<span class="nc" id="L178">                    LOG.warn(&quot;{} =&gt; Not handling element: {}&quot;, parentAttrKey, childTagName);</span>
+                }
+            }
+        }
+<span class="nc" id="L182">        return dictionary;</span>
+    }
+
+    private COSStream parseStreamElement(Element streamEl) throws IOException
+    {
+<span class="nc" id="L187">        LOG.debug(&quot;Parse {} Stream&quot;, () -&gt; streamEl.getAttribute(&quot;KEY&quot;));</span>
+<span class="nc" id="L188">        COSStream stream = new COSStream();</span>
+
+<span class="nc" id="L190">        NodeList nodeList = streamEl.getChildNodes();</span>
+<span class="nc" id="L191">        String parentAttrKey = streamEl.getAttribute(&quot;KEY&quot;);</span>
+
+<span class="nc bnc" id="L193" title="All 2 branches missed.">        for (int i = 0; i &lt; nodeList.getLength(); i++)</span>
+        {
+<span class="nc" id="L195">            Node node = nodeList.item(i);</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">            if (node instanceof Element)</span>
+            {
+<span class="nc" id="L198">                Element child = (Element) node;</span>
+<span class="nc" id="L199">                String childAttrKey = child.getAttribute(&quot;KEY&quot;);</span>
+<span class="nc" id="L200">                String childAttrVal = child.getAttribute(&quot;VAL&quot;);</span>
+<span class="nc" id="L201">                String childTagName = child.getTagName();</span>
+<span class="nc" id="L202">                LOG.debug(&quot;{} =&gt; reading child: {} with key: {}&quot;, parentAttrKey, childTagName, childAttrKey);</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">                if (childTagName == null)</span>
+                {
+<span class="nc" id="L205">                    LOG.warn(&quot;{} =&gt; Not handling child element: null&quot;, parentAttrKey);</span>
+<span class="nc" id="L206">                    continue;</span>
+                }
+<span class="nc bnc" id="L208" title="All 9 branches missed.">                switch (childTagName.toUpperCase())</span>
+                {
+                    case &quot;INT&quot;:
+<span class="nc bnc" id="L211" title="All 2 branches missed.">                        if (!&quot;Length&quot;.equals(childAttrKey))</span>
+                        {
+<span class="nc" id="L213">                            stream.setInt(COSName.getPDFName(childAttrKey), Integer.parseInt(childAttrVal));</span>
+<span class="nc" id="L214">                            LOG.debug(&quot;{} =&gt; Set {}: {}&quot;, parentAttrKey, childAttrKey, childAttrVal);</span>
+                        }
+                        break;
+                    case &quot;FIXED&quot;:
+<span class="nc" id="L218">                        stream.setFloat(COSName.getPDFName(childAttrKey), Float.parseFloat(childAttrVal));</span>
+<span class="nc" id="L219">                        LOG.debug(&quot;{} =&gt; Set {}: {}&quot;, parentAttrKey, childAttrKey, childAttrVal);</span>
+<span class="nc" id="L220">                        break;</span>
+                    case &quot;NAME&quot;:
+<span class="nc" id="L222">                        stream.setName(COSName.getPDFName(childAttrKey), childAttrVal);</span>
+<span class="nc" id="L223">                        LOG.debug(&quot;{} =&gt; Set {}: {}&quot;, parentAttrKey, childAttrKey, childAttrVal);</span>
+<span class="nc" id="L224">                        break;</span>
+                    case &quot;BOOL&quot;:
+<span class="nc" id="L226">                        stream.setBoolean(COSName.getPDFName(childAttrKey), Boolean.parseBoolean(childAttrVal));</span>
+<span class="nc" id="L227">                        LOG.debug(&quot;{} =&gt; Set {}&quot;, parentAttrKey, childAttrVal);</span>
+<span class="nc" id="L228">                        break;</span>
+                    case &quot;ARRAY&quot;:
+<span class="nc" id="L230">                        stream.setItem(COSName.getPDFName(childAttrKey), parseArrayElement(child));</span>
+<span class="nc" id="L231">                        LOG.debug(&quot;{} =&gt; Set {}&quot;, parentAttrKey, childAttrKey);</span>
+<span class="nc" id="L232">                        break;</span>
+                    case &quot;DICT&quot;:
+<span class="nc" id="L234">                        stream.setItem(COSName.getPDFName(childAttrKey), parseDictElement(child));</span>
+<span class="nc" id="L235">                        LOG.debug(&quot;{} =&gt; Set {}&quot;, parentAttrKey, childAttrKey);</span>
+<span class="nc" id="L236">                        break;</span>
+                    case &quot;STREAM&quot;:
+<span class="nc" id="L238">                        stream.setItem(COSName.getPDFName(childAttrKey), parseStreamElement(child));</span>
+<span class="nc" id="L239">                        LOG.debug(&quot;{} =&gt; Set {}&quot;, parentAttrKey, childAttrKey);</span>
+<span class="nc" id="L240">                        break;</span>
+                    case &quot;DATA&quot;:
+<span class="nc" id="L242">                        String childEncodingAttr = child.getAttribute(&quot;ENCODING&quot;);</span>
+<span class="nc" id="L243">                        LOG.debug(&quot;{} =&gt; Handling DATA with encoding: {}&quot;, parentAttrKey, childEncodingAttr);</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">                        if (&quot;HEX&quot;.equals(childEncodingAttr))</span>
+                        {
+<span class="nc" id="L246">                            try (OutputStream os = stream.createRawOutputStream())</span>
+                            {
+<span class="nc" id="L248">                                os.write(Hex.decodeHex(child.getTextContent()));</span>
+<span class="nc" id="L249">                                LOG.debug(&quot;{} =&gt; Data was streamed&quot;, parentAttrKey);</span>
+                            }
+                        }
+<span class="nc bnc" id="L252" title="All 2 branches missed.">                        else if (&quot;ASCII&quot;.equals(childEncodingAttr))</span>
+                        {
+<span class="nc" id="L254">                            try (OutputStream os = stream.createOutputStream())</span>
+                            {
+<span class="nc" id="L256">                                String encoding = child.getOwnerDocument().getXmlEncoding();</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">                                if (encoding == null)</span>
+                                {
+<span class="nc" id="L259">                                    encoding = child.getOwnerDocument().getInputEncoding();</span>
+                                }
+<span class="nc bnc" id="L261" title="All 2 branches missed.">                                if (encoding == null)</span>
+                                {
+<span class="nc" id="L263">                                    encoding = &quot;UTF-8&quot;;</span>
+                                }
+<span class="nc" id="L265">                                os.write(child.getTextContent().getBytes(encoding));</span>
+<span class="nc" id="L266">                                LOG.debug(&quot;{} =&gt; Data was streamed&quot;, parentAttrKey);</span>
+                            }
+                        }
+                        else
+                        {
+<span class="nc" id="L271">                            LOG.warn(&quot;{} =&gt; Not handling element DATA encoding: {}&quot;, parentAttrKey,</span>
+                                    childEncodingAttr);
+                        }
+<span class="nc" id="L274">                        break;</span>
+                    default:
+<span class="nc" id="L276">                        LOG.warn(&quot;{} =&gt; Not handling child element: {}&quot;, parentAttrKey, childTagName);</span>
+                        break;
+                }
+            }
+        }
+
+<span class="nc" id="L282">        return stream;</span>
+    }
+
+    private COSArray parseArrayElement(Element arrayEl) throws IOException
+    {
+<span class="nc" id="L287">        LOG.debug(&quot;Parse {} Array&quot;, () -&gt; arrayEl.getAttribute(&quot;KEY&quot;));</span>
+<span class="nc" id="L288">        COSArray array = new COSArray();</span>
+
+<span class="nc" id="L290">        NodeList nodeList = arrayEl.getChildNodes();</span>
+<span class="nc" id="L291">        String parentAttrKey = arrayEl.getAttribute(&quot;KEY&quot;);</span>
+
+<span class="nc bnc" id="L293" title="All 4 branches missed.">        if (&quot;BBox&quot;.equals(parentAttrKey) &amp;&amp; nodeList.getLength() &lt; 4)</span>
+        {
+<span class="nc" id="L295">            throw new IOException(&quot;BBox does not have enough coordinates, only has: &quot; +</span>
+<span class="nc" id="L296">                    nodeList.getLength());</span>
+        }
+<span class="nc bnc" id="L298" title="All 4 branches missed.">        else if (&quot;Matrix&quot;.equals(parentAttrKey) &amp;&amp; nodeList.getLength() &lt; 6)</span>
+        {
+<span class="nc" id="L300">            throw new IOException(&quot;Matrix does not have enough coordinates, only has: &quot; + </span>
+<span class="nc" id="L301">                    nodeList.getLength());</span>
+        }
+
+<span class="nc bnc" id="L304" title="All 2 branches missed.">        for (int i = 0; i &lt; nodeList.getLength(); i++)</span>
+        {
+<span class="nc" id="L306">            Node node = nodeList.item(i);</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">            if (node instanceof Element)</span>
+            {
+<span class="nc" id="L309">                Element child = (Element) node;</span>
+<span class="nc" id="L310">                String childAttrKey = child.getAttribute(&quot;KEY&quot;);</span>
+<span class="nc" id="L311">                String childAttrVal = child.getAttribute(&quot;VAL&quot;);</span>
+<span class="nc" id="L312">                String childTagName = child.getTagName();</span>
+<span class="nc" id="L313">                LOG.debug(&quot;{} =&gt; reading child: {} with key: {}&quot;, parentAttrKey, childTagName,</span>
+                        childAttrKey);
+<span class="nc bnc" id="L315" title="All 2 branches missed.">                if (null == childTagName)</span>
+                {
+<span class="nc" id="L317">                    LOG.warn(&quot;{} =&gt; Not handling child element: null&quot;, parentAttrKey);</span>
+<span class="nc" id="L318">                    continue;</span>
+                }
+<span class="nc bnc" id="L320" title="All 7 branches missed.">                switch (childTagName.toUpperCase())</span>
+                {
+                    case &quot;INT&quot;:
+                    case &quot;FIXED&quot;:
+<span class="nc" id="L324">                        LOG.debug(&quot;{} value({}): {}&quot;, parentAttrKey, i, childAttrVal);</span>
+<span class="nc" id="L325">                        array.add(COSNumber.get(childAttrVal));</span>
+<span class="nc" id="L326">                        break;</span>
+                    case &quot;NAME&quot;:
+<span class="nc" id="L328">                        LOG.debug(&quot;{} value({}): {}&quot;, parentAttrKey, i, childAttrVal);</span>
+<span class="nc" id="L329">                        array.add(COSName.getPDFName(childAttrVal));</span>
+<span class="nc" id="L330">                        break;</span>
+                    case &quot;BOOL&quot;:
+<span class="nc" id="L332">                        LOG.debug(&quot;{} value({}): {}&quot;, parentAttrKey, i, childAttrVal);</span>
+<span class="nc" id="L333">                        array.add(COSBoolean.getBoolean(Boolean.parseBoolean(childAttrVal)));</span>
+<span class="nc" id="L334">                        break;</span>
+                    case &quot;DICT&quot;:
+<span class="nc" id="L336">                        LOG.debug(&quot;{} value({}): {}&quot;, parentAttrKey, i, childAttrVal);</span>
+<span class="nc" id="L337">                        array.add(parseDictElement(child));</span>
+<span class="nc" id="L338">                        break;</span>
+                    case &quot;STREAM&quot;:
+<span class="nc" id="L340">                        LOG.debug(&quot;{} value({}): {}&quot;, parentAttrKey, i, childAttrVal);</span>
+<span class="nc" id="L341">                        array.add(parseStreamElement(child));</span>
+<span class="nc" id="L342">                        break;</span>
+                    case &quot;ARRAY&quot;:
+<span class="nc" id="L344">                        LOG.debug(&quot;{} value({}): {}&quot;, parentAttrKey, i, childAttrVal);</span>
+<span class="nc" id="L345">                        array.add(parseArrayElement(child));</span>
+<span class="nc" id="L346">                        break;</span>
+                    default:
+<span class="nc" id="L348">                        LOG.warn(&quot;{} =&gt; Not handling child element: {}&quot;, parentAttrKey, childTagName);</span>
+                        break;
+                }
+            }
+        }
+
+<span class="nc" id="L354">        return array;</span>
+    }
+
+    private COSDictionary parseDictElement(Element dictEl) throws IOException
+    {
+<span class="nc" id="L359">        LOG.debug(&quot;Parse {} Dictionary&quot;, dictEl.getAttribute(&quot;KEY&quot;));</span>
+<span class="nc" id="L360">        COSDictionary dict = new COSDictionary();</span>
+
+<span class="nc" id="L362">        NodeList nodeList = dictEl.getChildNodes();</span>
+<span class="nc" id="L363">        String parentAttrKey = dictEl.getAttribute(&quot;KEY&quot;);</span>
+
+<span class="nc bnc" id="L365" title="All 2 branches missed.">        for (int i = 0; i &lt; nodeList.getLength(); i++)</span>
+        {
+<span class="nc" id="L367">            Node node = nodeList.item(i);</span>
+<span class="nc bnc" id="L368" title="All 2 branches missed.">            if (node instanceof Element)</span>
+            {
+<span class="nc" id="L370">                Element child = (Element) node;</span>
+<span class="nc" id="L371">                String childAttrKey = child.getAttribute(&quot;KEY&quot;);</span>
+<span class="nc" id="L372">                String childAttrVal = child.getAttribute(&quot;VAL&quot;);</span>
+<span class="nc" id="L373">                String childTagName = child.getTagName();</span>
+
+<span class="nc bnc" id="L375" title="All 2 branches missed.">                if (childTagName == null)</span>
+                {
+<span class="nc" id="L377">                    LOG.warn(&quot;{} =&gt; NOT handling child element: null&quot;, parentAttrKey);</span>
+<span class="nc" id="L378">                    continue;</span>
+                }
+<span class="nc bnc" id="L380" title="All 8 branches missed.">                switch (childTagName)</span>
+                {
+                    case &quot;DICT&quot;:
+<span class="nc" id="L383">                        LOG.debug(&quot;{} =&gt; Handling DICT element with key: {}&quot;, parentAttrKey,</span>
+                                childAttrKey);
+<span class="nc" id="L385">                        dict.setItem(COSName.getPDFName(childAttrKey), parseDictElement(child));</span>
+<span class="nc" id="L386">                        LOG.debug(&quot;{} =&gt; Set {}&quot;, parentAttrKey, childAttrKey);</span>
+<span class="nc" id="L387">                        break;</span>
+                    case &quot;STREAM&quot;:
+<span class="nc" id="L389">                        LOG.debug(&quot;{} =&gt; Handling STREAM element with key: {}&quot;, parentAttrKey,</span>
+                                childAttrKey);
+<span class="nc" id="L391">                        dict.setItem(COSName.getPDFName(childAttrKey), parseStreamElement(child));</span>
+<span class="nc" id="L392">                        break;</span>
+                    case &quot;NAME&quot;:
+<span class="nc" id="L394">                        LOG.debug(&quot;{} =&gt; Handling NAME element with key: {}&quot;, parentAttrKey,</span>
+                                childAttrKey);
+<span class="nc" id="L396">                        dict.setName(COSName.getPDFName(childAttrKey), childAttrVal);</span>
+<span class="nc" id="L397">                        LOG.debug(&quot;{} =&gt; Set {}: {}&quot;, parentAttrKey, childAttrKey, childAttrVal);</span>
+<span class="nc" id="L398">                        break;</span>
+                    case &quot;INT&quot;:
+<span class="nc" id="L400">                        dict.setInt(COSName.getPDFName(childAttrKey), Integer.parseInt(childAttrVal));</span>
+<span class="nc" id="L401">                        LOG.debug(&quot;{} =&gt; Set {}: {}&quot;, parentAttrKey, childAttrKey, childAttrVal);</span>
+<span class="nc" id="L402">                        break;</span>
+                    case &quot;FIXED&quot;:
+<span class="nc" id="L404">                        dict.setFloat(COSName.getPDFName(childAttrKey), Float.parseFloat(childAttrVal));</span>
+<span class="nc" id="L405">                        LOG.debug(&quot;{} =&gt; Set {}: {}&quot;, parentAttrKey, childAttrKey, childAttrVal);</span>
+<span class="nc" id="L406">                        break;</span>
+                    case &quot;BOOL&quot;:
+<span class="nc" id="L408">                        dict.setBoolean(COSName.getPDFName(childAttrKey), Boolean.parseBoolean(childAttrVal));</span>
+<span class="nc" id="L409">                        LOG.debug(&quot;{} =&gt; Set {}&quot;, parentAttrKey, childAttrVal);</span>
+<span class="nc" id="L410">                        break;</span>
+                    case &quot;ARRAY&quot;:
+<span class="nc" id="L412">                        dict.setItem(COSName.getPDFName(childAttrKey), parseArrayElement(child));</span>
+<span class="nc" id="L413">                        LOG.debug(&quot;{} =&gt; Set {}&quot;, parentAttrKey, childAttrKey);</span>
+<span class="nc" id="L414">                        break;</span>
+                    default:
+<span class="nc" id="L416">                        LOG.warn(&quot;{} =&gt; NOT handling child element: {}&quot;, parentAttrKey, childTagName);</span>
+                        break;
+                }
+            }
+        }
+
+<span class="nc" id="L422">        return dict;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

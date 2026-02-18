@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AnnotationBorder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation.handlers</a> &gt; <span class="el_source">AnnotationBorder.java</span></div><h1>AnnotationBorder.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2018 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel.interactive.annotation.handlers;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictionary;
+
+/**
+ * Class to collect all sort of border info about annotations.
+ * 
+ * @author Tilman Hausherr
+ */
+<span class="nc" id="L30">class AnnotationBorder</span>
+{
+<span class="nc" id="L32">    float[] dashArray = null;</span>
+<span class="nc" id="L33">    boolean underline = false;</span>
+<span class="nc" id="L34">    float width = 0;</span>
+
+    // return border info. BorderStyle must be provided as parameter because
+    // method is not available in the base class
+    static AnnotationBorder getAnnotationBorder(PDAnnotation annotation,
+            PDBorderStyleDictionary borderStyle)
+    {
+<span class="nc" id="L41">        AnnotationBorder ab = new AnnotationBorder();</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">        if (borderStyle == null)</span>
+        {
+<span class="nc" id="L44">            COSArray border = annotation.getBorder();</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">            if (border.size() &gt;= 3)</span>
+            {
+<span class="nc" id="L47">                COSBase base = border.getObject(2);</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">                if (base instanceof COSNumber)</span>
+                {
+<span class="nc" id="L50">                    ab.width = ((COSNumber) base).floatValue();</span>
+                }
+            }
+<span class="nc bnc" id="L53" title="All 2 branches missed.">            if (border.size() &gt; 3)</span>
+            {
+<span class="nc" id="L55">                COSBase base3 = border.getObject(3);</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">                if (base3 instanceof COSArray)</span>
+                {
+<span class="nc" id="L58">                    ab.dashArray = ((COSArray) base3).toFloatArray();</span>
+                }
+            }
+<span class="nc" id="L61">        }</span>
+        else
+        {
+<span class="nc" id="L64">            ab.width = borderStyle.getWidth();</span>
+<span class="nc" id="L65">            String style = borderStyle.getStyle();</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">            if (style.equals(PDBorderStyleDictionary.STYLE_DASHED))</span>
+            {
+<span class="nc" id="L68">                ab.dashArray = borderStyle.getDashStyle().getDashArray();</span>
+            }
+<span class="nc bnc" id="L70" title="All 2 branches missed.">            if (style.equals(PDBorderStyleDictionary.STYLE_UNDERLINE))</span>
+            {
+<span class="nc" id="L72">                ab.underline = true;</span>
+            }
+        }
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        if (ab.dashArray != null)</span>
+        {
+<span class="nc" id="L77">            boolean allZero = true;</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">            for (float f : ab.dashArray)</span>
+            {
+<span class="nc bnc" id="L80" title="All 2 branches missed.">                if (Float.compare(f, 0) != 0)</span>
+                {
+<span class="nc" id="L82">                    allZero = false;</span>
+<span class="nc" id="L83">                    break;</span>
+                }
+            }
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            if (allZero)</span>
+            {
+<span class="nc" id="L88">                ab.dashArray = null;</span>
+            }
+        }
+<span class="nc" id="L91">        return ab;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

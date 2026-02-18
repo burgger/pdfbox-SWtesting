@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDPropBuildDataDict.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.digitalsignature</a> &gt; <span class="el_source">PDPropBuildDataDict.java</span></div><h1>PDPropBuildDataDict.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.digitalsignature;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * The general property dictionaries from the build property dictionary.
+ *
+ * @see PDPropBuild
+ * @author Thomas Chojecki
+ */
+public class PDPropBuildDataDict implements COSObjectable
+{
+    private final COSDictionary dictionary;
+
+    /**
+     * Default constructor.
+     */
+    public PDPropBuildDataDict()
+<span class="nc" id="L38">    {</span>
+<span class="nc" id="L39">        dictionary = new COSDictionary();</span>
+        // the specification claim to use direct objects
+<span class="nc" id="L41">        dictionary.setDirect(true);</span>
+<span class="nc" id="L42">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param dict The signature dictionary.
+     */
+    public PDPropBuildDataDict(COSDictionary dict)
+<span class="nc" id="L50">    {</span>
+<span class="nc" id="L51">        dictionary = dict;</span>
+        // the specification claim to use direct objects
+<span class="nc" id="L53">        dictionary.setDirect(true);</span>
+<span class="nc" id="L54">    }</span>
+
+    /**
+     * Convert this standard java object to a COS dictionary.
+     *
+     * @return The COS dictionary that matches this Java object.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L64">        return dictionary;</span>
+    }
+
+    /**
+     * The name of the software module that was used to create the signature.
+     * @return the name of the software module
+     */
+    public String getName()
+    {
+<span class="nc" id="L73">        return dictionary.getNameAsString(COSName.NAME);</span>
+    }
+
+    /**
+     * The name of the software module that was used to create the signature.
+     *
+     * @param name is the name of the software module
+     */
+    public void setName(String name)
+    {
+<span class="nc" id="L83">        dictionary.setName(COSName.NAME, name);</span>
+<span class="nc" id="L84">    }</span>
+
+    /**
+     * The build date of the software module. This string is normally produced by the compiler that
+     * is used to compile the software, for example using the Date and Time preprocessor flags. As
+     * such, this not likely to be in PDF Date format.
+     *
+     * @return the build date of the software module
+     */
+    public String getDate()
+    {
+<span class="nc" id="L95">        return dictionary.getString(COSName.DATE);</span>
+    }
+
+    /**
+     * The build date of the software module. This string is normally produced by the compiler.
+     *
+     * @param date is the build date of the software module
+     */
+    public void setDate(String date)
+    {
+<span class="nc" id="L105">        dictionary.setString(COSName.DATE, date);</span>
+<span class="nc" id="L106">    }</span>
+
+    /**
+     * A text string indicating the version of the application implementation, as described by the
+     * &lt;code&gt;Name&lt;/code&gt; attribute in this dictionary. When set by Adobe Acrobat, this entry is in
+     * the format: major.minor.micro (for example 7.0.7).
+     * &lt;p&gt;
+     * NOTE: Version value is specific for build data dictionary when used as the &lt;code&gt;App&lt;/code&gt;
+     * dictionary in a build properties dictionary.
+     * &lt;/p&gt;
+     *
+     * @param applicationVersion the application implementation version
+     */
+    public void setVersion(String applicationVersion)
+    {
+<span class="nc" id="L121">        dictionary.setString(&quot;REx&quot;, applicationVersion);</span>
+<span class="nc" id="L122">    }</span>
+
+    /**
+     * A text string indicating the version of the application implementation, as described by the
+     * &lt;code&gt;/Name&lt;/code&gt; attribute in this dictionary. When set by Adobe Acrobat, this entry is in
+     * the format: major.minor.micro (for example 7.0.7).
+     *
+     * @return the application implementation version
+     */
+    public String getVersion()
+    {
+<span class="nc" id="L133">        return dictionary.getString(&quot;REx&quot;);</span>
+    }
+
+    /**
+     * The software module revision number, corresponding to the Date attribute.
+     *
+     * @return the revision of the software module
+     */
+    public long getRevision()
+    {
+<span class="nc" id="L143">        return dictionary.getLong(COSName.R);</span>
+    }
+
+    /**
+     * The software module revision number, corresponding to the Date attribute.
+     *
+     * @param revision is the software module revision number
+     */
+    public void setRevision(long revision)
+    {
+<span class="nc" id="L153">        dictionary.setLong(COSName.R, revision);</span>
+<span class="nc" id="L154">    }</span>
+
+    /**
+     * The software module revision number, used to determinate the minimum version of software that
+     * is required in order to process this signature.
+     * &lt;p&gt;
+     * NOTE: this entry is deprecated for PDF v1.7
+     * &lt;/p&gt;
+     *
+     * @return the revision of the software module
+     */
+    public long getMinimumRevision()
+    {
+<span class="nc" id="L167">        return dictionary.getLong(COSName.V);</span>
+    }
+
+    /**
+     * The software module revision number, used to determinate the minimum version of software that
+     * is required in order to process this signature.
+     * &lt;p&gt;
+     * NOTE: this entry is deprecated for PDF v1.7
+     * &lt;/p&gt;
+     *
+     * @param revision is the software module revision number
+     */
+    public void setMinimumRevision(long revision)
+    {
+<span class="nc" id="L181">        dictionary.setLong(COSName.V, revision);</span>
+<span class="nc" id="L182">    }</span>
+
+    /**
+     * A flag that can be used by the signature handler or software module to
+     * indicate that this signature was created with unrelease software.
+     *
+     * @return true if the software module or signature handler was a pre release.
+     */
+    public boolean getPreRelease()
+    {
+<span class="nc" id="L192">        return dictionary.getBoolean(COSName.PRE_RELEASE, false);</span>
+    }
+
+    /**
+     * A flag that can be used by the signature handler or software module to
+     * indicate that this signature was created with unrelease software.
+     *
+     * @param preRelease is true if the signature was created with a unrelease
+     *                   software, otherwise false.
+     */
+    public void setPreRelease(boolean preRelease)
+    {
+<span class="nc" id="L204">        dictionary.setBoolean(COSName.PRE_RELEASE, preRelease);</span>
+<span class="nc" id="L205">    }</span>
+
+    /**
+     * Indicates the operating system. The string format isn't specified yet. In its PDF Signature
+     * Build Dictionary Specifications Adobe differently specifies the value type to store operating
+     * system string:&lt;ul&gt;
+     * &lt;li&gt;Specification for PDF v1.5 specifies type as string;&lt;/li&gt;
+     * &lt;li&gt;Specification for PDF v1.7 specifies type as array and provided example for
+     * &lt;code&gt;/PropBuild&lt;/code&gt; dictionary indicate it as array of names.&lt;/li&gt;
+     * &lt;/ul&gt;
+     * This method supports both types to retrieve the value.
+     *
+     * @return the operating system id or name.
+     */
+    public String getOS()
+    {
+<span class="nc" id="L221">        final COSArray osArray = dictionary.getCOSArray(COSName.OS);</span>
+        // PDF v1.5 style
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        return osArray != null ? osArray.getName(0) : dictionary.getString(COSName.OS);</span>
+    }
+
+    /**
+     * Indicates the operating system. The string format isn't specified yet. Value will be stored
+     * as first item of the array, as specified in PDF Signature Build Dictionary Specification for
+     * PDF v1.7.
+     *
+     * @param os is a string with the system id or name.
+     */
+    public void setOS(String os)
+    {
+<span class="nc bnc" id="L235" title="All 2 branches missed.">        if (os == null)</span>
+        {
+<span class="nc" id="L237">            dictionary.removeItem(COSName.OS);</span>
+        }
+        else
+        {
+<span class="nc" id="L241">            COSArray osArray = dictionary.getCOSArray(COSName.OS);</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">            if (osArray == null)</span>
+            {
+<span class="nc" id="L244">                osArray = new COSArray();</span>
+<span class="nc" id="L245">                osArray.setDirect(true);</span>
+<span class="nc" id="L246">                dictionary.setItem(COSName.OS, osArray);</span>
+            }
+<span class="nc" id="L248">            osArray.add(0, COSName.getPDFName(os));</span>
+        }
+<span class="nc" id="L250">    }</span>
+
+    /**
+     * If there is a LegalPDF dictionary in the catalog
+     * of the PDF file and the NonEmbeddedFonts attribute in this dictionary
+     * has a non zero value, and the viewing application has a preference
+     * set to suppress the display of this warning then the value of this
+     * attribute will be set to true.
+     *
+     * @return true if NonEFontNoWarn is set to true
+     * @see #setNonEFontNoWarn(boolean)
+     */
+    public boolean getNonEFontNoWarn()
+    {
+<span class="nc" id="L264">        return dictionary.getBoolean(COSName.NON_EFONT_NO_WARN, true);</span>
+    }
+
+    /**
+     * If true, the reader should not display a warning about fonts not being embedded.
+     *
+     * @param noEmbedFontWarning true if there is a Legal dictionary in the catalog and the
+     * NonEmbeddedFonts attribute has a non-zero value
+     *
+     * Documentation says: (Optional; PDF 1.5) If there is a LegalPDF dictionary in the catalog of
+     * the PDF file and the NonEmbeddedFonts attribute in this dictionary has a non zero value, and
+     * the viewing application has a preference set to suppress the display of this warning then the
+     * value of this attribute will be set to true.
+     *
+     * @see
+     * &lt;a href=&quot;https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/Acrobat_Signature_BuildDict.pdf#page=6&quot;&gt;Digital
+     * Signature Build Dictionary Specification&lt;/a&gt;
+     * @see #getNonEFontNoWarn()
+     * @see COSName#NON_EFONT_NO_WARN
+     */
+    public void setNonEFontNoWarn(boolean noEmbedFontWarning)
+    {
+<span class="nc" id="L286">        dictionary.setBoolean(COSName.NON_EFONT_NO_WARN, noEmbedFontWarning);</span>
+<span class="nc" id="L287">    }</span>
+
+    /**
+     * If true, the application was in trusted mode when signing took place.
+     *
+     * @return true if the application was in trusted mode while signing.
+     *              default: false
+     */
+    public boolean getTrustedMode()
+    {
+<span class="nc" id="L297">        return dictionary.getBoolean(COSName.TRUSTED_MODE, false);</span>
+    }
+
+    /**
+     * If true, the application was in trusted mode when signing took place.
+     *
+     * @param trustedMode true if the application is in trusted mode.
+     */
+    public void setTrustedMode(boolean trustedMode)
+    {
+<span class="nc" id="L307">        dictionary.setBoolean(COSName.TRUSTED_MODE, trustedMode);</span>
+<span class="nc" id="L308">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

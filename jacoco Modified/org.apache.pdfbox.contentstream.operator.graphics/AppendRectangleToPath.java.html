@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AppendRectangleToPath.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.contentstream.operator.graphics</a> &gt; <span class="el_source">AppendRectangleToPath.java</span></div><h1>AppendRectangleToPath.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.contentstream.operator.graphics;
+
+import java.awt.geom.Point2D;
+import java.io.IOException;
+import java.util.List;
+
+import org.apache.pdfbox.contentstream.PDFGraphicsStreamEngine;
+import org.apache.pdfbox.contentstream.operator.MissingOperandException;
+
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.contentstream.operator.Operator;
+import org.apache.pdfbox.contentstream.operator.OperatorName;
+
+/**
+ * re Appends a rectangle to the path.
+ *
+ * @author Ben Litchfield
+ */
+public final class AppendRectangleToPath extends GraphicsOperatorProcessor
+{
+
+    public AppendRectangleToPath(PDFGraphicsStreamEngine context)
+    {
+<span class="fc" id="L41">        super(context);</span>
+<span class="fc" id="L42">    }</span>
+
+    @Override
+    public void process(Operator operator, List&lt;COSBase&gt; operands) throws IOException
+    {
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (operands.size() &lt; 4)</span>
+        {
+<span class="nc" id="L49">            throw new MissingOperandException(operator, operands);</span>
+        }
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">        if (!checkArrayTypesClass(operands, COSNumber.class))</span>
+        {
+<span class="nc" id="L53">            return;</span>
+        }
+<span class="fc" id="L55">        COSNumber x = (COSNumber) operands.get(0);</span>
+<span class="fc" id="L56">        COSNumber y = (COSNumber) operands.get(1);</span>
+<span class="fc" id="L57">        COSNumber w = (COSNumber) operands.get(2);</span>
+<span class="fc" id="L58">        COSNumber h = (COSNumber) operands.get(3);</span>
+
+<span class="fc" id="L60">        float x1 = x.floatValue();</span>
+<span class="fc" id="L61">        float y1 = y.floatValue();</span>
+
+        // create a pair of coordinates for the transformation
+<span class="fc" id="L64">        float x2 = w.floatValue() + x1;</span>
+<span class="fc" id="L65">        float y2 = h.floatValue() + y1;</span>
+
+<span class="fc" id="L67">        PDFGraphicsStreamEngine context = getGraphicsContext();</span>
+<span class="fc" id="L68">        Point2D p0 = context.transformedPoint(x1, y1);</span>
+<span class="fc" id="L69">        Point2D p1 = context.transformedPoint(x2, y1);</span>
+<span class="fc" id="L70">        Point2D p2 = context.transformedPoint(x2, y2);</span>
+<span class="fc" id="L71">        Point2D p3 = context.transformedPoint(x1, y2);</span>
+
+<span class="fc" id="L73">        context.appendRectangle(p0, p1, p2, p3);</span>
+<span class="fc" id="L74">    }</span>
+
+    @Override
+    public String getName()
+    {
+<span class="fc" id="L79">        return OperatorName.APPEND_RECT;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,647 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDSeedValueCertificate.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.digitalsignature</a> &gt; <span class="el_source">PDSeedValueCertificate.java</span></div><h1>PDSeedValueCertificate.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2017 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.digitalsignature;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+
+/**
+ * This class represents a certificate seed value dictionary that is in the seed value which puts
+ * constraints on certificates when signing documents.
+ *
+ * @author Hossam Hazem
+ */
+public class PDSeedValueCertificate implements COSObjectable
+{
+    /**
+     * A Ff flag.
+     */
+    public static final int FLAG_SUBJECT = 1;
+
+    /**
+     * A Ff flag.
+     */
+    public static final int FLAG_ISSUER = 1 &lt;&lt; 1;
+
+    /**
+     * A Ff flag.
+     */
+    public static final int FLAG_OID = 1 &lt;&lt; 2;
+
+    /**
+     * A Ff flag.
+     */
+    public static final int FLAG_SUBJECT_DN = 1 &lt;&lt; 3;
+
+    /**
+     * A Ff flag.
+     */
+    public static final int FLAG_KEY_USAGE = 1 &lt;&lt; 5;
+
+    /**
+     * A Ff flag.
+     */
+    public static final int FLAG_URL = 1 &lt;&lt; 6;
+    private final COSDictionary dictionary;
+
+    /**
+     * Default constructor.
+     */
+    public PDSeedValueCertificate()
+<span class="nc" id="L72">    {</span>
+<span class="nc" id="L73">        dictionary = new COSDictionary();</span>
+<span class="nc" id="L74">        dictionary.setItem(COSName.TYPE, COSName.SV_CERT);</span>
+<span class="nc" id="L75">        dictionary.setDirect(true);</span>
+<span class="nc" id="L76">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param dict The certificate seed value dictionary.
+     */
+    public PDSeedValueCertificate(COSDictionary dict)
+<span class="nc" id="L84">    {</span>
+<span class="nc" id="L85">        dictionary = dict;</span>
+<span class="nc" id="L86">        dictionary.setDirect(true);</span>
+<span class="nc" id="L87">    }</span>
+
+    /**
+     * Convert this standard java object to a COS dictionary.
+     *
+     * @return The COS dictionary that matches this Java object.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L97">        return dictionary;</span>
+    }
+
+    /**
+     *
+     * @return true if the Subject is required
+     */
+    public boolean isSubjectRequired()
+    {
+<span class="nc" id="L106">        return dictionary.getFlag(COSName.FF, FLAG_SUBJECT);</span>
+    }
+
+    /**
+     * set true if subject shall be required as a constraint on signature.
+     *
+     * @param flag if true, the specified Subject shall be enforced as a constraint.
+     */
+    public void setSubjectRequired(boolean flag)
+    {
+<span class="nc" id="L116">        dictionary.setFlag(COSName.FF, FLAG_SUBJECT, flag);</span>
+<span class="nc" id="L117">    }</span>
+
+    /**
+     *
+     * @return true if the Issuer is required
+     */
+    public boolean isIssuerRequired()
+    {
+<span class="nc" id="L125">        return dictionary.getFlag(COSName.FF, FLAG_ISSUER);</span>
+    }
+
+    /**
+     * set true if Issuer shall be required as a constraint on signature.
+     *
+     * @param flag if true, the specified Issuer shall be enforced as a constraint.
+     */
+    public void setIssuerRequired(boolean flag)
+    {
+<span class="nc" id="L135">        dictionary.setFlag(COSName.FF, FLAG_ISSUER, flag);</span>
+<span class="nc" id="L136">    }</span>
+
+    /**
+     *
+     * @return true if the OID is required
+     */
+    public boolean isOIDRequired()
+    {
+<span class="nc" id="L144">        return dictionary.getFlag(COSName.FF, FLAG_OID);</span>
+    }
+
+    /**
+     * set true if OID shall be required as a constraint on signature.
+     *
+     * @param flag if true, the specified OID shall be enforced as a constraint.
+     */
+    public void setOIDRequired(boolean flag)
+    {
+<span class="nc" id="L154">        dictionary.setFlag(COSName.FF, FLAG_OID, flag);</span>
+<span class="nc" id="L155">    }</span>
+
+    /**
+     *
+     * @return true if the Subject DN is required
+     */
+    public boolean isSubjectDNRequired()
+    {
+<span class="nc" id="L163">        return dictionary.getFlag(COSName.FF, FLAG_SUBJECT_DN);</span>
+    }
+
+    /**
+     * set true if subject DN shall be required as a constraint on signature.
+     *
+     * @param flag if true, the specified Subject DN shall be enforced as a constraint.
+     */
+    public void setSubjectDNRequired(boolean flag)
+    {
+<span class="nc" id="L173">        dictionary.setFlag(COSName.FF, FLAG_SUBJECT_DN, flag);</span>
+<span class="nc" id="L174">    }</span>
+
+    /**
+     *
+     * @return true if the KeyUsage is required
+     */
+    public boolean isKeyUsageRequired()
+    {
+<span class="nc" id="L182">        return dictionary.getFlag(COSName.FF, FLAG_KEY_USAGE);</span>
+    }
+
+    /**
+     * set true if KeyUsage shall be required as a constraint on signature.
+     *
+     * @param flag if true, the specified KeyUsage shall be enforced as a constraint.
+     */
+    public void setKeyUsageRequired(boolean flag)
+    {
+<span class="nc" id="L192">        dictionary.setFlag(COSName.FF, FLAG_KEY_USAGE, flag);</span>
+<span class="nc" id="L193">    }</span>
+
+    /**
+     *
+     * @return true if the URL is required
+     */
+    public boolean isURLRequired()
+    {
+<span class="nc" id="L201">        return dictionary.getFlag(COSName.FF, FLAG_URL);</span>
+    }
+
+    /**
+     * set true if URL shall be required as a constraint on signature.
+     *
+     * @param flag if true, the specified URL shall be enforced as a constraint.
+     */
+    public void setURLRequired(boolean flag)
+    {
+<span class="nc" id="L211">        dictionary.setFlag(COSName.FF, FLAG_URL, flag);</span>
+<span class="nc" id="L212">    }</span>
+
+    /**
+     * Returns list of byte arrays that contains DER-encoded X.509v3 certificates
+     * 
+     * @return list of byte arrays containing DER-encoded X.509v3 certificates
+     */
+    public List&lt;byte[]&gt; getSubject()
+    {
+<span class="nc" id="L221">        COSArray array = dictionary.getCOSArray(COSName.SUBJECT);</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">        return array != null ? getListOfByteArraysFromCOSArray(array) : null;</span>
+    }
+
+    /**
+     * (Optional) A list of byte arrays containing DER-encoded X.509v3 certificates that are
+     * acceptable for signing. if
+     * &lt;b&gt;Subject&lt;/b&gt; is not null and {@link #isSubjectRequired()} is true then the subject
+     * constraint is enforced on the subjects in this array subjects.
+     *
+     * @param subjects list of byte arrays containing DER-encoded X.509v3 certificates that are
+     * acceptable for signing.
+     */
+    public void setSubject(List&lt;byte[]&gt; subjects)
+    {
+<span class="nc" id="L236">        dictionary.setItem(COSName.SUBJECT, convertListOfByteArraysToCOSArray(subjects));</span>
+<span class="nc" id="L237">    }</span>
+
+    /**
+     * (Optional) byte array containing DER-encoded X.509v3 certificate that is acceptable for
+     * signing. works like {@link #setSubject(List)} but one byte array
+     *
+     * @param subject byte array containing DER-encoded X.509v3 certificate
+     */
+    public void addSubject(byte[] subject)
+    {
+<span class="nc" id="L247">        COSArray array = dictionary.getCOSArray(COSName.SUBJECT);</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">        if (array == null)</span>
+        {
+<span class="nc" id="L250">            array = new COSArray();</span>
+        }
+<span class="nc" id="L252">        array.add(new COSString(subject));</span>
+<span class="nc" id="L253">        dictionary.setItem(COSName.SUBJECT, array);</span>
+<span class="nc" id="L254">    }</span>
+
+    /**
+     * removes a subject from the list
+     *
+     * @param subject byte array containing DER-encoded X.509v3 certificate
+     */
+    public void removeSubject(byte[] subject)
+    {
+<span class="nc" id="L263">        COSArray array = dictionary.getCOSArray(COSName.SUBJECT);</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        if (array != null)</span>
+        {
+<span class="nc" id="L266">            array.remove(new COSString(subject));</span>
+        }
+<span class="nc" id="L268">    }</span>
+
+    /**
+     * Returns list of maps that contains subject distinguished names like [(cn: John Doe, o: Doe), (cn: John Smith)]
+     * both keys are typically of the form 'cn', 'o', 'email', '2.5.4.43'; and values are text strings.
+     * 
+     * @return list maps that contains subject distinguished names
+     */
+    public List&lt;Map&lt;String, String&gt;&gt; getSubjectDN()
+    {
+<span class="nc" id="L278">        COSArray cosArray = dictionary.getCOSArray(COSName.SUBJECT_DN);</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">        if (cosArray != null)</span>
+        {
+<span class="nc" id="L281">            List&lt;? extends COSBase&gt; subjectDNList = cosArray.toList();</span>
+<span class="nc" id="L282">            List&lt;Map&lt;String, String&gt;&gt; result = new LinkedList&lt;&gt;();</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">            for (COSBase subjectDNItem : subjectDNList)</span>
+            {
+<span class="nc bnc" id="L285" title="All 2 branches missed.">                if (subjectDNItem instanceof COSDictionary)</span>
+                {
+<span class="nc" id="L287">                    COSDictionary subjectDNItemDict = (COSDictionary) subjectDNItem;</span>
+<span class="nc" id="L288">                    Map&lt;String, String&gt; subjectDNMap = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L289" title="All 2 branches missed.">                    for (COSName key : subjectDNItemDict.keySet())</span>
+                    {
+<span class="nc" id="L291">                        subjectDNMap.put(key.getName(), subjectDNItemDict.getString(key));</span>
+<span class="nc" id="L292">                    }</span>
+<span class="nc" id="L293">                    result.add(subjectDNMap);</span>
+                }
+<span class="nc" id="L295">            }</span>
+<span class="nc" id="L296">            return result;</span>
+        }
+<span class="nc" id="L298">        return null;</span>
+    }
+
+    /**
+     * (Optional; PDF 1.7) A list of maps, where each map contains key value pairs, that specify the
+     * Subject Distinguished Name (DN) that must be present within the certificate for it to be
+     * acceptable for signing. The certificate must at a minimum contain all the attributes
+     * specified in one of the maps entered.
+     *
+     * @param subjectDN list of maps that contains subject distinguished names
+     */
+    public void setSubjectDN(List&lt;Map&lt;String, String&gt;&gt; subjectDN)
+    {
+<span class="nc" id="L311">        List&lt;COSDictionary&gt; subjectDNDict = new LinkedList&lt;&gt;();</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">        for (Map&lt;String, String&gt; subjectDNItem : subjectDN)</span>
+        {
+<span class="nc" id="L314">            COSDictionary dict = new COSDictionary();</span>
+<span class="nc" id="L315">            subjectDNItem.forEach((key, value) -&gt; dict.setItem(key, new COSString(value)));</span>
+<span class="nc" id="L316">            subjectDNDict.add(dict);</span>
+<span class="nc" id="L317">        }</span>
+<span class="nc" id="L318">        dictionary.setItem(COSName.SUBJECT_DN, new COSArray(subjectDNDict));</span>
+<span class="nc" id="L319">    }</span>
+
+    /**
+     * Returns list of key usages of certificate strings where each string is 9 characters long and each character is
+     * one of these values {0, 1, X} 0 for must not set, 1 for must set, X for don't care. each index in the string
+     * represents a key usage:
+     * &lt;ol&gt;
+     * &lt;li&gt;digitalSignature&lt;/li&gt;
+     * &lt;li&gt;non-Repudiation&lt;/li&gt;
+     * &lt;li&gt;keyEncipherment&lt;/li&gt;
+     * &lt;li&gt;dataEncipherment&lt;/li&gt;
+     * &lt;li&gt;keyAgreement&lt;/li&gt;
+     * &lt;li&gt;keyCertSign&lt;/li&gt;
+     * &lt;li&gt;cRLSign&lt;/li&gt;
+     * &lt;li&gt;encipherOnly&lt;/li&gt;
+     * &lt;li&gt;decipherOnly&lt;/li&gt;
+     * &lt;/ol&gt;
+     * 
+     * @return list of key usages of certificate strings
+     */
+    public List&lt;String&gt; getKeyUsage()
+    {
+<span class="nc" id="L341">        COSArray array = dictionary.getCOSArray(COSName.KEY_USAGE);</span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">        if (array != null)</span>
+        {
+<span class="nc" id="L344">            List&lt;String&gt; keyUsageExtensions = new LinkedList&lt;&gt;();</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">            for (COSBase item : array)</span>
+            {
+<span class="nc bnc" id="L347" title="All 2 branches missed.">                if (item instanceof COSString)</span>
+                {
+<span class="nc" id="L349">                    keyUsageExtensions.add(((COSString) item).getString());</span>
+                }
+<span class="nc" id="L351">            }</span>
+<span class="nc" id="L352">            return keyUsageExtensions;</span>
+        }
+<span class="nc" id="L354">        return null;</span>
+    }
+
+    /**
+     * (Optional; PDF 1.7) A List of ASCII strings, where each string specifies an acceptable
+     * key-usage extension that must be present in the signing certificate. Multiple strings specify
+     * a range of acceptable key-usage extensions; where each string 9 characters long and each
+     * character is one of these values {0, 1, X} 0 for must not set, 1 for must set, X for don't
+     * care. each index in the string represents a key usage:
+     * &lt;ol&gt;
+     * &lt;li&gt;digitalSignature&lt;/li&gt;
+     * &lt;li&gt;non-Repudiation&lt;/li&gt;
+     * &lt;li&gt;keyEncipherment&lt;/li&gt;
+     * &lt;li&gt;dataEncipherment&lt;/li&gt;
+     * &lt;li&gt;keyAgreement&lt;/li&gt;
+     * &lt;li&gt;keyCertSign&lt;/li&gt;
+     * &lt;li&gt;cRLSign&lt;/li&gt;
+     * &lt;li&gt;encipherOnly&lt;/li&gt;
+     * &lt;li&gt;decipherOnly&lt;/li&gt;
+     * &lt;/ol&gt;
+     *
+     * @param keyUsageExtensions list of ASCII strings that consists only of {0, 1, X}
+     */
+    public void setKeyUsage(List&lt;String&gt; keyUsageExtensions)
+    {
+<span class="nc" id="L379">        dictionary.setItem(COSName.KEY_USAGE,</span>
+<span class="nc" id="L380">                COSArray.ofCOSStrings(keyUsageExtensions));</span>
+<span class="nc" id="L381">    }</span>
+
+    /**
+     * (Optional; PDF 1.7) specifies an acceptable key-usage extension that must be presennt in the
+     * signing certificate for works like {@link #setKeyUsage(List)} but takes only one string
+     *
+     * @param keyUsageExtension String that consist only of {0, 1, X}
+     */
+    public void addKeyUsage(String keyUsageExtension)
+    {
+<span class="nc" id="L391">        String allowedChars = &quot;01X&quot;;</span>
+<span class="nc bnc" id="L392" title="All 2 branches missed.">        for (int c = 0; c &lt; keyUsageExtension.length(); c++)</span>
+        {
+<span class="nc bnc" id="L394" title="All 2 branches missed.">            if (allowedChars.indexOf(keyUsageExtension.charAt(c)) == -1)</span>
+            {
+<span class="nc" id="L396">                throw new IllegalArgumentException(&quot;characters can only be 0, 1, X&quot;);</span>
+            }
+        }
+<span class="nc" id="L399">        COSArray array = dictionary.getCOSArray(COSName.KEY_USAGE);</span>
+<span class="nc bnc" id="L400" title="All 2 branches missed.">        if (array == null)</span>
+        {
+<span class="nc" id="L402">            array = new COSArray();</span>
+        }
+<span class="nc" id="L404">        array.add(new COSString(keyUsageExtension));</span>
+<span class="nc" id="L405">        dictionary.setItem(COSName.KEY_USAGE, array);</span>
+<span class="nc" id="L406">    }</span>
+
+    /**
+     * works like {@link #addKeyUsage(String)} but enters each character separately
+     *
+     * @param digitalSignature char that is one of {0, 1, X}
+     * @param nonRepudiation char that is one of {0, 1, X}
+     * @param keyEncipherment char that is one of {0, 1, X}
+     * @param dataEncipherment char that is one of {0, 1, X}
+     * @param keyAgreement char that is one of {0, 1, X}
+     * @param keyCertSign char that is one of {0, 1, X}
+     * @param cRLSign char that is one of {0, 1, X}
+     * @param encipherOnly char that is one of {0, 1, X}
+     * @param decipherOnly char that is one of {0, 1, X}
+     */
+    public void addKeyUsage(char digitalSignature, char nonRepudiation, char keyEncipherment,
+            char dataEncipherment, char keyAgreement, char keyCertSign, char cRLSign,
+            char encipherOnly, char decipherOnly)
+    {
+<span class="nc" id="L425">        StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L426">        builder.append(digitalSignature);</span>
+<span class="nc" id="L427">        builder.append(nonRepudiation);</span>
+<span class="nc" id="L428">        builder.append(keyEncipherment);</span>
+<span class="nc" id="L429">        builder.append(dataEncipherment);</span>
+<span class="nc" id="L430">        builder.append(keyAgreement);</span>
+<span class="nc" id="L431">        builder.append(keyCertSign);</span>
+<span class="nc" id="L432">        builder.append(cRLSign);</span>
+<span class="nc" id="L433">        builder.append(encipherOnly);</span>
+<span class="nc" id="L434">        builder.append(decipherOnly);</span>
+        
+<span class="nc" id="L436">        addKeyUsage(builder.toString());</span>
+<span class="nc" id="L437">    }</span>
+
+    /**
+     * Removes a key usage extension
+     *
+     * @param keyUsageExtension ASCII string that consists of {0, 1, X}
+     */
+    public void removeKeyUsage(String keyUsageExtension)
+    {
+<span class="nc" id="L446">        COSArray array = dictionary.getCOSArray(COSName.KEY_USAGE);</span>
+<span class="nc bnc" id="L447" title="All 2 branches missed.">        if (array != null)</span>
+        {
+<span class="nc" id="L449">            array.remove(new COSString(keyUsageExtension));</span>
+        }
+<span class="nc" id="L451">    }</span>
+
+    /**
+     * Returns list of array of bytes of DER-encoded X.509v3 certificates
+     * 
+     * @return list of array of bytes of DER-encoded X.509v3 certificates
+     */
+    public List&lt;byte[]&gt; getIssuer()
+    {
+<span class="nc" id="L460">        COSArray array = dictionary.getCOSArray(COSName.ISSUER);</span>
+<span class="nc bnc" id="L461" title="All 2 branches missed.">        return array != null ? getListOfByteArraysFromCOSArray(array) : null;</span>
+    }
+
+    /**
+     * (Optional) A list of array of bytes containing DER-encoded X.509v3 certificates of acceptable
+     * issuers. If the signer’s certificate chains up to any of the specified issuers (either
+     * directly or indirectly), the certificate is considered acceptable for signing.
+     *
+     * @param issuers A list of byte array containing DER-encoded X.509v3 certificates
+     */
+    public void setIssuer(List&lt;byte[]&gt; issuers)
+    {
+<span class="nc" id="L473">        dictionary.setItem(COSName.ISSUER, convertListOfByteArraysToCOSArray(issuers));</span>
+<span class="nc" id="L474">    }</span>
+
+    /**
+     * array of bytes containing DER-encoded X.509v3 certificates of acceptable issuers. If the
+     * signer’s certificate chains up to any of the specified issuers (either directly or
+     * indirectly), the certificate is considered acceptable for signing.
+     *
+     * @param issuer A byte array containing DER-encoded X.509v3 certificate
+     */
+    public void addIssuer(byte[] issuer)
+    {
+<span class="nc" id="L485">        COSArray array = dictionary.getCOSArray(COSName.ISSUER);</span>
+<span class="nc bnc" id="L486" title="All 2 branches missed.">        if (array == null)</span>
+        {
+<span class="nc" id="L488">            array = new COSArray();</span>
+        }
+<span class="nc" id="L490">        array.add(new COSString(issuer));</span>
+<span class="nc" id="L491">        dictionary.setItem(COSName.ISSUER, array);</span>
+<span class="nc" id="L492">    }</span>
+
+    /**
+     * Removes an issuer from the issuers list
+     *
+     * @param issuer A byte array containing DER-encoded X.509v3 certificate
+     */
+    public void removeIssuer(byte[] issuer)
+    {
+<span class="nc" id="L501">        COSArray array = dictionary.getCOSArray(COSName.ISSUER);</span>
+<span class="nc bnc" id="L502" title="All 2 branches missed.">        if (array != null)</span>
+        {
+<span class="nc" id="L504">            array.remove(new COSString(issuer));</span>
+        }
+<span class="nc" id="L506">    }</span>
+
+    /**
+     * Returns A list of array of bytes that contain Object Identifiers (OIDs) of the certificate policies that must be
+     * present in the signing certificate
+     * 
+     * @return list of array of bytes that contain Object Identifiers of the certificate policies
+     */
+    public List&lt;byte[]&gt; getOID()
+    {
+<span class="nc" id="L516">        COSArray array = dictionary.getCOSArray(COSName.OID);</span>
+<span class="nc bnc" id="L517" title="All 2 branches missed.">        return array != null ? getListOfByteArraysFromCOSArray(array) : null;</span>
+    }
+
+    /**
+     * (Optional) A list of byte arrays that contain Object Identifiers (OIDs) of the certificate
+     * policies that must be present in the signing certificate. This field is only applicable if
+     * the value of Issuer is not empty.
+     *
+     * @param oidByteStrings list of byte arrays that contain OIDs
+     */
+    public void setOID(List&lt;byte[]&gt; oidByteStrings)
+    {
+<span class="nc" id="L529">        dictionary.setItem(COSName.OID, convertListOfByteArraysToCOSArray(oidByteStrings));</span>
+<span class="nc" id="L530">    }</span>
+
+    /**
+     * works like {@link #setOID(List)} but for one object
+     *
+     * @param oid Object Identifier of a certificate policy to be added
+     */
+    public void addOID(byte[] oid)
+    {
+<span class="nc" id="L539">        COSArray array = dictionary.getCOSArray(COSName.OID);</span>
+<span class="nc bnc" id="L540" title="All 2 branches missed.">        if (array == null)</span>
+        {
+<span class="nc" id="L542">            array = new COSArray();</span>
+        }
+<span class="nc" id="L544">        array.add(new COSString(oid));</span>
+<span class="nc" id="L545">        dictionary.setItem(COSName.OID, array);</span>
+<span class="nc" id="L546">    }</span>
+
+    /**
+     * removes an OID from the list
+     *
+     * @param oid Object Identifier of the certificate policy to be removed
+     */
+    public void removeOID(byte[] oid)
+    {
+<span class="nc" id="L555">        COSArray array = dictionary.getCOSArray(COSName.OID);</span>
+<span class="nc bnc" id="L556" title="All 2 branches missed.">        if (array != null)</span>
+        {
+<span class="nc" id="L558">            array.remove(new COSString(oid));</span>
+        }
+<span class="nc" id="L560">    }</span>
+
+    /**
+     * returns String of the URL
+     * 
+     * @return string of the URL
+     */
+    public String getURL()
+    {
+<span class="nc" id="L569">        return dictionary.getString(COSName.URL);</span>
+    }
+
+    /**
+     * (Optional) A URL, the use for which is defined by the URLType entry.
+     *
+     * @param url String of the URL
+     */
+    public void setURL(String url)
+    {
+<span class="nc" id="L579">        dictionary.setString(COSName.URL, url);</span>
+<span class="nc" id="L580">    }</span>
+
+    /**
+     * A name indicating the usage of the URL entry. There are standard uses and there can be
+     * implementation-specific use for this URL. The following value specifies a valid standard
+     * usage:
+     * &lt;ul&gt;
+     * &lt;li&gt;Browser, The URL references content that should be displayed in a web browser to allow
+     * enrolling for a new credential if a matching credential is not found. The Ff attribute’s URL
+     * bit is ignored for this usage.&lt;/li&gt;
+     * &lt;li&gt;ASSP, The URL references a signature web service that can be used for server-based
+     * signing. If the Ff attribute’s URL bit indicates that this is a required constraint, this
+     * implies that the credential used when signing must come from this server.&lt;/li&gt;
+     * &lt;/ul&gt;
+     *
+     * @return string of URL type
+     */
+    public String getURLType()
+    {
+<span class="nc" id="L599">        return dictionary.getNameAsString(COSName.URL_TYPE);</span>
+    }
+
+    /**
+     * (Optional; PDF 1.7) A name indicating the usage of the URL entry. There are standard uses and
+     * there can be implementation-specific uses for this URL. The following value specifies a valid
+     * standard usage:
+     * &lt;ul&gt;
+     * &lt;li&gt;Browser, The URL references content that should be displayed in a web browser to allow
+     * enrolling for a new credential if a matching credential is not found. The Ff attribute’s URL
+     * bit is ignored for this usage.&lt;/li&gt;
+     * &lt;li&gt;ASSP, The URL references a signature web service that can be used for server-based
+     * signing. If the Ff attribute’s URL bit indicates that this is a required constraint, this
+     * implies that the credential used when signing must come from this server.&lt;/li&gt;
+     * &lt;/ul&gt;
+     * Third parties can extend the use of this attribute with their own attribute values, which
+     * must conform to the guidelines specified in
+     * &lt;a href=&quot;http://www.adobe.com/content/dam/acom/en/devnet/pdf/PDF32000_2008.pdf#page=681&quot;&gt;PDF
+     * Spec 1.7 Appendix E (PDF Name Registry)&lt;/a&gt;
+     * if urlType is not set the default is Browser for URL
+     *
+     * @param urlType String of the urlType
+     */
+    public void setURLType(String urlType)
+    {
+<span class="nc" id="L624">        dictionary.setName(COSName.URL_TYPE, urlType);</span>
+<span class="nc" id="L625">    }</span>
+
+    private static List&lt;byte[]&gt; getListOfByteArraysFromCOSArray(COSArray array)
+    {
+<span class="nc" id="L629">        List&lt;byte[]&gt; result = new LinkedList&lt;&gt;();</span>
+<span class="nc bnc" id="L630" title="All 2 branches missed.">        for (COSBase item : array)</span>
+        {
+<span class="nc bnc" id="L632" title="All 2 branches missed.">            if (item instanceof COSString)</span>
+            {
+<span class="nc" id="L634">                result.add(((COSString) item).getBytes());</span>
+            }
+<span class="nc" id="L636">        }</span>
+<span class="nc" id="L637">        return result;</span>
+    }
+
+    private static COSArray convertListOfByteArraysToCOSArray(List&lt;byte[]&gt; strings)
+    {
+<span class="nc" id="L642">        COSArray array = new COSArray();</span>
+<span class="nc" id="L643">        strings.forEach(s -&gt; array.add(new COSString(s)));</span>
+<span class="nc" id="L644">        return array;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

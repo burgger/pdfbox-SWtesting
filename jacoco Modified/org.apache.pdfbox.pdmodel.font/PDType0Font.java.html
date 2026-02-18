@@ -1,0 +1,734 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDType0Font.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font</a> &gt; <span class="el_source">PDType0Font.java</span></div><h1>PDType0Font.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.font;
+
+import java.awt.geom.GeneralPath;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.fontbox.cmap.CMap;
+import org.apache.fontbox.ttf.CmapLookup;
+import org.apache.fontbox.ttf.TTFParser;
+import org.apache.fontbox.ttf.TrueTypeFont;
+import org.apache.fontbox.ttf.model.GsubData;
+import org.apache.fontbox.util.BoundingBox;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.util.Matrix;
+import org.apache.pdfbox.util.Vector;
+
+/**
+ * A Composite (Type 0) font.
+ *
+ * @author Ben Litchfield
+ */
+public class PDType0Font extends PDFont implements PDVectorFont
+{
+<span class="fc" id="L53">    private static final Logger LOG = LogManager.getLogger(PDType0Font.class);</span>
+
+    private final PDCIDFont descendantFont;
+<span class="fc" id="L56">    private final Set&lt;Integer&gt; noUnicode = new HashSet&lt;&gt;(); </span>
+    private final GsubData gsubData;
+    private final CmapLookup cmapLookup;
+    private CMap cMap, cMapUCS2;
+    private boolean isCMapPredefined;
+    private boolean isDescendantCJK;
+    private PDCIDFontType2Embedder embedder;
+    private TrueTypeFont ttf;
+
+    /**
+     * Constructor for reading a Type0 font from a PDF file.
+     * 
+     * @param fontDictionary The font dictionary according to the PDF specification.
+     * @throws IOException if the descendant font is missing.
+     */
+    public PDType0Font(COSDictionary fontDictionary) throws IOException
+    {
+<span class="fc" id="L73">        super(fontDictionary);</span>
+
+<span class="fc" id="L75">        gsubData = GsubData.NO_DATA_FOUND;</span>
+<span class="fc" id="L76">        cmapLookup = null;</span>
+
+<span class="fc" id="L78">        COSArray descendantFonts = dict.getCOSArray(COSName.DESCENDANT_FONTS);</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        if (descendantFonts == null)</span>
+        {
+<span class="fc" id="L81">            throw new IOException(&quot;Missing descendant font array&quot;);</span>
+        }
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        if (descendantFonts.isEmpty())</span>
+        {
+<span class="nc" id="L85">            throw new IOException(&quot;Descendant font array is empty&quot;);</span>
+        }
+<span class="fc" id="L87">        COSBase descendantFontDictBase = descendantFonts.getObject(0);</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (!(descendantFontDictBase instanceof COSDictionary))</span>
+        {
+<span class="nc" id="L90">            throw new IOException(&quot;Missing descendant font dictionary&quot;);</span>
+        }
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        if (!COSName.FONT.equals(</span>
+<span class="fc" id="L93">                ((COSDictionary) descendantFontDictBase).getCOSName(COSName.TYPE, COSName.FONT)))</span>
+        {
+<span class="nc" id="L95">            throw new IOException(&quot;Missing or wrong type in descendant font dictionary&quot;);</span>
+        }
+<span class="fc" id="L97">        descendantFont = PDFontFactory.createDescendantFont((COSDictionary) descendantFontDictBase, this);</span>
+<span class="fc" id="L98">        readEncoding();</span>
+<span class="fc" id="L99">        fetchCMapUCS2();</span>
+<span class="fc" id="L100">    }</span>
+
+    /**
+     * Private. Creates a new PDType0Font font for embedding.
+     *
+     * @param document
+     * @param ttf
+     * @param embedSubset
+     * @param closeTTF whether to close the ttf parameter after embedding. Must be true when the ttf
+     * parameter was created in the load() method, false when the ttf parameter was passed to the
+     * load() method.
+     * @param vertical whether to enable vertical substitutions.
+     * @throws IOException
+     */
+    private PDType0Font(PDDocument document, TrueTypeFont ttf, boolean embedSubset,
+            boolean closeTTF, boolean vertical) throws IOException
+<span class="fc" id="L116">    {</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">        if (vertical)</span>
+        {
+<span class="fc" id="L119">            ttf.enableVerticalSubstitutions();</span>
+        }
+
+<span class="fc" id="L122">        gsubData = ttf.getGsubData();</span>
+<span class="fc" id="L123">        cmapLookup = ttf.getUnicodeCmapLookup();</span>
+
+<span class="fc" id="L125">        embedder = new PDCIDFontType2Embedder(document, dict, ttf, embedSubset, this, vertical);</span>
+<span class="fc" id="L126">        descendantFont = embedder.getCIDFont();</span>
+<span class="fc" id="L127">        readEncoding();</span>
+<span class="fc" id="L128">        fetchCMapUCS2();</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        if (closeTTF)</span>
+        {
+<span class="fc bfc" id="L131" title="All 2 branches covered.">            if (embedSubset)</span>
+            {
+<span class="fc" id="L133">                this.ttf = ttf;</span>
+<span class="fc" id="L134">                document.registerTrueTypeFontForClosing(ttf);</span>
+            }
+            else
+            {
+                // the TTF is fully loaded and it is safe to close the underlying data source
+<span class="fc" id="L139">                ttf.close();</span>
+            }
+        }
+<span class="fc" id="L142">    }</span>
+
+    /**
+     * Loads a TTF to be embedded and subset into a document as a Type 0 font. If you are loading a
+     * font for AcroForm, then use the 3-parameter constructor instead.
+     *
+     * @param doc The PDF document that will hold the embedded font.
+     * @param file A TrueType font.
+     * @return A Type0 font with a CIDFontType2 descendant.
+     * @throws IOException If there is an error reading the font file.
+     */
+    public static PDType0Font load(PDDocument doc, File file) throws IOException
+    {
+<span class="fc" id="L155">        return load(doc, new RandomAccessReadBufferedFile(file), true, false);</span>
+    }
+
+    /**
+     * Loads a TTF to be embedded and subset into a document as a Type 0 font. If you are loading a
+     * font for AcroForm, then use the 3-parameter constructor instead.
+     *
+     * @param doc The PDF document that will hold the embedded font.
+     * @param input An input stream of a TrueType font. It will be closed before returning.
+     * @return A Type0 font with a CIDFontType2 descendant.
+     * @throws IOException If there is an error reading the font stream.
+     */
+    public static PDType0Font load(PDDocument doc, InputStream input) throws IOException
+    {
+<span class="fc" id="L169">        return load(doc, input, true);</span>
+    }
+
+    /**
+     * Loads a TTF to be embedded into a document as a Type 0 font.
+     *
+     * @param doc The PDF document that will hold the embedded font.
+     * @param input An input stream of a TrueType font. It will be closed before returning.
+     * @param embedSubset True if the font will be subset before embedding. Set this to false when
+     * creating a font for AcroForm.
+     * @return A Type0 font with a CIDFontType2 descendant.
+     * @throws IOException If there is an error reading the font stream.
+     */
+    public static PDType0Font load(PDDocument doc, InputStream input, boolean embedSubset)
+            throws IOException
+    {
+<span class="fc" id="L185">        return load(doc, RandomAccessReadBuffer.createBufferFromStream(input), embedSubset, false);</span>
+    }
+
+    /**
+     * Loads a TTF to be embedded into a document as a Type 0 font.
+     *
+     * @param doc The PDF document that will hold the embedded font.
+     * @param randomAccessRead source of a TrueType font.
+     * @param embedSubset True if the font will be subset before embedding. Set this to false when creating a font for
+     * AcroForm.
+     * @param vertical whether to enable vertical substitutions.
+     * @return A Type0 font with a CIDFontType2 descendant.
+     * @throws IOException If there is an error reading the font stream.
+     */
+    public static PDType0Font load(PDDocument doc, RandomAccessRead randomAccessRead,
+            boolean embedSubset, boolean vertical) throws IOException
+    {
+<span class="fc" id="L202">        return new PDType0Font(doc, new TTFParser().parse(randomAccessRead), embedSubset, true,</span>
+                vertical);
+    }
+
+    /**
+     * Loads a TTF to be embedded into a document as a Type 0 font.
+     *
+     * @param doc The PDF document that will hold the embedded font.
+     * @param ttf A TrueType font.
+     * @param embedSubset True if the font will be subset before embedding. Set this to false when creating a font for
+     * AcroForm.
+     * @return A Type0 font with a CIDFontType2 descendant.
+     * @throws IOException If there is an error reading the font stream.
+     */
+    public static PDType0Font load(PDDocument doc, TrueTypeFont ttf, boolean embedSubset)
+            throws IOException
+    {
+<span class="fc" id="L219">        return new PDType0Font(doc, ttf, embedSubset, false, false);</span>
+    }
+
+    /**
+     * Loads a TTF to be embedded into a document as a vertical Type 0 font.
+     *
+     * @param doc The PDF document that will hold the embedded font.
+     * @param file A TrueType font.
+     * @return A Type0 font with a CIDFontType2 descendant.
+     * @throws IOException If there is an error reading the font file.
+     */
+    public static PDType0Font loadVertical(PDDocument doc, File file) throws IOException
+    {
+<span class="fc" id="L232">        return load(doc, new RandomAccessReadBufferedFile(file), true, true);</span>
+    }
+
+    /**
+     * Loads a TTF to be embedded into a document as a vertical Type 0 font.
+     *
+     * @param doc The PDF document that will hold the embedded font.
+     * @param input A TrueType font. It will be closed before returning.
+     * @return A Type0 font with a CIDFontType2 descendant.
+     * @throws IOException If there is an error reading the font stream.
+     */
+    public static PDType0Font loadVertical(PDDocument doc, InputStream input) throws IOException
+    {
+<span class="nc" id="L245">        return load(doc, RandomAccessReadBuffer.createBufferFromStream(input), true, true);</span>
+    }
+
+    /**
+     * Loads a TTF to be embedded into a document as a vertical Type 0 font.
+     *
+     * @param doc The PDF document that will hold the embedded font.
+     * @param input A TrueType font. It will be closed before returning.
+     * @param embedSubset True if the font will be subset before embedding
+     * @return A Type0 font with a CIDFontType2 descendant.
+     * @throws IOException If there is an error reading the font stream.
+     */
+    public static PDType0Font loadVertical(PDDocument doc, InputStream input, boolean embedSubset)
+            throws IOException
+    {
+<span class="nc" id="L260">        return load(doc, RandomAccessReadBuffer.createBufferFromStream(input), embedSubset, true);</span>
+    }
+
+    /**
+     * Loads a TTF to be embedded into a document as a vertical Type 0 font.
+     *
+     * @param doc The PDF document that will hold the embedded font.
+     * @param ttf A TrueType font.
+     * @param embedSubset True if the font will be subset before embedding
+     * @return A Type0 font with a CIDFontType2 descendant.
+     * @throws IOException If there is an error reading the font stream.
+     */
+    public static PDType0Font loadVertical(PDDocument doc, TrueTypeFont ttf, boolean embedSubset)
+            throws IOException
+    {
+<span class="nc" id="L275">        return new PDType0Font(doc, ttf, embedSubset, false, true);</span>
+    }
+
+    @Override
+    public void addToSubset(int codePoint)
+    {
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">        if (!willBeSubset())</span>
+        {
+<span class="nc" id="L283">            throw new IllegalStateException(&quot;This font was created with subsetting disabled&quot;);</span>
+        }
+<span class="fc" id="L285">        embedder.addToSubset(codePoint);</span>
+<span class="fc" id="L286">    }</span>
+    
+    public void addGlyphsToSubset(Set&lt;Integer&gt; glyphIds)
+    {
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">        if (!willBeSubset())</span>
+        {
+<span class="nc" id="L292">            throw new IllegalStateException(&quot;This font was created with subsetting disabled&quot;);</span>
+        }
+<span class="fc" id="L294">        embedder.addGlyphIds(glyphIds);</span>
+<span class="fc" id="L295">    }</span>
+
+    @Override
+    public void subset() throws IOException
+    {
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">        if (!willBeSubset())</span>
+        {
+<span class="nc" id="L302">            throw new IllegalStateException(&quot;This font was created with subsetting disabled&quot;);</span>
+        }
+<span class="fc" id="L304">        embedder.subset();</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">        if (ttf != null)</span>
+        {
+<span class="fc" id="L307">            ttf.close();</span>
+<span class="fc" id="L308">            ttf = null;</span>
+        }
+<span class="fc" id="L310">    }</span>
+    
+    @Override
+    public boolean willBeSubset()
+    {
+<span class="fc bfc" id="L315" title="All 4 branches covered.">        return embedder != null &amp;&amp; embedder.needsSubset();</span>
+    }
+
+    /**
+     * Reads the font's Encoding entry, which should be a CMap name/stream.
+     */
+    private void readEncoding() throws IOException
+    {
+<span class="fc" id="L323">        COSBase encoding = dict.getDictionaryObject(COSName.ENCODING);</span>
+<span class="fc bfc" id="L324" title="All 2 branches covered.">        if (encoding instanceof COSName)</span>
+        {
+            // predefined CMap
+<span class="fc" id="L327">            COSName encodingName = (COSName) encoding;</span>
+<span class="fc" id="L328">            cMap = CMapManager.getPredefinedCMap(encodingName.getName());</span>
+<span class="fc" id="L329">            isCMapPredefined = true;</span>
+<span class="fc" id="L330">        }</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">        else if (encoding != null)</span>
+        {
+<span class="fc" id="L333">            cMap = readCMap(encoding);</span>
+<span class="pc bpc" id="L334" title="1 of 2 branches missed.">            if (cMap == null)</span>
+            {
+<span class="nc" id="L336">                throw new IOException(&quot;Missing required CMap&quot;);</span>
+            }
+<span class="pc bpc" id="L338" title="1 of 2 branches missed.">            else if (!cMap.hasCIDMappings())</span>
+            {
+<span class="nc" id="L340">                LOG.warn(&quot;Invalid Encoding CMap in font {}&quot;, getName());</span>
+            }
+        }
+        
+        // check if the descendant font is CJK
+<span class="fc" id="L345">        PDCIDSystemInfo ros = descendantFont.getCIDSystemInfo();</span>
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">        if (ros != null)</span>
+        {
+<span class="fc" id="L348">            String ordering = ros.getOrdering();</span>
+<span class="fc bfc" id="L349" title="All 2 branches covered.">            isDescendantCJK = &quot;Adobe&quot;.equals(ros.getRegistry()) &amp;&amp;</span>
+<span class="pc bpc" id="L350" title="1 of 2 branches missed.">                    (&quot;GB1&quot;.equals(ordering) || </span>
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">                     &quot;CNS1&quot;.equals(ordering) ||</span>
+<span class="fc bfc" id="L352" title="All 2 branches covered.">                     &quot;Japan1&quot;.equals(ordering) ||</span>
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">                     &quot;Korea1&quot;.equals(ordering));</span>
+        }
+<span class="fc" id="L355">    }</span>
+
+    /**
+     * Fetches the corresponding UCS2 CMap if the font's CMap is predefined.
+     */
+    private void fetchCMapUCS2() throws IOException
+    {
+        // if the font is composite and uses a predefined cmap (excluding Identity-H/V)
+        // or whose descendant CIDFont uses the Adobe-GB1, Adobe-CNS1, Adobe-Japan1, or
+        // Adobe-Korea1 character collection:
+<span class="fc" id="L365">        COSName name = dict.getCOSName(COSName.ENCODING);</span>
+<span class="pc bpc" id="L366" title="1 of 8 branches missed.">        if (isCMapPredefined &amp;&amp; !(name == COSName.IDENTITY_H || name == COSName.IDENTITY_V) ||</span>
+            isDescendantCJK)
+        {
+            // a) Map the character code to a CID using the font's CMap
+            // b) Obtain the ROS from the font's CIDSystemInfo
+            // c) Construct a second CMap name by concatenating the ROS in the format &quot;R-O-UCS2&quot;
+            // d) Obtain the CMap with the constructed name
+            // e) Map the CID according to the CMap from step d), producing a Unicode value
+
+            // todo: not sure how to interpret the PDF spec here, do we always override? or only when Identity-H/V?
+<span class="fc" id="L376">            String strName = null;</span>
+<span class="pc bpc" id="L377" title="1 of 2 branches missed.">            if (isDescendantCJK)</span>
+            {
+<span class="fc" id="L379">                PDCIDSystemInfo cidSystemInfo = descendantFont.getCIDSystemInfo();</span>
+<span class="pc bpc" id="L380" title="1 of 2 branches missed.">                if (cidSystemInfo != null)</span>
+                {
+<span class="fc" id="L382">                    strName = cidSystemInfo.getRegistry() + &quot;-&quot; +</span>
+<span class="fc" id="L383">                              cidSystemInfo.getOrdering() + &quot;-&quot; +</span>
+<span class="fc" id="L384">                              cidSystemInfo.getSupplement();</span>
+                }
+<span class="fc" id="L386">            }</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">            else if (name != null)</span>
+            {
+<span class="nc" id="L389">                strName = name.getName();</span>
+            }
+            
+            // try to find the corresponding Unicode (UC2) CMap
+<span class="pc bpc" id="L393" title="1 of 2 branches missed.">            if (strName != null)</span>
+            {
+                try
+                {
+<span class="fc" id="L397">                    CMap prdCMap = CMapManager.getPredefinedCMap(strName);</span>
+<span class="fc" id="L398">                    String ucs2Name = prdCMap.getRegistry() + &quot;-&quot; + prdCMap.getOrdering() + &quot;-UCS2&quot;;</span>
+<span class="fc" id="L399">                    cMapUCS2 = CMapManager.getPredefinedCMap(ucs2Name);</span>
+                }
+<span class="nc" id="L401">                catch (IOException ex)</span>
+                {
+<span class="nc" id="L403">                    LOG.warn(&quot;Could not get &quot; + strName + &quot; UC2 map for font &quot; + getName(), ex);</span>
+<span class="fc" id="L404">                }</span>
+            }
+        }
+<span class="fc" id="L407">    }</span>
+
+    /**
+     * Returns the PostScript name of the font.
+     * 
+     * @return the PostScript name of the font
+     */
+    public String getBaseFont()
+    {
+<span class="fc" id="L416">        return dict.getNameAsString(COSName.BASE_FONT);</span>
+    }
+
+    /**
+     * Returns the descendant font.
+     * 
+     * @return the descendant font
+     */
+    public PDCIDFont getDescendantFont()
+    {
+<span class="fc" id="L426">        return descendantFont;</span>
+    }
+
+    /**
+     * Returns the font's CMap.
+     * 
+     * @return the font's CMap
+     */
+    public CMap getCMap()
+    {
+<span class="fc" id="L436">        return cMap;</span>
+    }
+
+    /**
+     * Returns the font's UCS2 CMap, only present this font uses a predefined CMap.
+     * 
+     * @return the font's UCS2 CMap if present
+     */
+    public CMap getCMapUCS2()
+    {
+<span class="nc" id="L446">        return cMapUCS2;</span>
+    }
+
+    @Override
+    public PDFontDescriptor getFontDescriptor()
+    {
+<span class="fc" id="L452">        return descendantFont.getFontDescriptor();</span>
+    }
+
+    @Override
+    public Matrix getFontMatrix()
+    {
+<span class="fc" id="L458">        return descendantFont.getFontMatrix();</span>
+    }
+
+    @Override
+    public boolean isVertical()
+    {
+<span class="pc bpc" id="L464" title="1 of 4 branches missed.">        return cMap != null &amp;&amp; cMap.getWMode() == 1;</span>
+    }
+
+    @Override
+    public float getHeight(int code) throws IOException
+    {
+<span class="nc" id="L470">        return descendantFont.getHeight(code);</span>
+    }
+
+    @Override
+    protected byte[] encode(int unicode) throws IOException
+    {
+<span class="fc" id="L476">        return descendantFont.encode(unicode);</span>
+    }
+
+    @Override
+    public boolean hasExplicitWidth(int code) throws IOException
+    {
+<span class="nc" id="L482">        return descendantFont.hasExplicitWidth(code);</span>
+    }
+
+    @Override
+    public float getAverageFontWidth()
+    {
+<span class="fc" id="L488">        return descendantFont.getAverageFontWidth();</span>
+    }
+
+    @Override
+    public Vector getPositionVector(int code)
+    {
+        // units are always 1/1000 text space, font matrix is not used, see FOP-2252
+<span class="fc" id="L495">        return descendantFont.getPositionVector(code).scale(-1 / 1000f);</span>
+    }
+
+    @Override
+    public Vector getDisplacement(int code) throws IOException
+    {
+<span class="fc bfc" id="L501" title="All 2 branches covered.">        if (isVertical())</span>
+        {
+<span class="fc" id="L503">            return new Vector(0, descendantFont.getVerticalDisplacementVectorY(code) / 1000f);</span>
+        }
+        else
+        {
+<span class="fc" id="L507">            return super.getDisplacement(code);</span>
+        }
+    }
+
+    @Override
+    public float getWidth(int code) throws IOException
+    {
+<span class="fc" id="L514">        return descendantFont.getWidth(code);</span>
+    }
+
+    @Override
+    protected float getStandard14Width(int code)
+    {
+<span class="nc" id="L520">        throw new UnsupportedOperationException(&quot;not supported&quot;);</span>
+    }
+
+    @Override
+    public float getWidthFromFont(int code) throws IOException
+    {
+<span class="fc" id="L526">        return descendantFont.getWidthFromFont(code);</span>
+    }
+
+    @Override
+    public boolean isEmbedded()
+    {
+<span class="fc" id="L532">        return descendantFont.isEmbedded();</span>
+    }
+
+    @Override
+    public String toUnicode(int code)
+    {
+        // try to use a ToUnicode CMap
+<span class="fc" id="L539">        String unicode = super.toUnicode(code);</span>
+<span class="fc bfc" id="L540" title="All 2 branches covered.">        if (unicode != null)</span>
+        {
+<span class="fc" id="L542">            return unicode;</span>
+        }
+
+        // Use identity mapping if the given ToUnicode CMap doesn't provide any valid mapping
+        // a predefined map shall only be used if there isn't any ToUnicode CMap
+        // PDFBOX-6022: not when there's a predefined cmap
+<span class="pc bpc" id="L548" title="2 of 4 branches missed.">        if (getToUnicodeCMap() != null &amp;&amp; !isCMapPredefined)</span>
+        {
+<span class="nc" id="L550">            return Character.toString((char) code);</span>
+        }
+
+<span class="pc bpc" id="L553" title="4 of 6 branches missed.">        if ((isCMapPredefined || isDescendantCJK) &amp;&amp; cMapUCS2 != null)</span>
+        {
+            // if the font is composite and uses a predefined cmap (excluding Identity-H/V) then
+            // or if its descendant font uses Adobe-GB1/CNS1/Japan1/Korea1
+
+            // a) Map the character code to a character identifier (CID) according to the font?s CMap
+<span class="nc" id="L559">            int cid = codeToCID(code);</span>
+
+            // e) Map the CID according to the CMap from step d), producing a Unicode value
+<span class="nc" id="L562">            return cMapUCS2.toUnicode(cid);</span>
+        }
+
+        // PDFBOX-5324: try to get unicode from font cmap
+<span class="pc bpc" id="L566" title="1 of 2 branches missed.">        if (descendantFont instanceof PDCIDFontType2)</span>
+        {
+<span class="fc" id="L568">            TrueTypeFont font = ((PDCIDFontType2) descendantFont).getTrueTypeFont();</span>
+<span class="pc bpc" id="L569" title="1 of 2 branches missed.">            if (font != null)</span>
+            {
+                try
+                {
+<span class="fc" id="L573">                    CmapLookup cmap = font.getUnicodeCmapLookup(false);</span>
+<span class="fc bfc" id="L574" title="All 2 branches covered.">                    if (cmap != null)</span>
+                    {
+                        int gid;
+<span class="pc bpc" id="L577" title="1 of 2 branches missed.">                        if (descendantFont.isEmbedded())</span>
+                        {
+                            // original PDFBOX-5324 supported only embedded fonts
+<span class="fc" id="L580">                            gid = descendantFont.codeToGID(code);</span>
+                        }
+                        else
+                        {
+                            // PDFBOX-5331: this bypasses the fallback attempt in
+                            // PDCIDFontType2.codeToGID() which would bring a stackoverflow
+<span class="nc" id="L586">                            gid = descendantFont.codeToCID(code);</span>
+                        }
+<span class="fc" id="L588">                        List&lt;Integer&gt; codes = cmap.getCharCodes(gid);</span>
+<span class="pc bpc" id="L589" title="2 of 4 branches missed.">                        if (codes != null &amp;&amp; !codes.isEmpty())</span>
+                        {
+<span class="fc" id="L591">                            return Character.toString((char) (int) codes.get(0));</span>
+                        }
+                    }
+                }
+<span class="nc" id="L595">                catch (IOException e)</span>
+                {
+<span class="nc" id="L597">                    LOG.warn(&quot;get unicode from font cmap fail&quot;, e);</span>
+<span class="fc" id="L598">                }</span>
+            }
+        }
+
+<span class="pc bpc" id="L602" title="1 of 4 branches missed.">        if (LOG.isWarnEnabled() &amp;&amp; !noUnicode.contains(code))</span>
+        {
+            // if no value has been produced, there is no way to obtain Unicode for the character.
+<span class="fc" id="L605">            String cid = &quot;CID+&quot; + codeToCID(code);</span>
+<span class="fc" id="L606">            LOG.warn(&quot;No Unicode mapping for {} ({}) in font {}&quot;, cid, code, getName());</span>
+            // we keep track of which warnings have been issued, so we don't log multiple times
+<span class="fc" id="L608">            noUnicode.add(code);</span>
+        }
+<span class="fc" id="L610">        return null;</span>
+    }
+
+    @Override
+    public String getName()
+    {
+<span class="fc" id="L616">        return getBaseFont();</span>
+    }
+
+    @Override
+    public BoundingBox getBoundingBox() throws IOException
+    {
+        // Will be cached by underlying font
+<span class="fc" id="L623">        return descendantFont.getBoundingBox();</span>
+    }
+
+    @Override
+    public int readCode(InputStream in) throws IOException
+    {
+<span class="pc bpc" id="L629" title="1 of 2 branches missed.">        if (cMap == null)</span>
+        {
+<span class="nc" id="L631">            throw new IOException(&quot;required cmap is null&quot;);</span>
+        }
+<span class="fc" id="L633">        return cMap.readCode(in);</span>
+    }
+
+    /**
+     * Returns the CID for the given character code. If not found then CID 0 is returned.
+     *
+     * @param code character code
+     * @return CID for the given character code
+     */
+    public int codeToCID(int code)
+    {
+<span class="fc" id="L644">        return descendantFont.codeToCID(code);</span>
+    }
+
+    /**
+     * Returns the GID for the given character code.
+     *
+     * @param code character code
+     * @return GID for the given character code
+     * 
+     * @throws IOException if the data could not be read
+     */
+    public int codeToGID(int code) throws IOException
+    {
+<span class="nc" id="L657">        return descendantFont.codeToGID(code);</span>
+    }
+
+    @Override
+    public boolean isStandard14()
+    {
+<span class="nc" id="L663">        return false;</span>
+    }
+
+    @Override
+    public boolean isDamaged()
+    {
+<span class="fc" id="L669">        return descendantFont.isDamaged();</span>
+    }
+
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L675">        String descendant = null;</span>
+<span class="nc bnc" id="L676" title="All 2 branches missed.">        if (getDescendantFont() != null)</span>
+        {
+<span class="nc" id="L678">            descendant = getDescendantFont().getClass().getSimpleName();</span>
+        }
+<span class="nc" id="L680">        return getClass().getSimpleName() + &quot;/&quot; + descendant + &quot;, PostScript name: &quot; + getBaseFont();</span>
+    }
+
+    @Override
+    public GeneralPath getPath(int code) throws IOException
+    {
+<span class="fc" id="L686">        return descendantFont.getPath(code);</span>
+    }
+
+    
+    @Override
+    public GeneralPath getNormalizedPath(int code) throws IOException
+    {
+<span class="fc" id="L693">        return descendantFont.getNormalizedPath(code);</span>
+    }
+    
+    @Override
+    public boolean hasGlyph(int code) throws IOException
+    {
+<span class="fc" id="L699">        return descendantFont.hasGlyph(code);</span>
+    }
+
+    /**
+     * Returns the GSubData if present.
+     * 
+     * @return the GSubData if present
+     */
+    public GsubData getGsubData()
+    {
+<span class="fc" id="L709">        return gsubData;</span>
+    }
+
+    /**
+     * Returns the encoded value for the given glyph ID.
+     * 
+     * @param glyphId the ID of the glyph to be encoded
+     * @return the encoded glyph ID
+     */
+    public byte[] encodeGlyphId(int glyphId)
+    {
+<span class="fc" id="L720">        return descendantFont.encodeGlyphId(glyphId);</span>
+    }
+
+    /**
+     * Returns the CMap lookup table if present.
+     * 
+     * @return the CMap lookup table if present
+     */
+    public CmapLookup getCmapLookup()
+    {
+<span class="fc" id="L730">        return cmapLookup;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

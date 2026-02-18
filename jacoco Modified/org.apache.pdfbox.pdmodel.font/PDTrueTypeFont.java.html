@@ -1,0 +1,788 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDTrueTypeFont.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font</a> &gt; <span class="el_source">PDTrueTypeFont.java</span></div><h1>PDTrueTypeFont.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.font;
+
+import java.awt.geom.AffineTransform;
+import java.awt.geom.GeneralPath;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.fontbox.FontBoxFont;
+import org.apache.fontbox.cff.CFFFont;
+import org.apache.fontbox.cff.Type2CharString;
+import org.apache.fontbox.ttf.CmapSubtable;
+import org.apache.fontbox.ttf.CmapTable;
+import org.apache.fontbox.ttf.GlyphData;
+import org.apache.fontbox.ttf.GlyphTable;
+import org.apache.fontbox.ttf.OTFParser;
+import org.apache.fontbox.ttf.OpenTypeFont;
+import org.apache.fontbox.ttf.PostScriptTable;
+import org.apache.fontbox.ttf.TTFParser;
+import org.apache.fontbox.ttf.TrueTypeFont;
+import org.apache.fontbox.util.BoundingBox;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.io.IOUtils;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName;
+import org.apache.pdfbox.pdmodel.font.encoding.BuiltInEncoding;
+import org.apache.pdfbox.pdmodel.font.encoding.Encoding;
+import org.apache.pdfbox.pdmodel.font.encoding.GlyphList;
+import org.apache.pdfbox.pdmodel.font.encoding.MacOSRomanEncoding;
+import org.apache.pdfbox.pdmodel.font.encoding.MacRomanEncoding;
+import org.apache.pdfbox.pdmodel.font.encoding.StandardEncoding;
+import org.apache.pdfbox.pdmodel.font.encoding.Type1Encoding;
+import org.apache.pdfbox.pdmodel.font.encoding.WinAnsiEncoding;
+
+import static org.apache.pdfbox.pdmodel.font.UniUtil.getUniNameOfCodePoint;
+
+/**
+ * TrueType font.
+ * 
+ * @author Ben Litchfield
+ */
+public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
+{
+<span class="fc" id="L70">    private static final Logger LOG = LogManager.getLogger(PDTrueTypeFont.class);</span>
+
+    private static final int START_RANGE_F000 = 0xF000;
+    private static final int START_RANGE_F100 = 0xF100;
+    private static final int START_RANGE_F200 = 0xF200;
+
+<span class="fc" id="L76">    private static final Map&lt;String, Integer&gt; INVERTED_MACOS_ROMAN = new HashMap&lt;&gt;(250);</span>
+    static
+    {
+<span class="fc" id="L79">        MacOSRomanEncoding.INSTANCE.getCodeToNameMap().forEach((key, value) -&gt;</span>
+        {
+<span class="fc" id="L81">            INVERTED_MACOS_ROMAN.putIfAbsent(value, key);</span>
+<span class="fc" id="L82">        });</span>
+<span class="fc" id="L83">    }</span>
+
+    private final TrueTypeFont ttf;
+    private final OpenTypeFont otf;
+    private final boolean isEmbedded;
+    private final boolean isDamaged;
+<span class="fc" id="L89">    private CmapSubtable cmapWinUnicode = null;</span>
+<span class="fc" id="L90">    private CmapSubtable cmapWinSymbol = null;</span>
+<span class="fc" id="L91">    private CmapSubtable cmapMacRoman = null;</span>
+<span class="fc" id="L92">    private boolean cmapInitialized = false;</span>
+<span class="fc" id="L93">    private final Map&lt;Integer, Integer&gt; gidToCode = new HashMap&lt;&gt;(); // for embedding</span>
+    private BoundingBox fontBBox;
+
+    /**
+     * Creates a new TrueType font from a Font dictionary.
+     *
+     * @param fontDictionary The font dictionary according to the PDF specification.
+     * 
+     * @throws IOException if the font could not be created
+     */
+    public PDTrueTypeFont(COSDictionary fontDictionary) throws IOException
+    {
+<span class="fc" id="L105">        super(fontDictionary);</span>
+
+<span class="fc" id="L107">        TrueTypeFont ttfFont = null;</span>
+<span class="fc" id="L108">        boolean fontIsDamaged = false;</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        if (getFontDescriptor() != null)</span>
+        {
+<span class="fc" id="L111">            PDFontDescriptor fd = super.getFontDescriptor();</span>
+<span class="fc" id="L112">            PDStream ff2Stream = fd.getFontFile2();</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            if (ff2Stream != null)</span>
+            {
+<span class="fc" id="L115">                RandomAccessRead view = null;</span>
+                try
+                {
+<span class="fc" id="L118">                    view = ff2Stream.getCOSObject().createView();</span>
+                    // embedded
+<span class="fc" id="L120">                    TTFParser ttfParser = getParser(view, true);</span>
+<span class="fc" id="L121">                    ttfFont = ttfParser.parse(view);</span>
+<span class="fc" id="L122">                    ttfFont.close();</span>
+                }
+<span class="nc" id="L124">                catch (IOException e)</span>
+                {
+<span class="nc" id="L126">                    LOG.warn(() -&gt; &quot;Could not read embedded TTF for font &quot; + getBaseFont(), e);</span>
+<span class="nc" id="L127">                    fontIsDamaged = true;</span>
+<span class="nc" id="L128">                    IOUtils.closeQuietly(view);</span>
+<span class="fc" id="L129">                }</span>
+            }
+        }
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        isEmbedded = ttfFont != null;</span>
+<span class="fc" id="L133">        isDamaged = fontIsDamaged;</span>
+
+        // substitute
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        if (ttfFont == null)</span>
+        {
+<span class="fc" id="L138">            FontMapping&lt;TrueTypeFont&gt; mapping = FontMappers.instance()</span>
+<span class="fc" id="L139">                                                           .getTrueTypeFont(getBaseFont(),</span>
+<span class="fc" id="L140">                                                                            getFontDescriptor());</span>
+<span class="fc" id="L141">            ttfFont = mapping.getFont();</span>
+
+<span class="fc bfc" id="L143" title="All 2 branches covered.">            if (mapping.isFallback())</span>
+            {
+<span class="fc" id="L145">                LOG.warn(&quot;Using fallback font {} for {}&quot;, ttfFont, getBaseFont());</span>
+            }
+        }
+<span class="pc bpc" id="L148" title="3 of 4 branches missed.">        otf = ttfFont instanceof OpenTypeFont &amp;&amp; ((OpenTypeFont) ttfFont).isSupportedOTF()</span>
+<span class="pc" id="L149">                ? (OpenTypeFont) ttfFont : null;</span>
+<span class="fc" id="L150">        ttf = ttfFont;</span>
+<span class="fc" id="L151">        readEncoding();</span>
+<span class="fc" id="L152">    }</span>
+    /**
+     * Creates a new TrueType font for embedding.
+     */
+    private PDTrueTypeFont(PDDocument document, TrueTypeFont ttf, Encoding encoding,
+            boolean closeTTF)
+            throws IOException
+<span class="fc" id="L159">    {</span>
+<span class="fc" id="L160">        PDTrueTypeFontEmbedder embedder = new PDTrueTypeFontEmbedder(document, dict, ttf,</span>
+                                                                     encoding);
+<span class="fc" id="L162">        this.encoding = encoding;</span>
+<span class="fc" id="L163">        this.ttf = ttf;</span>
+        // OpenTypeFonts are not fully supported yet
+<span class="fc" id="L165">        otf = null;</span>
+<span class="fc" id="L166">        setFontDescriptor(embedder.getFontDescriptor());</span>
+<span class="fc" id="L167">        isEmbedded = true;</span>
+<span class="fc" id="L168">        isDamaged = false;</span>
+<span class="fc" id="L169">        glyphList = GlyphList.getAdobeGlyphList();</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        if (closeTTF)</span>
+        {
+            // the TTF is fully loaded and it is safe to close the underlying data source
+<span class="fc" id="L173">            ttf.close();</span>
+        }
+<span class="fc" id="L175">    }</span>
+
+    /**
+     * Loads a TTF to be embedded into a document as a simple font.
+     * 
+     * &lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; Simple fonts only support 256 characters. For Unicode support, use
+     * {@link PDType0Font#load(PDDocument, File)} instead.&lt;/p&gt;
+     *
+     * @param doc The PDF document that will hold the embedded font.
+     * @param file A TTF file.
+     * @param encoding The PostScript encoding vector to be used for embedding.
+     * @return a PDTrueTypeFont instance.
+     * @throws IOException If there is an error loading the data.
+     */
+    public static PDTrueTypeFont load(PDDocument doc, File file, Encoding encoding)
+            throws IOException
+    {
+<span class="nc" id="L192">        return load(doc, new RandomAccessReadBufferedFile(file), encoding);</span>
+    }
+
+    /**
+     * Loads a TTF to be embedded into a document as a simple font.
+     *
+     * &lt;p&gt;
+     * &lt;b&gt;Note:&lt;/b&gt; Simple fonts only support 256 characters. For Unicode support, use
+     * {@link PDType0Font#load(PDDocument, InputStream)} instead.
+     * &lt;/p&gt;
+     * 
+     * @param doc The PDF document that will hold the embedded font.
+     * @param input A TTF file stream. It will be closed before returning.
+     * @param encoding The PostScript encoding vector to be used for embedding.
+     * @return a PDTrueTypeFont instance.
+     * @throws IOException If there is an error loading the data.
+     */
+    public static PDTrueTypeFont load(PDDocument doc, InputStream input, Encoding encoding)
+            throws IOException
+    {
+<span class="fc" id="L212">        return load(doc, RandomAccessReadBuffer.createBufferFromStream(input), encoding);</span>
+    }
+
+    /**
+     * Loads a TTF to be embedded into a document as a simple font.
+     *
+     * &lt;p&gt;
+     * &lt;b&gt;Note:&lt;/b&gt; Simple fonts only support 256 characters. For Unicode support, use
+     * {@link PDType0Font#load(PDDocument, InputStream)} instead.
+     * &lt;/p&gt;
+     * 
+     * @param doc The PDF document that will hold the embedded font.
+     * @param ttf A true type font
+     * @param encoding The PostScript encoding vector to be used for embedding.
+     * @return a PDTrueTypeFont instance.
+     * @throws IOException If there is an error loading the data.
+     */
+    public static PDTrueTypeFont load(PDDocument doc, TrueTypeFont ttf, Encoding encoding)
+            throws IOException
+    {
+<span class="fc" id="L232">        return new PDTrueTypeFont(doc, ttf, encoding, false);</span>
+    }
+
+    /**
+     * Loads a TTF to be embedded into a document as a simple font.
+     * 
+     * &lt;p&gt;
+     * &lt;b&gt;Note:&lt;/b&gt; Simple fonts only support 256 characters. For Unicode support, use
+     * {@link PDType0Font#load(PDDocument, File)} instead.
+     * &lt;/p&gt;
+     *
+     * @param doc The PDF document that will hold the embedded font.
+     * @param randomAccessRead the source of the TTF.
+     * @param encoding The PostScript encoding vector to be used for embedding.
+     * @return a PDTrueTypeFont instance.
+     * @throws IOException If there is an error loading the data.
+     */
+    public static PDTrueTypeFont load(PDDocument doc, RandomAccessRead randomAccessRead,
+            Encoding encoding) throws IOException
+    {
+<span class="fc" id="L252">        return new PDTrueTypeFont(doc, new TTFParser().parse(randomAccessRead), encoding, true);</span>
+    }
+
+    /**
+     * Returns the PostScript name of the font.
+     * 
+     * @return the PostScript name of the font
+     */
+    public final String getBaseFont()
+    {
+<span class="fc" id="L262">        return dict.getNameAsString(COSName.BASE_FONT);</span>
+    }
+
+    @Override
+    protected Encoding readEncodingFromFont() throws IOException
+    {
+<span class="pc bpc" id="L268" title="3 of 4 branches missed.">        if (!isEmbedded() &amp;&amp; getStandard14AFM() != null)</span>
+        {
+            // read from AFM
+<span class="nc" id="L271">            return new Type1Encoding(getStandard14AFM());</span>
+        }
+        else
+        {
+            // non-symbolic fonts don't have a built-in encoding per se, but there encoding is
+            // assumed to be StandardEncoding by the PDF spec unless an explicit Encoding is present
+            // which will override this anyway
+<span class="pc bpc" id="L278" title="1 of 2 branches missed.">            if (Boolean.FALSE.equals(getSymbolicFlag()))</span>
+            {
+<span class="nc" id="L280">                return StandardEncoding.INSTANCE;</span>
+            }
+            
+            // normalise the standard 14 name, e.g &quot;Symbol,Italic&quot; -&gt; &quot;Symbol&quot;
+<span class="fc" id="L284">            FontName standard14Name = Standard14Fonts.getMappedFontName(getName());</span>
+            
+            // likewise, if the font is standard 14 then we know it's Standard Encoding
+<span class="pc bpc" id="L287" title="5 of 6 branches missed.">            if (isStandard14() &amp;&amp;</span>
+                    standard14Name != FontName.SYMBOL &amp;&amp;
+                    standard14Name != FontName.ZAPF_DINGBATS)
+            {
+<span class="nc" id="L291">                return StandardEncoding.INSTANCE;</span>
+            }
+            
+            // synthesize an encoding, so that getEncoding() is always usable
+<span class="fc" id="L295">            PostScriptTable post = ttf.getPostScript();</span>
+<span class="fc" id="L296">            Map&lt;Integer, String&gt; codeToName = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">            for (int code = 0; code &lt;= 256; code++)</span>
+            {
+<span class="fc" id="L299">                int gid = codeToGID(code);</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">                if (gid &gt; 0)</span>
+                {
+<span class="fc" id="L302">                    String name = null;</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">                    if (post != null)</span>
+                    {
+<span class="fc" id="L305">                        name = post.getName(gid);</span>
+                    }
+<span class="fc bfc" id="L307" title="All 2 branches covered.">                    if (name == null)</span>
+                    {
+                        // GID pseudo-name
+<span class="fc" id="L310">                        name = Integer.toString(gid);</span>
+                    }
+<span class="fc" id="L312">                    codeToName.put(code, name);</span>
+                }
+            }
+<span class="fc" id="L315">            return new BuiltInEncoding(codeToName);</span>
+        }
+    }
+
+    @Override
+    public int readCode(InputStream in) throws IOException
+    {
+<span class="fc" id="L322">        return in.read();</span>
+    }
+
+    @Override
+    public String getName()
+    {
+<span class="fc" id="L328">        return getBaseFont();</span>
+    }
+
+    @Override
+    public BoundingBox getBoundingBox() throws IOException
+    {
+<span class="fc bfc" id="L334" title="All 2 branches covered.">        if (fontBBox == null)</span>
+        {
+<span class="fc" id="L336">            fontBBox = generateBoundingBox();</span>
+        }
+<span class="fc" id="L338">        return fontBBox;</span>
+    }
+
+    private BoundingBox generateBoundingBox() throws IOException
+    {
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">        if (getFontDescriptor() != null) {</span>
+<span class="fc" id="L344">            PDRectangle bbox = getFontDescriptor().getFontBoundingBox();</span>
+<span class="pc bpc" id="L345" title="1 of 2 branches missed.">            if (bbox != null)</span>
+            {
+<span class="fc" id="L347">                return new BoundingBox(bbox.getLowerLeftX(), bbox.getLowerLeftY(),</span>
+<span class="fc" id="L348">                        bbox.getUpperRightX(), bbox.getUpperRightY());</span>
+            }
+        }
+<span class="nc" id="L351">        return ttf.getFontBBox();</span>
+    }
+
+    @Override
+    public boolean isDamaged()
+    {
+<span class="nc" id="L357">        return isDamaged;</span>
+    }
+
+    /**
+     * Returns the embedded or substituted TrueType font.
+     * 
+     * @return the embedded or substituted TrueType font
+     */
+    public TrueTypeFont getTrueTypeFont()
+    {
+<span class="nc" id="L367">        return ttf;</span>
+    }
+
+    @Override
+    public float getWidthFromFont(int code) throws IOException
+    {
+<span class="fc" id="L373">        int gid = codeToGID(code);</span>
+<span class="fc" id="L374">        float width = ttf.getAdvanceWidth(gid);</span>
+<span class="fc" id="L375">        float unitsPerEM = ttf.getUnitsPerEm();</span>
+<span class="pc bpc" id="L376" title="1 of 2 branches missed.">        if (Float.compare(unitsPerEM, 1000) != 0)</span>
+        {
+<span class="fc" id="L378">            width *= 1000f / unitsPerEM;</span>
+        }
+<span class="fc" id="L380">        return width;</span>
+    }
+
+    @Override
+    public float getHeight(int code) throws IOException
+    {
+<span class="nc" id="L386">        int gid = codeToGID(code);</span>
+<span class="nc" id="L387">        GlyphData glyph = ttf.getGlyph().getGlyph(gid);</span>
+<span class="nc bnc" id="L388" title="All 2 branches missed.">        if (glyph != null)</span>
+        {
+<span class="nc" id="L390">            return glyph.getBoundingBox().getHeight();</span>
+        }
+<span class="nc" id="L392">        return 0;</span>
+    }
+
+    @Override
+    protected byte[] encode(int unicode) throws IOException
+    {
+<span class="pc bpc" id="L398" title="1 of 2 branches missed.">        if (encoding != null)</span>
+        {
+<span class="pc bpc" id="L400" title="1 of 2 branches missed.">            if (!encoding.contains(getGlyphList().codePointToName(unicode)))</span>
+            {
+<span class="nc" id="L402">                throw new IllegalArgumentException(</span>
+<span class="nc" id="L403">                    String.format(&quot;U+%04X is not available in font %s encoding: %s&quot;,</span>
+<span class="nc" id="L404">                                  unicode, getName(), encoding.getEncodingName()));</span>
+            }
+
+<span class="fc" id="L407">            String name = getGlyphList().codePointToName(unicode);</span>
+<span class="fc" id="L408">            Map&lt;String, Integer&gt; inverted = encoding.getNameToCodeMap();</span>
+
+<span class="fc bfc" id="L410" title="All 2 branches covered.">            if (!ttf.hasGlyph(name))</span>
+            {
+                // try unicode name
+<span class="fc" id="L413">                String uniName = getUniNameOfCodePoint(unicode);</span>
+<span class="fc bfc" id="L414" title="All 2 branches covered.">                if (!ttf.hasGlyph(uniName))</span>
+                {
+<span class="fc" id="L416">                    throw new IllegalArgumentException(</span>
+<span class="fc" id="L417">                            String.format(&quot;No glyph for U+%04X in font %s&quot;, unicode, getName()));</span>
+                }
+            }
+
+<span class="fc" id="L421">            int code = inverted.get(name);</span>
+<span class="fc" id="L422">            return new byte[] { (byte)code };</span>
+        }
+        else
+        {
+            // use TTF font's built-in encoding
+<span class="nc" id="L427">            String name = getGlyphList().codePointToName(unicode);</span>
+
+<span class="nc bnc" id="L429" title="All 2 branches missed.">            if (!ttf.hasGlyph(name))</span>
+            {
+<span class="nc" id="L431">                throw new IllegalArgumentException(</span>
+<span class="nc" id="L432">                    String.format(&quot;No glyph for U+%04X in font %s&quot;, unicode, getName()));</span>
+            }
+            
+<span class="nc" id="L435">            int gid = ttf.nameToGID(name);</span>
+<span class="nc" id="L436">            Integer code = getGIDToCode().get(gid);</span>
+<span class="nc bnc" id="L437" title="All 2 branches missed.">            if (code == null)</span>
+            {
+<span class="nc" id="L439">                throw new IllegalArgumentException(</span>
+<span class="nc" id="L440">                    String.format(&quot;U+%04X is not available in font %s encoding&quot;, unicode, getName()));</span>
+            }
+            
+<span class="nc" id="L443">            return new byte[] { (byte)(int)code };</span>
+        }
+    }
+
+    /**
+     * Inverts the font's code -&amp;gt; GID mapping. Any duplicate (GID -&amp;gt; code) mappings will be lost.
+     * 
+     * @return the GID for the given code
+     * 
+     * @throws IOException if the data could not be read
+     */
+    protected Map&lt;Integer, Integer&gt; getGIDToCode() throws IOException
+    {
+<span class="nc bnc" id="L456" title="All 2 branches missed.">        if (!gidToCode.isEmpty())</span>
+        {
+<span class="nc" id="L458">            return gidToCode;</span>
+        }
+
+<span class="nc bnc" id="L461" title="All 2 branches missed.">        for (int code = 0; code &lt;= 255; code++)</span>
+        {
+<span class="nc" id="L463">            int gid = codeToGID(code);</span>
+<span class="nc" id="L464">            gidToCode.putIfAbsent(gid, code);</span>
+        }
+<span class="nc" id="L466">        return gidToCode;</span>
+    }
+
+    @Override
+    public boolean isEmbedded()
+    {
+<span class="fc" id="L472">        return isEmbedded;</span>
+    }
+
+    @Override
+    public GeneralPath getPath(int code) throws IOException
+    {
+<span class="pc bpc" id="L478" title="3 of 4 branches missed.">        if (otf != null &amp;&amp; otf.isPostScript())</span>
+        {
+<span class="nc" id="L480">            GeneralPath path = getPathFromOutlines(code);</span>
+<span class="nc bnc" id="L481" title="All 2 branches missed.">            return path == null ? new GeneralPath() : path;</span>
+        }
+<span class="fc" id="L483">        int gid = codeToGID(code);</span>
+<span class="fc" id="L484">        GlyphTable glyphTable = ttf.getGlyph();</span>
+<span class="pc bpc" id="L485" title="1 of 2 branches missed.">        if (glyphTable == null)</span>
+        {
+            // needs to be caught earlier, see PDFBOX-5587 and PDFBOX-3488
+<span class="nc" id="L488">            throw new IOException(&quot;glyf table is missing in font &quot; + getName() +</span>
+                    &quot;, please report this file&quot;);
+        }
+<span class="fc" id="L491">        GlyphData glyph = glyphTable.getGlyph(gid);</span>
+        
+        // some glyphs have no outlines (e.g. space, table, newline)
+<span class="pc bpc" id="L494" title="1 of 2 branches missed.">        if (glyph == null)</span>
+        {
+<span class="nc" id="L496">            return new GeneralPath();</span>
+        }
+        else
+        {
+<span class="fc" id="L500">            return glyph.getPath();</span>
+        }
+    }
+    
+    @Override
+    public GeneralPath getPath(String name) throws IOException
+    {
+        // handle glyph names and uniXXXX names
+<span class="fc" id="L508">        int gid = ttf.nameToGID(name);</span>
+<span class="pc bpc" id="L509" title="1 of 2 branches missed.">        if (gid == 0)</span>
+        {
+            try
+            {
+                // handle GID pseudo-names
+<span class="nc" id="L514">                gid = Integer.parseInt(name);</span>
+<span class="nc bnc" id="L515" title="All 2 branches missed.">                if (gid &gt; ttf.getNumberOfGlyphs())</span>
+                {
+<span class="nc" id="L517">                    gid = 0;</span>
+                }
+            }
+<span class="nc" id="L520">            catch (NumberFormatException e)</span>
+            {
+<span class="nc" id="L522">                gid = 0;</span>
+<span class="nc" id="L523">            }</span>
+        }
+        // I'm assuming .notdef paths are not drawn, as it PDFBOX-2421
+<span class="pc bpc" id="L526" title="1 of 2 branches missed.">        if (gid == 0)</span>
+        {
+<span class="nc" id="L528">            return new GeneralPath();</span>
+        }
+        
+<span class="fc" id="L531">        GlyphData glyph = ttf.getGlyph().getGlyph(gid);</span>
+<span class="pc bpc" id="L532" title="1 of 2 branches missed.">        if (glyph != null)</span>
+        {
+<span class="fc" id="L534">            return glyph.getPath();</span>
+        }
+        else
+        {
+<span class="nc" id="L538">            return new GeneralPath();</span>
+        }
+    }
+
+    @Override
+    public GeneralPath getNormalizedPath(int code) throws IOException
+    {
+<span class="fc" id="L545">        GeneralPath path = null;</span>
+<span class="pc bpc" id="L546" title="3 of 4 branches missed.">        if (otf != null &amp;&amp; otf.isPostScript())</span>
+        {
+<span class="nc" id="L548">            path = getPathFromOutlines(code);</span>
+        }
+        else
+        {
+<span class="fc" id="L552">            int gid = codeToGID(code);</span>
+<span class="fc" id="L553">            path = getPath(code);</span>
+            // Acrobat only draws GID 0 for embedded or &quot;Standard 14&quot; fonts, see PDFBOX-2372
+<span class="pc bpc" id="L555" title="5 of 6 branches missed.">            if (gid == 0 &amp;&amp; !isEmbedded() &amp;&amp; !isStandard14())</span>
+            {
+<span class="nc" id="L557">                path = null;</span>
+            }
+        }
+<span class="pc bpc" id="L560" title="1 of 2 branches missed.">        if (path == null)</span>
+        {
+<span class="nc" id="L562">            return new GeneralPath();</span>
+        }
+<span class="pc bpc" id="L564" title="1 of 2 branches missed.">        if (ttf.getUnitsPerEm() != 1000)</span>
+        {
+<span class="fc" id="L566">            float scale = 1000f / ttf.getUnitsPerEm();</span>
+            // path will have to be cloned if it is cached in the future, see PDFBOX-5567
+<span class="fc" id="L568">            path.transform(AffineTransform.getScaleInstance(scale, scale));</span>
+        }
+<span class="fc" id="L570">        return path;</span>
+    }
+
+    private GeneralPath getPathFromOutlines(int code) throws IOException
+    {
+<span class="nc" id="L575">        CFFFont cffFont = otf.getCFF().getFont();</span>
+<span class="nc" id="L576">        String name = getEncoding().getName(code);</span>
+<span class="nc" id="L577">        int sid = cffFont.getCharset().getSID(name);</span>
+<span class="nc" id="L578">        int gid = cffFont.getCharset().getGIDForSID(sid);</span>
+<span class="nc" id="L579">        Type2CharString type2CharString = cffFont.getType2CharString(gid);</span>
+<span class="nc bnc" id="L580" title="All 2 branches missed.">        return type2CharString != null ? type2CharString.getPath() : null;</span>
+    }
+
+    @Override
+    public boolean hasGlyph(String name) throws IOException
+    {
+<span class="fc" id="L586">        int gid = ttf.nameToGID(name);</span>
+<span class="pc bpc" id="L587" title="2 of 4 branches missed.">        return !(gid == 0 || gid &gt;= ttf.getMaximumProfile().getNumGlyphs());</span>
+    }
+
+    @Override
+    public FontBoxFont getFontBoxFont()
+    {
+<span class="nc" id="L593">        return ttf;</span>
+    }
+
+    @Override
+    public boolean hasGlyph(int code) throws IOException
+    {
+<span class="pc bpc" id="L599" title="1 of 2 branches missed.">        return codeToGID(code) != 0;</span>
+    }
+
+    /**
+     * Returns the GID for the given character code.
+     *
+     * @param code character code
+     * @return GID (glyph index)
+     * @throws IOException if the data could not be read
+     */
+    public int codeToGID(int code) throws IOException
+    {
+<span class="fc" id="L611">        extractCmapTable();</span>
+<span class="fc" id="L612">        int gid = 0;</span>
+
+<span class="fc bfc" id="L614" title="All 2 branches covered.">        if (!isSymbolic()) // non-symbolic</span>
+        {
+<span class="fc" id="L616">            String name = encoding.getName(code);</span>
+<span class="pc bpc" id="L617" title="1 of 2 branches missed.">            if (&quot;.notdef&quot;.equals(name))</span>
+            {
+<span class="nc" id="L619">                return 0;</span>
+            }
+            else
+            {
+                // (3, 1) - (Windows, Unicode)
+<span class="fc bfc" id="L624" title="All 2 branches covered.">                if (cmapWinUnicode != null)</span>
+                {
+<span class="fc" id="L626">                    String unicode = GlyphList.getAdobeGlyphList().toUnicode(name);</span>
+<span class="pc bpc" id="L627" title="1 of 2 branches missed.">                    if (unicode != null)</span>
+                    {
+<span class="fc" id="L629">                        int uni = unicode.codePointAt(0);</span>
+<span class="fc" id="L630">                        gid = cmapWinUnicode.getGlyphId(uni);</span>
+                    }
+                }
+
+                // (1, 0) - (Macintosh, Roman)
+<span class="pc bpc" id="L635" title="1 of 4 branches missed.">                if (gid == 0 &amp;&amp; cmapMacRoman != null)</span>
+                {
+<span class="fc" id="L637">                    Integer macCode = INVERTED_MACOS_ROMAN.get(name);</span>
+<span class="pc bpc" id="L638" title="1 of 2 branches missed.">                    if (macCode != null)</span>
+                    {
+<span class="fc" id="L640">                        gid = cmapMacRoman.getGlyphId(macCode);</span>
+                    }
+                }
+
+                // 'post' table
+<span class="fc bfc" id="L645" title="All 2 branches covered.">                if (gid == 0)</span>
+                {
+<span class="fc" id="L647">                    gid = ttf.nameToGID(name);</span>
+                }
+            }
+<span class="fc" id="L650">        }</span>
+        else // symbolic
+        {
+            // PDFBOX-4755 / PDF.js #5501
+            // PDFBOX-3965: fallback for font has that the symbol flag but isn't
+<span class="fc bfc" id="L655" title="All 2 branches covered.">            if (cmapWinUnicode != null)</span>
+            {
+<span class="pc bpc" id="L657" title="3 of 4 branches missed.">                if (encoding instanceof WinAnsiEncoding || encoding instanceof MacRomanEncoding)</span>
+                {
+<span class="fc" id="L659">                    String name = encoding.getName(code);</span>
+<span class="pc bpc" id="L660" title="1 of 2 branches missed.">                    if (&quot;.notdef&quot;.equals(name))</span>
+                    {
+<span class="nc" id="L662">                        return 0;</span>
+                    }
+<span class="fc" id="L664">                    String unicode = GlyphList.getAdobeGlyphList().toUnicode(name);</span>
+<span class="pc bpc" id="L665" title="1 of 2 branches missed.">                    if (unicode != null)</span>
+                    {
+<span class="fc" id="L667">                        int uni = unicode.codePointAt(0);</span>
+<span class="fc" id="L668">                        gid = cmapWinUnicode.getGlyphId(uni);</span>
+                    }
+<span class="fc" id="L670">                }</span>
+                else
+                {
+<span class="nc" id="L673">                    gid = cmapWinUnicode.getGlyphId(code);</span>
+                }
+            }
+
+            // (3, 0) - (Windows, Symbol)
+<span class="fc bfc" id="L678" title="All 4 branches covered.">            if (gid == 0 &amp;&amp; cmapWinSymbol != null)</span>
+            {
+<span class="fc" id="L680">                gid = cmapWinSymbol.getGlyphId(code);</span>
+<span class="pc bpc" id="L681" title="2 of 4 branches missed.">                if (code &gt;= 0 &amp;&amp; code &lt;= 0xFF)</span>
+                {
+                    // the CMap may use one of the following code ranges,
+                    // so that we have to add the high byte to get the
+                    // mapped value
+<span class="pc bpc" id="L686" title="1 of 2 branches missed.">                    if (gid == 0)</span>
+                    {
+                        // F000 - F0FF
+<span class="fc" id="L689">                        gid = cmapWinSymbol.getGlyphId(code + START_RANGE_F000);</span>
+                    }
+<span class="pc bpc" id="L691" title="1 of 2 branches missed.">                    if (gid == 0)</span>
+                    {
+                        // F100 - F1FF
+<span class="nc" id="L694">                        gid = cmapWinSymbol.getGlyphId(code + START_RANGE_F100);</span>
+                    }
+<span class="pc bpc" id="L696" title="1 of 2 branches missed.">                    if (gid == 0)</span>
+                    {
+                        // F200 - F2FF
+<span class="nc" id="L699">                        gid = cmapWinSymbol.getGlyphId(code + START_RANGE_F200);</span>
+                    }
+                }
+            }
+
+            // (1, 0) - (Mac, Roman)
+<span class="pc bpc" id="L705" title="1 of 4 branches missed.">            if (gid == 0 &amp;&amp; cmapMacRoman != null)</span>
+            {
+<span class="fc" id="L707">                gid = cmapMacRoman.getGlyphId(code);</span>
+            }
+        }
+
+<span class="fc" id="L711">        return gid;</span>
+    }
+
+    /**
+     * extract all useful &quot;cmap&quot; subtables.
+     */
+    private void extractCmapTable() throws IOException
+    {
+<span class="fc bfc" id="L719" title="All 2 branches covered.">        if (cmapInitialized)</span>
+        {
+<span class="fc" id="L721">            return;</span>
+        }
+
+<span class="fc" id="L724">        CmapTable cmapTable = ttf.getCmap();</span>
+<span class="pc bpc" id="L725" title="1 of 2 branches missed.">        if (cmapTable != null)</span>
+        {
+            // get all relevant &quot;cmap&quot; subtables
+<span class="fc" id="L728">            CmapSubtable[] cmaps = cmapTable.getCmaps();</span>
+<span class="fc bfc" id="L729" title="All 2 branches covered.">            for (CmapSubtable cmap : cmaps)</span>
+            {
+<span class="fc bfc" id="L731" title="All 2 branches covered.">                if (CmapTable.PLATFORM_WINDOWS == cmap.getPlatformId())</span>
+                {
+<span class="fc bfc" id="L733" title="All 2 branches covered.">                    if (CmapTable.ENCODING_WIN_UNICODE_BMP == cmap.getPlatformEncodingId())</span>
+                    {
+<span class="fc" id="L735">                        cmapWinUnicode = cmap;</span>
+                    }
+<span class="pc bpc" id="L737" title="1 of 2 branches missed.">                    else if (CmapTable.ENCODING_WIN_SYMBOL == cmap.getPlatformEncodingId())</span>
+                    {
+<span class="fc" id="L739">                        cmapWinSymbol = cmap;</span>
+                    }
+                }
+<span class="fc bfc" id="L742" title="All 2 branches covered.">                else if (CmapTable.PLATFORM_MACINTOSH == cmap.getPlatformId()</span>
+<span class="fc bfc" id="L743" title="All 2 branches covered.">                        &amp;&amp; CmapTable.ENCODING_MAC_ROMAN == cmap.getPlatformEncodingId())</span>
+                {
+<span class="fc" id="L745">                    cmapMacRoman = cmap;</span>
+                }
+<span class="fc bfc" id="L747" title="All 2 branches covered.">                else if (CmapTable.PLATFORM_UNICODE == cmap.getPlatformId()</span>
+<span class="pc bpc" id="L748" title="1 of 2 branches missed.">                        &amp;&amp; CmapTable.ENCODING_UNICODE_1_0 == cmap.getPlatformEncodingId())</span>
+                {
+                    // PDFBOX-4755 / PDF.js #5501
+<span class="nc" id="L751">                    cmapWinUnicode = cmap;</span>
+                }
+<span class="fc bfc" id="L753" title="All 2 branches covered.">                else if (CmapTable.PLATFORM_UNICODE == cmap.getPlatformId()</span>
+<span class="pc bpc" id="L754" title="1 of 2 branches missed.">                        &amp;&amp; CmapTable.ENCODING_UNICODE_2_0_BMP == cmap.getPlatformEncodingId())</span>
+                {
+                    // PDFBOX-5484
+<span class="fc" id="L757">                    cmapWinUnicode = cmap;</span>
+                }
+            }
+        }
+<span class="fc" id="L761">        cmapInitialized = true;</span>
+<span class="fc" id="L762">    }</span>
+
+    private TTFParser getParser(RandomAccessRead randomAccessRead, boolean isEmbedded)
+            throws IOException
+    {
+<span class="fc" id="L767">        long startPos = randomAccessRead.getPosition();</span>
+<span class="fc" id="L768">        byte[] tagBytes = new byte[4];</span>
+<span class="fc" id="L769">        int remainingBytes = tagBytes.length;</span>
+        int amountRead;
+<span class="fc bfc" id="L771" title="All 2 branches covered.">        while ((amountRead = randomAccessRead.read(tagBytes, tagBytes.length - remainingBytes,</span>
+                remainingBytes)) &gt; 0)
+        {
+<span class="fc" id="L774">            remainingBytes -= amountRead;</span>
+        }
+<span class="fc" id="L776">        randomAccessRead.seek(startPos);</span>
+<span class="pc bpc" id="L777" title="1 of 2 branches missed.">        if (&quot;OTTO&quot;.equals(new String(tagBytes, StandardCharsets.US_ASCII)))</span>
+        {
+<span class="nc" id="L779">            return new OTFParser(isEmbedded);</span>
+        }
+        else
+        {
+<span class="fc" id="L783">            return new TTFParser(isEmbedded);</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

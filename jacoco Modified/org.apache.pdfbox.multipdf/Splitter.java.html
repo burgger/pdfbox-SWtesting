@@ -1,0 +1,992 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Splitter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.multipdf</a> &gt; <span class="el_source">Splitter.java</span></div><h1>Splitter.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.multipdf;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.io.RandomAccessStreamCache.StreamCacheCreateFunction;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
+import org.apache.pdfbox.pdmodel.PDDocumentInformation;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageTree;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.PDStructureElementNameTreeNode;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.common.PDNameTreeNode;
+import org.apache.pdfbox.pdmodel.common.PDNumberTreeNode;
+import org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure.PDParentTreeValue;
+import org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure.PDStructureElement;
+import org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure.PDStructureTreeRoot;
+import org.apache.pdfbox.pdmodel.graphics.PDXObject;
+import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.pdmodel.interactive.action.PDAction;
+import org.apache.pdfbox.pdmodel.interactive.action.PDActionFactory;
+import org.apache.pdfbox.pdmodel.interactive.action.PDActionGoTo;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationMarkup;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationPopup;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceStream;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDDestination;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDNamedDestination;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination;
+
+/**
+ * Split a document into several other documents.
+ *
+ * @author Mario Ivankovits
+ * @author Ben Litchfield
+ * @author Tilman Hausherr
+ */
+<span class="fc" id="L74">public class Splitter</span>
+{
+<span class="fc" id="L76">    private static final Logger LOG = LogManager.getLogger(Splitter.class);</span>
+
+    private PDDocument sourceDocument;
+    private PDDocument currentDestinationDocument;
+
+<span class="fc" id="L81">    private int splitLength = 1;</span>
+<span class="fc" id="L82">    private int startPage = Integer.MIN_VALUE;</span>
+<span class="fc" id="L83">    private int endPage = Integer.MAX_VALUE;</span>
+    private List&lt;PDDocument&gt; destinationDocuments;
+    private Map&lt;COSDictionary, COSDictionary&gt; pageDictMap; // map old page =&gt; new page for the current destination document
+    private List&lt;Map&lt;COSDictionary, COSDictionary&gt;&gt; pageDictMaps; // list of these maps for all destination documents
+    private Map&lt;COSDictionary, COSDictionary&gt; structDictMap;
+    private List&lt;Map&lt;COSDictionary, COSDictionary&gt;&gt; annotDictMaps; // map old annotation =&gt; new annotation for the current destination document
+    private Map&lt;COSDictionary, COSDictionary&gt; annotDictMap; // list of these maps for all destination documents
+    private Map&lt;PDPageDestination,PDPage&gt; destToFixMap;
+    private Set&lt;String&gt; idSet;
+    private Set&lt;COSName&gt; roleSet;
+
+    private int currentPageNumber;
+
+<span class="fc" id="L96">    private StreamCacheCreateFunction streamCacheCreateFunction = null;</span>
+
+    /**
+     * @return the current function to be used to create an instance of stream cache.
+     */
+    public StreamCacheCreateFunction getStreamCacheCreateFunction()
+    {
+<span class="nc" id="L103">        return streamCacheCreateFunction;</span>
+    }
+
+    /**
+     * Set the current function to be used to create an instance of stream cache.
+     * 
+     * @param streamCacheCreateFunction the current function to be used to create an instance of stream cache.
+     */
+    public void setStreamCacheCreateFunction(StreamCacheCreateFunction streamCacheCreateFunction)
+    {
+<span class="nc" id="L113">        this.streamCacheCreateFunction = streamCacheCreateFunction;</span>
+<span class="nc" id="L114">    }</span>
+
+    /**
+     * This will take a document and split into several other documents.
+     *
+     * @param document The document to split.
+     *
+     * @return A list of all the split documents. These should all be saved before closing any
+     * documents, including the source document. Any further operations should be made after
+     * reloading them, to avoid problems due to resource sharing. For the same reason, they should
+     * not be saved with encryption.
+     *
+     * @throws IOException If there is an IOError
+     */
+    public List&lt;PDDocument&gt; split(PDDocument document) throws IOException
+    {
+        // reset the currentPageNumber for a case if the split method will be used several times
+<span class="fc" id="L131">        currentPageNumber = 0;</span>
+<span class="fc" id="L132">        destinationDocuments = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L133">        sourceDocument = document;</span>
+<span class="fc" id="L134">        pageDictMaps = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L135">        annotDictMaps = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L136">        destToFixMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L137">        idSet = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L138">        roleSet = new HashSet&lt;&gt;();</span>
+
+<span class="fc" id="L140">        processPages();</span>
+
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        for (int i = 0; i &lt; destinationDocuments.size(); ++i)</span>
+        {
+<span class="fc" id="L144">            PDDocument destinationDocument = destinationDocuments.get(i);</span>
+<span class="fc" id="L145">            pageDictMap = pageDictMaps.get(i);</span>
+<span class="fc" id="L146">            annotDictMap = annotDictMaps.get(i);</span>
+<span class="fc" id="L147">            cloneStructureTree(destinationDocument);</span>
+<span class="fc" id="L148">            fixDestinations(destinationDocument);</span>
+        }
+
+<span class="fc" id="L151">        return destinationDocuments;</span>
+    }
+    
+    /**
+     * Replace the page destinations, if the source and destination pages are in the target
+     * document. This must be called after all pages (and its annotations) are processed.
+     *
+     * @param destinationDocument
+     */
+    private void fixDestinations(PDDocument destinationDocument)
+    {
+<span class="fc" id="L162">        PDPageTree pageTree = destinationDocument.getPages();</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">        for (Map.Entry&lt;PDPageDestination,PDPage&gt; entry : destToFixMap.entrySet())</span>
+        {
+<span class="fc" id="L165">            PDPageDestination pageDestination = entry.getKey();</span>
+            // Find whether source page is inside or outside
+<span class="fc" id="L167">            PDPage srcPage = entry.getValue();</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">            if (pageTree.indexOf(srcPage) &lt; 0)</span>
+            {
+<span class="fc" id="L170">                continue;</span>
+            }
+<span class="fc" id="L172">            COSDictionary srcPageDict = pageDestination.getPage().getCOSObject();</span>
+<span class="fc" id="L173">            COSDictionary dstPageDict = pageDictMap.get(srcPageDict);</span>
+<span class="fc" id="L174">            PDPage dstPage = new PDPage(dstPageDict);</span>
+            // Find whether destination page is inside or outside
+<span class="fc bfc" id="L176" title="All 2 branches covered.">            if (pageTree.indexOf(dstPage) &gt;= 0)</span>
+            {
+<span class="fc" id="L178">                pageDestination.setPage(dstPage);</span>
+            }
+            else
+            {
+<span class="fc" id="L182">                pageDestination.setPage(null);</span>
+            }
+<span class="fc" id="L184">        }</span>
+<span class="fc" id="L185">    }</span>
+
+    /**
+     * Clone the structure tree from the source to the current destination document. This must be
+     * called after all pages are processed.
+     *
+     * @param destinationDocument
+     * @throws IOException 
+     */
+    private void cloneStructureTree(PDDocument destinationDocument) throws IOException
+    {
+<span class="fc" id="L196">        PDStructureTreeRoot srcStructureTreeRoot = sourceDocument.getDocumentCatalog().getStructureTreeRoot();</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        if (srcStructureTreeRoot == null)</span>
+        {
+<span class="fc" id="L199">            return;</span>
+        }
+<span class="fc" id="L201">        structDictMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L202">        PDStructureTreeRoot dstStructureTreeRoot = new PDStructureTreeRoot();</span>
+<span class="fc" id="L203">        PDPageTree dstPageTree = destinationDocument.getPages();</span>
+
+        // clone /K, also fills dictMap
+<span class="fc" id="L206">        COSBase k1 = srcStructureTreeRoot.getK();</span>
+<span class="fc" id="L207">        COSBase k2 = new KCloner(dstPageTree).createClone(k1, dstStructureTreeRoot.getCOSObject(), null);</span>
+<span class="fc" id="L208">        dstStructureTreeRoot.setK(k2);</span>
+
+        // transfer ParentTree using the map because the dictionaries are all found in the /K structure.
+<span class="fc" id="L211">        PDNumberTreeNode srcParentTree = srcStructureTreeRoot.getParentTree();</span>
+<span class="fc" id="L212">        Map&lt;Integer, COSObjectable&gt; srcNumberTreeAsMap = PDFMergerUtility.getNumberTreeAsMap(srcParentTree);</span>
+<span class="fc" id="L213">        Map&lt;Integer, COSObjectable&gt; dstNumberTreeAsMap = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L214">        int dstPageTreeCount = dstPageTree.getCount();</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        for (int p = 0; p &lt; dstPageTreeCount; ++p)</span>
+        {
+<span class="fc" id="L217">            PDPage page = dstPageTree.get(p);</span>
+<span class="fc" id="L218">            int sp1 = page.getStructParents();</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">            if (sp1 != -1)</span>
+            {
+<span class="fc" id="L221">                cloneTreeElement(srcNumberTreeAsMap, dstNumberTreeAsMap, sp1);</span>
+            }
+<span class="fc bfc" id="L223" title="All 2 branches covered.">            for (PDAnnotation ann : page.getAnnotations())</span>
+            {
+<span class="fc" id="L225">                int sp2 = ann.getStructParent();</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">                if (sp2 != -1)</span>
+                {
+<span class="fc" id="L228">                    cloneTreeElement(srcNumberTreeAsMap, dstNumberTreeAsMap, sp2);</span>
+                }
+<span class="fc" id="L230">                PDAppearanceStream normalAppearanceStream = ann.getNormalAppearanceStream();</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">                if (normalAppearanceStream != null)</span>
+                {
+<span class="fc" id="L233">                    processResources(normalAppearanceStream.getResources(), srcNumberTreeAsMap, dstNumberTreeAsMap, new HashSet&lt;&gt;());</span>
+                }
+<span class="fc" id="L235">            }</span>
+<span class="fc" id="L236">            processResources(page.getResources(), srcNumberTreeAsMap, dstNumberTreeAsMap, new HashSet&lt;&gt;());</span>
+        }
+<span class="fc" id="L238">        PDNumberTreeNode dstNumberTreeNode = new PDNumberTreeNode(PDParentTreeValue.class);</span>
+<span class="fc" id="L239">        dstNumberTreeNode.setNumbers(dstNumberTreeAsMap);</span>
+<span class="fc" id="L240">        dstStructureTreeRoot.setParentTree(dstNumberTreeNode);</span>
+<span class="fc" id="L241">        Integer upperLimit = dstNumberTreeNode.getUpperLimit();</span>
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">        if (upperLimit != null)</span>
+        {
+<span class="fc" id="L244">            dstStructureTreeRoot.setParentTreeNextKey(upperLimit + 1);</span>
+        }
+<span class="fc" id="L246">        dstStructureTreeRoot.setClassMap(srcStructureTreeRoot.getClassMap());</span>
+<span class="fc" id="L247">        cloneRoleMap(srcStructureTreeRoot, dstStructureTreeRoot);</span>
+<span class="fc" id="L248">        cloneIDTree(srcStructureTreeRoot, dstStructureTreeRoot);</span>
+
+<span class="fc" id="L250">        destinationDocument.getDocumentCatalog().setStructureTreeRoot(dstStructureTreeRoot);</span>
+<span class="fc" id="L251">    }</span>
+
+    private void cloneIDTree(PDStructureTreeRoot srcStructTree, PDStructureTreeRoot destStructTree)
+            throws IOException
+    {
+<span class="fc" id="L256">        PDNameTreeNode&lt;PDStructureElement&gt; srcIDTree = srcStructTree.getIDTree();</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">        if (srcIDTree == null)</span>
+        {
+<span class="fc" id="L259">            return;</span>
+        }
+<span class="fc" id="L261">        Map&lt;String, PDStructureElement&gt; srcIDTreeAsMap = PDFMergerUtility.getIDTreeAsMap(srcIDTree);</span>
+<span class="fc" id="L262">        Map&lt;String, PDStructureElement&gt; destNames = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L263">        srcIDTreeAsMap.forEach((key, val) -&gt;</span>
+        {
+<span class="fc bfc" id="L265" title="All 2 branches covered.">            if (!idSet.contains(key))</span>
+            {
+<span class="fc" id="L267">                return;</span>
+            }
+<span class="fc" id="L269">            COSDictionary dstDict = structDictMap.get(val.getCOSObject());</span>
+<span class="pc bpc" id="L270" title="1 of 2 branches missed.">            if (dstDict != null)</span>
+            {
+<span class="fc" id="L272">                destNames.put(key, new PDStructureElement(dstDict));</span>
+            }
+<span class="fc" id="L274">        });</span>
+<span class="fc" id="L275">        PDNameTreeNode&lt;PDStructureElement&gt; destIDTree = new PDStructureElementNameTreeNode();</span>
+<span class="fc" id="L276">        destIDTree.setNames(destNames);</span>
+<span class="fc" id="L277">        destStructTree.setIDTree(destIDTree);</span>
+        // See comment at the end of PDFMergerUtility.mergeIDTree()
+<span class="fc" id="L279">    }</span>
+
+    // needed because getRoleMap() and setRoleMap() habe different map types?!
+    private void cloneRoleMap(PDStructureTreeRoot srcStructTree, PDStructureTreeRoot destStructTree)
+    {
+<span class="fc" id="L284">        COSDictionary srcDict = srcStructTree.getCOSObject().getCOSDictionary(COSName.ROLE_MAP);</span>
+<span class="fc bfc" id="L285" title="All 2 branches covered.">        if (srcDict == null)</span>
+        {
+<span class="fc" id="L287">            return;</span>
+        }
+<span class="fc" id="L289">        COSDictionary dstDict = new COSDictionary();</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">        for (Map.Entry&lt;COSName, COSBase&gt; entry : srcDict.entrySet())</span>
+        {
+<span class="fc bfc" id="L292" title="All 2 branches covered.">            if (roleSet.contains(entry.getKey()))</span>
+            {
+<span class="fc" id="L294">                dstDict.setItem(entry.getKey(), entry.getValue());</span>
+            }
+<span class="fc" id="L296">        }</span>
+<span class="fc" id="L297">        destStructTree.getCOSObject().setItem(COSName.ROLE_MAP, dstDict);</span>
+<span class="fc" id="L298">    }</span>
+
+    // clone tree element using the map so that structure elements are replaced
+    private void cloneTreeElement(
+            Map&lt;Integer, COSObjectable&gt; srcNumberTreeAsMap, 
+            Map&lt;Integer, COSObjectable&gt; dstNumberTreeAsMap, 
+            int sp)
+    {
+<span class="fc" id="L306">        COSObjectable srcObj = srcNumberTreeAsMap.get(sp); // this is a PDParentTreeValue class</span>
+<span class="fc" id="L307">        COSObjectable dstObj = null;</span>
+<span class="pc bpc" id="L308" title="1 of 2 branches missed.">        if (srcObj != null)</span>
+        {
+<span class="fc" id="L310">            COSBase actualSrcObj = srcObj.getCOSObject();</span>
+            // structure element or array
+<span class="fc bfc" id="L312" title="All 2 branches covered.">            if (actualSrcObj instanceof COSArray)</span>
+            {
+                // create a clone of the array
+<span class="fc" id="L315">                COSArray srcArray = (COSArray) actualSrcObj;</span>
+<span class="fc" id="L316">                COSArray dstArray = new COSArray();</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">                for (int i = 0; i &lt; srcArray.size(); ++i)</span>
+                {
+<span class="fc" id="L319">                    COSBase srcElement = srcArray.getObject(i);</span>
+<span class="fc" id="L320">                    dstArray.add(structDictMap.get(srcElement)); // may be null</span>
+                }
+<span class="fc" id="L322">                dstObj = dstArray;</span>
+<span class="fc" id="L323">            }</span>
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">            else if (actualSrcObj instanceof COSDictionary)</span>
+            {
+                // get the clone from the map
+<span class="fc" id="L327">                dstObj = structDictMap.get(actualSrcObj);</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">                if (dstObj == null)</span>
+                {
+                    // 164421.pdf, structure tree is weird.
+                    // also 250052.pdf, 250198.pdf, 257012.pdf, 271459.pdf (multiple), 
+                    // 670045.pdf (multiple)
+                    // In 71459.pdf annotations on page 1 have StructParent numbers
+                    // that point to structure elements in the /ParentTree that point to
+                    // a different page.
+<span class="fc" id="L336">                    LOG.warn(&quot;ParentTree index {} dictionary not found in /K&quot;, sp);</span>
+                }
+            }
+            else
+            {
+<span class="nc" id="L341">                LOG.warn(&quot;tree element neither dictionary nor array, but &quot; + </span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">                        (actualSrcObj == null ? &quot;(null)&quot; : actualSrcObj.getClass().getSimpleName()));</span>
+            }
+<span class="fc bfc" id="L344" title="All 2 branches covered.">            if (dstObj != null)</span>
+            {
+<span class="fc" id="L346">                dstNumberTreeAsMap.put(sp, dstObj);</span>
+            }
+        }
+<span class="fc" id="L349">    }</span>
+
+    /**
+     * Class to help clone the /K tree. It clones structure elements and fills the structure
+     * elements map. Pages are replaced with the help of the page map. Elements with pages that
+     * don't belong to the destination are removed from the clone.
+     */
+    private class KCloner
+    {
+        PDPageTree dstPageTree;
+
+        KCloner(PDPageTree dstPageTree)
+<span class="fc" id="L361">        {</span>
+<span class="fc" id="L362">            this.dstPageTree = dstPageTree;</span>
+<span class="fc" id="L363">        }</span>
+
+        /**
+         * Creates a clone of the source.
+         *
+         * @param src source dictionary or array.
+         * @param dstParent for the /P entry; parameter needed because arrays don't keep a parent.
+         * @param currentPageDict used to remember whether we have a page parent somewhere or not.
+         * Starts with null.
+         * @return a clone, or null if source is null or if there is no clone because it belongs to a
+         * different page or to no page.
+         */
+        COSBase createClone(COSBase src, COSBase dstParent, COSDictionary currentPageDict)
+        {
+<span class="fc bfc" id="L377" title="All 2 branches covered.">            if (src instanceof COSArray)</span>
+            {
+<span class="fc" id="L379">                return createArrayClone(src, dstParent, currentPageDict);</span>
+            }
+<span class="fc bfc" id="L381" title="All 2 branches covered.">            else if (src instanceof COSDictionary)</span>
+            {
+<span class="fc" id="L383">                return createDictionaryClone(src, dstParent, currentPageDict);</span>
+            }
+            else
+            {
+<span class="fc" id="L387">                return src;</span>
+            }
+        }
+
+        private COSBase createArrayClone(COSBase src, COSBase dstParent, COSDictionary currentPageDict)
+        {
+<span class="fc" id="L393">            COSArray dst = new COSArray();</span>
+<span class="fc bfc" id="L394" title="All 2 branches covered.">            for (COSBase base2 : (COSArray) src)</span>
+            {
+                COSBase rc;
+<span class="fc bfc" id="L397" title="All 2 branches covered.">                if (base2 instanceof COSObject)</span>
+                {
+<span class="fc" id="L399">                    rc = createClone(((COSObject) base2).getObject(), dstParent, currentPageDict);</span>
+                }
+                else
+                {
+<span class="fc" id="L403">                    rc = createClone(base2, dstParent, currentPageDict);</span>
+                }
+                // if this is null then they don't belong to the destination document
+<span class="fc bfc" id="L406" title="All 2 branches covered.">                if (rc != null)</span>
+                {
+<span class="fc" id="L408">                    dst.add(rc);</span>
+                }
+<span class="fc" id="L410">            }</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">            return dst.isEmpty() ? null : dst;</span>
+        }
+
+        private COSBase createDictionaryClone(COSBase src, COSBase dstParent, COSDictionary currentPageDict)
+        {
+<span class="fc" id="L416">            COSDictionary srcDict = (COSDictionary) src;</span>
+<span class="fc" id="L417">            COSDictionary dstDict = structDictMap.get(srcDict);</span>
+<span class="pc bpc" id="L418" title="1 of 2 branches missed.">            if (dstDict != null)</span>
+            {
+<span class="nc" id="L420">                return dstDict;</span>
+            }
+<span class="fc" id="L422">            COSDictionary srcPageDict = srcDict.getCOSDictionary(COSName.PG);</span>
+<span class="fc" id="L423">            COSDictionary dstPageDict = null;</span>
+<span class="fc" id="L424">            COSBase kid = srcDict.getDictionaryObject(COSName.K);</span>
+<span class="fc" id="L425">            COSName type = srcDict.getCOSName(COSName.TYPE);</span>
+<span class="fc bfc" id="L426" title="All 2 branches covered.">            if (srcPageDict != null)</span>
+            {
+<span class="fc" id="L428">                dstPageDict = pageDictMap.get(srcPageDict);</span>
+<span class="fc bfc" id="L429" title="All 2 branches covered.">                if (dstPageDict != null)</span>
+                {
+<span class="fc" id="L431">                    PDPage dstPage = new PDPage(dstPageDict);</span>
+<span class="pc bpc" id="L432" title="1 of 2 branches missed.">                    if (dstPageTree.indexOf(dstPage) == -1)</span>
+                    {
+<span class="nc" id="L434">                        return null;</span>
+                    }
+<span class="fc" id="L436">                }</span>
+                else
+                {
+                    // PDFBOX-6009: &quot;wrong&quot; /Pg entry
+                    // quit if MCIDs because these need a /Pg entry
+                    // or if MCR/OBJR dicts
+<span class="pc bpc" id="L442" title="1 of 6 branches missed.">                    if (COSName.MCR.equals(type) || COSName.OBJR.equals(type) || hasMCIDs(kid))</span>
+                    {
+<span class="fc" id="L444">                        return null;</span>
+                    }
+                    // else keep this as an intermediate element for now
+                }
+            }
+
+            // special handling for MCR items (&quot;marked-content reference dictionary&quot;)
+<span class="pc bpc" id="L451" title="3 of 6 branches missed.">            if (COSName.MCR.equals(type) &amp;&amp; dstPageDict == null &amp;&amp; </span>
+<span class="nc bnc" id="L452" title="All 2 branches missed.">                dstParent instanceof COSDictionary &amp;&amp; ((COSDictionary) dstParent).getCOSDictionary(COSName.PG) == null)</span>
+            {
+                // PAC: Pg entry of marked-content reference and of parent structure is null
+<span class="nc" id="L455">                return null;</span>
+            }
+
+            // Create and fill clone
+<span class="fc" id="L459">            dstDict = new COSDictionary();</span>
+<span class="fc" id="L460">            structDictMap.put(srcDict, dstDict);</span>
+<span class="fc bfc" id="L461" title="All 2 branches covered.">            for (Map.Entry&lt;COSName,COSBase&gt; entry : srcDict.entrySet())</span>
+            {
+<span class="fc" id="L463">                COSName key = entry.getKey();</span>
+<span class="fc bfc" id="L464" title="All 2 branches covered.">                if (!COSName.K.equals(key) &amp;&amp;</span>
+<span class="fc bfc" id="L465" title="All 2 branches covered.">                    !COSName.PG.equals(key) &amp;&amp;</span>
+<span class="fc bfc" id="L466" title="All 2 branches covered.">                    !COSName.P.equals(key))</span>
+                {
+<span class="fc" id="L468">                    dstDict.setItem(key, entry.getValue());</span>
+                }
+<span class="fc" id="L470">            }</span>
+
+            // special handling for OBJR items (&quot;object reference dictionary&quot;)
+            // see e.g. file 488300.pdf and Root/StructTreeRoot/K/K/[2]/K/[1]/K/[0]/Obj
+<span class="fc bfc" id="L474" title="All 2 branches covered.">            if (COSName.OBJR.equals(type))</span>
+            {
+<span class="fc" id="L476">                COSDictionary srcObj = srcDict.getCOSDictionary(COSName.OBJ);</span>
+<span class="fc" id="L477">                COSDictionary dstObj = annotDictMap.get(srcObj);</span>
+<span class="fc bfc" id="L478" title="All 2 branches covered.">                if (dstObj != null)</span>
+                {
+                    // replace annotation with clone
+<span class="fc" id="L481">                    dstDict.setItem(COSName.OBJ, dstObj);</span>
+                }
+<span class="pc bpc" id="L483" title="1 of 2 branches missed.">                else if (srcObj != null) // 079177.pdf</span>
+                {
+<span class="fc" id="L485">                    removePossibleOrphanAnnotation(srcObj, srcDict, currentPageDict, dstDict);</span>
+                }
+<span class="fc bfc" id="L487" title="All 2 branches covered.">                if (dstDict.size() == 1)</span>
+                {
+<span class="fc" id="L489">                    return null;</span>
+                }
+<span class="pc bpc" id="L491" title="1 of 4 branches missed.">                if (dstPageDict == null &amp;&amp;</span>
+<span class="pc bpc" id="L492" title="1 of 2 branches missed.">                    dstParent instanceof COSDictionary &amp;&amp; ((COSDictionary) dstParent).getCOSDictionary(COSName.PG) == null)</span>
+                {
+                    // Pg entry of object reference dictionary and of parent structure is null
+<span class="nc" id="L495">                    return null;</span>
+                }
+            }
+
+<span class="fc bfc" id="L499" title="All 4 branches covered.">            if (!COSName.OBJR.equals(type) &amp;&amp; !COSName.MCR.equals(type))</span>
+            {
+                // /P not needed for OBJR or MCR items
+<span class="fc" id="L502">                dstDict.setItem(COSName.P, dstParent);</span>
+            }
+
+<span class="fc" id="L505">            dstDict.setItem(COSName.PG, dstPageDict);</span>
+            
+            // stack overflow here with 207658.pdf and 113484.pdf, too complex; works with -Xss50m
+<span class="fc bfc" id="L508" title="All 2 branches covered.">            COSBase cloneKid = createClone(kid, dstDict, dstPageDict != null ? dstPageDict : currentPageDict);</span>
+<span class="fc bfc" id="L509" title="All 4 branches covered.">            if (cloneKid == null &amp;&amp; kid != null)</span>
+            {
+<span class="fc" id="L511">                return null; // kids array wasn't empty, but is empty now =&gt; ignore</span>
+            }
+            
+            // removes orphan nodes, example:
+            // Root/StructTreeRoot/K/[7]/K/[3]/K/[5]/K/[2] in 271459.pdf
+            // decide about keeping source dictionaries with no /K and no /PG
+<span class="fc bfc" id="L517" title="All 6 branches covered.">            if (dstPageDict == null &amp;&amp; cloneKid == null &amp;&amp; currentPageDict == null)</span>
+            {
+                // if no parent page and no page here and no kids, assume this is an orphan
+<span class="fc" id="L520">                return null;</span>
+            }
+<span class="fc" id="L522">            dstDict.setItem(COSName.K, cloneKid);</span>
+<span class="fc" id="L523">            String id = dstDict.getString(COSName.ID);</span>
+<span class="fc bfc" id="L524" title="All 2 branches covered.">            if (id != null)</span>
+            {
+<span class="fc" id="L526">                idSet.add(id);</span>
+            }
+<span class="fc" id="L528">            COSName s = dstDict.getCOSName(COSName.S);</span>
+<span class="fc bfc" id="L529" title="All 2 branches covered.">            if (s != null)</span>
+            {
+<span class="fc" id="L531">                roleSet.add(s);</span>
+            }
+<span class="fc" id="L533">            return dstDict;</span>
+        }
+
+        private boolean hasMCIDs(COSBase kid)
+        {
+<span class="fc bfc" id="L538" title="All 2 branches covered.">            if (kid instanceof COSInteger)</span>
+            {
+<span class="fc" id="L540">                return true;</span>
+            }
+<span class="pc bpc" id="L542" title="1 of 2 branches missed.">            if (kid instanceof COSArray)</span>
+            {
+<span class="fc" id="L544">                COSArray ar = (COSArray) kid;</span>
+<span class="fc bfc" id="L545" title="All 2 branches covered.">                for (int i = 0; i &lt; ar.size(); ++i)</span>
+                {
+<span class="fc bfc" id="L547" title="All 2 branches covered.">                    if (ar.getObject(i) instanceof COSInteger)</span>
+                    {
+<span class="fc" id="L549">                        return true;</span>
+                    }
+                }
+            }
+<span class="fc" id="L553">            return false;</span>
+        }
+
+        private void removePossibleOrphanAnnotation(COSDictionary srcObj, COSDictionary srcDict,
+                COSDictionary currentPageDict, COSDictionary dstDict)
+        {
+            // PDFBOX-5929: Check whether this is an &quot;orphan&quot; annotation that isn't in the page
+<span class="fc" id="L560">            COSBase objType = srcObj.getDictionaryObject(COSName.TYPE);</span>
+<span class="fc" id="L561">            COSBase objSubtype = srcObj.getDictionaryObject(COSName.SUBTYPE);</span>
+<span class="pc bpc" id="L562" title="3 of 4 branches missed.">            if (COSName.ANNOT.equals(objType) || COSName.LINK.equals(objSubtype))</span>
+            {
+<span class="fc" id="L564">                COSDictionary srcPageDict = srcDict.getCOSDictionary(COSName.PG);</span>
+<span class="pc bpc" id="L565" title="1 of 2 branches missed.">                if (srcPageDict == null)</span>
+                {
+                    // /Pg entry is not always on this level
+<span class="fc" id="L568">                    srcPageDict = currentPageDict;</span>
+                }
+<span class="pc bpc" id="L570" title="1 of 2 branches missed.">                if (srcPageDict != null)</span>
+                {
+<span class="fc" id="L572">                    COSArray annotationArray = srcPageDict.getCOSArray(COSName.ANNOTS);</span>
+<span class="pc bpc" id="L573" title="2 of 4 branches missed.">                    if (annotationArray == null || annotationArray.indexOfObject(srcObj) == -1)</span>
+                    {
+                        // Ideally the entire OBJR entry should be removed.
+                        // Removing the OBJ entry is done to avoid potential page orphans
+                        // from the annotation destination.
+<span class="fc" id="L578">                        LOG.warn(&quot;An annotation OBJ that isn't in the page has been removed from the structure tree&quot;);</span>
+<span class="fc" id="L579">                        dstDict.removeItem(COSName.OBJ);</span>
+                    }
+                }
+            }
+<span class="fc" id="L583">        }</span>
+    }
+
+    // Look for /StructParent and /StructParents and add them to the destination tree
+    private void processResources(PDResources res, 
+            Map&lt;Integer, COSObjectable&gt; srcNumberTreeAsMap, 
+            Map&lt;Integer, COSObjectable&gt; dstNumberTreeAsMap,
+            Set&lt;COSDictionary&gt; visited) throws IOException
+    {
+<span class="pc bpc" id="L592" title="1 of 2 branches missed.">        if (res == null)</span>
+        {
+<span class="nc" id="L594">            return;</span>
+        }
+<span class="pc bpc" id="L596" title="1 of 2 branches missed.">        if (visited.contains(res.getCOSObject()))</span>
+        {
+            // avoid endless recursion, e.g. with 002874.pdf
+<span class="nc" id="L599">            return;</span>
+        }
+<span class="fc" id="L601">        visited.add(res.getCOSObject());</span>
+
+<span class="pc bpc" id="L603" title="1 of 2 branches missed.">        for (COSName name : res.getXObjectNames())</span>
+        {
+<span class="nc" id="L605">            PDXObject xObject = res.getXObject(name);</span>
+<span class="nc" id="L606">            int sp2 = -1;</span>
+<span class="nc bnc" id="L607" title="All 2 branches missed.">            if (xObject instanceof PDFormXObject)</span>
+            {
+<span class="nc" id="L609">                sp2 = ((PDFormXObject) xObject).getStructParents();</span>
+<span class="nc" id="L610">                processResources(((PDFormXObject) xObject).getResources(), srcNumberTreeAsMap, dstNumberTreeAsMap, visited);</span>
+            }
+<span class="nc bnc" id="L612" title="All 2 branches missed.">            else if (xObject instanceof PDImageXObject)</span>
+            {
+<span class="nc" id="L614">                sp2 = ((PDImageXObject) xObject).getStructParent();</span>
+            }
+<span class="nc bnc" id="L616" title="All 2 branches missed.">            if (sp2 != -1)</span>
+            {
+<span class="nc" id="L618">                cloneTreeElement(srcNumberTreeAsMap, dstNumberTreeAsMap, sp2);</span>
+            }
+<span class="nc" id="L620">        }</span>
+<span class="fc" id="L621">    }</span>
+
+    /**
+     * This will tell the splitting algorithm where to split the pages.  The default
+     * is 1, so every page will become a new document.  If it was two then each document would
+     * contain 2 pages.  If the source document had 5 pages it would split into
+     * 3 new documents, 2 documents containing 2 pages and 1 document containing one
+     * page.
+     *
+     * @param split The number of pages each split document should contain.
+     * @throws IllegalArgumentException if the page is smaller than one.
+     */
+    public void setSplitAtPage(int split)
+    {
+<span class="pc bpc" id="L635" title="1 of 2 branches missed.">        if(split &lt;= 0)</span>
+        {
+<span class="nc" id="L637">            throw new IllegalArgumentException(&quot;Number of pages is smaller than one&quot;);</span>
+        }
+<span class="fc" id="L639">        splitLength = split;</span>
+<span class="fc" id="L640">    }</span>
+
+    /**
+     * This will set the start page.
+     *
+     * @param start the 1-based start page
+     * @throws IllegalArgumentException if the start page is smaller than one.
+     */
+    public void setStartPage(int start)
+    {
+<span class="pc bpc" id="L650" title="1 of 2 branches missed.">        if(start &lt;= 0)</span>
+        {
+<span class="nc" id="L652">            throw new IllegalArgumentException(&quot;Start page is smaller than one&quot;);</span>
+        }
+<span class="fc" id="L654">        startPage = start;</span>
+<span class="fc" id="L655">    }</span>
+
+    /**
+     * This will set the end page.
+     *
+     * @param end the 1-based end page
+     * @throws IllegalArgumentException if the end page is smaller than one or than the start page.
+     */
+    public void setEndPage(int end)
+    {
+<span class="pc bpc" id="L665" title="1 of 2 branches missed.">        if(end &lt;= 0)</span>
+        {
+<span class="nc" id="L667">            throw new IllegalArgumentException(&quot;End page is smaller than one&quot;);</span>
+        }
+<span class="pc bpc" id="L669" title="1 of 2 branches missed.">        if (end &lt; startPage)</span>
+        {
+<span class="nc" id="L671">            throw new IllegalArgumentException(&quot;End page is smaller than startPage&quot;);</span>
+        }
+<span class="fc" id="L673">        endPage = end;</span>
+<span class="fc" id="L674">    }</span>
+
+    /**
+     * Interface method to handle the start of the page processing.
+     *
+     * @throws IOException If an IO error occurs.
+     */
+    private void processPages() throws IOException
+    {
+<span class="fc bfc" id="L683" title="All 2 branches covered.">        for (PDPage page : sourceDocument.getPages())</span>
+        {
+<span class="fc bfc" id="L685" title="All 4 branches covered.">            if (currentPageNumber + 1 &gt;= startPage &amp;&amp; currentPageNumber + 1 &lt;= endPage)</span>
+            {
+<span class="fc" id="L687">                processPage(page);</span>
+<span class="fc" id="L688">                currentPageNumber++;</span>
+            }
+            else
+            {
+<span class="fc bfc" id="L692" title="All 2 branches covered.">                if (currentPageNumber &gt; endPage)</span>
+                {
+<span class="fc" id="L694">                    break;</span>
+                }
+                else
+                {
+<span class="fc" id="L698">                    currentPageNumber++;</span>
+                }
+            }
+<span class="fc" id="L701">        }</span>
+<span class="fc" id="L702">    }</span>
+
+    /**
+     * Helper method for creating new documents at the appropriate pages.
+     *
+     * @throws IOException If there is an error creating the new document.
+     */
+    private void createNewDocumentIfNecessary() throws IOException
+    {
+<span class="pc bpc" id="L711" title="1 of 4 branches missed.">        if (splitAtPage(currentPageNumber) || currentDestinationDocument == null)</span>
+        {
+<span class="fc" id="L713">            currentDestinationDocument = createNewDocument();</span>
+<span class="fc" id="L714">            destinationDocuments.add(currentDestinationDocument);</span>
+<span class="fc" id="L715">            pageDictMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L716">            pageDictMaps.add(pageDictMap);</span>
+<span class="fc" id="L717">            annotDictMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L718">            annotDictMaps.add(annotDictMap);</span>
+        }
+<span class="fc" id="L720">    }</span>
+
+    /**
+     * Check if it is necessary to create a new document.
+     * By default a split occurs at every page.  If you wanted to split
+     * based on some complex logic then you could override this method.  For example.
+     * &lt;code&gt;
+     * protected void splitAtPage()
+     * {
+     *     // will split at pages with prime numbers only
+     *     return isPrime(pageNumber);
+     * }
+     * &lt;/code&gt;
+     * @param pageNumber the 0-based page number to be checked as splitting page
+     * 
+     * @return true If a new document should be created.
+     */
+    protected boolean splitAtPage(int pageNumber)
+    {
+<span class="fc bfc" id="L739" title="All 2 branches covered.">        return (pageNumber + 1 - Math.max(1, startPage)) % splitLength == 0;</span>
+    }
+
+    /**
+     * Create a new document to write the split contents to.
+     *
+     * @return the newly created PDDocument. 
+     * @throws IOException If there is an problem creating the new document.
+     */
+    protected PDDocument createNewDocument() throws IOException
+    {
+<span class="pc bpc" id="L750" title="1 of 2 branches missed.">        PDDocument document = streamCacheCreateFunction != null ? new PDDocument(streamCacheCreateFunction) : new PDDocument();</span>
+<span class="fc" id="L751">        document.getDocument().setVersion(getSourceDocument().getVersion());</span>
+<span class="fc" id="L752">        PDDocumentInformation sourceDocumentInformation = getSourceDocument().getDocumentInformation();</span>
+<span class="pc bpc" id="L753" title="1 of 2 branches missed.">        if (sourceDocumentInformation != null)</span>
+        {
+            // PDFBOX-5317: Image Capture Plus files where /Root and /Info share the same dictionary
+            // Only copy simple elements to avoid huge files
+<span class="fc" id="L757">            COSDictionary sourceDocumentInformationDictionary = sourceDocumentInformation.getCOSObject();</span>
+<span class="fc" id="L758">            COSDictionary destDocumentInformationDictionary = new COSDictionary();</span>
+<span class="fc bfc" id="L759" title="All 2 branches covered.">            for (COSName key : sourceDocumentInformationDictionary.keySet())</span>
+            {
+<span class="fc" id="L761">                COSBase value = sourceDocumentInformationDictionary.getDictionaryObject(key);</span>
+<span class="pc bpc" id="L762" title="1 of 2 branches missed.">                if (value instanceof COSDictionary)</span>
+                {
+<span class="nc" id="L764">                    LOG.warn(&quot;Nested entry for key '{}' skipped in document information dictionary&quot;,</span>
+<span class="nc" id="L765">                            key.getName());</span>
+<span class="nc" id="L766">                    if (sourceDocument.getDocumentCatalog().getCOSObject() ==</span>
+<span class="nc bnc" id="L767" title="All 2 branches missed.">                            sourceDocument.getDocumentInformation().getCOSObject())</span>
+                    {
+<span class="nc" id="L769">                        LOG.warn(&quot;/Root and /Info share the same dictionary&quot;);</span>
+                    }
+                    continue;
+                }
+<span class="pc bpc" id="L773" title="1 of 2 branches missed.">                if (COSName.TYPE.equals(key))</span>
+                {
+<span class="nc" id="L775">                    continue; // there is no /Type in the document information dictionary</span>
+                }
+<span class="fc" id="L777">                destDocumentInformationDictionary.setItem(key, value);</span>
+<span class="fc" id="L778">            }</span>
+<span class="fc" id="L779">            document.setDocumentInformation(new PDDocumentInformation(destDocumentInformationDictionary));</span>
+        }
+<span class="fc" id="L781">        PDDocumentCatalog destCatalog = document.getDocumentCatalog();</span>
+<span class="fc" id="L782">        PDDocumentCatalog sourceCatalog = getSourceDocument().getDocumentCatalog();</span>
+<span class="fc" id="L783">        destCatalog.setViewerPreferences(sourceCatalog.getViewerPreferences());</span>
+<span class="fc" id="L784">        destCatalog.setLanguage(sourceCatalog.getLanguage());</span>
+<span class="fc" id="L785">        destCatalog.setMarkInfo(sourceCatalog.getMarkInfo());</span>
+<span class="fc" id="L786">        destCatalog.setMetadata(sourceCatalog.getMetadata());</span>
+<span class="fc" id="L787">        return document;</span>
+    }
+
+    /**
+     * Interface to start processing a new page.
+     *
+     * @param page The page that is about to get processed.
+     *
+     * @throws IOException If there is an error creating the new document.
+     */
+    protected void processPage(PDPage page) throws IOException
+    {
+<span class="fc" id="L799">        createNewDocumentIfNecessary();</span>
+        
+<span class="fc" id="L801">        PDPage imported = getDestinationDocument().importPage(page);</span>
+<span class="pc bpc" id="L802" title="1 of 4 branches missed.">        if (page.getResources() != null &amp;&amp; !page.getCOSObject().containsKey(COSName.RESOURCES))</span>
+        {
+<span class="nc" id="L804">            imported.setResources(page.getResources());</span>
+<span class="nc" id="L805">            LOG.info(&quot;Resources imported in Splitter&quot;); // follow-up to warning in importPage</span>
+        }
+<span class="fc bfc" id="L807" title="All 2 branches covered.">        if (imported.getCOSObject().containsKey(COSName.B))</span>
+        {
+<span class="fc" id="L809">            imported.getCOSObject().removeItem(COSName.B);</span>
+<span class="fc" id="L810">            LOG.warn(&quot;/B entry (beads) removed by splitter&quot;);</span>
+        }
+        // remove page links to avoid copying not needed resources 
+<span class="fc" id="L813">        processAnnotations(imported);</span>
+
+<span class="fc" id="L815">        pageDictMap.put(page.getCOSObject(), imported.getCOSObject());</span>
+<span class="fc" id="L816">    }</span>
+
+    /**
+     * Clone all annotations because of changes possibly made, and because the structure tree is
+     * cloned.
+     *
+     * @param imported
+     * @throws IOException 
+     */
+    private void processAnnotations(PDPage imported) throws IOException
+    {
+<span class="fc" id="L827">        List&lt;PDAnnotation&gt; annotations = imported.getAnnotations();</span>
+<span class="fc bfc" id="L828" title="All 2 branches covered.">        if (annotations.isEmpty())</span>
+        {
+<span class="fc" id="L830">            return;</span>
+        }
+<span class="fc" id="L832">        List&lt;PDAnnotation&gt; clonedAnnotations = new ArrayList&lt;&gt;(annotations.size());</span>
+<span class="fc bfc" id="L833" title="All 2 branches covered.">        for (PDAnnotation annotation : annotations)</span>
+        {
+            // create a shallow clone
+<span class="fc" id="L836">            COSDictionary clonedDict = new COSDictionary(annotation.getCOSObject());</span>
+<span class="fc" id="L837">            PDAnnotation annotationClone = PDAnnotation.createAnnotation(clonedDict);</span>
+<span class="fc" id="L838">            annotDictMap.put(annotation.getCOSObject(), clonedDict);</span>
+<span class="fc" id="L839">            clonedAnnotations.add(annotationClone);</span>
+<span class="fc bfc" id="L840" title="All 2 branches covered.">            if (annotationClone instanceof PDAnnotationLink)</span>
+            {
+<span class="fc" id="L842">                PDAnnotationLink link = (PDAnnotationLink) annotationClone;</span>
+<span class="fc" id="L843">                PDDestination srcDestination = null;</span>
+                try
+                {
+<span class="fc" id="L846">                    srcDestination = link.getDestination();</span>
+                }
+<span class="fc" id="L848">                catch (IOException ex)</span>
+                {
+<span class="fc" id="L850">                    LOG.warn(&quot;Incorrect destination in link annotation on page &quot; +</span>
+                            (currentPageNumber + 1) + &quot; is removed&quot;, ex);
+<span class="fc" id="L852">                    link.setDestination(null);</span>
+<span class="fc" id="L853">                }</span>
+<span class="fc" id="L854">                PDAction action = null;</span>
+<span class="fc bfc" id="L855" title="All 2 branches covered.">                if (srcDestination == null)</span>
+                {
+<span class="fc" id="L857">                    action = link.getAction();</span>
+<span class="fc bfc" id="L858" title="All 2 branches covered.">                    if (action instanceof PDActionGoTo)</span>
+                    {
+<span class="fc" id="L860">                        PDActionGoTo goToAction = (PDActionGoTo) action;</span>
+                        try
+                        {
+<span class="fc" id="L863">                            srcDestination = goToAction.getDestination();</span>
+                        }
+<span class="nc" id="L865">                        catch (IOException ex)</span>
+                        {
+<span class="nc" id="L867">                            LOG.warn(&quot;GoToAction with incorrect destination in link annotation on page &quot; +</span>
+                                    (currentPageNumber + 1) + &quot; is removed&quot;, ex);
+<span class="nc" id="L869">                            link.setAction(null);</span>
+<span class="fc" id="L870">                        }</span>
+                    }
+                }
+<span class="fc bfc" id="L873" title="All 2 branches covered.">                if (srcDestination instanceof PDNamedDestination)</span>
+                {
+<span class="fc" id="L875">                    srcDestination = sourceDocument.getDocumentCatalog().</span>
+<span class="fc" id="L876">                            findNamedDestinationPage((PDNamedDestination) srcDestination);</span>
+                    // we do not use the named destination anymore because names get modified, e.g.
+                    // 0xAD becomes 0, see file 410609.pdf where the name no longer matches with the
+                    // entry in the new name tree; plus the original solution was 40 additional loc
+                }
+<span class="fc bfc" id="L881" title="All 2 branches covered.">                if (srcDestination instanceof PDPageDestination)</span>
+                {
+                    // preserve links to pages within the split result:
+                    // not fully possible here because we don't have the full target document yet.
+                    // However we're cloning as needed and remember what to do later.
+<span class="fc" id="L886">                    PDPage destinationPage = ((PDPageDestination) srcDestination).getPage();</span>
+<span class="pc bpc" id="L887" title="1 of 2 branches missed.">                    if (destinationPage != null)</span>
+                    {
+                        // clone destination
+<span class="fc" id="L890">                        COSArray clonedDestinationArray =</span>
+<span class="fc" id="L891">                                new COSArray(((PDPageDestination) srcDestination).getCOSObject().toList());</span>
+<span class="fc" id="L892">                        PDPageDestination dstDestination =</span>
+<span class="fc" id="L893">                                (PDPageDestination) PDDestination.create(clonedDestinationArray);</span>
+
+                        // remember the destination to adjust / remove page later
+<span class="fc" id="L896">                        destToFixMap.put(dstDestination, imported);</span>
+
+<span class="fc bfc" id="L898" title="All 2 branches covered.">                        if (action != null)</span>
+                        {
+                            // if action is not null, then the destination came from an action,
+                            // thus clone action as well, then assign destination clone, then action
+<span class="fc" id="L902">                            COSDictionary clonedActionDict = new COSDictionary(action.getCOSObject());</span>
+<span class="fc" id="L903">                            PDActionGoTo dstAction =</span>
+<span class="fc" id="L904">                                    (PDActionGoTo) PDActionFactory.createAction(clonedActionDict);</span>
+<span class="fc" id="L905">                            dstAction.setDestination(dstDestination);</span>
+<span class="fc" id="L906">                            link.setAction(dstAction);</span>
+<span class="fc" id="L907">                        }</span>
+                        else
+                        {
+                            // just assign destination clone
+<span class="fc" id="L911">                            link.setDestination(dstDestination);</span>
+                        }
+                    }
+                }
+            }
+<span class="pc bpc" id="L916" title="1 of 2 branches missed.">            if (annotationClone instanceof PDAnnotationWidget &amp;&amp;</span>
+<span class="nc bnc" id="L917" title="All 2 branches missed.">                annotationClone.getCOSObject().containsKey(COSName.PARENT))</span>
+            {
+                // remove non-terminal field /Parent reference, because this may lead to orphan pages
+<span class="nc" id="L920">                annotationClone.getCOSObject().removeItem(COSName.PARENT);</span>
+            }
+<span class="fc bfc" id="L922" title="All 2 branches covered.">            if (annotation.getPage() != null)</span>
+            {
+<span class="fc" id="L924">                annotationClone.setPage(imported);</span>
+            }
+<span class="fc" id="L926">        }</span>
+        // Second loop for markup and popup annotations, which reference annotations themselves
+<span class="fc bfc" id="L928" title="All 2 branches covered.">        for (PDAnnotation annotation : clonedAnnotations)</span>
+        {
+<span class="fc bfc" id="L930" title="All 2 branches covered.">            if (annotation instanceof PDAnnotationMarkup)</span>
+            {
+<span class="fc" id="L932">                PDAnnotationPopup annotationPopup = ((PDAnnotationMarkup) annotation).getPopup();</span>
+<span class="pc bpc" id="L933" title="1 of 2 branches missed.">                if (annotationPopup == null)</span>
+                {
+<span class="nc" id="L935">                    continue;</span>
+                }
+<span class="fc" id="L937">                COSDictionary clonedPopupDict = annotDictMap.get(annotationPopup.getCOSObject());</span>
+<span class="fc bfc" id="L938" title="All 2 branches covered.">                if (clonedPopupDict != null)</span>
+                {
+<span class="fc" id="L940">                    annotation.getCOSObject().setItem(COSName.POPUP, clonedPopupDict);</span>
+                }
+                else
+                {
+                    // orphan popup (not in annotation list); clone it and fix references 
+<span class="fc" id="L945">                    clonedPopupDict = new COSDictionary(annotationPopup.getCOSObject());</span>
+<span class="fc" id="L946">                    annotDictMap.put(annotationPopup.getCOSObject(), clonedPopupDict);</span>
+<span class="fc" id="L947">                    PDAnnotationPopup annotationPopupClone =</span>
+<span class="fc" id="L948">                            (PDAnnotationPopup) PDAnnotation.createAnnotation(clonedPopupDict);</span>
+<span class="fc" id="L949">                    annotationPopupClone.setParent((PDAnnotationMarkup) annotation);</span>
+<span class="fc" id="L950">                    ((PDAnnotationMarkup) annotation).setPopup(annotationPopupClone);</span>
+<span class="pc bpc" id="L951" title="1 of 2 branches missed.">                    if (annotationPopupClone.getPage() != null)</span>
+                    {
+<span class="nc" id="L953">                        annotationPopupClone.setPage(imported);</span>
+                    }
+                }
+            }
+<span class="fc bfc" id="L957" title="All 2 branches covered.">            if (annotation instanceof PDAnnotationPopup)</span>
+            {
+<span class="fc" id="L959">                PDAnnotationMarkup annotationMarkup = ((PDAnnotationPopup) annotation).getParent();</span>
+<span class="pc bpc" id="L960" title="1 of 2 branches missed.">                if (annotationMarkup == null)</span>
+                {
+<span class="nc" id="L962">                    continue;</span>
+                }
+<span class="fc" id="L964">                COSDictionary clonedMarkupDict = annotDictMap.get(annotationMarkup.getCOSObject());</span>
+                // clonedMarkupDict will be null if markup annotation is an orphan (not in annotation list)
+<span class="fc" id="L966">                annotation.getCOSObject().setItem(COSName.PARENT, clonedMarkupDict);</span>
+            }
+<span class="fc" id="L968">        }</span>
+<span class="fc" id="L969">        imported.setAnnotations(clonedAnnotations);</span>
+<span class="fc" id="L970">    }</span>
+
+    /**
+     * The source PDF document.
+     * 
+     * @return the pdf to be split
+     */
+    protected final PDDocument getSourceDocument()
+    {
+<span class="fc" id="L979">        return sourceDocument;</span>
+    }
+
+    /**
+     * The source PDF document.
+     * 
+     * @return current destination pdf
+     */
+    protected final PDDocument getDestinationDocument()
+    {
+<span class="fc" id="L989">        return currentDestinationDocument;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,814 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CCITTFaxDecoderStream.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.filter</a> &gt; <span class="el_source">CCITTFaxDecoderStream.java</span></div><h1>CCITTFaxDecoderStream.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2012, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package org.apache.pdfbox.filter;
+
+
+import java.io.EOFException;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+
+/**
+ * CCITT Modified Huffman RLE, Group 3 (T4) and Group 4 (T6) fax compression.
+ *
+ * @author &lt;a href=&quot;mailto:harald.kuhr@gmail.com&quot;&gt;Harald Kuhr&lt;/a&gt;
+ * @author &lt;a href=&quot;https://github.com/Schmidor&quot;&gt;Oliver Schmidtmer&lt;/a&gt;
+ * @author last modified by $Author: haraldk$
+ * @version $Id: CCITTFaxDecoderStream.java,v 1.0 23.05.12 15:55 haraldk Exp$
+ * 
+ * Taken from commit 24c6682236e5a02151359486aa4075ddc5ab1534 of 18.08.2018 from twelvemonkeys/imageio/plugins/tiff/CCITTFaxDecoderStream.java
+ * 
+ * Initial changes for PDFBox, discussed in PDFBOX-3338:
+ * - removed Validate() usages
+ * - catch VALUE_EOL in decode1D()
+ */
+final class CCITTFaxDecoderStream extends FilterInputStream {
+    // See TIFF 6.0 Specification, Section 10: &quot;Modified Huffman Compression&quot;, page 43.
+
+    private final int columns;
+    private final byte[] decodedRow;
+
+    private final boolean optionG32D;
+    // Leading zeros for aligning EOL
+    private final boolean optionG3Fill;
+    private final boolean optionUncompressed;
+    private final boolean optionByteAligned;
+
+    private final int type;
+
+    private int decodedLength;
+    private int decodedPos;
+
+    private int[] changesReferenceRow;
+    private int[] changesCurrentRow;
+    private int changesReferenceRowCount;
+    private int changesCurrentRowCount;
+
+<span class="fc" id="L75">    private int lastChangingElement = 0;</span>
+
+    /**
+     * Creates a CCITTFaxDecoderStream.
+     * This constructor may be used for CCITT streams embedded in PDF files,
+     * which use EncodedByteAlign.
+     *
+     * @param stream the compressed CCITT stream.
+     * @param columns the number of columns in the stream.
+     * @param type the type of stream, must be one of {@code COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE},
+     *             {@code COMPRESSION_CCITT_T4} or {@code COMPRESSION_CCITT_T6}.
+     * @param options CCITT T.4 or T.6 options.
+     * @param byteAligned enable byte alignment used in PDF files (EncodedByteAlign).
+     */
+    CCITTFaxDecoderStream(final InputStream stream, final int columns, final int type,
+                                 final long options, final boolean byteAligned) {
+<span class="fc" id="L91">        super(stream);</span>
+
+<span class="fc" id="L93">        this.columns = columns;</span>
+<span class="fc" id="L94">        this.type = type;</span>
+
+        // We know this is only used for b/w (1 bit)
+<span class="fc" id="L97">        decodedRow = new byte[(columns + 7) / 8];</span>
+<span class="fc" id="L98">        changesReferenceRow = new int[columns + 2];</span>
+<span class="fc" id="L99">        changesCurrentRow = new int[columns + 2];</span>
+
+<span class="pc bpc" id="L101" title="2 of 4 branches missed.">        switch (type) {</span>
+            case TIFFExtension.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
+<span class="nc" id="L103">                optionByteAligned = byteAligned;</span>
+<span class="nc" id="L104">                optionG32D = false;</span>
+<span class="nc" id="L105">                optionG3Fill = false;</span>
+<span class="nc" id="L106">                optionUncompressed = false;</span>
+<span class="nc" id="L107">                break;</span>
+            case TIFFExtension.COMPRESSION_CCITT_T4:
+<span class="fc" id="L109">                optionByteAligned = byteAligned;</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">                optionG32D = (options &amp; TIFFExtension.GROUP3OPT_2DENCODING) != 0;</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">                optionG3Fill = (options &amp; TIFFExtension.GROUP3OPT_FILLBITS) != 0;</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">                optionUncompressed = (options &amp; TIFFExtension.GROUP3OPT_UNCOMPRESSED) != 0;</span>
+<span class="fc" id="L113">                break;</span>
+            case TIFFExtension.COMPRESSION_CCITT_T6:
+<span class="fc" id="L115">                optionByteAligned = byteAligned;</span>
+<span class="fc" id="L116">                optionG32D = false;</span>
+<span class="fc" id="L117">                optionG3Fill = false;</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">                optionUncompressed = (options &amp; TIFFExtension.GROUP4OPT_UNCOMPRESSED) != 0;</span>
+<span class="fc" id="L119">                break;</span>
+            default:
+<span class="nc" id="L121">                throw new IllegalArgumentException(&quot;Illegal parameter: &quot; + type);</span>
+        }
+
+<span class="fc" id="L124">    }</span>
+
+    private void fetch() throws IOException {
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        if (decodedPos &gt;= decodedLength) {</span>
+<span class="fc" id="L128">            decodedLength = 0;</span>
+
+            try {
+<span class="fc" id="L131">                decodeRow();</span>
+            }
+<span class="nc" id="L133">            catch (ArrayIndexOutOfBoundsException e) {</span>
+                // Mask the AIOOBE as an IOException
+<span class="nc" id="L135">                throw new IOException(&quot;Malformed CCITT stream&quot;, e);</span>
+            }
+<span class="fc" id="L137">            catch (EOFException e) {</span>
+                // TODO: Rewrite to avoid throw/catch for normal flow...
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">                if (decodedLength != 0) {</span>
+<span class="nc" id="L140">                    throw e;</span>
+                }
+
+                // ..otherwise, just let client code try to read past the
+                // end of stream
+<span class="fc" id="L145">                decodedLength = -1;</span>
+<span class="fc" id="L146">            }</span>
+
+<span class="fc" id="L148">            decodedPos = 0;</span>
+        }
+<span class="fc" id="L150">    }</span>
+
+    private void decode1D() throws IOException {
+<span class="fc" id="L153">        int index = 0;</span>
+<span class="fc" id="L154">        boolean white = true;</span>
+<span class="fc" id="L155">        changesCurrentRowCount = 0;</span>
+
+        do {
+            int completeRun;
+
+<span class="fc bfc" id="L160" title="All 2 branches covered.">            if (white) {</span>
+<span class="fc" id="L161">                completeRun = decodeRun(whiteRunTree);</span>
+            }
+            else {
+<span class="fc" id="L164">                completeRun = decodeRun(blackRunTree);</span>
+            }
+
+<span class="fc" id="L167">            index += completeRun;</span>
+<span class="fc" id="L168">            changesCurrentRow[changesCurrentRowCount++] = index;</span>
+
+            // Flip color for next run
+<span class="fc bfc" id="L171" title="All 2 branches covered.">            white = !white;</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">        } while (index &lt; columns);</span>
+<span class="fc" id="L173">    }</span>
+
+    private void decode2D() throws IOException {
+<span class="fc" id="L176">        changesReferenceRowCount = changesCurrentRowCount;</span>
+<span class="fc" id="L177">        int[] tmp = changesCurrentRow;</span>
+<span class="fc" id="L178">        changesCurrentRow = changesReferenceRow;</span>
+<span class="fc" id="L179">        changesReferenceRow = tmp;</span>
+
+<span class="fc" id="L181">        boolean white = true;</span>
+<span class="fc" id="L182">        int index = 0;</span>
+<span class="fc" id="L183">        changesCurrentRowCount = 0;</span>
+
+<span class="fc bfc" id="L185" title="All 2 branches covered.">        mode: while (index &lt; columns) {</span>
+            // read mode
+<span class="fc" id="L187">            Node n = codeTree.root;</span>
+
+            while (true) {
+<span class="fc" id="L190">                n = n.walk(readBit());</span>
+
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">                if (n == null) {</span>
+<span class="nc" id="L193">                    continue mode;</span>
+                }
+<span class="fc bfc" id="L195" title="All 2 branches covered.">                else if (n.isLeaf) {</span>
+<span class="fc bfc" id="L196" title="All 3 branches covered.">                    switch (n.value) {</span>
+                        case VALUE_HMODE:
+                            int runLength;
+<span class="fc bfc" id="L199" title="All 2 branches covered.">                            runLength = decodeRun(white ? whiteRunTree : blackRunTree);</span>
+<span class="fc" id="L200">                            index += runLength;</span>
+<span class="fc" id="L201">                            changesCurrentRow[changesCurrentRowCount++] = index;</span>
+
+<span class="fc bfc" id="L203" title="All 2 branches covered.">                            runLength = decodeRun(white ? blackRunTree : whiteRunTree);</span>
+<span class="fc" id="L204">                            index += runLength;</span>
+<span class="fc" id="L205">                            changesCurrentRow[changesCurrentRowCount++] = index;</span>
+<span class="fc" id="L206">                            break;</span>
+
+                        case VALUE_PASSMODE:
+<span class="fc" id="L209">                            int pChangingElement = getNextChangingElement(index, white) + 1;</span>
+
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">                            if (pChangingElement &gt;= changesReferenceRowCount) {</span>
+<span class="nc" id="L212">                                index = columns;</span>
+                            }
+                            else {
+<span class="fc" id="L215">                                index = changesReferenceRow[pChangingElement];</span>
+                            }
+
+<span class="fc" id="L218">                            break;</span>
+
+                        default:
+                            // Vertical mode (-3 to 3)
+<span class="fc" id="L222">                            int vChangingElement = getNextChangingElement(index, white);</span>
+
+<span class="fc bfc" id="L224" title="All 4 branches covered.">                            if (vChangingElement &gt;= changesReferenceRowCount || vChangingElement == -1) {</span>
+<span class="fc" id="L225">                                index = columns + n.value;</span>
+                            }
+                            else {
+<span class="fc" id="L228">                                index = changesReferenceRow[vChangingElement] + n.value;</span>
+                            }
+
+<span class="fc" id="L231">                            changesCurrentRow[changesCurrentRowCount] = index;</span>
+<span class="fc" id="L232">                            changesCurrentRowCount++;</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">                            white = !white;</span>
+
+                            break;
+                    }
+
+<span class="fc" id="L238">                    continue mode;</span>
+                }
+            }
+        }
+<span class="fc" id="L242">    }</span>
+
+    private int getNextChangingElement(final int a0, final boolean white) {
+<span class="fc bfc" id="L245" title="All 2 branches covered.">        int start = (lastChangingElement &amp; 0xFFFF_FFFE) + (white ? 0 : 1);</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">        if (start &gt; 2) {</span>
+<span class="fc" id="L247">            start -= 2;</span>
+        }
+
+<span class="fc bfc" id="L250" title="All 2 branches covered.">        if (a0 == 0) {</span>
+<span class="fc" id="L251">            return start;</span>
+        }
+
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        for (int i = start; i &lt; changesReferenceRowCount; i += 2) {</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">            if (a0 &lt; changesReferenceRow[i]) {</span>
+<span class="fc" id="L256">                lastChangingElement = i;</span>
+<span class="fc" id="L257">                return i;</span>
+            }
+        }
+
+<span class="fc" id="L261">        return -1;</span>
+    }
+
+    private void decodeRowType2() throws IOException {
+<span class="nc bnc" id="L265" title="All 2 branches missed.">        if (optionByteAligned) {</span>
+<span class="nc" id="L266">            resetBuffer();</span>
+        }
+<span class="nc" id="L268">        decode1D();</span>
+<span class="nc" id="L269">    }</span>
+
+    private void decodeRowType4() throws IOException {
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">        if (optionByteAligned) {</span>
+<span class="nc" id="L273">            resetBuffer();</span>
+        }
+        eof: while (true) {
+            // read till next EOL code
+<span class="fc" id="L277">            Node n = eolOnlyTree.root;</span>
+
+            while (true) {
+<span class="fc" id="L280">                n = n.walk(readBit());</span>
+
+<span class="fc bfc" id="L282" title="All 2 branches covered.">                if (n == null) {</span>
+<span class="fc" id="L283">                    continue eof;</span>
+                }
+
+<span class="fc bfc" id="L286" title="All 2 branches covered.">                if (n.isLeaf) {</span>
+<span class="fc" id="L287">                    break eof;</span>
+                }
+            }
+        }
+
+<span class="pc bpc" id="L292" title="3 of 4 branches missed.">        if (!optionG32D || readBit()) {</span>
+<span class="fc" id="L293">            decode1D();</span>
+        }
+        else {
+<span class="nc" id="L296">            decode2D();</span>
+        }
+<span class="fc" id="L298">    }</span>
+
+    private void decodeRowType6() throws IOException {
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">        if (optionByteAligned) {</span>
+<span class="nc" id="L302">            resetBuffer();</span>
+        }
+<span class="fc" id="L304">        decode2D();</span>
+<span class="fc" id="L305">    }</span>
+
+    private void decodeRow() throws IOException {
+<span class="pc bpc" id="L308" title="2 of 4 branches missed.">        switch (type) {</span>
+            case TIFFExtension.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
+<span class="nc" id="L310">                decodeRowType2();</span>
+<span class="nc" id="L311">                break;</span>
+            case TIFFExtension.COMPRESSION_CCITT_T4:
+<span class="fc" id="L313">                decodeRowType4();</span>
+<span class="fc" id="L314">                break;</span>
+            case TIFFExtension.COMPRESSION_CCITT_T6:
+<span class="fc" id="L316">                decodeRowType6();</span>
+<span class="fc" id="L317">                break;</span>
+            default:
+<span class="nc" id="L319">                throw new IllegalArgumentException(&quot;Illegal parameter: &quot; + type);</span>
+        }
+
+<span class="fc" id="L322">        int index = 0;</span>
+<span class="fc" id="L323">        boolean white = true;</span>
+
+<span class="fc" id="L325">        lastChangingElement = 0;</span>
+<span class="fc bfc" id="L326" title="All 2 branches covered.">        for (int i = 0; i &lt;= changesCurrentRowCount; i++) {</span>
+<span class="fc" id="L327">            int nextChange = columns;</span>
+
+<span class="fc bfc" id="L329" title="All 2 branches covered.">            if (i != changesCurrentRowCount) {</span>
+<span class="fc" id="L330">                nextChange = changesCurrentRow[i];</span>
+            }
+
+<span class="fc bfc" id="L333" title="All 2 branches covered.">            if (nextChange &gt; columns) {</span>
+<span class="fc" id="L334">                nextChange = columns;</span>
+            }
+
+<span class="fc" id="L337">            int byteIndex = index / 8;</span>
+
+<span class="fc bfc" id="L339" title="All 4 branches covered.">            while (index % 8 != 0 &amp;&amp; (nextChange - index) &gt; 0) {</span>
+<span class="fc bfc" id="L340" title="All 2 branches covered.">                decodedRow[byteIndex] |= (white ? 0 : 1 &lt;&lt; (7 - ((index) % 8)));</span>
+<span class="fc" id="L341">                index++;</span>
+            }
+
+<span class="fc bfc" id="L344" title="All 2 branches covered.">            if (index % 8 == 0) {</span>
+<span class="fc" id="L345">                byteIndex = index / 8;</span>
+<span class="fc bfc" id="L346" title="All 2 branches covered.">                final byte value = (byte) (white ? 0x00 : 0xff);</span>
+
+<span class="fc bfc" id="L348" title="All 2 branches covered.">                while ((nextChange - index) &gt; 7) {</span>
+<span class="fc" id="L349">                    decodedRow[byteIndex] = value;</span>
+<span class="fc" id="L350">                    index += 8;</span>
+<span class="fc" id="L351">                    ++byteIndex;</span>
+                }
+            }
+
+<span class="fc bfc" id="L355" title="All 2 branches covered.">            while ((nextChange - index) &gt; 0) {</span>
+<span class="fc bfc" id="L356" title="All 2 branches covered.">                if (index % 8 == 0) {</span>
+<span class="fc" id="L357">                    decodedRow[byteIndex] = 0;</span>
+                }
+
+<span class="fc bfc" id="L360" title="All 2 branches covered.">                decodedRow[byteIndex] |= (white ? 0 : 1 &lt;&lt; (7 - ((index) % 8)));</span>
+<span class="fc" id="L361">                index++;</span>
+            }
+
+<span class="fc bfc" id="L364" title="All 2 branches covered.">            white = !white;</span>
+        }
+        
+<span class="pc bpc" id="L367" title="1 of 2 branches missed.">        if (index != columns) {</span>
+<span class="nc" id="L368">            throw new IOException(&quot;Sum of run-lengths does not equal scan line width: &quot; + index + &quot; &gt; &quot; + columns);</span>
+        }
+
+<span class="fc" id="L371">        decodedLength = (index + 7) / 8;</span>
+<span class="fc" id="L372">    }</span>
+
+    private int decodeRun(final Tree tree) throws IOException {
+<span class="fc" id="L375">        int total = 0;</span>
+
+<span class="fc" id="L377">        Node n = tree.root;</span>
+
+        while (true) {
+<span class="fc" id="L380">            boolean bit = readBit();</span>
+<span class="fc" id="L381">            n = n.walk(bit);</span>
+
+<span class="pc bpc" id="L383" title="1 of 2 branches missed.">            if (n == null) {</span>
+<span class="nc" id="L384">                throw new IOException(&quot;Unknown code in Huffman RLE stream&quot;);</span>
+            }
+
+<span class="fc bfc" id="L387" title="All 2 branches covered.">            if (n.isLeaf) {</span>
+<span class="fc" id="L388">                total += n.value;</span>
+<span class="fc bfc" id="L389" title="All 2 branches covered.">                if (n.value &gt;= 64) {</span>
+<span class="fc" id="L390">                    n = tree.root;</span>
+                }
+<span class="fc bfc" id="L392" title="All 2 branches covered.">                else if (n.value &gt;= 0) {</span>
+<span class="fc" id="L393">                    return total;</span>
+                }
+                else {
+<span class="fc" id="L396">                    return columns;</span>
+                }
+            }
+<span class="fc" id="L399">        }</span>
+    }
+
+    private void resetBuffer() {
+<span class="nc" id="L403">        bufferPos = -1;</span>
+<span class="nc" id="L404">    }</span>
+
+<span class="fc" id="L406">    int buffer = -1;</span>
+<span class="fc" id="L407">    int bufferPos = -1;</span>
+
+    private boolean readBit() throws IOException {
+<span class="fc bfc" id="L410" title="All 4 branches covered.">        if (bufferPos &lt; 0 || bufferPos &gt; 7) {</span>
+<span class="fc" id="L411">            buffer = in.read();</span>
+
+<span class="fc bfc" id="L413" title="All 2 branches covered.">            if (buffer == -1) {</span>
+<span class="fc" id="L414">                throw new EOFException(&quot;Unexpected end of Huffman RLE stream&quot;);</span>
+            }
+
+<span class="fc" id="L417">            bufferPos = 0;</span>
+        }
+
+<span class="fc bfc" id="L420" title="All 2 branches covered.">        boolean isSet = (buffer &amp; 0x80) != 0;</span>
+<span class="fc" id="L421">        buffer &lt;&lt;= 1;</span>
+<span class="fc" id="L422">        bufferPos++;</span>
+
+<span class="fc" id="L424">        return isSet;</span>
+    }
+
+    @Override
+    public int read() throws IOException {
+<span class="nc bnc" id="L429" title="All 2 branches missed.">        if (decodedLength &lt; 0) {</span>
+<span class="nc" id="L430">            return 0x0;</span>
+        }
+
+<span class="nc bnc" id="L433" title="All 2 branches missed.">        if (decodedPos &gt;= decodedLength) {</span>
+<span class="nc" id="L434">            fetch();</span>
+
+<span class="nc bnc" id="L436" title="All 2 branches missed.">            if (decodedLength &lt; 0) {</span>
+<span class="nc" id="L437">                return 0x0;</span>
+            }
+        }
+
+<span class="nc" id="L441">        return decodedRow[decodedPos++] &amp; 0xff;</span>
+    }
+
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+<span class="pc bpc" id="L446" title="1 of 2 branches missed.">        if (decodedLength &lt; 0) {</span>
+<span class="nc" id="L447">            Arrays.fill(b, off, off + len, (byte) 0x0);</span>
+<span class="nc" id="L448">            return len;</span>
+        }
+
+<span class="pc bpc" id="L451" title="1 of 2 branches missed.">        if (decodedPos &gt;= decodedLength) {</span>
+<span class="fc" id="L452">            fetch();</span>
+
+<span class="fc bfc" id="L454" title="All 2 branches covered.">            if (decodedLength &lt; 0) {</span>
+<span class="fc" id="L455">                Arrays.fill(b, off, off + len, (byte) 0x0);</span>
+<span class="fc" id="L456">                return len;</span>
+            }
+        }
+
+<span class="fc" id="L460">        int read = Math.min(decodedLength - decodedPos, len);</span>
+<span class="fc" id="L461">        System.arraycopy(decodedRow, decodedPos, b, off, read);</span>
+<span class="fc" id="L462">        decodedPos += read;</span>
+
+<span class="fc" id="L464">        return read;</span>
+    }
+
+    @Override
+    public long skip(long n) throws IOException {
+<span class="nc bnc" id="L469" title="All 2 branches missed.">        if (decodedLength &lt; 0) {</span>
+<span class="nc" id="L470">            return -1;</span>
+        }
+
+<span class="nc bnc" id="L473" title="All 2 branches missed.">        if (decodedPos &gt;= decodedLength) {</span>
+<span class="nc" id="L474">            fetch();</span>
+
+<span class="nc bnc" id="L476" title="All 2 branches missed.">            if (decodedLength &lt; 0) {</span>
+<span class="nc" id="L477">                return -1;</span>
+            }
+        }
+
+<span class="nc" id="L481">        int skipped = (int) Math.min(decodedLength - decodedPos, n);</span>
+<span class="nc" id="L482">        decodedPos += skipped;</span>
+
+<span class="nc" id="L484">        return skipped;</span>
+    }
+
+    @Override
+    public boolean markSupported() {
+<span class="nc" id="L489">        return false;</span>
+    }
+
+    @Override
+    public synchronized void reset() throws IOException {
+<span class="nc" id="L494">        throw new IOException(&quot;mark/reset not supported&quot;);</span>
+    }
+
+<span class="fc" id="L497">    private static final class Node {</span>
+        Node left;
+        Node right;
+
+        int value; // &gt; 63 non term.
+
+<span class="fc" id="L503">        boolean canBeFill = false;</span>
+<span class="fc" id="L504">        boolean isLeaf = false;</span>
+
+        void set(final boolean next, final Node node) {
+<span class="fc bfc" id="L507" title="All 2 branches covered.">            if (!next) {</span>
+<span class="fc" id="L508">                left = node;</span>
+            }
+            else {
+<span class="fc" id="L511">                right = node;</span>
+            }
+<span class="fc" id="L513">        }</span>
+
+        Node walk(final boolean next) {
+<span class="fc bfc" id="L516" title="All 2 branches covered.">            return next ? right : left;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="nc" id="L521">            return &quot;[leaf=&quot; + isLeaf + &quot;, value=&quot; + value + &quot;, canBeFill=&quot; + canBeFill + &quot;]&quot;;</span>
+        }
+    }
+
+<span class="fc" id="L525">    private static final class Tree {</span>
+<span class="fc" id="L526">        final Node root = new Node();</span>
+
+        void fill(final int depth, final int path, final int value) throws IOException {
+<span class="fc" id="L529">            Node current = root;</span>
+
+<span class="fc bfc" id="L531" title="All 2 branches covered.">            for (int i = 0; i &lt; depth; i++) {</span>
+<span class="fc" id="L532">                int bitPos = depth - 1 - i;</span>
+<span class="fc bfc" id="L533" title="All 2 branches covered.">                boolean isSet = ((path &gt;&gt; bitPos) &amp; 1) == 1;</span>
+<span class="fc" id="L534">                Node next = current.walk(isSet);</span>
+
+<span class="fc bfc" id="L536" title="All 2 branches covered.">                if (next == null) {</span>
+<span class="fc" id="L537">                    next = new Node();</span>
+
+<span class="fc bfc" id="L539" title="All 2 branches covered.">                    if (i == depth - 1) {</span>
+<span class="fc" id="L540">                        next.value = value;</span>
+<span class="fc" id="L541">                        next.isLeaf = true;</span>
+                    }
+
+<span class="pc bpc" id="L544" title="1 of 2 branches missed.">                    if (path == 0) {</span>
+<span class="nc" id="L545">                        next.canBeFill = true;</span>
+                    }
+
+<span class="fc" id="L548">                    current.set(isSet, next);</span>
+                }
+                else {
+<span class="pc bpc" id="L551" title="1 of 2 branches missed.">                    if (next.isLeaf) {</span>
+<span class="nc" id="L552">                        throw new IOException(&quot;node is leaf, no other following&quot;);</span>
+                    }
+                }
+
+<span class="fc" id="L556">                current = next;</span>
+            }
+<span class="fc" id="L558">        }</span>
+
+        void fill(final int depth, final int path, final Node node) throws IOException {
+<span class="fc" id="L561">            Node current = root;</span>
+
+<span class="fc bfc" id="L563" title="All 2 branches covered.">            for (int i = 0; i &lt; depth; i++) {</span>
+<span class="fc" id="L564">                int bitPos = depth - 1 - i;</span>
+<span class="fc bfc" id="L565" title="All 2 branches covered.">                boolean isSet = ((path &gt;&gt; bitPos) &amp; 1) == 1;</span>
+<span class="fc" id="L566">                Node next = current.walk(isSet);</span>
+
+<span class="fc bfc" id="L568" title="All 2 branches covered.">                if (next == null) {</span>
+<span class="fc bfc" id="L569" title="All 2 branches covered.">                    if (i == depth - 1) {</span>
+<span class="fc" id="L570">                        next = node;</span>
+                    }
+                    else {
+<span class="fc" id="L573">                        next = new Node();</span>
+                    }
+
+<span class="fc bfc" id="L576" title="All 2 branches covered.">                    if (path == 0) {</span>
+<span class="fc" id="L577">                        next.canBeFill = true;</span>
+                    }
+
+<span class="fc" id="L580">                    current.set(isSet, next);</span>
+                }
+                else {
+<span class="pc bpc" id="L583" title="1 of 2 branches missed.">                    if (next.isLeaf) {</span>
+<span class="nc" id="L584">                        throw new IOException(&quot;node is leaf, no other following&quot;);</span>
+                    }
+                }
+
+<span class="fc" id="L588">                current = next;</span>
+            }
+<span class="fc" id="L590">        }</span>
+    }
+
+<span class="fc" id="L593">    static final short[][] BLACK_CODES = {</span>
+            { // 2 bits
+              0x2, 0x3,
+              },
+            { // 3 bits
+              0x2, 0x3,
+              },
+            { // 4 bits
+              0x2, 0x3,
+              },
+            { // 5 bits
+              0x3,
+              },
+            { // 6 bits
+              0x4, 0x5,
+              },
+            { // 7 bits
+              0x4, 0x5, 0x7,
+              },
+            { // 8 bits
+              0x4, 0x7,
+              },
+            { // 9 bits
+              0x18,
+              },
+            { // 10 bits
+              0x17, 0x18, 0x37, 0x8, 0xf,
+              },
+            { // 11 bits
+              0x17, 0x18, 0x28, 0x37, 0x67, 0x68, 0x6c, 0x8, 0xc, 0xd,
+              },
+            { // 12 bits
+              0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x1c, 0x1d, 0x1e, 0x1f, 0x24, 0x27, 0x28, 0x2b, 0x2c, 0x33,
+              0x34, 0x35, 0x37, 0x38, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x64, 0x65,
+              0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0xc8, 0xc9, 0xca, 0xcb, 0xcc, 0xcd, 0xd2, 0xd3,
+              0xd4, 0xd5, 0xd6, 0xd7, 0xda, 0xdb,
+              },
+            { // 13 bits
+              0x4a, 0x4b, 0x4c, 0x4d, 0x52, 0x53, 0x54, 0x55, 0x5a, 0x5b, 0x64, 0x65, 0x6c, 0x6d, 0x72, 0x73,
+              0x74, 0x75, 0x76, 0x77,
+              }
+    };
+<span class="fc" id="L635">    static final short[][] BLACK_RUN_LENGTHS = {</span>
+            { // 2 bits
+              3, 2,
+              },
+            { // 3 bits
+              1, 4,
+              },
+            { // 4 bits
+              6, 5,
+              },
+            { // 5 bits
+              7,
+              },
+            { // 6 bits
+              9, 8,
+              },
+            { // 7 bits
+              10, 11, 12,
+              },
+            { // 8 bits
+              13, 14,
+              },
+            { // 9 bits
+              15,
+              },
+            { // 10 bits
+              16, 17, 0, 18, 64,
+              },
+            { // 11 bits
+              24, 25, 23, 22, 19, 20, 21, 1792, 1856, 1920,
+              },
+            { // 12 bits
+              1984, 2048, 2112, 2176, 2240, 2304, 2368, 2432, 2496, 2560, 52, 55, 56, 59, 60, 320, 384, 448, 53,
+              54, 50, 51, 44, 45, 46, 47, 57, 58, 61, 256, 48, 49, 62, 63, 30, 31, 32, 33, 40, 41, 128, 192, 26,
+              27, 28, 29, 34, 35, 36, 37, 38, 39, 42, 43,
+              },
+            { // 13 bits
+              640, 704, 768, 832, 1280, 1344, 1408, 1472, 1536, 1600, 1664, 1728, 512, 576, 896, 960, 1024, 1088,
+              1152, 1216,
+              }
+    };
+
+<span class="fc" id="L677">    public static final short[][] WHITE_CODES = {</span>
+            { // 4 bits
+              0x7, 0x8, 0xb, 0xc, 0xe, 0xf,
+              },
+            { // 5 bits
+              0x12, 0x13, 0x14, 0x1b, 0x7, 0x8,
+              },
+            { // 6 bits
+              0x17, 0x18, 0x2a, 0x2b, 0x3, 0x34, 0x35, 0x7, 0x8,
+              },
+            { // 7 bits
+              0x13, 0x17, 0x18, 0x24, 0x27, 0x28, 0x2b, 0x3, 0x37, 0x4, 0x8, 0xc,
+              },
+            { // 8 bits
+              0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x1a, 0x1b, 0x2, 0x24, 0x25, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d,
+              0x3, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x4, 0x4a, 0x4b, 0x5, 0x52, 0x53, 0x54, 0x55, 0x58, 0x59,
+              0x5a, 0x5b, 0x64, 0x65, 0x67, 0x68, 0xa, 0xb,
+              },
+            { // 9 bits
+              0x98, 0x99, 0x9a, 0x9b, 0xcc, 0xcd, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6, 0xd7, 0xd8, 0xd9, 0xda, 0xdb,
+              },
+            { // 10 bits
+            },
+            { // 11 bits
+              0x8, 0xc, 0xd,
+              },
+            { // 12 bits
+              0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x1c, 0x1d, 0x1e, 0x1f,
+              }
+    };
+
+<span class="fc" id="L708">    public static final short[][] WHITE_RUN_LENGTHS = {</span>
+            { // 4 bits
+              2, 3, 4, 5, 6, 7,
+              },
+            { // 5 bits
+              128, 8, 9, 64, 10, 11,
+              },
+            { // 6 bits
+              192, 1664, 16, 17, 13, 14, 15, 1, 12,
+              },
+            { // 7 bits
+              26, 21, 28, 27, 18, 24, 25, 22, 256, 23, 20, 19,
+              },
+            { // 8 bits
+              33, 34, 35, 36, 37, 38, 31, 32, 29, 53, 54, 39, 40, 41, 42, 43, 44, 30, 61, 62, 63, 0, 320, 384, 45,
+              59, 60, 46, 49, 50, 51, 52, 55, 56, 57, 58, 448, 512, 640, 576, 47, 48,
+              },
+            { // 9 bits
+              1472, 1536, 1600, 1728, 704, 768, 832, 896, 960, 1024, 1088, 1152, 1216, 1280, 1344, 1408,
+              },
+            { // 10 bits
+            },
+            { // 11 bits
+              1792, 1856, 1920,
+              },
+            { // 12 bits
+              1984, 2048, 2112, 2176, 2240, 2304, 2368, 2432, 2496, 2560,
+              }
+    };
+
+    static final Node EOL;
+    static final Node FILL;
+    static final Tree blackRunTree;
+    static final Tree whiteRunTree;
+    static final Tree eolOnlyTree;
+    static final Tree codeTree;
+
+    static final int VALUE_EOL = -2000;
+    static final int VALUE_FILL = -1000;
+    static final int VALUE_PASSMODE = -3000;
+    static final int VALUE_HMODE = -4000;
+
+    static {
+<span class="fc" id="L751">        EOL = new Node();</span>
+<span class="fc" id="L752">        EOL.isLeaf = true;</span>
+<span class="fc" id="L753">        EOL.value = VALUE_EOL;</span>
+<span class="fc" id="L754">        FILL = new Node();</span>
+<span class="fc" id="L755">        FILL.value = VALUE_FILL;</span>
+<span class="fc" id="L756">        FILL.left = FILL;</span>
+<span class="fc" id="L757">        FILL.right = EOL;</span>
+
+<span class="fc" id="L759">        eolOnlyTree = new Tree();</span>
+        try {
+<span class="fc" id="L761">            eolOnlyTree.fill(12, 0, FILL);</span>
+<span class="fc" id="L762">            eolOnlyTree.fill(12, 1, EOL);</span>
+        }
+<span class="nc" id="L764">        catch (IOException e) {</span>
+<span class="nc" id="L765">            throw new AssertionError(e);</span>
+<span class="fc" id="L766">        }</span>
+
+<span class="fc" id="L768">        blackRunTree = new Tree();</span>
+        try {
+<span class="fc bfc" id="L770" title="All 2 branches covered.">            for (int i = 0; i &lt; BLACK_CODES.length; i++) {</span>
+<span class="fc bfc" id="L771" title="All 2 branches covered.">                for (int j = 0; j &lt; BLACK_CODES[i].length; j++) {</span>
+<span class="fc" id="L772">                    blackRunTree.fill(i + 2, BLACK_CODES[i][j], BLACK_RUN_LENGTHS[i][j]);</span>
+                }
+            }
+<span class="fc" id="L775">            blackRunTree.fill(12, 0, FILL);</span>
+<span class="fc" id="L776">            blackRunTree.fill(12, 1, EOL);</span>
+        }
+<span class="nc" id="L778">        catch (IOException e) {</span>
+<span class="nc" id="L779">            throw new AssertionError(e);</span>
+<span class="fc" id="L780">        }</span>
+
+<span class="fc" id="L782">        whiteRunTree = new Tree();</span>
+        try {
+<span class="fc bfc" id="L784" title="All 2 branches covered.">            for (int i = 0; i &lt; WHITE_CODES.length; i++) {</span>
+<span class="fc bfc" id="L785" title="All 2 branches covered.">                for (int j = 0; j &lt; WHITE_CODES[i].length; j++) {</span>
+<span class="fc" id="L786">                    whiteRunTree.fill(i + 4, WHITE_CODES[i][j], WHITE_RUN_LENGTHS[i][j]);</span>
+                }
+            }
+
+<span class="fc" id="L790">            whiteRunTree.fill(12, 0, FILL);</span>
+<span class="fc" id="L791">            whiteRunTree.fill(12, 1, EOL);</span>
+        }
+<span class="nc" id="L793">        catch (IOException e) {</span>
+<span class="nc" id="L794">            throw new AssertionError(e);</span>
+<span class="fc" id="L795">        }</span>
+
+<span class="fc" id="L797">        codeTree = new Tree();</span>
+        try {
+<span class="fc" id="L799">            codeTree.fill(4, 1, VALUE_PASSMODE); // pass mode</span>
+<span class="fc" id="L800">            codeTree.fill(3, 1, VALUE_HMODE); // H mode</span>
+<span class="fc" id="L801">            codeTree.fill(1, 1, 0); // V(0)</span>
+<span class="fc" id="L802">            codeTree.fill(3, 3, 1); // V_R(1)</span>
+<span class="fc" id="L803">            codeTree.fill(6, 3, 2); // V_R(2)</span>
+<span class="fc" id="L804">            codeTree.fill(7, 3, 3); // V_R(3)</span>
+<span class="fc" id="L805">            codeTree.fill(3, 2, -1); // V_L(1)</span>
+<span class="fc" id="L806">            codeTree.fill(6, 2, -2); // V_L(2)</span>
+<span class="fc" id="L807">            codeTree.fill(7, 2, -3); // V_L(3)</span>
+        }
+<span class="nc" id="L809">        catch (IOException e) {</span>
+<span class="nc" id="L810">            throw new AssertionError(e);</span>
+<span class="fc" id="L811">        }</span>
+<span class="fc" id="L812">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

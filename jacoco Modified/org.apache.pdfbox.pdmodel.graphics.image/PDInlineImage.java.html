@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDInlineImage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.image</a> &gt; <span class="el_source">PDInlineImage.java</span></div><h1>PDInlineImage.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.image;
+
+import java.awt.Paint;
+import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.List;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.filter.DecodeOptions;
+import org.apache.pdfbox.filter.DecodeResult;
+import org.apache.pdfbox.filter.Filter;
+import org.apache.pdfbox.filter.FilterFactory;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceGray;
+
+/**
+ * An inline image object which uses a special syntax to express the data for a
+ * small image directly within the content stream.
+ *
+ * @author Ben Litchfield
+ * @author John Hewson
+ */
+public final class PDInlineImage implements PDImage
+{
+    // image parameters
+    private final COSDictionary parameters;
+
+    // the current resources, contains named color spaces
+    private final PDResources resources;
+
+    // image data
+    private final byte[] rawData;
+    private final byte[] decodedData;
+
+    /**
+     * Creates an inline image from the given parameters and data.
+     *
+     * @param parameters the image parameters
+     * @param data the image data
+     * @param resources the current resources
+     * @throws IOException if the stream cannot be decoded
+     */
+    public PDInlineImage(COSDictionary parameters, byte[] data, PDResources resources)
+            throws IOException
+<span class="fc" id="L70">    {</span>
+<span class="fc" id="L71">        this.parameters = parameters;</span>
+<span class="fc" id="L72">        this.resources = resources;</span>
+<span class="fc" id="L73">        this.rawData = data;</span>
+
+<span class="fc" id="L75">        DecodeResult decodeResult = null;</span>
+<span class="fc" id="L76">        List&lt;String&gt; filters = getFilters();</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (filters.isEmpty())</span>
+        {
+<span class="fc" id="L79">            this.decodedData = data;</span>
+        }
+        else
+        {
+<span class="fc" id="L83">            ByteArrayInputStream in = new ByteArrayInputStream(data);</span>
+<span class="fc" id="L84">            ByteArrayOutputStream out = new ByteArrayOutputStream(data.length);</span>
+<span class="fc" id="L85">            byte[] ba = null;</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">            for (int i = 0; i &lt; filters.size(); i++)</span>
+            {
+                // TODO handling of abbreviated names belongs here, rather than in other classes
+<span class="fc" id="L89">                out.reset();</span>
+<span class="fc" id="L90">                Filter filter = FilterFactory.INSTANCE.getFilter(filters.get(i));</span>
+<span class="fc" id="L91">                decodeResult = filter.decode(in, out, parameters, i);</span>
+<span class="fc" id="L92">                ba = out.toByteArray();</span>
+<span class="fc" id="L93">                in = new ByteArrayInputStream(ba);</span>
+            }
+<span class="fc" id="L95">            this.decodedData = ba;</span>
+        }
+
+        // repair parameters
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        if (decodeResult != null)</span>
+        {
+<span class="fc" id="L101">            parameters.addAll(decodeResult.getParameters());</span>
+        }
+<span class="fc" id="L103">    }</span>
+
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="fc" id="L108">        return parameters;</span>
+    }
+
+    @Override
+    public int getBitsPerComponent()
+    {
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (isStencil())</span>
+        {
+<span class="fc" id="L116">            return 1;</span>
+        }
+        else
+        {
+<span class="fc" id="L120">            return parameters.getInt(COSName.BPC, COSName.BITS_PER_COMPONENT, -1);</span>
+        }
+    }
+
+    @Override
+    public void setBitsPerComponent(int bitsPerComponent)
+    {
+<span class="nc" id="L127">        parameters.setInt(COSName.BPC, bitsPerComponent);</span>
+<span class="nc" id="L128">    }</span>
+
+    @Override
+    public PDColorSpace getColorSpace() throws IOException
+    {
+<span class="fc" id="L133">        COSBase cs = parameters.getDictionaryObject(COSName.CS, COSName.COLORSPACE);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (cs != null)</span>
+        {
+<span class="fc" id="L136">            return createColorSpace(cs);</span>
+        }
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        else if (isStencil())</span>
+        {
+            // stencil mask color space must be gray, it is often missing
+<span class="fc" id="L141">            return PDDeviceGray.INSTANCE;</span>
+        }
+        else
+        {
+            // an image without a color space is always broken
+<span class="nc" id="L146">            throw new IOException(&quot;could not determine inline image color space&quot;);</span>
+        }
+    }
+    
+    // deliver the long name of a device colorspace, or the parameter
+    private COSBase toLongName(COSBase cs)
+    {
+<span class="fc bfc" id="L153" title="All 2 branches covered.">        if (COSName.RGB.equals(cs))</span>
+        {
+<span class="fc" id="L155">            return COSName.DEVICERGB;</span>
+        }
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">        if (COSName.CMYK.equals(cs))</span>
+        {
+<span class="nc" id="L159">            return COSName.DEVICECMYK;</span>
+        }
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        if (COSName.G.equals(cs))</span>
+        {
+<span class="nc" id="L163">            return COSName.DEVICEGRAY;</span>
+        }
+<span class="fc" id="L165">        return cs;</span>
+    }
+    
+    private PDColorSpace createColorSpace(COSBase cs) throws IOException
+    {
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        if (cs instanceof COSName)</span>
+        {
+<span class="fc" id="L172">            return PDColorSpace.create(toLongName(cs), resources);</span>
+        }
+
+<span class="nc bnc" id="L175" title="All 4 branches missed.">        if (cs instanceof COSArray &amp;&amp; ((COSArray) cs).size() &gt; 1)</span>
+        {
+<span class="nc" id="L177">            COSArray srcArray = (COSArray) cs;</span>
+<span class="nc" id="L178">            COSBase csType = srcArray.get(0);</span>
+<span class="nc bnc" id="L179" title="All 4 branches missed.">            if (COSName.I.equals(csType) || COSName.INDEXED.equals(csType))</span>
+            {
+<span class="nc" id="L181">                COSArray dstArray = new COSArray();</span>
+<span class="nc" id="L182">                dstArray.addAll(srcArray);</span>
+<span class="nc" id="L183">                dstArray.set(0, COSName.INDEXED);</span>
+<span class="nc" id="L184">                dstArray.set(1, toLongName(srcArray.get(1)));</span>
+<span class="nc" id="L185">                return PDColorSpace.create(dstArray, resources);</span>
+            }
+
+<span class="nc" id="L188">            throw new IOException(&quot;Illegal type of inline image color space: &quot; + csType);</span>
+        }
+
+<span class="nc" id="L191">        throw new IOException(&quot;Illegal type of object for inline image color space: &quot; + cs);</span>
+    }
+
+    @Override
+    public void setColorSpace(PDColorSpace colorSpace)
+    {
+<span class="nc" id="L197">        COSBase base = null;</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">        if (colorSpace != null)</span>
+        {
+<span class="nc" id="L200">            base = colorSpace.getCOSObject();</span>
+        }
+<span class="nc" id="L202">        parameters.setItem(COSName.CS, base);</span>
+<span class="nc" id="L203">    }</span>
+
+    @Override
+    public int getHeight()
+    {
+<span class="fc" id="L208">        return parameters.getInt(COSName.H, COSName.HEIGHT, -1);</span>
+    }
+
+    @Override
+    public void setHeight(int height)
+    {
+<span class="nc" id="L214">        parameters.setInt(COSName.H, height);</span>
+<span class="nc" id="L215">    }</span>
+
+    @Override
+    public int getWidth()
+    {
+<span class="fc" id="L220">        return parameters.getInt(COSName.W, COSName.WIDTH, -1);</span>
+    }
+
+    @Override
+    public void setWidth(int width)
+    {
+<span class="nc" id="L226">        parameters.setInt(COSName.W, width);</span>
+<span class="nc" id="L227">    }</span>
+
+    @Override
+    public boolean getInterpolate()
+    {
+<span class="fc" id="L232">        return parameters.getBoolean(COSName.I, COSName.INTERPOLATE, false);</span>
+    }
+
+    @Override
+    public void setInterpolate(boolean value)
+    {
+<span class="nc" id="L238">        parameters.setBoolean(COSName.I, value);</span>
+<span class="nc" id="L239">    }</span>
+
+    /**
+     * Returns A list of filters applied to this stream.
+     *
+     * @return A (possibly empty) list of filters applied to this stream, never null.
+     */
+    public List&lt;String&gt; getFilters()
+    {
+<span class="fc" id="L248">        COSBase filters = parameters.getDictionaryObject(COSName.F, COSName.FILTER);</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">        if (filters instanceof COSName)</span>
+        {
+<span class="fc" id="L251">            COSName name = (COSName) filters;</span>
+<span class="fc" id="L252">            return Collections.singletonList(name.getName());</span>
+        }
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        else if (filters instanceof COSArray)</span>
+        {
+<span class="fc" id="L256">            return ((COSArray) filters).toCOSNameStringList();</span>
+        }
+<span class="fc" id="L258">        return Collections.emptyList();</span>
+    }
+
+    /**
+     * Sets which filters are applied to this stream.
+     *
+     * @param filters the filters to apply to this stream.
+     */
+    public void setFilters(List&lt;String&gt; filters)
+    {
+<span class="nc" id="L268">        COSBase obj = COSArray.ofCOSNames(filters);</span>
+<span class="nc" id="L269">        parameters.setItem(COSName.F, obj);</span>
+<span class="nc" id="L270">    }</span>
+
+    @Override
+    public void setDecode(COSArray decode)
+    {
+<span class="nc" id="L275">        parameters.setItem(COSName.D, decode);</span>
+<span class="nc" id="L276">    }</span>
+
+    @Override
+    public COSArray getDecode()
+    {
+<span class="fc" id="L281">        return (COSArray) parameters.getDictionaryObject(COSName.D, COSName.DECODE);</span>
+    }
+
+    @Override
+    public boolean isStencil()
+    {
+<span class="fc" id="L287">        return parameters.getBoolean(COSName.IM, COSName.IMAGE_MASK, false);</span>
+    }
+
+    @Override
+    public void setStencil(boolean isStencil)
+    {
+<span class="nc" id="L293">        parameters.setBoolean(COSName.IM, isStencil);</span>
+<span class="nc" id="L294">    }</span>
+
+    @Override
+    public InputStream createInputStream() throws IOException
+    {
+<span class="fc" id="L299">        return new ByteArrayInputStream(decodedData);</span>
+    }
+
+    @Override
+    public InputStream createInputStream(DecodeOptions options) throws IOException
+    {
+        // Decode options are irrelevant for inline image, as the data is always buffered.
+<span class="fc" id="L306">        return createInputStream();</span>
+    }
+
+    @Override
+    public InputStream createInputStream(List&lt;String&gt; stopFilters) throws IOException
+    {
+<span class="nc" id="L312">        List&lt;String&gt; filters = getFilters();</span>
+<span class="nc" id="L313">        ByteArrayInputStream in = new ByteArrayInputStream(rawData);</span>
+<span class="nc" id="L314">        ByteArrayOutputStream out = new ByteArrayOutputStream(rawData.length);</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">        for (int i = 0; i &lt; filters.size(); i++)</span>
+        {
+<span class="nc bnc" id="L317" title="All 2 branches missed.">            if (stopFilters.contains(filters.get(i)))</span>
+            {
+<span class="nc" id="L319">                break;</span>
+            }
+
+            // TODO handling of abbreviated names belongs here, rather than in other classes
+<span class="nc" id="L323">            Filter filter = FilterFactory.INSTANCE.getFilter(filters.get(i));</span>
+<span class="nc" id="L324">            out.reset();</span>
+<span class="nc" id="L325">            filter.decode(in, out, parameters, i);</span>
+<span class="nc" id="L326">            in = new ByteArrayInputStream(out.toByteArray());</span>
+        }
+<span class="nc" id="L328">        return in;</span>
+    }
+
+    @Override
+    public boolean isEmpty()
+    {
+<span class="pc bpc" id="L334" title="1 of 2 branches missed.">        return decodedData.length == 0;</span>
+    }
+
+    /**
+     * Returns the inline image data.
+     * 
+     * @return the inline image data
+     */
+    public byte[] getData()
+    {
+<span class="fc" id="L344">        return decodedData;</span>
+    }
+    
+    @Override
+    public BufferedImage getImage() throws IOException
+    {
+<span class="fc" id="L350">        return SampledImageReader.getRGBImage(this, null);</span>
+    }
+
+    @Override
+    public BufferedImage getImage(Rectangle region, int subsampling) throws IOException
+    {
+<span class="nc" id="L356">        return SampledImageReader.getRGBImage(this, region, subsampling, null);</span>
+    }
+
+    @Override
+    public WritableRaster getRawRaster() throws IOException
+    {
+<span class="nc" id="L362">        return SampledImageReader.getRawRaster(this);</span>
+    }
+
+    @Override
+    public BufferedImage getRawImage() throws IOException
+    {
+<span class="nc" id="L368">        return getColorSpace().toRawImage(getRawRaster());</span>
+    }
+
+    @Override
+    public BufferedImage getStencilImage(Paint paint) throws IOException
+    {
+<span class="pc bpc" id="L374" title="1 of 2 branches missed.">        if (!isStencil())</span>
+        {
+<span class="nc" id="L376">            throw new IllegalStateException(&quot;Image is not a stencil&quot;);</span>
+        }
+<span class="fc" id="L378">        return SampledImageReader.getStencilImage(this, paint);</span>
+    }
+
+    /**
+     * Returns the suffix for this image type, e.g. jpg/png.
+     *
+     * @return The image suffix.
+     */
+    @Override
+    public String getSuffix()
+    {
+<span class="fc" id="L389">        List&lt;String&gt; filters = getFilters();</span>
+
+<span class="pc bpc" id="L391" title="2 of 4 branches missed.">        if (filters == null || filters.isEmpty())</span>
+        {
+<span class="nc" id="L393">            return &quot;png&quot;;</span>
+        }
+<span class="pc bpc" id="L395" title="1 of 2 branches missed.">        if (filters.contains(COSName.DCT_DECODE.getName()) || </span>
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">            filters.contains(COSName.DCT_DECODE_ABBREVIATION.getName()))</span>
+        {
+<span class="nc" id="L398">            return &quot;jpg&quot;;</span>
+        }
+<span class="pc bpc" id="L400" title="1 of 2 branches missed.">        if (filters.contains(COSName.CCITTFAX_DECODE.getName()) ||</span>
+<span class="pc bpc" id="L401" title="1 of 2 branches missed.">            filters.contains(COSName.CCITTFAX_DECODE_ABBREVIATION.getName()))</span>
+        {
+<span class="fc" id="L403">            return &quot;tiff&quot;;</span>
+        }
+        // JPX and JBIG2 don't exist for inline images
+<span class="nc" id="L406">        return &quot;png&quot;;        </span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

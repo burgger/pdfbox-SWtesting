@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JBIG2Filter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.filter</a> &gt; <span class="el_source">JBIG2Filter.java</span></div><h1>JBIG2Filter.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.filter;
+
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
+import java.awt.image.DataBufferByte;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.SequenceInputStream;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+
+/**
+ * Decompresses data encoded using the JBIG2 standard, reproducing the original
+ * monochrome (1 bit per pixel) image data (or an approximation of that data).
+ *
+ * Requires a JBIG2 plugin for Java Image I/O to be installed. A known working
+ * plug-in is the Apache PDFBox JBIG2 plugin.
+ *
+ * @author Timo Boehme
+ */
+<span class="fc" id="L46">final class JBIG2Filter extends Filter</span>
+{
+<span class="fc" id="L48">    private static final Logger LOG = LogManager.getLogger(JBIG2Filter.class);</span>
+
+<span class="fc" id="L50">    private static boolean levigoLogged = false;</span>
+
+    private static synchronized void logLevigoDonated()
+    {
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        if (!levigoLogged)</span>
+        {
+<span class="nc" id="L56">            LOG.info(&quot;The Levigo JBIG2 plugin has been donated to the Apache Foundation&quot;);</span>
+<span class="nc" id="L57">            LOG.info(&quot;and an improved version is available for download at &quot;</span>
+                    + &quot;https://pdfbox.apache.org/download.cgi&quot;);
+<span class="nc" id="L59">            levigoLogged = true;</span>
+        }
+<span class="nc" id="L61">    }</span>
+
+    @Override
+    public DecodeResult decode(InputStream encoded, OutputStream decoded, COSDictionary
+            parameters, int index, DecodeOptions options) throws IOException
+    {
+<span class="nc" id="L67">        ImageReader reader = findImageReader(&quot;JBIG2&quot;, &quot;jbig2-imageio is not installed&quot;);</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        if (reader.getClass().getName().contains(&quot;levigo&quot;))</span>
+        {
+<span class="nc" id="L70">            logLevigoDonated();</span>
+        }
+
+<span class="nc" id="L73">        int bits = parameters.getInt(COSName.BITS_PER_COMPONENT, 1);</span>
+<span class="nc" id="L74">        COSDictionary params = getDecodeParams(parameters, index);</span>
+
+<span class="nc" id="L76">        ImageReadParam irp = reader.getDefaultReadParam();</span>
+<span class="nc" id="L77">        irp.setSourceSubsampling(options.getSubsamplingX(), options.getSubsamplingY(),</span>
+<span class="nc" id="L78">                options.getSubsamplingOffsetX(), options.getSubsamplingOffsetY());</span>
+<span class="nc" id="L79">        irp.setSourceRegion(options.getSourceRegion());</span>
+<span class="nc" id="L80">        options.setFilterSubsampled(true);</span>
+
+<span class="nc" id="L82">        InputStream source = encoded;</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        if (params != null)</span>
+        {
+<span class="nc" id="L85">            COSStream globals = params.getCOSStream(COSName.JBIG2_GLOBALS);</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            if (globals != null)</span>
+            {
+<span class="nc" id="L88">                source = new SequenceInputStream(globals.createInputStream(), encoded);</span>
+            }
+        }
+
+<span class="nc" id="L92">        try (ImageInputStream iis = ImageIO.createImageInputStream(source))</span>
+        {
+<span class="nc" id="L94">            reader.setInput(iis);</span>
+
+            BufferedImage image;
+            try
+            {
+<span class="nc" id="L99">                image = reader.read(0, irp);</span>
+            }
+<span class="nc" id="L101">            catch (Exception e)</span>
+            {
+                // wrap and rethrow any exceptions
+<span class="nc" id="L104">                throw new IOException(&quot;Could not read JBIG2 image&quot;, e);</span>
+<span class="nc" id="L105">            }</span>
+
+            // I am assuming since JBIG2 is always black and white
+            // depending on your renderer this might or might be needed
+<span class="nc bnc" id="L109" title="All 2 branches missed.">            if (image.getColorModel().getPixelSize() != bits)</span>
+            {
+<span class="nc bnc" id="L111" title="All 2 branches missed.">                if (bits != 1)</span>
+                {
+<span class="nc" id="L113">                    LOG.warn(&quot;Attempting to handle a JBIG2 with more than 1-bit depth&quot;);</span>
+                }
+<span class="nc" id="L115">                BufferedImage packedImage = new BufferedImage(image.getWidth(), image.getHeight(),</span>
+                        BufferedImage.TYPE_BYTE_BINARY);
+<span class="nc" id="L117">                Graphics graphics = packedImage.getGraphics();</span>
+<span class="nc" id="L118">                graphics.drawImage(image, 0, 0, null);</span>
+<span class="nc" id="L119">                graphics.dispose();</span>
+<span class="nc" id="L120">                image = packedImage;</span>
+            }
+
+<span class="nc" id="L123">            DataBuffer dBuf = image.getData().getDataBuffer();</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">            if (dBuf.getDataType() == DataBuffer.TYPE_BYTE)</span>
+            {
+<span class="nc" id="L126">                decoded.write(((DataBufferByte) dBuf).getData());</span>
+            }
+            else
+            {
+<span class="nc" id="L130">                throw new IOException(&quot;Unexpected image buffer type&quot;);</span>
+            }
+        }
+        finally
+        {
+<span class="nc" id="L135">            reader.dispose();</span>
+        }
+
+<span class="nc" id="L138">        return new DecodeResult(parameters);</span>
+    }
+
+    @Override
+    public DecodeResult decode(InputStream encoded, OutputStream decoded,
+                               COSDictionary parameters, int index) throws IOException
+    {
+<span class="nc" id="L145">        return decode(encoded, decoded, parameters, index, DecodeOptions.DEFAULT);</span>
+    }
+
+    @Override
+    protected void encode(InputStream input, OutputStream encoded, COSDictionary parameters)
+            throws IOException
+    {
+<span class="nc" id="L152">        throw new UnsupportedOperationException(&quot;JBIG2 encoding not implemented&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

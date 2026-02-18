@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TilingPaintFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.rendering</a> &gt; <span class="el_source">TilingPaintFactory.java</span></div><h1>TilingPaintFactory.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2017 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.rendering;
+
+import java.awt.Paint;
+import java.awt.geom.AffineTransform;
+import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.Map;
+import java.util.Objects;
+import java.util.WeakHashMap;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import org.apache.pdfbox.pdmodel.graphics.pattern.PDTilingPattern;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * Factory class to cache TilingPaint generation.
+ *
+ * @author Tilman Hausherr
+ */
+class TilingPaintFactory
+{
+<span class="fc" id="L42">    private static final Logger LOG = LogManager.getLogger(TilingPaintFactory.class);</span>
+
+    private final PageDrawer drawer;
+<span class="fc" id="L45">    private final Map&lt;TilingPaintParameter, WeakReference&lt;Paint&gt;&gt; weakCache</span>
+            = new WeakHashMap&lt;&gt;();
+
+    TilingPaintFactory(PageDrawer drawer)
+<span class="fc" id="L49">    {</span>
+<span class="fc" id="L50">        this.drawer = drawer;</span>
+<span class="fc" id="L51">    }</span>
+
+    Paint create(PDTilingPattern pattern, PDColorSpace colorSpace,
+            PDColor color, AffineTransform xform) throws IOException
+    {
+<span class="fc" id="L56">        Paint paint = null;</span>
+<span class="fc" id="L57">        TilingPaintParameter tilingPaintParameter</span>
+<span class="fc" id="L58">                = new TilingPaintParameter(drawer.getInitialMatrix(), pattern.getCOSObject(), colorSpace, color, xform);</span>
+<span class="fc" id="L59">        WeakReference&lt;Paint&gt; weakRef = weakCache.get(tilingPaintParameter);</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">        if (weakRef != null)</span>
+        {
+            // PDFBOX-4058: additional WeakReference makes gc work better
+<span class="nc" id="L63">            paint = weakRef.get();</span>
+        }
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        if (paint == null)</span>
+        {
+<span class="fc" id="L67">            paint = new TilingPaint(drawer, pattern, colorSpace, color, xform);</span>
+<span class="fc" id="L68">            weakCache.put(tilingPaintParameter, new WeakReference&lt;&gt;(paint));</span>
+        }
+<span class="fc" id="L70">        return paint;</span>
+    }
+
+    // class to characterize a TilingPaint object. It is important that TilingPaint does not
+    // keep any objects from this class, so that the weak cache works.
+    private static class TilingPaintParameter
+    {
+        private final Matrix matrix;
+        private final COSDictionary patternDict;
+        private final PDColorSpace colorSpace;
+        private final PDColor color;
+        private final AffineTransform xform;
+
+        private TilingPaintParameter(Matrix matrix, COSDictionary patternDict, PDColorSpace colorSpace,
+                PDColor color, AffineTransform xform)
+<span class="fc" id="L85">        {</span>
+<span class="fc" id="L86">            this.matrix = matrix.clone();</span>
+<span class="fc" id="L87">            this.patternDict = patternDict;</span>
+<span class="fc" id="L88">            this.colorSpace = colorSpace;</span>
+<span class="fc" id="L89">            this.color = color;</span>
+<span class="fc" id="L90">            this.xform = xform;</span>
+<span class="fc" id="L91">        }</span>
+
+        // this may not catch all equals, but at least those related to one resource dictionary.
+        // it isn't needed to investigate further because matrix or transform would be different anyway.
+        @Override
+        public boolean equals(Object obj)
+        {
+<span class="nc bnc" id="L98" title="All 2 branches missed.">            if (this == obj)</span>
+            {
+<span class="nc" id="L100">                return true;</span>
+            }
+<span class="nc bnc" id="L102" title="All 2 branches missed.">            if (!(obj instanceof TilingPaintParameter))</span>
+            {
+<span class="nc" id="L104">                return false;</span>
+            }
+<span class="nc" id="L106">            final TilingPaintParameter other = (TilingPaintParameter) obj;</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">            if (!Objects.equals(this.matrix, other.matrix))</span>
+            {
+<span class="nc" id="L109">                return false;</span>
+            }
+<span class="nc bnc" id="L111" title="All 2 branches missed.">            if (!Objects.equals(this.patternDict, other.patternDict))</span>
+            {
+<span class="nc" id="L113">                return false;</span>
+            }
+<span class="nc bnc" id="L115" title="All 2 branches missed.">            if (!Objects.equals(this.colorSpace, other.colorSpace))</span>
+            {
+<span class="nc" id="L117">                return false;</span>
+            }
+<span class="nc bnc" id="L119" title="All 4 branches missed.">            if (this.color == null &amp;&amp; other.color != null)</span>
+            {
+<span class="nc" id="L121">                return false;</span>
+            }
+<span class="nc bnc" id="L123" title="All 4 branches missed.">            if (this.color != null &amp;&amp; other.color == null)</span>
+            {
+<span class="nc" id="L125">                return false;</span>
+            }
+<span class="nc bnc" id="L127" title="All 4 branches missed.">            if (this.color != null &amp;&amp; this.color.getColorSpace() != other.color.getColorSpace())</span>
+            {
+<span class="nc" id="L129">                return false;</span>
+            }
+            try
+            {
+<span class="nc bnc" id="L133" title="All 6 branches missed.">                if (this.color != null &amp;&amp; other.color != null &amp;&amp;</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">                    this.color != other.color &amp;&amp; this.color.toRGB() != other.color.toRGB())</span>
+                {
+<span class="nc" id="L136">                    return false;</span>
+                }
+            }
+<span class="nc" id="L139">            catch (IOException ex)</span>
+            {
+<span class="nc" id="L141">                LOG.debug(&quot;Couldn't convert color to RGB - treating as not equal&quot;, ex);</span>
+<span class="nc" id="L142">                return false;</span>
+<span class="nc" id="L143">            }</span>
+<span class="nc" id="L144">            return Objects.equals(this.xform, other.xform);</span>
+        }
+
+        @Override
+        public int hashCode()
+        {
+<span class="fc" id="L150">            int hash = 7;</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">            hash = 23 * hash + (this.matrix != null ? this.matrix.hashCode() : 0);</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">            hash = 23 * hash + (this.patternDict != null ? this.patternDict.hashCode() : 0);</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">            hash = 23 * hash + (this.colorSpace != null ? this.colorSpace.hashCode() : 0);</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">            hash = 23 * hash + (this.color != null ? this.color.hashCode() : 0);</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">            hash = 23 * hash + (this.xform != null ? this.xform.hashCode() : 0);</span>
+<span class="fc" id="L156">            return hash;</span>
+        }
+
+        @Override
+        public String toString()
+        {
+<span class="nc" id="L162">            return &quot;TilingPaintParameter{&quot; + &quot;matrix=&quot; + matrix + &quot;, pattern=&quot; + patternDict</span>
+                    + &quot;, colorSpace=&quot; + colorSpace + &quot;, color=&quot; + color + &quot;, xform=&quot; + xform + '}';
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,870 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDAnnotation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation</a> &gt; <span class="el_source">PDAnnotation.java</span></div><h1>PDAnnotation.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.annotation;
+
+import java.io.IOException;
+import java.util.Calendar;
+import java.util.Objects;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.documentinterchange.markedcontent.PDPropertyList;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceCMYK;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceGray;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
+
+/**
+ * A PDF annotation.
+ * 
+ * @author Ben Litchfield
+ */
+public abstract class PDAnnotation implements COSObjectable
+{
+    /**
+     * Log instance.
+     */
+<span class="fc" id="L52">    private static final Logger LOG = LogManager.getLogger(PDAnnotation.class);</span>
+
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_INVISIBLE = 1 &lt;&lt; 0;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_HIDDEN = 1 &lt;&lt; 1;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_PRINTED = 1 &lt;&lt; 2;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_NO_ZOOM = 1 &lt;&lt; 3;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_NO_ROTATE = 1 &lt;&lt; 4;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_NO_VIEW = 1 &lt;&lt; 5;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_READ_ONLY = 1 &lt;&lt; 6;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_LOCKED = 1 &lt;&lt; 7;
+    /**
+     * An annotation flag.
+     */
+    private static final int FLAG_TOGGLE_NO_VIEW = 1 &lt;&lt; 8;
+    /**
+     * An annotation flag.
+     * @see #setLockedContents(boolean)
+     */
+    private static final int FLAG_LOCKED_CONTENTS = 1 &lt;&lt; 9;
+
+    private final COSDictionary dictionary;
+
+    /**
+     * Create the correct annotation from the base COS object.
+     *
+     * @param base The COS object that is the annotation.
+     * @return The correctly typed annotation object, never null.
+     *
+     * @throws IOException If the annotation type is unknown.
+     */
+    public static PDAnnotation createAnnotation(COSBase base) throws IOException
+    {
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (base instanceof COSDictionary)</span>
+        {
+<span class="fc" id="L110">            COSDictionary annotDic = (COSDictionary) base;</span>
+<span class="fc" id="L111">            String subtype = annotDic.getNameAsString(COSName.SUBTYPE);</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">            if (null == subtype)</span>
+            {
+<span class="nc" id="L114">                LOG.debug(&quot;Unknown annotation subtype&quot;);</span>
+<span class="nc" id="L115">                return new PDAnnotationUnknown(annotDic);</span>
+            }
+<span class="pc bpc" id="L117" title="11 of 20 branches missed.">            switch (subtype)</span>
+            {
+                case PDAnnotationFileAttachment.SUB_TYPE:
+<span class="nc" id="L120">                    return new PDAnnotationFileAttachment(annotDic);</span>
+                case PDAnnotationLine.SUB_TYPE:
+<span class="nc" id="L122">                    return new PDAnnotationLine(annotDic);</span>
+                case PDAnnotationLink.SUB_TYPE:
+<span class="fc" id="L124">                    return new PDAnnotationLink(annotDic);</span>
+                case PDAnnotationPopup.SUB_TYPE:
+<span class="fc" id="L126">                    return new PDAnnotationPopup(annotDic);</span>
+                case PDAnnotationRubberStamp.SUB_TYPE:
+<span class="fc" id="L128">                    return new PDAnnotationRubberStamp(annotDic);</span>
+                case PDAnnotationSquare.SUB_TYPE:
+<span class="fc" id="L130">                    return new PDAnnotationSquare(annotDic);</span>
+                case PDAnnotationCircle.SUB_TYPE:
+<span class="fc" id="L132">                    return new PDAnnotationCircle(annotDic);</span>
+                case PDAnnotationPolygon.SUB_TYPE:
+<span class="nc" id="L134">                    return new PDAnnotationPolygon(annotDic);</span>
+                case PDAnnotationPolyline.SUB_TYPE:
+<span class="nc" id="L136">                    return new PDAnnotationPolyline(annotDic);</span>
+                case PDAnnotationInk.SUB_TYPE:
+<span class="nc" id="L138">                    return new PDAnnotationInk(annotDic);</span>
+                case PDAnnotationText.SUB_TYPE:
+<span class="fc" id="L140">                    return new PDAnnotationText(annotDic);</span>
+                case PDAnnotationHighlight.SUB_TYPE:
+<span class="fc" id="L142">                    return new PDAnnotationHighlight(annotDic);</span>
+                case PDAnnotationUnderline.SUB_TYPE:
+<span class="nc" id="L144">                    return new PDAnnotationUnderline(annotDic);</span>
+                case PDAnnotationStrikeout.SUB_TYPE:
+<span class="nc" id="L146">                    return new PDAnnotationStrikeout(annotDic);</span>
+                case PDAnnotationSquiggly.SUB_TYPE:
+<span class="nc" id="L148">                    return new PDAnnotationSquiggly(annotDic);</span>
+                case PDAnnotationWidget.SUB_TYPE:
+<span class="fc" id="L150">                    return new PDAnnotationWidget(annotDic);</span>
+                case PDAnnotationFreeText.SUB_TYPE:
+<span class="fc" id="L152">                    return new PDAnnotationFreeText(annotDic);</span>
+                case PDAnnotationCaret.SUB_TYPE:
+<span class="nc" id="L154">                    return new PDAnnotationCaret(annotDic);</span>
+                case PDAnnotationSound.SUB_TYPE:
+<span class="nc" id="L156">                    return new PDAnnotationSound(annotDic);</span>
+                default:
+                    // TODO not yet implemented:
+                    // Movie, Screen, PrinterMark, TrapNet, Watermark, 3D, Redact
+<span class="nc" id="L160">                    LOG.debug(&quot;Unknown or unsupported annotation subtype {}&quot;, subtype);</span>
+<span class="nc" id="L161">                    return new PDAnnotationUnknown(annotDic);</span>
+            }
+        }
+        else
+        {
+<span class="nc" id="L166">            throw new IOException(&quot;Error: Unknown annotation type &quot; + base);</span>
+        }
+    }
+
+    /**
+     * Constructor.
+     */
+    protected PDAnnotation()
+<span class="fc" id="L174">    {</span>
+<span class="fc" id="L175">        dictionary = new COSDictionary();</span>
+<span class="fc" id="L176">        dictionary.setItem(COSName.TYPE, COSName.ANNOT);</span>
+<span class="fc" id="L177">    }</span>
+
+    /**
+     * Constructor.
+     * 
+     * @param dict The annotations dictionary.
+     */
+    protected PDAnnotation(COSDictionary dict)
+<span class="fc" id="L185">    {</span>
+<span class="fc" id="L186">        dictionary = dict;</span>
+<span class="fc" id="L187">        COSBase type = dict.getDictionaryObject(COSName.TYPE);</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">        if (type == null)</span>
+        {
+<span class="fc" id="L190">            dictionary.setItem(COSName.TYPE, COSName.ANNOT);</span>
+        }
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">        else if (!COSName.ANNOT.equals(type))</span>
+        {
+<span class="nc" id="L194">            LOG.warn(&quot;Annotation has type {}, further mayhem may follow&quot;, type);</span>
+        }
+<span class="fc" id="L196">    }</span>
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals (Object o)
+    {
+<span class="fc bfc" id="L204" title="All 2 branches covered.">        if (o == this)</span>
+        {
+<span class="fc" id="L206">            return true;</span>
+        }
+
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">        if (!(o instanceof PDAnnotation))</span>
+        {
+<span class="nc" id="L211">            return false;</span>
+        }
+
+<span class="fc" id="L214">        COSDictionary toBeCompared = ((PDAnnotation) o).getCOSObject();</span>
+<span class="fc" id="L215">        return toBeCompared.equals(getCOSObject());</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode()
+    {
+<span class="nc" id="L224">        return Objects.hash(dictionary);</span>
+    }
+
+
+    /**
+     * This will set the sub type (and hence appearance, AP taking precedence) For this annotation. See the SUB_TYPE_XXX
+     * constants for valid values.
+     *
+     * @param subType The subtype of the annotation
+     */
+    protected final void setSubtype(String subType)
+    {
+<span class="fc" id="L236">        getCOSObject().setName(COSName.SUBTYPE, subType);</span>
+<span class="fc" id="L237">    }</span>
+
+    /**
+     * This will retrieve the subtype of the annotation.
+     *
+     * @return The subtype of this annotation, see the SUB_TYPE_XXX constants.
+     */
+    public final String getSubtype()
+    {
+<span class="nc" id="L246">        return getCOSObject().getNameAsString(COSName.SUBTYPE);</span>
+    }
+
+    /**
+     * The annotation rectangle, defining the location of the annotation on the page in default user space units. This
+     * is usually required and should not return null on valid PDF documents. But where this is a parent form field with
+     * children, such as radio button collections then the rectangle will be null.
+     * 
+     * @return The Rect value of this annotation.
+     */
+    public PDRectangle getRectangle()
+    {
+<span class="fc" id="L258">        COSArray rectArray = dictionary.getCOSArray(COSName.RECT);</span>
+<span class="fc" id="L259">        PDRectangle rectangle = null;</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">        if (rectArray != null)</span>
+        {
+<span class="pc bpc" id="L262" title="2 of 4 branches missed.">            if (rectArray.size() == 4 &amp;&amp; rectArray.getObject(0) instanceof COSNumber</span>
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">                    &amp;&amp; rectArray.getObject(1) instanceof COSNumber</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">                    &amp;&amp; rectArray.getObject(2) instanceof COSNumber</span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">                    &amp;&amp; rectArray.getObject(3) instanceof COSNumber)</span>
+            {
+<span class="fc" id="L267">                rectangle = new PDRectangle(rectArray);</span>
+            }
+            else
+            {
+<span class="nc" id="L271">                LOG.warn(&quot;{} is not a rectangle array, returning null&quot;, rectArray);</span>
+            }
+        }
+<span class="fc" id="L274">        return rectangle;</span>
+    }
+
+    /**
+     * This will set the rectangle for this annotation.
+     * 
+     * @param rectangle The new rectangle values.
+     */
+    public void setRectangle(PDRectangle rectangle)
+    {
+<span class="fc" id="L284">        dictionary.setItem(COSName.RECT, rectangle.getCOSArray());</span>
+<span class="fc" id="L285">    }</span>
+
+    /**
+     * This will get the flags for this field.
+     * 
+     * @return flags The set of flags.
+     */
+    public int getAnnotationFlags()
+    {
+<span class="fc" id="L294">        return getCOSObject().getInt(COSName.F, 0);</span>
+    }
+
+    /**
+     * This will set the flags for this field.
+     * 
+     * @param flags The new flags.
+     */
+    public void setAnnotationFlags(int flags)
+    {
+<span class="nc" id="L304">        getCOSObject().setInt(COSName.F, flags);</span>
+<span class="nc" id="L305">    }</span>
+
+    /**
+     * Interface method for COSObjectable.
+     * 
+     * @return This object as a standard COS object.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="fc" id="L315">        return dictionary;</span>
+    }
+
+    /**
+     * Returns the annotations appearance state, which selects the applicable appearance stream from an appearance
+     * subdictionary.
+     * 
+     * @return the annotations appearance state
+     */
+    public COSName getAppearanceState()
+    {
+<span class="fc" id="L326">        return getCOSObject().getCOSName(COSName.AS);</span>
+    }
+
+    /**
+     * This will set the annotations appearance state name.
+     * 
+     * @param as The name of the appearance stream.
+     */
+    public void setAppearanceState(String as)
+    {
+<span class="fc" id="L336">        getCOSObject().setName(COSName.AS, as);</span>
+<span class="fc" id="L337">    }</span>
+
+    /**
+     * This will get the appearance dictionary associated with this annotation. This may return null.
+     * 
+     * @return This annotations appearance.
+     */
+    public PDAppearanceDictionary getAppearance()
+    {
+<span class="fc" id="L346">        COSDictionary appearance = dictionary.getCOSDictionary(COSName.AP);</span>
+<span class="fc bfc" id="L347" title="All 2 branches covered.">        return appearance != null ? new PDAppearanceDictionary(appearance) : null;</span>
+    }
+
+    /**
+     * This will set the appearance associated with this annotation.
+     * 
+     * @param appearance The appearance dictionary for this annotation.
+     */
+    public void setAppearance(PDAppearanceDictionary appearance)
+    {
+<span class="fc" id="L357">        dictionary.setItem(COSName.AP, appearance);</span>
+<span class="fc" id="L358">    }</span>
+
+    /**
+     * Returns the appearance stream for this annotation, if any. The annotation state is taken into account, if
+     * present.
+     * 
+     * @return the appearance stream
+     */
+    public PDAppearanceStream getNormalAppearanceStream()
+    {
+<span class="fc" id="L368">        PDAppearanceDictionary appearanceDict = getAppearance();</span>
+<span class="fc bfc" id="L369" title="All 2 branches covered.">        if (appearanceDict == null)</span>
+        {
+<span class="fc" id="L371">            return null;</span>
+        }
+
+<span class="fc" id="L374">        PDAppearanceEntry normalAppearance = appearanceDict.getNormalAppearance();</span>
+<span class="pc bpc" id="L375" title="1 of 2 branches missed.">        if (normalAppearance == null)</span>
+        {
+<span class="nc" id="L377">            return null;</span>
+        }
+
+<span class="fc bfc" id="L380" title="All 2 branches covered.">        if (normalAppearance.isSubDictionary())</span>
+        {
+<span class="fc" id="L382">            COSName state = getAppearanceState();</span>
+<span class="fc" id="L383">            return normalAppearance.getSubDictionary().get(state);</span>
+        }
+        else
+        {
+// PDAppearanceStream extends PDFormXObject, but does not reference the resource cache
+<span class="fc" id="L388">            return normalAppearance.getAppearanceStream();</span>
+        }
+    }
+
+    /**
+     * Get the invisible flag.
+     * 
+     * @return The invisible flag.
+     */
+    public boolean isInvisible()
+    {
+<span class="fc" id="L399">        return getCOSObject().getFlag(COSName.F, FLAG_INVISIBLE);</span>
+    }
+
+    /**
+     * Set the invisible flag.
+     * 
+     * @param invisible The new invisible flag.
+     */
+    public void setInvisible(boolean invisible)
+    {
+<span class="nc" id="L409">        getCOSObject().setFlag(COSName.F, FLAG_INVISIBLE, invisible);</span>
+<span class="nc" id="L410">    }</span>
+
+    /**
+     * Get the hidden flag.
+     * 
+     * @return The hidden flag.
+     */
+    public boolean isHidden()
+    {
+<span class="fc" id="L419">        return getCOSObject().getFlag(COSName.F, FLAG_HIDDEN);</span>
+    }
+
+    /**
+     * Set the hidden flag.
+     * 
+     * @param hidden The new hidden flag.
+     */
+    public void setHidden(boolean hidden)
+    {
+<span class="nc" id="L429">        getCOSObject().setFlag(COSName.F, FLAG_HIDDEN, hidden);</span>
+<span class="nc" id="L430">    }</span>
+
+    /**
+     * Get the printed flag.
+     * 
+     * @return The printed flag.
+     */
+    public boolean isPrinted()
+    {
+<span class="nc" id="L439">        return getCOSObject().getFlag(COSName.F, FLAG_PRINTED);</span>
+    }
+
+    /**
+     * Set the printed flag.
+     * 
+     * @param printed The new printed flag.
+     */
+    public void setPrinted(boolean printed)
+    {
+<span class="fc" id="L449">        getCOSObject().setFlag(COSName.F, FLAG_PRINTED, printed);</span>
+<span class="fc" id="L450">    }</span>
+
+    /**
+     * Get the noZoom flag.
+     * 
+     * @return The noZoom flag.
+     */
+    public boolean isNoZoom()
+    {
+<span class="nc" id="L459">        return getCOSObject().getFlag(COSName.F, FLAG_NO_ZOOM);</span>
+    }
+
+    /**
+     * Set the noZoom flag.
+     * 
+     * @param noZoom The new noZoom flag.
+     */
+    public void setNoZoom(boolean noZoom)
+    {
+<span class="nc" id="L469">        getCOSObject().setFlag(COSName.F, FLAG_NO_ZOOM, noZoom);</span>
+<span class="nc" id="L470">    }</span>
+
+    /**
+     * Get the noRotate flag.
+     * 
+     * @return The noRotate flag.
+     */
+    public boolean isNoRotate()
+    {
+<span class="fc" id="L479">        return getCOSObject().getFlag(COSName.F, FLAG_NO_ROTATE);</span>
+    }
+
+    /**
+     * Set the noRotate flag.
+     * 
+     * @param noRotate The new noRotate flag.
+     */
+    public void setNoRotate(boolean noRotate)
+    {
+<span class="nc" id="L489">        getCOSObject().setFlag(COSName.F, FLAG_NO_ROTATE, noRotate);</span>
+<span class="nc" id="L490">    }</span>
+
+    /**
+     * Get the noView flag.
+     * 
+     * @return The noView flag.
+     */
+    public boolean isNoView()
+    {
+<span class="fc" id="L499">        return getCOSObject().getFlag(COSName.F, FLAG_NO_VIEW);</span>
+    }
+
+    /**
+     * Set the noView flag.
+     * 
+     * @param noView The new noView flag.
+     */
+    public void setNoView(boolean noView)
+    {
+<span class="nc" id="L509">        getCOSObject().setFlag(COSName.F, FLAG_NO_VIEW, noView);</span>
+<span class="nc" id="L510">    }</span>
+
+    /**
+     * Get the readOnly flag.
+     * 
+     * @return The readOnly flag.
+     */
+    public boolean isReadOnly()
+    {
+<span class="nc" id="L519">        return getCOSObject().getFlag(COSName.F, FLAG_READ_ONLY);</span>
+    }
+
+    /**
+     * Set the readOnly flag.
+     * 
+     * @param readOnly The new readOnly flag.
+     */
+    public void setReadOnly(boolean readOnly)
+    {
+<span class="nc" id="L529">        getCOSObject().setFlag(COSName.F, FLAG_READ_ONLY, readOnly);</span>
+<span class="nc" id="L530">    }</span>
+
+    /**
+     * Get the locked flag.
+     * 
+     * @return The locked flag.
+     */
+    public boolean isLocked()
+    {
+<span class="nc" id="L539">        return getCOSObject().getFlag(COSName.F, FLAG_LOCKED);</span>
+    }
+
+    /**
+     * Set the locked flag.
+     * 
+     * @param locked The new locked flag.
+     */
+    public void setLocked(boolean locked)
+    {
+<span class="fc" id="L549">        getCOSObject().setFlag(COSName.F, FLAG_LOCKED, locked);</span>
+<span class="fc" id="L550">    }</span>
+
+    /**
+     * Get the toggleNoView flag.
+     * 
+     * @return The toggleNoView flag.
+     */
+    public boolean isToggleNoView()
+    {
+<span class="nc" id="L559">        return getCOSObject().getFlag(COSName.F, FLAG_TOGGLE_NO_VIEW);</span>
+    }
+
+    /**
+     * Set the toggleNoView flag.
+     * 
+     * @param toggleNoView The new toggleNoView flag.
+     */
+    public void setToggleNoView(boolean toggleNoView)
+    {
+<span class="nc" id="L569">        getCOSObject().setFlag(COSName.F, FLAG_TOGGLE_NO_VIEW, toggleNoView);</span>
+<span class="nc" id="L570">    }</span>
+
+    /**
+     * Get the LockedContents flag.
+     *
+     * @return The LockedContents flag.
+     * @see #setLockedContents(boolean)
+     */
+    public boolean isLockedContents()
+    {
+<span class="nc" id="L580">        return getCOSObject().getFlag(COSName.F, FLAG_LOCKED_CONTENTS);</span>
+    }
+
+    /**
+     * Set the LockedContents flag. If set, do not allow the contents of the annotation to be
+     * modified by the user. This flag does not restrict deletion of the annotation or changes to
+     * other annotation properties, such as position and size.
+     *
+     * @param lockedContents The new LockedContents flag value.
+     * @see
+     * &lt;a href=&quot;https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/PDF32000_2008.pdf#page=393&quot;&gt;PDF
+     * 32000-1:2008 12.5.3, Table 165&lt;/a&gt;
+     * @see #isLockedContents()
+     * @see #FLAG_LOCKED_CONTENTS
+     * @since PDF 1.7
+     */
+    public void setLockedContents(boolean lockedContents)
+    {
+<span class="nc" id="L598">        getCOSObject().setFlag(COSName.F, FLAG_LOCKED_CONTENTS, lockedContents);</span>
+<span class="nc" id="L599">    }</span>
+
+    /**
+     * Get the &quot;contents&quot; of the field.
+     * 
+     * @return the value of the contents.
+     */
+    public String getContents()
+    {
+<span class="nc" id="L608">        return dictionary.getString(COSName.CONTENTS);</span>
+    }
+
+    /**
+     * Set the &quot;contents&quot; of the field.
+     * 
+     * @param value the value of the contents.
+     */
+    public void setContents(String value)
+    {
+<span class="fc" id="L618">        dictionary.setString(COSName.CONTENTS, value);</span>
+<span class="fc" id="L619">    }</span>
+
+    /**
+     * This will retrieve the date and time the annotation was modified.
+     * 
+     * @return the modified date/time (often in date format, but can be an arbitrary string).
+     */
+    public String getModifiedDate()
+    {
+<span class="nc" id="L628">        return getCOSObject().getString(COSName.M);</span>
+    }
+
+    /**
+     * This will set the date and time the annotation was modified.
+     *
+     * @param m the date and time the annotation was created. Date values used in a PDF shall
+     * conform to a standard date format, which closely follows that of the international standard
+     * ASN.1 (Abstract Syntax Notation One), defined in ISO/IEC 8824. A date shall be a text string
+     * of the form (D:YYYYMMDDHHmmSSOHH'mm). Alternatively, use
+     * {@link #setModifiedDate(java.util.Calendar)}
+     */
+    public void setModifiedDate(String m)
+    {
+<span class="nc" id="L642">        getCOSObject().setString(COSName.M, m);</span>
+<span class="nc" id="L643">    }</span>
+
+    /**
+     * This will set the date and time the annotation was modified.
+     *
+     * @param c the date and time the annotation was created.
+     */
+    public void setModifiedDate(Calendar c)
+    {
+<span class="nc" id="L652">        getCOSObject().setDate(COSName.M, c);</span>
+<span class="nc" id="L653">    }</span>
+
+    /**
+     * This will get the name, a string intended to uniquely identify each annotation within a page. Not to be confused
+     * with some annotations Name entry which impact the default image drawn for them.
+     * 
+     * @return The identifying name for the Annotation.
+     */
+    public String getAnnotationName()
+    {
+<span class="nc" id="L663">        return getCOSObject().getString(COSName.NM);</span>
+    }
+
+    /**
+     * This will set the name, a string intended to uniquely identify each annotation within a page. Not to be confused
+     * with some annotations Name entry which impact the default image drawn for them.
+     * 
+     * @param nm The identifying name for the annotation.
+     */
+    public void setAnnotationName(String nm)
+    {
+<span class="nc" id="L674">        getCOSObject().setString(COSName.NM, nm);</span>
+<span class="nc" id="L675">    }</span>
+
+    /**
+     * This will get the key of this annotation in the structural parent tree.
+     *
+     * @return the integer key of the annotation's entry in the structural parent tree or -1 if
+     * there isn't any.
+     */
+    public int getStructParent()
+    {
+<span class="fc" id="L685">        return getCOSObject().getInt(COSName.STRUCT_PARENT);</span>
+    }
+
+    /**
+     * This will set the key for this annotation in the structural parent tree.
+     * 
+     * @param structParent The new key for this annotation.
+     */
+    public void setStructParent(int structParent)
+    {
+<span class="fc" id="L695">        getCOSObject().setInt(COSName.STRUCT_PARENT, structParent);</span>
+<span class="fc" id="L696">    }</span>
+
+    /**
+     * This will get the optional content group or optional content membership dictionary for the
+     * annotation.
+     *
+     * @return The optional content group or optional content membership dictionary or null if there
+     * is none.
+     */
+    public PDPropertyList getOptionalContent()
+    {
+<span class="fc" id="L707">        COSDictionary optionalContent = getCOSObject().getCOSDictionary(COSName.OC);</span>
+<span class="pc bpc" id="L708" title="1 of 2 branches missed.">        return optionalContent != null ? PDPropertyList.create(optionalContent) : null;</span>
+    }
+
+    /**
+     * Sets the optional content group or optional content membership dictionary for the annotation.
+     *
+     * @param oc The optional content group or optional content membership dictionary.
+     */
+    public void setOptionalContent(PDPropertyList oc)
+    {
+<span class="nc" id="L718">        getCOSObject().setItem(COSName.OC, oc);</span>
+<span class="nc" id="L719">    }</span>
+
+    /**
+     * This will retrieve the border array. If none is available then it will create and return a
+     * default array, which is [0 0 1]. The array consists of at least three numbers defining the
+     * horizontal corner radius, vertical corner radius, and border width. The array may have a
+     * fourth element, an optional dash array defining a pattern of dashes and gaps that shall be
+     * used in drawing the border. If the array has less than three elements, the original array
+     * will be copied and missing elements with value 0 will be added.
+     *
+     * @return the border array, never null.
+     */
+    public COSArray getBorder()
+    {
+<span class="fc" id="L733">        COSArray border = getCOSObject().getCOSArray(COSName.BORDER);</span>
+<span class="fc bfc" id="L734" title="All 2 branches covered.">        if (border != null)</span>
+        {
+<span class="pc bpc" id="L736" title="1 of 2 branches missed.">            if (border.size() &lt; 3)</span>
+            {
+                // create a copy to avoid altering the PDF
+<span class="nc" id="L739">                COSArray newBorder = new COSArray();</span>
+<span class="nc" id="L740">                newBorder.addAll(border);</span>
+<span class="nc" id="L741">                border = newBorder;</span>
+                // Adobe Reader behaves as if missing elements are 0.
+<span class="nc bnc" id="L743" title="All 2 branches missed.">                while (border.size() &lt; 3)</span>
+                {
+<span class="nc" id="L745">                    border.add(COSInteger.ZERO);</span>
+                }
+<span class="nc" id="L747">            }</span>
+        }
+        else
+        {
+<span class="fc" id="L751">            border = new COSArray();</span>
+<span class="fc" id="L752">            border.add(COSInteger.ZERO);</span>
+<span class="fc" id="L753">            border.add(COSInteger.ZERO);</span>
+<span class="fc" id="L754">            border.add(COSInteger.ONE);</span>
+        }
+<span class="fc" id="L756">        return border;</span>
+    }
+    
+    /**
+     * This will set the border array.
+     * 
+     * @param borderArray the border array to set.
+     */
+    public void setBorder(COSArray borderArray)
+    {
+<span class="nc" id="L766">        getCOSObject().setItem(COSName.BORDER, borderArray);</span>
+<span class="nc" id="L767">    }</span>
+    
+    /**
+     * This will set the color used in drawing various elements. As of PDF 1.6 these are : Background of icon when
+     * closed Title bar of popup window Border of a link annotation
+     * 
+     * Colour is in DeviceRGB colourspace
+     * 
+     * @param c colour in the DeviceRGB colourspace
+     * 
+     */
+    public void setColor(PDColor c)
+    {
+<span class="fc" id="L780">        getCOSObject().setItem(COSName.C, c.toCOSArray());</span>
+<span class="fc" id="L781">    }</span>
+
+    /**
+     * This will retrieve the color used in drawing various elements. As of PDF 1.6 these are :
+     * &lt;ul&gt;
+     * &lt;li&gt;Background of icon when closed&lt;/li&gt;
+     * &lt;li&gt;Title bar of popup window&lt;/li&gt;
+     * &lt;li&gt;Border of a link annotation&lt;/li&gt;
+     * &lt;/ul&gt;
+     *
+     * @return Color object representing the colour
+     * 
+     */
+    public PDColor getColor()
+    {
+<span class="fc" id="L796">        return getColor(COSName.C);</span>
+    }
+
+    protected PDColor getColor(COSName itemName)
+    {
+<span class="fc" id="L801">        COSArray cs = this.getCOSObject().getCOSArray(itemName);</span>
+<span class="fc bfc" id="L802" title="All 2 branches covered.">        if (cs != null)</span>
+        {
+<span class="fc" id="L804">            PDColorSpace colorSpace = null;</span>
+<span class="pc bpc" id="L805" title="3 of 4 branches missed.">            switch (cs.size())</span>
+            {
+            case 1:
+<span class="nc" id="L808">                colorSpace = PDDeviceGray.INSTANCE;</span>
+<span class="nc" id="L809">                break;</span>
+            case 3:
+<span class="fc" id="L811">                colorSpace = PDDeviceRGB.INSTANCE;</span>
+<span class="fc" id="L812">                break;</span>
+            case 4:
+<span class="nc" id="L814">                colorSpace = PDDeviceCMYK.INSTANCE;</span>
+<span class="nc" id="L815">                break;</span>
+            default:
+                break;
+            }
+<span class="fc" id="L819">            return new PDColor(cs, colorSpace);</span>
+        }
+<span class="fc" id="L821">        return null;</span>
+    }
+
+    /**
+     * This will set the corresponding page for this annotation. This is optional but recommended.
+     * Not doing it &lt;a href=&quot;https://stackoverflow.com/questions/74836898/&quot;&gt;can cause trouble when
+     * PDFs get signed&lt;/a&gt;.
+     *
+     * @param page is the corresponding page
+     */
+    public void setPage(PDPage page)
+    {
+<span class="fc" id="L833">        this.getCOSObject().setItem(COSName.P, page);</span>
+<span class="fc" id="L834">    }</span>
+
+    /**
+     * This will retrieve the corresponding page of this annotation. See also
+     * &lt;a href=&quot;https://stackoverflow.com/a/36894982/535646&quot;&gt;this answer&lt;/a&gt; about what to do if
+     * the page isn't available.
+     *
+     * @return The corresponding page or null if not available.
+     */
+    public PDPage getPage()
+    {
+<span class="fc" id="L845">        COSDictionary page = getCOSObject().getCOSDictionary(COSName.P);</span>
+<span class="fc bfc" id="L846" title="All 2 branches covered.">        return page != null ? new PDPage(page) : null;</span>
+    }
+
+    /**
+     * Create the appearance entry for this annotation. Not having it may prevent display in some viewers. This method
+     * is for overriding in subclasses, the default implementation does nothing.
+     * 
+     * @param document the related document
+     */
+    public void constructAppearances(PDDocument document)
+    {
+<span class="fc" id="L857">    }</span>
+
+    /**
+     * Create the appearance entry for this annotation. Not having it may prevent display in some
+     * viewers. This method is for overriding in subclasses, the default implementation does
+     * nothing.
+     * 
+     */
+    public void constructAppearances()
+    {
+<span class="nc" id="L867">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

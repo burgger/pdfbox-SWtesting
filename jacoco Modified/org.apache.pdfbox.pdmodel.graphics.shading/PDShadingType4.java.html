@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDShadingType4.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.shading</a> &gt; <span class="el_source">PDShadingType4.java</span></div><h1>PDShadingType4.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.shading;
+
+import java.awt.Paint;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Point2D;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.pdmodel.common.PDRange;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * Resources for a shading type 4 (Free-Form Gouraud-Shaded Triangle Mesh).
+ */
+public class PDShadingType4 extends PDTriangleBasedShadingType
+{
+<span class="nc" id="L45">    private static final Logger LOG = LogManager.getLogger(PDShadingType4.class);</span>
+
+    /**
+     * Constructor using the given shading dictionary.
+     *
+     * @param shadingDictionary the dictionary for this shading
+     */
+    public PDShadingType4(COSDictionary shadingDictionary)
+    {
+<span class="nc" id="L54">        super(shadingDictionary);</span>
+<span class="nc" id="L55">    }</span>
+
+    @Override
+    public int getShadingType()
+    {
+<span class="nc" id="L60">        return PDShading.SHADING_TYPE4;</span>
+    }
+
+    /**
+     * The bits per flag of this shading. This will return -1 if one has not
+     * been set.
+     *
+     * @return The number of bits per flag.
+     */
+    public int getBitsPerFlag()
+    {
+<span class="nc" id="L71">        return getCOSObject().getInt(COSName.BITS_PER_FLAG, -1);</span>
+    }
+
+    /**
+     * Set the number of bits per flag.
+     *
+     * @param bitsPerFlag the number of bits per flag
+     */
+    public void setBitsPerFlag(int bitsPerFlag)
+    {
+<span class="nc" id="L81">        getCOSObject().setInt(COSName.BITS_PER_FLAG, bitsPerFlag);</span>
+<span class="nc" id="L82">    }</span>
+
+    @Override
+    public Paint toPaint(Matrix matrix)
+    {
+<span class="nc" id="L87">        return new Type4ShadingPaint(this, matrix);</span>
+    }
+    
+    @SuppressWarnings(&quot;squid:S1166&quot;)
+    @Override
+    List&lt;ShadedTriangle&gt; collectTriangles(AffineTransform xform, Matrix matrix)
+            throws IOException
+    {
+<span class="nc" id="L95">        int bitsPerFlag = getBitsPerFlag();</span>
+<span class="nc" id="L96">        COSDictionary dict = getCOSObject();</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        if (!(dict instanceof COSStream))</span>
+        {
+<span class="nc" id="L99">            return Collections.emptyList();</span>
+        }
+<span class="nc" id="L101">        PDRange rangeX = getDecodeForParameter(0);</span>
+<span class="nc" id="L102">        PDRange rangeY = getDecodeForParameter(1);</span>
+<span class="nc bnc" id="L103" title="All 4 branches missed.">        if (rangeX == null || rangeY == null ||</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">            Float.compare(rangeX.getMin(), rangeX.getMax()) == 0 ||</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">            Float.compare(rangeY.getMin(), rangeY.getMax()) == 0)</span>
+        {
+<span class="nc" id="L107">            return Collections.emptyList();</span>
+        }
+<span class="nc" id="L109">        PDRange[] colRange = new PDRange[getNumberOfColorComponents()];</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        for (int i = 0; i &lt; colRange.length; ++i)</span>
+        {
+<span class="nc" id="L112">            colRange[i] = getDecodeForParameter(2 + i);</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">            if (colRange[i] == null)</span>
+            {
+<span class="nc" id="L115">                throw new IOException(&quot;Range missing in shading /Decode entry&quot;);</span>
+            }
+        }
+<span class="nc" id="L118">        List&lt;ShadedTriangle&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L119">        long maxSrcCoord = (long) Math.pow(2, getBitsPerCoordinate()) - 1;</span>
+<span class="nc" id="L120">        long maxSrcColor = (long) Math.pow(2, getBitsPerComponent()) - 1;</span>
+
+        // MemoryCacheImageInputStream doesn't close the wrapped stream
+<span class="nc" id="L123">        try (InputStream imageStream = ((COSStream) dict).createInputStream())</span>
+        {
+<span class="nc" id="L125">            try (ImageInputStream mciis = new MemoryCacheImageInputStream(imageStream))</span>
+            {
+<span class="nc" id="L127">                byte flag = (byte) 0;</span>
+                try
+                {
+<span class="nc" id="L130">                    flag = (byte) (mciis.readBits(bitsPerFlag) &amp; 3);</span>
+                }
+<span class="nc" id="L132">                catch (EOFException ex)</span>
+                {
+<span class="nc" id="L134">                    LOG.error(ex);</span>
+<span class="nc" id="L135">                }</span>
+
+<span class="nc" id="L137">                boolean eof = false;</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">                while (!eof)</span>
+                {
+                    Vertex p0;
+                    Vertex p1;
+                    Vertex p2;
+                    Point2D[] ps;
+                    float[][] cs;
+                    int lastIndex;
+                    try
+                    {
+<span class="nc bnc" id="L148" title="All 3 branches missed.">                        switch (flag)</span>
+                        {
+                        case 0:
+<span class="nc" id="L151">                            p0 = readVertex(mciis, maxSrcCoord, maxSrcColor, rangeX, rangeY,</span>
+                                    colRange, matrix, xform);
+<span class="nc" id="L153">                            flag = (byte) (mciis.readBits(bitsPerFlag) &amp; 3);</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">                            if (flag != 0)</span>
+                            {
+<span class="nc" id="L156">                                LOG.error(&quot;bad triangle: {}&quot;, flag);</span>
+                            }
+<span class="nc" id="L158">                            p1 = readVertex(mciis, maxSrcCoord, maxSrcColor, rangeX, rangeY,</span>
+                                    colRange, matrix, xform);
+<span class="nc" id="L160">                            mciis.readBits(bitsPerFlag);</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">                            if (flag != 0)</span>
+                            {
+<span class="nc" id="L163">                                LOG.error(&quot;bad triangle: {}&quot;, flag);</span>
+                            }
+<span class="nc" id="L165">                            p2 = readVertex(mciis, maxSrcCoord, maxSrcColor, rangeX, rangeY,</span>
+                                    colRange, matrix, xform);
+<span class="nc" id="L167">                            ps = new Point2D[] { p0.point, p1.point, p2.point };</span>
+<span class="nc" id="L168">                            cs = new float[][] { p0.color, p1.color, p2.color };</span>
+<span class="nc" id="L169">                            list.add(new ShadedTriangle(ps, cs));</span>
+<span class="nc" id="L170">                            flag = (byte) (mciis.readBits(bitsPerFlag) &amp; 3);</span>
+<span class="nc" id="L171">                            break;</span>
+                        case 1:
+                        case 2:
+<span class="nc" id="L174">                            lastIndex = list.size() - 1;</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">                            if (lastIndex &lt; 0)</span>
+                            {
+<span class="nc" id="L177">                                LOG.error(&quot;broken data stream: {}, aborting&quot;, list.size());</span>
+<span class="nc" id="L178">                                eof = true;</span>
+                            }
+                            else
+                            {
+<span class="nc" id="L182">                                ShadedTriangle preTri = list.get(lastIndex);</span>
+<span class="nc" id="L183">                                p2 = readVertex(mciis, maxSrcCoord, maxSrcColor, rangeX, rangeY,</span>
+                                        colRange, matrix, xform);
+<span class="nc" id="L185">                                ps = new Point2D[] {</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">                                        flag == 1 ? preTri.corner[1] : preTri.corner[0],</span>
+                                        preTri.corner[2], p2.point };
+<span class="nc" id="L188">                                cs = new float[][] {</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">                                        flag == 1 ? preTri.color[1] : preTri.color[0],</span>
+                                        preTri.color[2], p2.color };
+<span class="nc" id="L191">                                list.add(new ShadedTriangle(ps, cs));</span>
+<span class="nc" id="L192">                                flag = (byte) (mciis.readBits(bitsPerFlag) &amp; 3);</span>
+                            }
+<span class="nc" id="L194">                            break;</span>
+                        default:
+<span class="nc" id="L196">                            LOG.warn(&quot;bad flag {}, aborting&quot;, flag);</span>
+<span class="nc" id="L197">                            eof = true;</span>
+                            break;
+                        }
+                    }
+<span class="nc" id="L201">                    catch (EOFException ex)</span>
+                    {
+<span class="nc" id="L203">                        eof = true;</span>
+<span class="nc" id="L204">                    }</span>
+                }
+            }
+        }
+<span class="nc" id="L208">        return list;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

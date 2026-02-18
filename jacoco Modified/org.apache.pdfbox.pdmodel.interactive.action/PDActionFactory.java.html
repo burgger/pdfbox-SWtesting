@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDActionFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.action</a> &gt; <span class="el_source">PDActionFactory.java</span></div><h1>PDActionFactory.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.action;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+
+/**
+ * This class will take a dictionary and determine which type of action to create.
+ *
+ * @author Ben Litchfield
+ * 
+ */
+public final class PDActionFactory
+{
+    /**
+     * Utility Class.
+     */
+    private PDActionFactory()
+    {
+        //utility class
+    }
+
+    /**
+     * This will create the correct type of action based on the type specified
+     * in the dictionary.
+     *
+     * @param action An action dictionary.
+     *
+     * @return An action of the correct type.
+     */
+    public static PDAction createAction( COSDictionary action )
+    {
+<span class="fc" id="L48">        PDAction retval = null;</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        if( action != null)</span>
+        {
+<span class="fc" id="L51">            String type = action.getNameAsString(COSName.S);</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">            if (type != null)</span>
+            {
+<span class="pc bpc" id="L54" title="13 of 15 branches missed.">                switch (type)</span>
+                {
+                    case PDActionJavaScript.SUB_TYPE:
+<span class="nc" id="L57">                        retval = new PDActionJavaScript(action);</span>
+<span class="nc" id="L58">                        break;</span>
+                    case PDActionGoTo.SUB_TYPE:
+<span class="fc" id="L60">                        retval = new PDActionGoTo(action);</span>
+<span class="fc" id="L61">                        break;</span>
+                    case PDActionLaunch.SUB_TYPE:
+<span class="nc" id="L63">                        retval = new PDActionLaunch(action);</span>
+<span class="nc" id="L64">                        break;</span>
+                    case PDActionRemoteGoTo.SUB_TYPE:
+<span class="nc" id="L66">                        retval = new PDActionRemoteGoTo(action);</span>
+<span class="nc" id="L67">                        break;</span>
+                    case PDActionURI.SUB_TYPE:
+<span class="fc" id="L69">                        retval = new PDActionURI(action);</span>
+<span class="fc" id="L70">                        break;</span>
+                    case PDActionNamed.SUB_TYPE:
+<span class="nc" id="L72">                        retval = new PDActionNamed(action);</span>
+<span class="nc" id="L73">                        break;</span>
+                    case PDActionSound.SUB_TYPE:
+<span class="nc" id="L75">                        retval = new PDActionSound(action);</span>
+<span class="nc" id="L76">                        break;</span>
+                    case PDActionMovie.SUB_TYPE:
+<span class="nc" id="L78">                        retval = new PDActionMovie(action);</span>
+<span class="nc" id="L79">                        break;</span>
+                    case PDActionImportData.SUB_TYPE:
+<span class="nc" id="L81">                        retval = new PDActionImportData(action);</span>
+<span class="nc" id="L82">                        break;</span>
+                    case PDActionResetForm.SUB_TYPE:
+<span class="nc" id="L84">                        retval = new PDActionResetForm(action);</span>
+<span class="nc" id="L85">                        break;</span>
+                    case PDActionHide.SUB_TYPE:
+<span class="nc" id="L87">                        retval = new PDActionHide(action);</span>
+<span class="nc" id="L88">                        break;</span>
+                    case PDActionSubmitForm.SUB_TYPE:
+<span class="nc" id="L90">                        retval = new PDActionSubmitForm(action);</span>
+<span class="nc" id="L91">                        break;</span>
+                    case PDActionThread.SUB_TYPE:
+<span class="nc" id="L93">                        retval = new PDActionThread(action);</span>
+<span class="nc" id="L94">                        break;</span>
+                    case PDActionEmbeddedGoTo.SUB_TYPE:
+<span class="nc" id="L96">                        retval = new PDActionEmbeddedGoTo(action);</span>
+<span class="nc" id="L97">                        break;</span>
+                    default:
+                        break;
+                }
+            }
+        }
+<span class="fc" id="L103">        return retval;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

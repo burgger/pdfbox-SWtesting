@@ -1,0 +1,479 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDSimpleFont.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font</a> &gt; <span class="el_source">PDSimpleFont.java</span></div><h1>PDSimpleFont.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.font;
+
+import java.awt.geom.GeneralPath;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.fontbox.FontBoxFont;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName;
+import org.apache.pdfbox.pdmodel.font.encoding.DictionaryEncoding;
+import org.apache.pdfbox.pdmodel.font.encoding.Encoding;
+import org.apache.pdfbox.pdmodel.font.encoding.GlyphList;
+import org.apache.pdfbox.pdmodel.font.encoding.MacRomanEncoding;
+import org.apache.pdfbox.pdmodel.font.encoding.StandardEncoding;
+import org.apache.pdfbox.pdmodel.font.encoding.WinAnsiEncoding;
+import org.apache.pdfbox.pdmodel.font.encoding.ZapfDingbatsEncoding;
+
+/**
+ * A simple font. Simple fonts use a PostScript encoding vector.
+ *
+ * @author John Hewson
+ */
+public abstract class PDSimpleFont extends PDFont
+{
+<span class="fc" id="L47">    private static final Logger LOG = LogManager.getLogger(PDSimpleFont.class);</span>
+
+    protected Encoding encoding;
+    protected GlyphList glyphList;
+    private Boolean isSymbolic;
+<span class="fc" id="L52">    private final Set&lt;Integer&gt; noUnicode = new HashSet&lt;&gt;(); // for logging</span>
+
+    /**
+     * Constructor for embedding.
+     */
+    PDSimpleFont()
+<span class="fc" id="L58">    {</span>
+<span class="fc" id="L59">    }</span>
+
+    /**
+     * Constructor for Standard 14.
+     */
+    PDSimpleFont(FontName baseFont)
+    {
+<span class="fc" id="L66">        super(baseFont);</span>
+<span class="fc" id="L67">        assignGlyphList(baseFont);</span>
+<span class="fc" id="L68">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param fontDictionary Font dictionary.
+     */
+    PDSimpleFont(COSDictionary fontDictionary)
+    {
+<span class="fc" id="L77">        super(fontDictionary);</span>
+<span class="fc" id="L78">    }</span>
+
+    /**
+     * Reads the Encoding from the Font dictionary or the embedded or substituted font file.
+     * Must be called at the end of any subclass constructors.
+     *
+     * @throws IOException if the font file could not be read
+     */
+    protected void readEncoding() throws IOException
+    {
+<span class="fc" id="L88">        COSBase encodingBase = dict.getDictionaryObject(COSName.ENCODING);</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        if (encodingBase instanceof COSName)</span>
+        {
+<span class="fc" id="L91">            COSName encodingName = (COSName) encodingBase;</span>
+<span class="pc bpc" id="L92" title="3 of 4 branches missed.">            if (FontName.ZAPF_DINGBATS.getName().equals(getName()) &amp;&amp; !isEmbedded())</span>
+            {
+                // PDFBOX- and PDF.js issue 16464: ignore other encodings
+                // this segment will work only if readEncoding() is called after the data
+                // for getName() and isEmbedded() is available
+<span class="nc" id="L97">                this.encoding = ZapfDingbatsEncoding.INSTANCE;</span>
+            }
+            else
+            {
+<span class="fc" id="L101">                this.encoding = Encoding.getInstance(encodingName);</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">                if (this.encoding == null)</span>
+                {
+<span class="nc" id="L104">                    LOG.warn(&quot;Unknown encoding: {}&quot;, encodingName.getName());</span>
+<span class="nc" id="L105">                    this.encoding = readEncodingFromFont(); // fallback</span>
+                }
+            }
+<span class="fc" id="L108">        }</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        else if (encodingBase instanceof COSDictionary)</span>
+        {
+<span class="fc" id="L111">            COSDictionary encodingDict = (COSDictionary) encodingBase;</span>
+<span class="fc" id="L112">            Encoding builtIn = null;</span>
+<span class="fc" id="L113">            Boolean symbolic = getSymbolicFlag();</span>
+
+<span class="fc" id="L115">            COSName baseEncoding = encodingDict.getCOSName(COSName.BASE_ENCODING);</span>
+
+<span class="fc bfc" id="L117" title="All 2 branches covered.">            boolean hasValidBaseEncoding = baseEncoding != null &amp;&amp;</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">                                             Encoding.getInstance(baseEncoding) != null;</span>
+
+<span class="fc bfc" id="L120" title="All 4 branches covered.">            if (!hasValidBaseEncoding &amp;&amp; Boolean.TRUE.equals(symbolic))</span>
+            {
+<span class="fc" id="L122">                builtIn = readEncodingFromFont();</span>
+            }
+
+<span class="fc bfc" id="L125" title="All 2 branches covered.">            if (symbolic == null)</span>
+            {
+<span class="fc" id="L127">                symbolic = false;</span>
+            }
+<span class="fc bfc" id="L129" title="All 2 branches covered.">            this.encoding = new DictionaryEncoding(encodingDict, !symbolic, builtIn);</span>
+<span class="fc" id="L130">        }</span>
+        else
+        {
+<span class="fc" id="L133">            this.encoding = readEncodingFromFont();</span>
+        }
+        // normalise the standard 14 name, e.g &quot;Symbol,Italic&quot; -&gt; &quot;Symbol&quot;
+<span class="fc" id="L136">        FontName standard14Name = Standard14Fonts.getMappedFontName(getName());</span>
+<span class="fc" id="L137">        assignGlyphList(standard14Name);</span>
+<span class="fc" id="L138">    }</span>
+    
+    /**
+     * Called by readEncoding() if the encoding needs to be extracted from the font file.
+     *
+     * @return encoding of the font
+     * 
+     * @throws IOException if the font file could not be read.
+     */
+    protected abstract Encoding readEncodingFromFont() throws IOException;
+
+    /**
+     * Returns the Encoding.
+     * 
+     * @return encoding
+     */
+    public Encoding getEncoding()
+    {
+<span class="fc" id="L156">        return encoding;</span>
+    }
+
+    /**
+     * Returns the glyphlist.
+     * 
+     * @return the glyphlist
+     */
+    public GlyphList getGlyphList()
+    {
+<span class="fc" id="L166">        return glyphList;</span>
+    }
+    
+    /**
+     * Returns true if the font is a symbolic (that is, it does not use the Adobe Standard Roman character set).
+     * 
+     * @return true if the font is a symbolic
+     */
+    public final boolean isSymbolic()
+    {
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        if (isSymbolic == null)</span>
+        {
+<span class="fc" id="L178">            Boolean result = isFontSymbolic();</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">            if (result != null)</span>
+            {
+<span class="fc" id="L181">                isSymbolic = result;</span>
+            }
+            else
+            {
+                // unless we can prove that the font is non-symbolic, we assume that it is not
+<span class="nc" id="L186">                isSymbolic = true;</span>
+            }
+        }
+<span class="fc" id="L189">        return isSymbolic;</span>
+    }
+
+    /**
+     * Internal implementation of isSymbolic, allowing for the fact that the result may be indeterminate.
+     * 
+     * @return true if isSymbolic
+     */
+    protected Boolean isFontSymbolic()
+    {
+<span class="fc" id="L199">        Boolean result = getSymbolicFlag();</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        if (result != null)</span>
+        {
+<span class="fc" id="L202">            return result;</span>
+        }
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">        else if (isStandard14())</span>
+        {
+<span class="nc" id="L206">            FontName mappedName = Standard14Fonts.getMappedFontName(getName());</span>
+<span class="nc bnc" id="L207" title="All 4 branches missed.">            return mappedName == FontName.SYMBOL || mappedName == FontName.ZAPF_DINGBATS;</span>
+        }
+        else
+        {
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">            if (encoding == null)</span>
+            {
+                // check, should never happen
+<span class="nc bnc" id="L214" title="All 2 branches missed.">                if (!(this instanceof PDTrueTypeFont))</span>
+                {
+<span class="nc" id="L216">                    throw new IllegalStateException(&quot;PDFBox bug: encoding should not be null!&quot;);</span>
+                }
+
+                // TTF without its non-symbolic flag set must be symbolic
+<span class="nc" id="L220">                return true;</span>
+            }
+<span class="pc bpc" id="L222" title="5 of 6 branches missed.">            else if (encoding instanceof WinAnsiEncoding ||</span>
+                     encoding instanceof MacRomanEncoding ||
+                     encoding instanceof StandardEncoding)
+            {
+<span class="fc" id="L226">                return false;</span>
+            }
+<span class="nc bnc" id="L228" title="All 2 branches missed.">            else if (encoding instanceof DictionaryEncoding)</span>
+            {
+                // each name in Differences array must also be in the latin character set
+<span class="nc bnc" id="L231" title="All 2 branches missed.">                for (String name : ((DictionaryEncoding)encoding).getDifferences().values())</span>
+                {
+<span class="nc bnc" id="L233" title="All 2 branches missed.">                    if (&quot;.notdef&quot;.equals(name))</span>
+                    {
+                        // skip
+                    }
+<span class="nc bnc" id="L237" title="All 2 branches missed.">                    else if (!(WinAnsiEncoding.INSTANCE.contains(name) &amp;&amp;</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">                               MacRomanEncoding.INSTANCE.contains(name) &amp;&amp;</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">                               StandardEncoding.INSTANCE.contains(name)))</span>
+                    {
+<span class="nc" id="L241">                        return true;</span>
+                    }
+
+<span class="nc" id="L244">                }</span>
+<span class="nc" id="L245">                return false;</span>
+            }
+            else
+            {
+                // we don't know
+<span class="nc" id="L250">                return null;</span>
+            }
+        }
+    }
+
+    /**
+     * Returns the value of the symbolic flag, allowing for the fact that the result may be indeterminate.
+     * 
+     * @return the value of the isSymbolic flag form the font descriptor
+     */
+    protected final Boolean getSymbolicFlag()
+    {
+<span class="fc bfc" id="L262" title="All 2 branches covered.">        if (getFontDescriptor() != null)</span>
+        {
+            // fixme: isSymbolic() defaults to false if the flag is missing so we can't trust this
+<span class="fc" id="L265">            return getFontDescriptor().isSymbolic();</span>
+        }
+<span class="fc" id="L267">        return null;</span>
+    }
+
+    @Override
+    public String toUnicode(int code)
+    {
+<span class="nc" id="L273">        return toUnicode(code, GlyphList.getAdobeGlyphList());</span>
+    }
+
+    @Override
+    public String toUnicode(int code, GlyphList customGlyphList)
+    {
+        // allow the glyph list to be overridden for the purpose of extracting Unicode
+        // we only do this when the font's glyph list is the AGL, to avoid breaking Zapf Dingbats
+        GlyphList unicodeGlyphList;
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">        if (this.glyphList == GlyphList.getAdobeGlyphList())</span>
+        {
+<span class="fc" id="L284">            unicodeGlyphList = customGlyphList;</span>
+        }
+        else
+        {
+<span class="nc" id="L288">            unicodeGlyphList = this.glyphList;</span>
+        }
+
+        // first try to use a ToUnicode CMap
+<span class="fc" id="L292">        String unicode = super.toUnicode(code);</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">        if (unicode != null)</span>
+        {
+<span class="fc" id="L295">            return unicode;</span>
+        }
+
+        // if the font is a &quot;simple font&quot; and uses MacRoman/MacExpert/WinAnsi[Encoding]
+        // or has Differences with names from only Adobe Standard and/or Symbol, then:
+        //
+        //    a) Map the character codes to names
+        //    b) Look up the name in the Adobe Glyph List to obtain the Unicode value
+
+<span class="fc" id="L304">        String name = null;</span>
+<span class="pc bpc" id="L305" title="1 of 2 branches missed.">        if (encoding != null)</span>
+        {
+<span class="fc" id="L307">            name = encoding.getName(code);</span>
+<span class="fc" id="L308">            unicode = unicodeGlyphList.toUnicode(name);</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">            if (unicode != null)</span>
+            {
+<span class="fc" id="L311">                return unicode;</span>
+            }
+        }
+
+        // if no value has been produced, there is no way to obtain Unicode for the character.
+<span class="pc bpc" id="L316" title="1 of 4 branches missed.">        if (LOG.isWarnEnabled() &amp;&amp; !noUnicode.contains(code))</span>
+        {
+            // we keep track of which warnings have been issued, so we don't log multiple times
+<span class="fc" id="L319">            noUnicode.add(code);</span>
+<span class="pc bpc" id="L320" title="1 of 2 branches missed.">            if (name != null)</span>
+            {
+<span class="fc" id="L322">                LOG.warn(&quot;No Unicode mapping for {} ({}) in font {}&quot;, name, code, getName());</span>
+            }
+            else
+            {
+<span class="nc" id="L326">                LOG.warn(&quot;No Unicode mapping for character code {} in font {}&quot;, code, getName());</span>
+            }
+        }
+
+<span class="fc" id="L330">        return null;</span>
+    }
+
+    @Override
+    public boolean isVertical()
+    {
+<span class="fc" id="L336">        return false;</span>
+    }
+
+    @Override
+    protected final float getStandard14Width(int code)
+    {
+<span class="pc bpc" id="L342" title="1 of 2 branches missed.">        if (getStandard14AFM() != null)</span>
+        {
+<span class="fc" id="L344">            String nameInAFM = getEncoding().getName(code);</span>
+
+            // the Adobe AFMs don't include .notdef, but Acrobat uses 250, test with PDFBOX-2334
+<span class="pc bpc" id="L347" title="1 of 2 branches missed.">            if (&quot;.notdef&quot;.equals(nameInAFM))</span>
+            {
+<span class="nc" id="L349">                return 250f;</span>
+            }
+
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">            if (&quot;nbspace&quot;.equals(nameInAFM))</span>
+            {
+                // PDFBOX-4944: nbspace is missing in AFM files,
+                // but PDF specification tells &quot;it shall be typographically the same as SPACE&quot;
+<span class="nc" id="L356">                nameInAFM = &quot;space&quot;;</span>
+            }
+<span class="fc bfc" id="L358" title="All 2 branches covered.">            else if (&quot;sfthyphen&quot;.equals(nameInAFM))</span>
+            {
+                // PDFBOX-5115: sfthyphen is missing in AFM files,
+                // but PDF specification tells &quot;it shall be typographically the same as hyphen&quot;
+<span class="fc" id="L362">                nameInAFM = &quot;hyphen&quot;;</span>
+            }
+
+<span class="fc" id="L365">            return getStandard14AFM().getCharacterWidth(nameInAFM);</span>
+        }
+<span class="nc" id="L367">        throw new IllegalStateException(&quot;No AFM&quot;);</span>
+    }
+
+    @Override
+    public boolean isStandard14()
+    {
+        // this logic is based on Acrobat's behaviour, see PDFBOX-2372
+        // the Encoding entry cannot have Differences if we want &quot;standard 14&quot; font handling
+<span class="fc bfc" id="L375" title="All 2 branches covered.">        if (getEncoding() instanceof DictionaryEncoding)</span>
+        {
+<span class="fc" id="L377">            DictionaryEncoding dictionary = (DictionaryEncoding)getEncoding();</span>
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">            if (!dictionary.getDifferences().isEmpty())</span>
+            {
+                // we also require that the differences are actually different, see PDFBOX-1900 with
+                // the file from PDFBOX-2192 on Windows
+<span class="fc" id="L382">                Encoding baseEncoding = dictionary.getBaseEncoding();</span>
+<span class="fc bfc" id="L383" title="All 2 branches covered.">                for (Map.Entry&lt;Integer, String&gt; entry : dictionary.getDifferences().entrySet())</span>
+                {
+<span class="fc bfc" id="L385" title="All 2 branches covered.">                    if (!entry.getValue().equals(baseEncoding.getName(entry.getKey())))</span>
+                    {
+<span class="fc" id="L387">                        return false;</span>
+                    }
+<span class="fc" id="L389">                }</span>
+            }
+        }
+<span class="fc" id="L392">        return super.isStandard14();</span>
+    }
+
+    protected boolean isNonZeroBoundingBox (PDRectangle bbox)
+    {
+<span class="pc bpc" id="L397" title="1 of 2 branches missed.">        return bbox != null &amp;&amp; (</span>
+<span class="fc bfc" id="L398" title="All 2 branches covered.">            Float.compare(bbox.getLowerLeftX(), 0) != 0 ||</span>
+<span class="pc bpc" id="L399" title="1 of 2 branches missed.">            Float.compare(bbox.getLowerLeftY(), 0) != 0 ||</span>
+<span class="nc bnc" id="L400" title="All 2 branches missed.">            Float.compare(bbox.getUpperRightX(), 0) != 0 ||</span>
+<span class="pc bnc" id="L401" title="All 2 branches missed.">            Float.compare(bbox.getUpperRightY(), 0) != 0</span>
+        );
+    }
+
+    /**
+     * Returns the path for the character with the given name. For some fonts, GIDs may be used instead of names when
+     * calling this method. *
+     * 
+     * @param name glyph name
+     * @return glyph path of the character with the given name
+     * 
+     * @throws IOException if the path could not be read
+     */
+    public abstract GeneralPath getPath(String name) throws IOException;
+
+    /**
+     * Returns true if the font contains the character with the given name.
+     *
+     * @param name glyph name
+     * @return true if the font contains the character with the given name
+     * 
+     * @throws IOException if the path could not be read
+     */
+    public abstract boolean hasGlyph(String name) throws IOException;
+
+    /**
+     * Returns the embedded or system font used for rendering. This is never null.
+     * 
+     * @return the embedded or system font used for rendering
+     */
+    public abstract FontBoxFont getFontBoxFont();
+
+    @Override
+    public void addToSubset(int codePoint)
+    {
+<span class="nc" id="L436">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public void subset() throws IOException
+    {
+        // only TTF subsetting via PDType0Font is currently supported
+<span class="nc" id="L443">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public boolean willBeSubset()
+    {
+<span class="fc" id="L449">        return false;</span>
+    }
+
+    @Override
+    public boolean hasExplicitWidth(int code) throws IOException
+    {
+<span class="fc bfc" id="L455" title="All 2 branches covered.">        if (dict.containsKey(COSName.WIDTHS))</span>
+        {
+<span class="fc" id="L457">            int firstChar = dict.getInt(COSName.FIRST_CHAR, -1);</span>
+<span class="pc bpc" id="L458" title="1 of 4 branches missed.">            if (code &gt;= firstChar &amp;&amp; code - firstChar &lt; getWidths().size())</span>
+            {
+<span class="fc" id="L460">                return true;</span>
+            }
+        }
+<span class="fc" id="L463">        return false;</span>
+    }
+
+    private void assignGlyphList(FontName fontName)
+    {
+        // assign the glyph list based on the font
+<span class="fc bfc" id="L469" title="All 2 branches covered.">        if (FontName.ZAPF_DINGBATS == fontName)</span>
+        {
+<span class="fc" id="L471">            glyphList = GlyphList.getZapfDingbats();</span>
+        }
+        else
+        {
+<span class="fc" id="L475">            glyphList = GlyphList.getAdobeGlyphList();</span>
+        }
+<span class="fc" id="L477">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,664 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDDocumentCatalog.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel</a> &gt; <span class="el_source">PDDocumentCatalog.java</span></div><h1>PDDocumentCatalog.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.pdmodel.common.COSArrayList;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.common.PDDestinationOrAction;
+import org.apache.pdfbox.pdmodel.common.PDMetadata;
+import org.apache.pdfbox.pdmodel.common.PDPageLabels;
+import org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure.PDMarkInfo;
+import org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure.PDStructureTreeRoot;
+import org.apache.pdfbox.pdmodel.fixup.AcroFormDefaultFixup;
+import org.apache.pdfbox.pdmodel.fixup.PDDocumentFixup;
+import org.apache.pdfbox.pdmodel.graphics.color.PDOutputIntent;
+import org.apache.pdfbox.pdmodel.graphics.optionalcontent.PDOptionalContentProperties;
+import org.apache.pdfbox.pdmodel.interactive.action.PDActionFactory;
+import org.apache.pdfbox.pdmodel.interactive.action.PDDocumentCatalogAdditionalActions;
+import org.apache.pdfbox.pdmodel.interactive.action.PDURIDictionary;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDDestination;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDNamedDestination;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.pagenavigation.PDThread;
+import org.apache.pdfbox.pdmodel.interactive.viewerpreferences.PDViewerPreferences;
+
+/**
+ * The Document Catalog of a PDF.
+ *
+ * @author Ben Litchfield
+ */
+public class PDDocumentCatalog implements COSObjectable
+{
+<span class="fc" id="L61">    private static final Logger LOG = LogManager.getLogger(PDDocumentCatalog.class);</span>
+    
+    private final COSDictionary root;
+    private final PDDocument document;
+    private PDDocumentFixup acroFormFixupApplied;
+    private PDAcroForm cachedAcroForm;
+
+    /**
+     * Constructor. Internal PDFBox use only! If you need to get the document catalog, call
+     * {@link PDDocument#getDocumentCatalog()}.
+     *
+     * @param doc The document that this catalog is part of.
+     */
+    protected PDDocumentCatalog(PDDocument doc)
+<span class="nc" id="L75">    {</span>
+<span class="nc" id="L76">        document = doc;</span>
+<span class="nc" id="L77">        root = new COSDictionary();</span>
+<span class="nc" id="L78">        root.setItem(COSName.TYPE, COSName.CATALOG);</span>
+<span class="nc" id="L79">        document.getDocument().getTrailer().setItem(COSName.ROOT, root);</span>
+<span class="nc" id="L80">    }</span>
+
+    /**
+     * Constructor. Internal PDFBox use only! If you need to get the document catalog, call
+     * {@link PDDocument#getDocumentCatalog()}.
+     *
+     * @param doc The document that this catalog is part of.
+     * @param rootDictionary The root dictionary that this object wraps.
+     */
+    protected PDDocumentCatalog(PDDocument doc, COSDictionary rootDictionary)
+<span class="fc" id="L90">    {</span>
+<span class="fc" id="L91">        document = doc;</span>
+<span class="fc" id="L92">        root = rootDictionary;</span>
+<span class="fc" id="L93">    }</span>
+
+    /**
+     * Convert this standard java object to a COS object.
+     *
+     * @return The cos object that matches this Java object.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="fc" id="L103">        return root;</span>
+    }
+
+    /**
+     * Get the documents AcroForm. This will return null if no AcroForm is part of the document.
+     *
+     * @return The document's AcroForm.
+     */
+    public PDAcroForm getAcroForm()
+    {
+<span class="fc" id="L113">        return getAcroForm(new AcroFormDefaultFixup(document));</span>
+    }
+
+    /**
+     * Get the documents AcroForm. This will return null if no AcroForm is part of the document.
+     *
+     * Dependent on setting &lt;code&gt;acroFormFixup&lt;/code&gt; some fixing/changes will be done to the AcroForm.
+     * If you need to ensure that there are no fixes applied call &lt;code&gt;getAcroForm&lt;/code&gt; with &lt;code&gt;null&lt;/code&gt;.
+     * 
+     * Using &lt;code&gt;getAcroForm(PDDocumentFixup acroFormFixup)&lt;/code&gt; might change the original content and
+     * subsequent calls with &lt;code&gt;getAcroForm(null)&lt;/code&gt; will return the changed content.
+     * 
+     * @param acroFormFixup the fix up action or null
+     * @return The document's AcroForm.
+     */
+    public PDAcroForm getAcroForm(PDDocumentFixup acroFormFixup)
+    {
+<span class="pc bpc" id="L130" title="1 of 4 branches missed.">        if (acroFormFixup != null &amp;&amp; acroFormFixup != acroFormFixupApplied)</span>
+        {
+<span class="fc" id="L132">            acroFormFixup.apply();</span>
+<span class="fc" id="L133">            cachedAcroForm = null;</span>
+<span class="fc" id="L134">            acroFormFixupApplied =  acroFormFixup;</span>
+        }
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        else if (acroFormFixupApplied != null)</span>
+        {
+<span class="fc" id="L138">            LOG.debug(&quot;AcroForm content has already been retrieved with fixes applied - original content changed because of that&quot;);</span>
+        }
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        if (cachedAcroForm == null)</span>
+        {
+<span class="fc" id="L142">            COSDictionary dict = root.getCOSDictionary(COSName.ACRO_FORM);</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">            cachedAcroForm = dict == null ? null : new PDAcroForm(document, dict);</span>
+        }
+<span class="fc" id="L145">        return cachedAcroForm;</span>
+    }
+
+    /**
+     * Sets the AcroForm for this catalog.
+     *
+     * @param acroForm The new AcroForm.
+     */
+    public void setAcroForm(PDAcroForm acroForm)
+    {
+<span class="fc" id="L155">        root.setItem(COSName.ACRO_FORM, acroForm);</span>
+<span class="fc" id="L156">        cachedAcroForm = null;</span>
+<span class="fc" id="L157">    }</span>
+
+    /**
+     * Returns all pages in the document, as a page tree.
+     * 
+     * @return PDPageTree providing all pages of the document
+     */
+    public PDPageTree getPages()
+    {
+        // todo: cache me?
+<span class="fc" id="L167">        return new PDPageTree(root.getCOSDictionary(COSName.PAGES), document);</span>
+    }
+
+    /**
+     * Get the viewer preferences associated with this document or null if they do not exist.
+     *
+     * @return The document's viewer preferences.
+     */
+    public PDViewerPreferences getViewerPreferences()
+    {
+<span class="fc" id="L177">        COSDictionary viewerPref = root.getCOSDictionary(COSName.VIEWER_PREFERENCES);</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        return viewerPref != null ? new PDViewerPreferences(viewerPref) : null;</span>
+    }
+
+    /**
+     * Sets the viewer preferences.
+     *
+     * @param prefs The new viewer preferences.
+     */
+    public void setViewerPreferences(PDViewerPreferences prefs)
+    {
+<span class="fc" id="L188">        root.setItem(COSName.VIEWER_PREFERENCES, prefs);</span>
+<span class="fc" id="L189">    }</span>
+
+    /**
+     * Get the outline associated with this document or null if it does not exist.
+     *
+     * @return The document's outline.
+     */
+    public PDDocumentOutline getDocumentOutline()
+    {
+<span class="fc" id="L198">        COSDictionary outlineDict = root.getCOSDictionary(COSName.OUTLINES);</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        return outlineDict != null ? new PDDocumentOutline(outlineDict) : null;</span>
+    }
+
+    /**
+     * Sets the document outlines.
+     *
+     * @param outlines The new document outlines.
+     */
+    public void setDocumentOutline(PDDocumentOutline outlines)
+    {
+<span class="fc" id="L209">        root.setItem(COSName.OUTLINES, outlines);</span>
+<span class="fc" id="L210">    }</span>
+
+    /**
+     * Returns the document's article threads.
+     * 
+     * @return a list of all threads of the document
+     */
+    public List&lt;PDThread&gt; getThreads()
+    {
+<span class="nc" id="L219">        COSArray array = root.getCOSArray(COSName.THREADS);</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">        if (array == null)</span>
+        {
+<span class="nc" id="L222">            array = new COSArray();</span>
+<span class="nc" id="L223">            array.setDirect(false);</span>
+<span class="nc" id="L224">            root.setItem(COSName.THREADS, array);</span>
+        }
+<span class="nc" id="L226">        List&lt;PDThread&gt; pdObjects = new ArrayList&lt;&gt;(array.size());</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        for (int i = 0; i &lt; array.size(); i++)</span>
+        {
+<span class="nc" id="L229">            pdObjects.add(new PDThread((COSDictionary)array.getObject(i)));</span>
+        }
+<span class="nc" id="L231">        return new COSArrayList&lt;&gt;(pdObjects, array);</span>
+    }
+
+    /**
+     * Sets the list of threads for this pdf document.
+     *
+     * @param threads The list of threads, or null to clear it.
+     */
+    public void setThreads(List&lt;PDThread&gt; threads)
+    {
+<span class="nc" id="L241">        COSArray threadsArray = new COSArray(threads);</span>
+<span class="nc" id="L242">        threadsArray.setDirect(false);</span>
+<span class="nc" id="L243">        root.setItem(COSName.THREADS, threadsArray);</span>
+<span class="nc" id="L244">    }</span>
+
+    /**
+     * Get the metadata that is part of the document catalog. This will return null if there is no
+     * meta data for this object.
+     *
+     * @return The metadata for this object.
+     */
+    public PDMetadata getMetadata()
+    {
+<span class="fc" id="L254">        COSStream metaObj = root.getCOSStream(COSName.METADATA);</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">        return metaObj != null ? new PDMetadata(metaObj) : null;</span>
+    }
+
+    /**
+     * Sets the metadata for this object. This can be null.
+     *
+     * @param meta The meta data for this object.
+     */
+    public void setMetadata(PDMetadata meta)
+    {
+<span class="fc" id="L265">        root.setItem(COSName.METADATA, meta);</span>
+<span class="fc" id="L266">    }</span>
+
+    /**
+     * Sets the Document Open Action for this object.
+     *
+     * @param action The action you want to perform.
+     */
+    public void setOpenAction(PDDestinationOrAction action)
+    {
+<span class="fc" id="L275">        root.setItem(COSName.OPEN_ACTION, action);</span>
+<span class="fc" id="L276">    }</span>
+
+    /**
+     * Get the Document Open Action for this object.
+     *
+     * @return The action to perform when the document is opened.
+     * @throws IOException If there is an error creating the destination or action.
+     */
+    public PDDestinationOrAction getOpenAction() throws IOException
+    {
+<span class="fc" id="L286">        COSBase openAction = root.getDictionaryObject(COSName.OPEN_ACTION);</span>
+<span class="pc bpc" id="L287" title="1 of 2 branches missed.">        if (openAction instanceof COSDictionary)</span>
+        {
+<span class="nc" id="L289">            return PDActionFactory.createAction((COSDictionary)openAction);</span>
+        }
+<span class="fc bfc" id="L291" title="All 2 branches covered.">        else if (openAction instanceof COSArray)</span>
+        {
+<span class="fc" id="L293">            return PDDestination.create(openAction);</span>
+        }
+        else
+        {
+<span class="fc" id="L297">            return null;</span>
+        }
+    }
+    /**
+     * @return The Additional Actions for this Document
+     */
+    public PDDocumentCatalogAdditionalActions getActions()
+    {
+<span class="nc" id="L305">        COSDictionary addAction = root.getCOSDictionary(COSName.AA);</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">        if (addAction == null)</span>
+        {
+<span class="nc" id="L308">            addAction = new COSDictionary();</span>
+<span class="nc" id="L309">            root.setItem(COSName.AA, addAction);</span>
+        }
+<span class="nc" id="L311">        return new PDDocumentCatalogAdditionalActions(addAction);</span>
+    }
+
+    /**
+     * Sets the additional actions for the document.
+     *
+     * @param actions The actions that are associated with this document.
+     */
+    public void setActions(PDDocumentCatalogAdditionalActions actions)
+    {
+<span class="nc" id="L321">        root.setItem(COSName.AA, actions);</span>
+<span class="nc" id="L322">    }</span>
+
+    /**
+     * @return The names dictionary for this document or null if none exist.
+     */
+    public PDDocumentNameDictionary getNames()
+    {
+<span class="fc" id="L329">        COSDictionary names = root.getCOSDictionary(COSName.NAMES);</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">        return names == null ? null : new PDDocumentNameDictionary(this, names);</span>
+    }
+
+    /**
+     * @return The named destinations dictionary for this document or null if none exists.
+     */
+    public PDDocumentNameDestinationDictionary getDests()
+    {
+<span class="fc" id="L338">        COSDictionary dests = root.getCOSDictionary(COSName.DESTS);</span>
+<span class="fc bfc" id="L339" title="All 2 branches covered.">        return dests != null ? new PDDocumentNameDestinationDictionary(dests) : null;</span>
+    }
+    
+    /**
+     * Find the page destination from a named destination.
+     * @param namedDest the named destination.
+     * @return a PDPageDestination object or null if not found.
+     * @throws IOException if there is an error creating the PDPageDestination object.
+     */
+    public PDPageDestination findNamedDestinationPage(PDNamedDestination namedDest)
+            throws IOException
+    {
+<span class="fc" id="L351">        PDPageDestination pageDestination = null;</span>
+<span class="fc" id="L352">        PDDocumentNameDictionary namesDict = getNames();</span>
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">        if (namesDict != null)</span>
+        {
+<span class="fc" id="L355">            PDDestinationNameTreeNode destsTree = namesDict.getDests();</span>
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">            if (destsTree != null)</span>
+            {
+<span class="fc" id="L358">                pageDestination = destsTree.getValue(namedDest.getNamedDestination());</span>
+            }
+        }
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">        if (pageDestination == null)</span>
+        {
+            // Look up /Dests dictionary from catalog
+<span class="nc" id="L364">            PDDocumentNameDestinationDictionary nameDestDict = getDests();</span>
+<span class="nc bnc" id="L365" title="All 2 branches missed.">            if (nameDestDict != null)</span>
+            {
+<span class="nc" id="L367">                String name = namedDest.getNamedDestination();</span>
+<span class="nc" id="L368">                pageDestination = (PDPageDestination) nameDestDict.getDestination(name);</span>
+            }
+        }
+<span class="fc" id="L371">        return pageDestination;</span>
+    }
+    
+    /**
+     * Sets the names dictionary for the document.
+     *
+     * @param names The names dictionary that is associated with this document.
+     */
+    public void setNames(PDDocumentNameDictionary names)
+    {
+<span class="nc" id="L381">        root.setItem(COSName.NAMES, names);</span>
+<span class="nc" id="L382">    }</span>
+
+    /**
+     * Get info about doc's usage of tagged features. This will return null if there is no
+     * information.
+     *
+     * @return The new mark info.
+     */
+    public PDMarkInfo getMarkInfo()
+    {
+<span class="fc" id="L392">        COSDictionary dic = root.getCOSDictionary(COSName.MARK_INFO);</span>
+<span class="fc bfc" id="L393" title="All 2 branches covered.">        return dic == null ? null : new PDMarkInfo(dic);</span>
+    }
+
+    /**
+     * Set information about the doc's usage of tagged features.
+     *
+     * @param markInfo The new MarkInfo data.
+     */
+    public void setMarkInfo(PDMarkInfo markInfo)
+    {
+<span class="fc" id="L403">        root.setItem(COSName.MARK_INFO, markInfo);</span>
+<span class="fc" id="L404">    }</span>
+
+    /**
+     * Get the list of OutputIntents defined in the document.
+     *
+     * @return The list of PDOutputIntent, never null.
+     */
+    public List&lt;PDOutputIntent&gt; getOutputIntents()
+    {
+<span class="fc" id="L413">        List&lt;PDOutputIntent&gt; retval = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L414">        COSArray array = root.getCOSArray(COSName.OUTPUT_INTENTS);</span>
+<span class="fc bfc" id="L415" title="All 2 branches covered.">        if (array != null)</span>
+        {
+<span class="fc bfc" id="L417" title="All 2 branches covered.">            for (COSBase cosBase : array)</span>
+            {
+<span class="pc bpc" id="L419" title="1 of 2 branches missed.">                if (cosBase instanceof COSObject)</span>
+                {
+<span class="nc" id="L421">                    cosBase = ((COSObject)cosBase).getObject();</span>
+                }
+<span class="fc" id="L423">                PDOutputIntent oi = new PDOutputIntent((COSDictionary) cosBase);</span>
+<span class="fc" id="L424">                retval.add(oi);</span>
+<span class="fc" id="L425">            }</span>
+        }
+<span class="fc" id="L427">        return retval;</span>
+    }
+
+    /**
+     * Add an OutputIntent to the list.  If there is not OutputIntent, the list is created and the
+     * first  element added.
+     *
+     * @param outputIntent the OutputIntent to add.
+     */
+    public void addOutputIntent(PDOutputIntent outputIntent)
+    {
+<span class="fc" id="L438">        COSArray array = root.getCOSArray(COSName.OUTPUT_INTENTS);</span>
+<span class="pc bpc" id="L439" title="1 of 2 branches missed.">        if (array == null)</span>
+        {
+<span class="fc" id="L441">            array = new COSArray();</span>
+<span class="fc" id="L442">            root.setItem(COSName.OUTPUT_INTENTS, array);</span>
+        }
+<span class="fc" id="L444">        array.add(outputIntent.getCOSObject());</span>
+<span class="fc" id="L445">    }</span>
+
+    /**
+     * Replace the list of OutputIntents of the document.
+     *
+     * @param outputIntents the list of OutputIntents, if the list is empty all OutputIntents are
+     * removed.
+     */
+    public void setOutputIntents(List&lt;PDOutputIntent&gt; outputIntents) 
+    {
+<span class="fc" id="L455">        COSArray array = new COSArray();</span>
+<span class="fc bfc" id="L456" title="All 2 branches covered.">        for (PDOutputIntent intent : outputIntents)</span>
+        {
+<span class="fc" id="L458">            array.add(intent.getCOSObject());</span>
+<span class="fc" id="L459">        }</span>
+<span class="fc" id="L460">        root.setItem(COSName.OUTPUT_INTENTS, array);</span>
+<span class="fc" id="L461">    }</span>
+
+    /**
+     * Returns the page display mode.
+     * 
+     * @return the PageMode of the document, if not present PageMode.USE_NONE is returned
+     */
+    public PageMode getPageMode()
+    {
+<span class="fc" id="L470">        String mode = root.getNameAsString(COSName.PAGE_MODE);</span>
+<span class="fc bfc" id="L471" title="All 2 branches covered.">        if (mode != null)</span>
+        {
+            try
+            {
+<span class="fc" id="L475">                return PageMode.fromString(mode);</span>
+            }
+<span class="nc" id="L477">            catch (IllegalArgumentException e)</span>
+            {
+<span class="nc" id="L479">                LOG.debug(() -&gt; &quot;Invalid PageMode used '&quot; + mode + &quot;' - setting to PageMode.USE_NONE&quot;, e);</span>
+<span class="nc" id="L480">                return PageMode.USE_NONE;</span>
+            }
+        }
+        else
+        {
+<span class="fc" id="L485">            return PageMode.USE_NONE;</span>
+        }
+    }
+
+    /**
+     * Sets the page mode.
+     *
+     * @param mode The new page mode.
+     */
+    public void setPageMode(PageMode mode)
+    {
+<span class="fc" id="L496">        root.setName(COSName.PAGE_MODE, mode.stringValue());</span>
+<span class="fc" id="L497">    }</span>
+
+    /**
+     * Returns the page layout.
+     * 
+     * @return the PageLayout of the document, if not present PageLayout.SINGLE_PAGE is returned
+     */
+    public PageLayout getPageLayout()
+    {
+<span class="nc" id="L506">        String mode = root.getNameAsString(COSName.PAGE_LAYOUT);</span>
+<span class="nc bnc" id="L507" title="All 4 branches missed.">        if (mode != null &amp;&amp; !mode.isEmpty())</span>
+        {
+            try
+            {
+<span class="nc" id="L511">                return PageLayout.fromString(mode);</span>
+            }
+<span class="nc" id="L513">            catch (IllegalArgumentException e)</span>
+            {
+<span class="nc" id="L515">                LOG.warn(() -&gt; &quot;Invalid PageLayout used '&quot; + mode + &quot;' - returning PageLayout.SINGLE_PAGE&quot;,</span>
+                        e);
+            }
+        }
+<span class="nc" id="L519">        return PageLayout.SINGLE_PAGE;</span>
+    }
+
+    /**
+     * Sets the page layout.
+     *
+     * @param layout The new page layout.
+     */
+    public void setPageLayout(PageLayout layout)
+    {
+<span class="nc" id="L529">        root.setName(COSName.PAGE_LAYOUT, layout.stringValue());</span>
+<span class="nc" id="L530">    }</span>
+
+    /**
+     * Returns the document-level URI.
+     * 
+     * @return the document level URI if present, otherwise null
+     */
+    public PDURIDictionary getURI()
+    {
+<span class="nc" id="L539">        COSDictionary uri = root.getCOSDictionary(COSName.URI);</span>
+<span class="nc bnc" id="L540" title="All 2 branches missed.">        return uri == null ? null : new PDURIDictionary(uri);</span>
+    }
+
+    /**
+     * Sets the document level URI.
+     *
+     * @param uri The new document level URI.
+     */
+    public void setURI(PDURIDictionary uri)
+    {
+<span class="nc" id="L550">        root.setItem(COSName.URI, uri);</span>
+<span class="nc" id="L551">    }</span>
+
+    /**
+     * Get the document's structure tree root, or null if none exists.
+     * 
+     * @return the structure tree root if present, otherwise null
+     */
+    public PDStructureTreeRoot getStructureTreeRoot()
+    {
+<span class="fc" id="L560">        COSDictionary dict = root.getCOSDictionary(COSName.STRUCT_TREE_ROOT);</span>
+<span class="fc bfc" id="L561" title="All 2 branches covered.">        return dict == null ? null : new PDStructureTreeRoot(dict);</span>
+    }
+
+    /**
+     * Sets the document's structure tree root.
+     *
+     * @param treeRoot The new structure tree.
+     */
+    public void setStructureTreeRoot(PDStructureTreeRoot treeRoot)
+    {
+<span class="fc" id="L571">        root.setItem(COSName.STRUCT_TREE_ROOT, treeRoot);</span>
+<span class="fc" id="L572">    }</span>
+
+    /**
+     * Returns the language for the document, or null.
+     * 
+     * @return the language of the document if present, otherwise null
+     */
+    public String getLanguage()
+    {
+<span class="fc" id="L581">        return root.getString(COSName.LANG);</span>
+    }
+
+    /**
+     * Sets the Language for the document.
+     *
+     * @param language The new document language.
+     */
+    public void setLanguage(String language)
+    {
+<span class="fc" id="L591">        root.setString(COSName.LANG, language);</span>
+<span class="fc" id="L592">    }</span>
+
+    /**
+     * Returns the PDF specification version this document conforms to.
+     *
+     * @return the PDF version (e.g. &quot;1.4&quot;)
+     */
+    public String getVersion()
+    {
+<span class="fc" id="L601">        return root.getNameAsString(COSName.VERSION);</span>
+    }
+
+    /**
+     * Sets the PDF specification version this document conforms to.
+     *
+     * @param version the PDF version (e.g. &quot;1.4&quot;)
+     */
+    public void setVersion(String version)
+    {
+<span class="fc" id="L611">        root.setName(COSName.VERSION, version);</span>
+<span class="fc" id="L612">    }</span>
+
+    /**
+     * Returns the page labels descriptor of the document.
+     *
+     * @return the page labels descriptor of the document.
+     * @throws IOException If there is a problem retrieving the page labels.
+     */
+    public PDPageLabels getPageLabels() throws IOException
+    {
+<span class="fc" id="L622">        COSDictionary dict = root.getCOSDictionary(COSName.PAGE_LABELS);</span>
+<span class="pc bpc" id="L623" title="1 of 2 branches missed.">        return dict == null ? null : new PDPageLabels(document, dict);</span>
+    }
+
+    /**
+     * Sets the page label descriptor for the document.
+     *
+     * @param labels the new page label descriptor to set.
+     */
+    public void setPageLabels(PDPageLabels labels)
+    {
+<span class="nc" id="L633">        root.setItem(COSName.PAGE_LABELS, labels);</span>
+<span class="nc" id="L634">    }</span>
+
+    /**
+     * Get the optional content properties dictionary associated with this document.
+     *
+     * @return the optional properties dictionary or null if it is not present
+     */
+    public PDOptionalContentProperties getOCProperties()
+    {
+<span class="fc" id="L643">        COSDictionary dict = root.getCOSDictionary(COSName.OCPROPERTIES);</span>
+<span class="fc bfc" id="L644" title="All 2 branches covered.">        return dict == null ? null : new PDOptionalContentProperties(dict);</span>
+    }
+
+    /**
+     * Sets the optional content properties dictionary. The document version is incremented to 1.5
+     * if lower.
+     *
+     * @param ocProperties the optional properties dictionary
+     */
+    public void setOCProperties(PDOptionalContentProperties ocProperties)
+    {
+<span class="fc" id="L655">        root.setItem(COSName.OCPROPERTIES, ocProperties);</span>
+
+        // optional content groups require PDF 1.5
+<span class="pc bpc" id="L658" title="2 of 4 branches missed.">        if (ocProperties != null &amp;&amp; document.getVersion() &lt; 1.5)</span>
+        {
+<span class="fc" id="L660">            document.setVersion(1.5f);</span>
+        }
+<span class="fc" id="L662">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

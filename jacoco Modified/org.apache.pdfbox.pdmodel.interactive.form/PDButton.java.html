@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDButton.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.form</a> &gt; <span class="el_source">PDButton.java</span></div><h1>PDButton.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.form;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSString;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceDictionary;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceEntry;
+
+/**
+ * A button field represents an interactive control on the screen
+ * that the user can manipulate with the mouse.
+ *
+ * @author sug
+ */
+public abstract class PDButton extends PDTerminalField
+{
+    /**
+     * A Ff flag. If set, the field is a set of radio buttons
+     */
+    static final int FLAG_RADIO = 1 &lt;&lt; 15;
+    
+    /**
+     * A Ff flag. If set, the field is a pushbutton.
+     */
+    static final int FLAG_PUSHBUTTON = 1 &lt;&lt; 16;
+    
+    /**
+     * A Ff flag. If set, radio buttons individual fields, using the same
+     * value for the on state will turn on and off in unison.
+     */
+    static final int FLAG_RADIOS_IN_UNISON = 1 &lt;&lt; 25;
+    
+    /**
+     * @see PDField#PDField(PDAcroForm)
+     *
+     * @param acroForm The acroform.
+     */
+    PDButton(PDAcroForm acroForm)
+    {
+<span class="fc" id="L66">        super(acroForm);</span>
+<span class="fc" id="L67">        getCOSObject().setItem(COSName.FT, COSName.BTN);</span>
+<span class="fc" id="L68">    }</span>
+    
+    /**
+     * Constructor.
+     * 
+     * @param acroForm The form that this field is part of.
+     * @param field the PDF object to represent as a field.
+     * @param parent the parent node of the node
+     */
+    PDButton(PDAcroForm acroForm, COSDictionary field, PDNonTerminalField parent)
+    {
+<span class="fc" id="L79">        super(acroForm, field, parent);</span>
+<span class="fc" id="L80">    }</span>
+    
+    /**
+     * Determines if push button bit is set.
+     * 
+     * @return true if type of button field is a push button.
+     */
+    public boolean isPushButton()
+    {
+<span class="fc" id="L89">        return getCOSObject().getFlag(COSName.FF, FLAG_PUSHBUTTON);</span>
+    }
+
+    /**
+     * Determines if radio button bit is set.
+     * 
+     * @return true if type of button field is a radio button.
+     */
+    public boolean isRadioButton()
+    {
+<span class="fc" id="L99">        return getCOSObject().getFlag(COSName.FF, FLAG_RADIO);</span>
+    }
+    
+    /**
+     * Returns the selected value.
+     * 
+     * &lt;p&gt;Off is the default value which will also be returned if the
+     * value hasn't been set at all.
+     * 
+     * @return A non-null string.
+     */
+    public String getValue()
+    {
+<span class="fc" id="L112">        COSBase value = getInheritableAttribute(COSName.V);</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        if (value instanceof COSName)</span>
+        {
+<span class="fc" id="L115">            String stringValue = ((COSName)value).getName();</span>
+<span class="fc" id="L116">            List&lt;String&gt; exportValues = getExportValues();</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">            if (!exportValues.isEmpty())</span>
+            {
+                try
+                {
+<span class="fc" id="L121">                    int idx = Integer.parseInt(stringValue, 10);</span>
+<span class="pc bpc" id="L122" title="2 of 4 branches missed.">                    if (idx &gt;= 0 &amp;&amp; idx &lt; exportValues.size())</span>
+                    {
+<span class="fc" id="L124">                        return exportValues.get(idx);</span>
+                    }
+                }
+<span class="fc" id="L127">                catch (NumberFormatException nfe)</span>
+                {
+<span class="fc" id="L129">                    return stringValue;</span>
+<span class="nc" id="L130">                }</span>
+            }
+<span class="fc" id="L132">            return stringValue;</span>
+        }
+        else
+        {
+            // Off is the default value if there is nothing else set.
+            // See PDF Spec.
+<span class="fc" id="L138">            return &quot;Off&quot;;</span>
+        }
+    }
+
+    /**
+     * Set the selected option given its name, and try to update the visual appearance.
+     * 
+     * @param value Name of option to select
+     * @throws IOException if the value could not be set
+     * @throws IllegalArgumentException if the value is not a valid option.
+     */
+    @Override
+    public void setValue(String value) throws IOException
+    {
+<span class="fc" id="L152">        checkValue(value);</span>
+        
+        // if there are export values/an Opt entry there is a different 
+        // approach to setting the value
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        if (!getExportValues().isEmpty())</span>
+        {
+<span class="fc" id="L158">            updateByOption(value);</span>
+        }
+        else
+        {
+<span class="fc" id="L162">            updateByValue(value);</span>
+        }
+        
+<span class="fc" id="L165">        applyChange();</span>
+<span class="fc" id="L166">    }</span>
+
+    /**
+     * Set the selected option given its index, and try to update the visual appearance.
+     * 
+     * NOTE: this method is only usable if there are export values and used for 
+     * radio buttons with FLAG_RADIOS_IN_UNISON not set.
+     * 
+     * @param index index of option to be selected
+     * @throws IOException if the value could not be set
+     * @throws IllegalArgumentException if the index provided is not a valid index.
+     */
+    public void setValue(int index) throws IOException
+    {
+<span class="fc" id="L180">        List&lt;String&gt; exportValues = getExportValues();</span>
+<span class="pc bpc" id="L181" title="2 of 6 branches missed.">        if (exportValues.isEmpty() || index &lt; 0 || index &gt;= exportValues.size())</span>
+        {
+<span class="fc" id="L183">            throw new IllegalArgumentException(&quot;index '&quot; + index</span>
+<span class="fc" id="L184">                    + &quot;' is not a valid index for the field &quot; + getFullyQualifiedName()</span>
+<span class="fc" id="L185">                    + &quot;, valid indices are from 0 to &quot; + (exportValues.size() - 1));</span>
+        }
+
+<span class="fc" id="L188">        updateByValue(String.valueOf(index));</span>
+                
+<span class="fc" id="L190">        applyChange();</span>
+<span class="fc" id="L191">    }</span>
+    
+    
+    /**
+     * Returns the default value, if any.
+     *
+     * @return A non-null string.
+     */
+    public String getDefaultValue()
+    {
+<span class="fc" id="L201">        COSBase value = getInheritableAttribute(COSName.DV);</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">        if (value instanceof COSName)</span>
+        {
+<span class="fc" id="L204">            return ((COSName)value).getName();</span>
+        }
+        else
+        {
+<span class="fc" id="L208">            return &quot;&quot;;</span>
+        }
+    }
+
+    /**
+     * Sets the default value.
+     *
+     * @param value Name of option to select
+     * @throws IllegalArgumentException if the value is not a valid option.
+     */
+    public void setDefaultValue(String value)
+    {
+<span class="fc" id="L220">        checkValue(value);        </span>
+<span class="fc" id="L221">        getCOSObject().setName(COSName.DV, value);</span>
+<span class="fc" id="L222">    }    </span>
+    
+    @Override
+    public String getValueAsString()
+    {
+<span class="fc" id="L227">        return getValue();</span>
+    }    
+    
+    
+    /**
+     * This will get the (optional) export values.
+     * 
+     * &lt;p&gt;The export values are defined in the field dictionaries /Opt key.&lt;/p&gt;
+     * 
+     * &lt;p&gt;The option values are used to define the export values
+     * for the field to 
+     * &lt;ul&gt;
+     *  &lt;li&gt;hold values in non-Latin writing systems as name objects, which represent the field value, are limited
+     *      to PDFDocEncoding
+     *  &lt;/li&gt;
+     *  &lt;li&gt;allow radio buttons having the same export value to be handled independently
+     *  &lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * @return List containing all possible export values. If there is no /Opt entry an empty list will be returned.
+     * 
+     * @see #getOnValues() 
+     */
+    public List&lt;String&gt; getExportValues()
+    {
+<span class="fc" id="L252">        COSBase value = getInheritableAttribute(COSName.OPT);</span>
+        
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">        if (value instanceof COSString)</span>
+        {
+<span class="nc" id="L256">            return Collections.singletonList(((COSString) value).getString());</span>
+        }
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        else if (value instanceof COSArray)</span>
+        {
+<span class="fc" id="L260">            return ((COSArray) value).toCOSStringStringList();</span>
+        }
+<span class="fc" id="L262">        return Collections.emptyList();</span>
+    }
+    
+    /**
+     * This will set the export values.
+     * 
+     * @see #getExportValues()
+     * @param values List containing all possible export values. Supplying null or an empty list will remove the Opt entry.
+     */
+    public void setExportValues(List&lt;String&gt; values)
+    {
+        COSArray cosValues;
+<span class="pc bpc" id="L274" title="1 of 4 branches missed.">        if (values != null &amp;&amp; !values.isEmpty())</span>
+        {
+<span class="fc" id="L276">            cosValues = COSArray.ofCOSStrings(values);</span>
+<span class="fc" id="L277">            getCOSObject().setItem(COSName.OPT, cosValues);</span>
+        }
+        else
+        {
+<span class="fc" id="L281">            getCOSObject().removeItem(COSName.OPT);</span>
+        }
+<span class="fc" id="L283">    }</span>
+
+    @Override
+    void constructAppearances() throws IOException
+    {
+<span class="fc bfc" id="L288" title="All 2 branches covered.">        for (PDAnnotationWidget widget : getWidgets())</span>
+        {
+<span class="fc" id="L290">            PDAppearanceDictionary appearance = widget.getAppearance();</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">            if (appearance == null)</span>
+            {
+<span class="fc" id="L293">                continue;</span>
+            }
+<span class="fc" id="L295">            PDAppearanceEntry appearanceEntry = appearance.getNormalAppearance();</span>
+<span class="fc" id="L296">            COSName value = getCOSObject().getCOSName(COSName.V);</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">            if (appearanceEntry.getCOSObject().containsKey(value))</span>
+            {
+<span class="fc" id="L299">                widget.setAppearanceState(value.getName());</span>
+            }
+            else
+            {
+<span class="fc" id="L303">                widget.setAppearanceState(COSName.Off.getName());</span>
+            }
+<span class="fc" id="L305">        }</span>
+<span class="fc" id="L306">    } </span>
+
+    /**
+     * Get the values to set individual buttons within a group to the on state.
+     * 
+     * &lt;p&gt;The On value could be an arbitrary string as long as it is within the limitations of
+     * a PDF name object. The Off value shall always be 'Off'. If not set or not part of the normal
+     * appearance keys 'Off' is the default&lt;/p&gt;
+     *
+     * @return the potential values setting the check box to the On state. 
+     *         If an empty Set is returned there is no appearance definition.
+     */
+    public Set&lt;String&gt; getOnValues()
+    {
+        // we need a set as the field can appear multiple times
+<span class="fc" id="L321">        Set&lt;String&gt; onValues = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L322">        List&lt;String&gt; exportValues = getExportValues();</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">        if (!exportValues.isEmpty())</span>
+        {
+<span class="fc" id="L325">            onValues.addAll(exportValues);</span>
+<span class="fc" id="L326">            return onValues;</span>
+        }
+        
+<span class="fc" id="L329">        List&lt;PDAnnotationWidget&gt; widgets = this.getWidgets();</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">        for (PDAnnotationWidget widget : widgets)</span>
+        {
+<span class="fc" id="L332">            onValues.add(getOnValueForWidget(widget));</span>
+<span class="fc" id="L333">        }        </span>
+<span class="fc" id="L334">        return onValues;</span>
+    }
+    
+    /*
+     * Get the on value for an individual widget by it's index.
+     */
+    private String getOnValue(int index)
+    {
+<span class="fc" id="L342">        List&lt;PDAnnotationWidget&gt; widgets = this.getWidgets();</span>
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">        if (index &lt; widgets.size())</span>
+        {
+<span class="fc" id="L345">            return getOnValueForWidget(widgets.get(index));</span>
+        }
+<span class="nc" id="L347">        return &quot;&quot;;</span>
+    }
+ 
+    /*
+     * Get the on value for an individual widget.
+     */
+    private String getOnValueForWidget(PDAnnotationWidget widget)
+    {
+<span class="fc" id="L355">        PDAppearanceDictionary apDictionary = widget.getAppearance();</span>
+<span class="fc bfc" id="L356" title="All 2 branches covered.">        if (apDictionary != null) </span>
+        {
+<span class="fc" id="L358">            PDAppearanceEntry normalAppearance = apDictionary.getNormalAppearance();</span>
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">            if (normalAppearance != null)</span>
+            {
+<span class="fc" id="L361">                Set&lt;COSName&gt; entries = normalAppearance.getSubDictionary().keySet();</span>
+<span class="pc bpc" id="L362" title="1 of 2 branches missed.">                for (COSName entry : entries)</span>
+                {
+<span class="pc bpc" id="L364" title="1 of 2 branches missed.">                    if (COSName.Off.compareTo(entry) != 0)</span>
+                    {
+<span class="fc" id="L366">                        return entry.getName();</span>
+                    }
+<span class="nc" id="L368">                }</span>
+            }
+        }
+<span class="fc" id="L371">        return &quot;&quot;;</span>
+    }
+    
+    /**
+     * Checks value.
+     *
+     * @param value Name of radio button to select
+     * @throws IllegalArgumentException if the value is not a valid option.
+     */
+    void checkValue(String value)
+    {
+<span class="fc" id="L382">        Set&lt;String&gt; onValues = getOnValues();</span>
+<span class="fc bfc" id="L383" title="All 4 branches covered.">        if (COSName.Off.getName().compareTo(value) != 0 &amp;&amp; !onValues.contains(value))</span>
+        {
+<span class="fc" id="L385">            throw new IllegalArgumentException(&quot;value '&quot; + value</span>
+<span class="fc" id="L386">                    + &quot;' is not a valid option for the field &quot; + getFullyQualifiedName()</span>
+<span class="fc" id="L387">                    + &quot;, valid values are: &quot; + onValues + &quot; and &quot; + COSName.Off.getName());</span>
+        }
+<span class="fc" id="L389">    }</span>
+
+    private void updateByValue(String value)
+    {
+<span class="fc" id="L393">        getCOSObject().setName(COSName.V, value);</span>
+        // update the appearance state (AS)
+<span class="fc bfc" id="L395" title="All 2 branches covered.">        for (PDAnnotationWidget widget : getWidgets())</span>
+        {
+<span class="fc" id="L397">            PDAppearanceDictionary appearance = widget.getAppearance();</span>
+<span class="fc bfc" id="L398" title="All 2 branches covered.">            if (appearance == null)</span>
+            {
+<span class="fc" id="L400">                continue;</span>
+            }
+<span class="fc" id="L402">            PDAppearanceEntry appearanceEntry = appearance.getNormalAppearance();</span>
+<span class="fc bfc" id="L403" title="All 2 branches covered.">            if (appearanceEntry.getCOSObject().containsKey(value))</span>
+            {
+<span class="fc" id="L405">                widget.setAppearanceState(value);</span>
+            }
+            else
+            {
+<span class="fc" id="L409">                widget.setAppearanceState(COSName.Off.getName());</span>
+            }
+<span class="fc" id="L411">        }</span>
+<span class="fc" id="L412">    }</span>
+
+    private void updateByOption(String value)
+    {
+<span class="fc" id="L416">        List&lt;PDAnnotationWidget&gt; widgets = getWidgets();</span>
+<span class="fc" id="L417">        List&lt;String&gt; options = getExportValues();</span>
+        
+<span class="pc bpc" id="L419" title="1 of 2 branches missed.">        if (widgets.size() != options.size())</span>
+        {
+<span class="nc" id="L421">            throw new IllegalArgumentException(&quot;The number of options doesn't match the number of widgets&quot;);</span>
+        }
+        
+<span class="fc bfc" id="L424" title="All 2 branches covered.">        if (value.equals(COSName.Off.getName()))</span>
+        {
+<span class="fc" id="L426">            updateByValue(value);</span>
+        }
+        else
+        {     
+            // the value is the index of the matching option
+<span class="fc" id="L431">            int optionsIndex = options.indexOf(value);</span>
+            
+            // get the values the options are pointing to as
+            // this might not be numerical
+            // see PDFBOX-3682
+<span class="pc bpc" id="L436" title="1 of 2 branches missed.">            if (optionsIndex != -1)</span>
+            {
+<span class="fc" id="L438">                updateByValue(getOnValue(optionsIndex));</span>
+            }
+        }
+<span class="fc" id="L441">    }</span>
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

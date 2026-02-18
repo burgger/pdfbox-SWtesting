@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DefaultResourceCache.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel</a> &gt; <span class="el_source">DefaultResourceCache.java</span></div><h1>DefaultResourceCache.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.pdfbox.pdmodel;
+
+import java.lang.ref.SoftReference;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.pdmodel.documentinterchange.markedcontent.PDPropertyList;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.graphics.PDXObject;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import org.apache.pdfbox.pdmodel.graphics.pattern.PDAbstractPattern;
+import org.apache.pdfbox.pdmodel.graphics.shading.PDShading;
+import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
+
+/**
+ * A resource cached based on SoftReference, retains resources until memory pressure causes them to be garbage
+ * collected.
+ * 
+ * Cached resources may be removed pro actively.
+ * 
+ * Resources which are removed and added several times, can't be removed after hitting the threshold of
+ * {@value #maxRemovals}. This may happen if resources are shared among several pages. This kind of stable caching is
+ * enabled by default and can be deactivated.
+ *
+ * @author John Hewson
+ */
+public class DefaultResourceCache implements ResourceCache
+{
+    private static final int maxRemovals = 3;
+
+    private final boolean stableCacheEnabled;
+
+<span class="fc" id="L53">    private final Map&lt;COSObject, SoftReference&lt;PDFont&gt;&gt; fonts =</span>
+            new HashMap&lt;&gt;();
+<span class="fc" id="L55">    private final Map&lt;Long, Integer&gt; removedFonts = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L56">    private final Set&lt;Long&gt; stableFonts = new HashSet&lt;&gt;();</span>
+    
+<span class="fc" id="L58">    private final Map&lt;COSObject, SoftReference&lt;PDColorSpace&gt;&gt; colorSpaces =</span>
+            new HashMap&lt;&gt;();
+<span class="fc" id="L60">    private final Map&lt;Long, Integer&gt; removedColorSpaces = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L61">    private final Set&lt;Long&gt; stableColorSpaces = new HashSet&lt;&gt;();</span>
+
+<span class="fc" id="L63">    private final Map&lt;COSObject, SoftReference&lt;PDXObject&gt;&gt; xobjects =</span>
+            new HashMap&lt;&gt;();
+<span class="fc" id="L65">    private final Map&lt;Long, Integer&gt; removedXObjects = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L66">    private final Set&lt;Long&gt; stableXObject = new HashSet&lt;&gt;();</span>
+
+<span class="fc" id="L68">    private final Map&lt;COSObject, SoftReference&lt;PDExtendedGraphicsState&gt;&gt; extGStates =</span>
+            new HashMap&lt;&gt;();
+<span class="fc" id="L70">    private final Map&lt;Long, Integer&gt; removedExtGStates = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L71">    private final Set&lt;Long&gt; stableExtGStates = new HashSet&lt;&gt;();</span>
+
+<span class="fc" id="L73">    private final Map&lt;COSObject, SoftReference&lt;PDShading&gt;&gt; shadings =</span>
+            new HashMap&lt;&gt;();
+<span class="fc" id="L75">    private final Map&lt;Long, Integer&gt; removedShadings = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L76">    private final Set&lt;Long&gt; stableShadings = new HashSet&lt;&gt;();</span>
+
+<span class="fc" id="L78">    private final Map&lt;COSObject, SoftReference&lt;PDAbstractPattern&gt;&gt; patterns =</span>
+            new HashMap&lt;&gt;();
+<span class="fc" id="L80">    private final Map&lt;Long, Integer&gt; removedPatterns = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L81">    private final Set&lt;Long&gt; stablePatterns = new HashSet&lt;&gt;();</span>
+
+<span class="fc" id="L83">    private final Map&lt;COSObject, SoftReference&lt;PDPropertyList&gt;&gt; properties =</span>
+            new HashMap&lt;&gt;();
+<span class="fc" id="L85">    private final Map&lt;Long, Integer&gt; removedProperties = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L86">    private final Set&lt;Long&gt; stableProperties = new HashSet&lt;&gt;();</span>
+
+    /**
+     * Default constructor.
+     */
+    public DefaultResourceCache()
+    {
+<span class="nc" id="L93">        this(true);</span>
+<span class="nc" id="L94">    }</span>
+
+    /**
+     * Constructor providing a parameter to enable/disable the stable object cache.
+     * 
+     * @param enableStableCache enables/disables the stable object cache
+     * 
+     */
+    public DefaultResourceCache(boolean enableStableCache)
+<span class="fc" id="L103">    {</span>
+<span class="fc" id="L104">        stableCacheEnabled = enableStableCache;</span>
+<span class="fc" id="L105">    }</span>
+
+    @Override
+    public PDFont getFont(COSObject indirect)
+    {
+<span class="fc" id="L110">        SoftReference&lt;PDFont&gt; font = fonts.get(indirect);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        return font != null ? font.get() : null;</span>
+    }
+
+    @Override
+    public void put(COSObject indirect, PDFont font)
+    {
+<span class="fc" id="L117">        fonts.put(indirect, new SoftReference&lt;&gt;(font));</span>
+<span class="fc" id="L118">    }</span>
+
+    @Override
+    public PDFont removeFont(COSObject indirect)
+    {
+<span class="pc bpc" id="L123" title="2 of 4 branches missed.">        Long objectKey = stableCacheEnabled &amp;&amp; indirect.getKey() != null</span>
+<span class="pc" id="L124">                ? indirect.getKey().getInternalHash() : null;</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (objectKey != null)</span>
+        {
+<span class="fc bfc" id="L127" title="All 2 branches covered.">            if (stableFonts.contains(objectKey))</span>
+            {
+<span class="fc" id="L129">                return null;</span>
+            }
+<span class="fc" id="L131">            Integer counter = removedFonts.computeIfAbsent(objectKey, v -&gt; 1);</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">            if (counter &lt; maxRemovals)</span>
+            {
+<span class="fc" id="L134">                removedFonts.put(objectKey, ++counter);</span>
+            }
+            else
+            {
+<span class="fc" id="L138">                stableFonts.add(objectKey);</span>
+<span class="fc" id="L139">                removedFonts.remove(objectKey);</span>
+<span class="fc" id="L140">                return null;</span>
+            }
+        }
+<span class="fc" id="L143">        SoftReference&lt;PDFont&gt; font = fonts.remove(indirect);</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        return font != null ? font.get() : null;</span>
+    }
+
+    @Override
+    public PDColorSpace getColorSpace(COSObject indirect)
+    {
+<span class="fc" id="L150">        SoftReference&lt;PDColorSpace&gt; colorSpace = colorSpaces.get(indirect);</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        return colorSpace != null ? colorSpace.get() : null;</span>
+    }
+
+    @Override
+    public void put(COSObject indirect, PDColorSpace colorSpace)
+    {
+<span class="fc" id="L157">        colorSpaces.put(indirect, new SoftReference&lt;&gt;(colorSpace));</span>
+<span class="fc" id="L158">    }</span>
+
+    @Override
+    public PDColorSpace removeColorSpace(COSObject indirect)
+    {
+<span class="nc bnc" id="L163" title="All 4 branches missed.">        Long objectKey = stableCacheEnabled &amp;&amp; indirect.getKey() != null</span>
+<span class="nc" id="L164">                ? indirect.getKey().getInternalHash() : null;</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">        if (objectKey != null)</span>
+        {
+<span class="nc bnc" id="L167" title="All 2 branches missed.">            if (stableColorSpaces.contains(objectKey))</span>
+            {
+<span class="nc" id="L169">                return null;</span>
+            }
+<span class="nc" id="L171">            Integer counter = removedColorSpaces.computeIfAbsent(objectKey, v -&gt; 1);</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">            if (counter &lt; maxRemovals)</span>
+            {
+<span class="nc" id="L174">                removedColorSpaces.put(objectKey, ++counter);</span>
+            }
+            else
+            {
+<span class="nc" id="L178">                stableColorSpaces.add(objectKey);</span>
+<span class="nc" id="L179">                removedColorSpaces.remove(objectKey);</span>
+<span class="nc" id="L180">                return null;</span>
+            }
+        }
+<span class="nc" id="L183">        SoftReference&lt;PDColorSpace&gt; colorSpace = colorSpaces.remove(indirect);</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">        return colorSpace != null ? colorSpace.get() : null;</span>
+    }
+
+    @Override
+    public PDExtendedGraphicsState getExtGState(COSObject indirect)
+    {
+<span class="fc" id="L190">        SoftReference&lt;PDExtendedGraphicsState&gt; extGState = extGStates.get(indirect);</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        return extGState != null ? extGState.get() : null;</span>
+    }
+
+    @Override
+    public void put(COSObject indirect, PDExtendedGraphicsState extGState)
+    {
+<span class="fc" id="L197">        extGStates.put(indirect, new SoftReference&lt;&gt;(extGState));</span>
+<span class="fc" id="L198">    }</span>
+
+    @Override
+    public PDExtendedGraphicsState removeExtState(COSObject indirect)
+    {
+<span class="pc bpc" id="L203" title="2 of 4 branches missed.">        Long objectKey = stableCacheEnabled &amp;&amp; indirect.getKey() != null</span>
+<span class="pc" id="L204">                ? indirect.getKey().getInternalHash() : null;</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">        if (objectKey != null)</span>
+        {
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">            if (stableExtGStates.contains(objectKey))</span>
+            {
+<span class="nc" id="L209">                return null;</span>
+            }
+<span class="fc" id="L211">            Integer counter = removedExtGStates.computeIfAbsent(objectKey, v -&gt; 1);</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">            if (counter &lt; maxRemovals)</span>
+            {
+<span class="fc" id="L214">                removedExtGStates.put(objectKey, ++counter);</span>
+            }
+            else
+            {
+<span class="fc" id="L218">                stableExtGStates.add(objectKey);</span>
+<span class="fc" id="L219">                removedExtGStates.remove(objectKey);</span>
+<span class="fc" id="L220">                return null;</span>
+            }
+        }
+<span class="fc" id="L223">        SoftReference&lt;PDExtendedGraphicsState&gt; extGState = extGStates.remove(indirect);</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">        return extGState != null ? extGState.get() : null;</span>
+    }
+
+    @Override
+    public PDShading getShading(COSObject indirect)
+    {
+<span class="nc" id="L230">        SoftReference&lt;PDShading&gt; shading = shadings.get(indirect);</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">        return shading != null ? shading.get() : null;</span>
+    }
+
+    @Override
+    public void put(COSObject indirect, PDShading shading)
+    {
+<span class="nc" id="L237">        shadings.put(indirect, new SoftReference&lt;&gt;(shading));</span>
+<span class="nc" id="L238">    }</span>
+
+    @Override
+    public PDShading removeShading(COSObject indirect)
+    {
+<span class="nc bnc" id="L243" title="All 4 branches missed.">        Long objectKey = stableCacheEnabled &amp;&amp; indirect.getKey() != null</span>
+<span class="nc" id="L244">                ? indirect.getKey().getInternalHash() : null;</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">        if (objectKey != null)</span>
+        {
+<span class="nc bnc" id="L247" title="All 2 branches missed.">            if (stableShadings.contains(objectKey))</span>
+            {
+<span class="nc" id="L249">                return null;</span>
+            }
+<span class="nc" id="L251">            Integer counter = removedShadings.computeIfAbsent(objectKey, v -&gt; 1);</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">            if (counter &lt; maxRemovals)</span>
+            {
+<span class="nc" id="L254">                removedShadings.put(objectKey, ++counter);</span>
+            }
+            else
+            {
+<span class="nc" id="L258">                stableShadings.add(objectKey);</span>
+<span class="nc" id="L259">                removedShadings.remove(objectKey);</span>
+<span class="nc" id="L260">                return null;</span>
+            }
+        }
+<span class="nc" id="L263">        SoftReference&lt;PDShading&gt; shading = shadings.remove(indirect);</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        return shading != null ? shading.get() : null;</span>
+    }
+
+    @Override
+    public PDAbstractPattern getPattern(COSObject indirect)
+    {
+<span class="fc" id="L270">        SoftReference&lt;PDAbstractPattern&gt; pattern = patterns.get(indirect);</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">        return pattern != null ? pattern.get() : null;</span>
+    }
+
+    @Override
+    public void put(COSObject indirect, PDAbstractPattern pattern)
+    {
+<span class="fc" id="L277">        patterns.put(indirect, new SoftReference&lt;&gt;(pattern));</span>
+<span class="fc" id="L278">    }</span>
+    
+    @Override
+    public PDAbstractPattern removePattern(COSObject indirect)
+    {
+<span class="nc bnc" id="L283" title="All 4 branches missed.">        Long objectKey = stableCacheEnabled &amp;&amp; indirect.getKey() != null</span>
+<span class="nc" id="L284">                ? indirect.getKey().getInternalHash() : null;</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">        if (objectKey != null)</span>
+        {
+<span class="nc bnc" id="L287" title="All 2 branches missed.">            if (stablePatterns.contains(objectKey))</span>
+            {
+<span class="nc" id="L289">                return null;</span>
+            }
+<span class="nc" id="L291">            Integer counter = removedPatterns.computeIfAbsent(objectKey, v -&gt; 1);</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">            if (counter &lt; maxRemovals)</span>
+            {
+<span class="nc" id="L294">                removedPatterns.put(objectKey, ++counter);</span>
+            }
+            else
+            {
+<span class="nc" id="L298">                stablePatterns.add(objectKey);</span>
+<span class="nc" id="L299">                removedPatterns.remove(objectKey);</span>
+<span class="nc" id="L300">                return null;</span>
+            }
+        }
+<span class="nc" id="L303">        SoftReference&lt;PDAbstractPattern&gt; pattern = patterns.remove(indirect);</span>
+<span class="nc bnc" id="L304" title="All 2 branches missed.">        return pattern != null ? pattern.get() : null;</span>
+    }
+
+    @Override
+    public PDPropertyList getProperties(COSObject indirect)
+    {
+<span class="fc" id="L310">        SoftReference&lt;PDPropertyList&gt; propertyList = properties.get(indirect);</span>
+<span class="fc bfc" id="L311" title="All 2 branches covered.">        return propertyList != null ? propertyList.get() : null;</span>
+    }
+
+    @Override
+    public void put(COSObject indirect, PDPropertyList propertyList)
+    {
+<span class="fc" id="L317">        properties.put(indirect, new SoftReference&lt;&gt;(propertyList));</span>
+<span class="fc" id="L318">    }</span>
+
+    @Override
+    public PDPropertyList removeProperties(COSObject indirect)
+    {
+<span class="nc bnc" id="L323" title="All 4 branches missed.">        Long objectKey = stableCacheEnabled &amp;&amp; indirect.getKey() != null</span>
+<span class="nc" id="L324">                ? indirect.getKey().getInternalHash() : null;</span>
+<span class="nc bnc" id="L325" title="All 2 branches missed.">        if (objectKey != null)</span>
+        {
+<span class="nc bnc" id="L327" title="All 2 branches missed.">            if (stableProperties.contains(objectKey))</span>
+            {
+<span class="nc" id="L329">                return null;</span>
+            }
+<span class="nc" id="L331">            Integer counter = removedProperties.computeIfAbsent(objectKey, v -&gt; 1);</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">            if (counter &lt; maxRemovals)</span>
+            {
+<span class="nc" id="L334">                removedProperties.put(objectKey, ++counter);</span>
+            }
+            else
+            {
+<span class="nc" id="L338">                stableProperties.add(objectKey);</span>
+<span class="nc" id="L339">                removedProperties.remove(objectKey);</span>
+<span class="nc" id="L340">                return null;</span>
+            }
+        }
+<span class="nc" id="L343">        SoftReference&lt;PDPropertyList&gt; propertyList = properties.remove(indirect);</span>
+<span class="nc bnc" id="L344" title="All 2 branches missed.">        return propertyList != null ? propertyList.get() : null;</span>
+    }
+
+    @Override
+    public PDXObject getXObject(COSObject indirect)
+    {
+<span class="fc" id="L350">        SoftReference&lt;PDXObject&gt; xobject = xobjects.get(indirect);</span>
+<span class="fc bfc" id="L351" title="All 2 branches covered.">        return xobject != null ? xobject.get() : null;</span>
+    }
+
+    @Override
+    public void put(COSObject indirect, PDXObject xobject)
+    {
+<span class="fc" id="L357">        xobjects.put(indirect, new SoftReference&lt;&gt;(xobject));</span>
+<span class="fc" id="L358">    }</span>
+
+    @Override
+    public PDXObject removeXObject(COSObject indirect)
+    {
+<span class="pc bpc" id="L363" title="2 of 4 branches missed.">        Long objectKey = stableCacheEnabled &amp;&amp; indirect.getKey() != null</span>
+<span class="pc" id="L364">                ? indirect.getKey().getInternalHash() : null;</span>
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">        if (objectKey != null)</span>
+        {
+
+<span class="pc bpc" id="L368" title="1 of 2 branches missed.">            if (stableXObject.contains(objectKey))</span>
+            {
+<span class="nc" id="L370">                return null;</span>
+            }
+<span class="fc" id="L372">            Integer counter = removedXObjects.computeIfAbsent(objectKey, v -&gt; 1);</span>
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">            if (counter &lt; maxRemovals)</span>
+            {
+<span class="fc" id="L375">                removedXObjects.put(objectKey, ++counter);</span>
+            }
+            else
+            {
+<span class="nc" id="L379">                stableXObject.add(objectKey);</span>
+<span class="nc" id="L380">                removedXObjects.remove(objectKey);</span>
+<span class="nc" id="L381">                return null;</span>
+            }
+        }
+<span class="fc" id="L384">        SoftReference&lt;PDXObject&gt; xobject = xobjects.remove(indirect);</span>
+<span class="fc bfc" id="L385" title="All 2 branches covered.">        return xobject != null ? xobject.get() : null;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

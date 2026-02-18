@@ -1,0 +1,2317 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PageDrawer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.rendering</a> &gt; <span class="el_source">PageDrawer.java</span></div><h1>PageDrawer.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.rendering;
+
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsDevice;
+import java.awt.Image;
+import java.awt.Paint;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.Shape;
+import java.awt.Stroke;
+import java.awt.TexturePaint;
+import java.awt.Transparency;
+import java.awt.color.ColorSpace;
+import java.awt.geom.AffineTransform;
+import static java.awt.geom.AffineTransform.TYPE_FLIP;
+import static java.awt.geom.AffineTransform.TYPE_MASK_SCALE;
+import static java.awt.geom.AffineTransform.TYPE_TRANSLATION;
+import java.awt.geom.Area;
+import java.awt.geom.GeneralPath;
+import java.awt.geom.Path2D;
+import java.awt.geom.PathIterator;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
+import java.awt.image.ByteLookupTable;
+import java.awt.image.ColorModel;
+import java.awt.image.ComponentColorModel;
+import java.awt.image.DataBuffer;
+import java.awt.image.DataBufferByte;
+import java.awt.image.LookupOp;
+import java.awt.image.LookupTable;
+import java.awt.image.Raster;
+import java.awt.image.WritableRaster;
+import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.contentstream.PDFGraphicsStreamEngine;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.common.function.PDFunction;
+import org.apache.pdfbox.pdmodel.documentinterchange.markedcontent.PDPropertyList;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType3Font;
+import org.apache.pdfbox.pdmodel.font.PDVectorFont;
+import org.apache.pdfbox.pdmodel.graphics.PDLineDashPattern;
+import org.apache.pdfbox.pdmodel.graphics.PDXObject;
+import org.apache.pdfbox.pdmodel.graphics.blend.BlendMode;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceGray;
+import org.apache.pdfbox.pdmodel.graphics.color.PDICCBased;
+import org.apache.pdfbox.pdmodel.graphics.color.PDPattern;
+import org.apache.pdfbox.pdmodel.graphics.color.PDSeparation;
+import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
+import org.apache.pdfbox.pdmodel.graphics.form.PDTransparencyGroup;
+import org.apache.pdfbox.pdmodel.graphics.form.PDTransparencyGroupAttributes;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImage;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.pdmodel.graphics.optionalcontent.PDOptionalContentGroup;
+import org.apache.pdfbox.pdmodel.graphics.optionalcontent.PDOptionalContentGroup.RenderState;
+import org.apache.pdfbox.pdmodel.graphics.optionalcontent.PDOptionalContentMembershipDictionary;
+import org.apache.pdfbox.pdmodel.graphics.pattern.PDAbstractPattern;
+import org.apache.pdfbox.pdmodel.graphics.pattern.PDShadingPattern;
+import org.apache.pdfbox.pdmodel.graphics.pattern.PDTilingPattern;
+import org.apache.pdfbox.pdmodel.graphics.shading.PDShading;
+import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
+import org.apache.pdfbox.pdmodel.graphics.state.PDGraphicsState;
+import org.apache.pdfbox.pdmodel.graphics.state.PDSoftMask;
+import org.apache.pdfbox.pdmodel.graphics.state.RenderingMode;
+import org.apache.pdfbox.pdmodel.interactive.annotation.AnnotationFilter;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationUnknown;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceDictionary;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceEntry;
+import org.apache.pdfbox.util.Matrix;
+import org.apache.pdfbox.util.Vector;
+
+/**
+ * Paints a page in a PDF document to a Graphics context. May be subclassed to provide custom
+ * rendering.
+ *
+ * &lt;p&gt;
+ * If you want to do custom graphics processing rather than Graphics2D rendering, then you should
+ * subclass {@link PDFGraphicsStreamEngine} instead. Subclassing PageDrawer is only suitable for
+ * cases where the goal is to render onto a {@link Graphics2D} surface. In that case you'll also
+ * have to subclass {@link PDFRenderer} and override
+ * {@link PDFRenderer#createPageDrawer(PageDrawerParameters)}. See the &lt;i&gt;OpaquePDFRenderer.java&lt;/i&gt;
+ * example in the source code download on how to do this.
+ *
+ * @author Ben Litchfield
+ */
+public class PageDrawer extends PDFGraphicsStreamEngine
+{
+<span class="fc" id="L129">    private static final Logger LOG = LogManager.getLogger(PageDrawer.class);</span>
+
+<span class="fc" id="L131">    private static final String OS_NAME = System.getProperty(&quot;os.name&quot;).toLowerCase();</span>
+<span class="fc" id="L132">    private static final boolean IS_WINDOWS = OS_NAME.startsWith(&quot;windows&quot;);</span>
+<span class="fc" id="L133">    private static final boolean IS_LINUX = OS_NAME.startsWith(&quot;linux&quot;);</span>
+
+    // parent document renderer - note: this is needed for not-yet-implemented resource caching
+    private final PDFRenderer renderer;
+    
+    private final boolean subsamplingAllowed;
+    
+    // the graphics device to draw to, xform is the initial transform of the device (i.e. DPI)
+    private Graphics2D graphics;
+    private AffineTransform xform;
+    private float xformScalingFactorX;
+    private float xformScalingFactorY;
+    
+    // the page box to draw (usually the crop box but may be another)
+    private PDRectangle pageSize;
+
+    // whether image of a transparency group must be flipped
+    // needed when in a tiling pattern
+<span class="fc" id="L151">    private boolean flipTG = false;</span>
+
+    // clipping winding rule used for the clipping path
+<span class="fc" id="L154">    private int clipWindingRule = -1;</span>
+<span class="fc" id="L155">    private GeneralPath linePath = new GeneralPath();</span>
+    
+    // last clipping path
+    private List&lt;Path2D&gt; lastClips;
+
+    // clip when drawPage() is called, can be null, must be intersected when clipping
+    private Shape initialClip;
+    
+    // shapes of glyphs being drawn to be used for clipping
+    private List&lt;Shape&gt; textClippings;
+
+    // glyph caches
+<span class="fc" id="L167">    private final Map&lt;PDFont, GlyphCache&gt; glyphCaches = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L169">    private final TilingPaintFactory tilingPaintFactory = new TilingPaintFactory(this);</span>
+    
+<span class="fc" id="L171">    private final Deque&lt;TransparencyGroup&gt; transparencyGroupStack = new ArrayDeque&lt;&gt;();</span>
+
+    // if greater zero the content is hidden and will not be rendered
+    private int nestedHiddenOCGCount;
+
+    private final RenderDestination destination;
+    private final RenderingHints renderingHints;
+    private final float imageDownscalingOptimizationThreshold;
+<span class="fc" id="L179">    private LookupTable invTable = null;</span>
+<span class="fc" id="L180">    private final Map&lt;COSBase,Boolean&gt; blendModeMap = new HashMap&lt;&gt;();</span>
+
+    /**
+    * Default annotations filter, returns all annotations
+    */
+<span class="pc" id="L185">    private AnnotationFilter annotationFilter = annotation -&gt; true;</span>
+
+    /**
+     * Constructor.
+     *
+     * @param parameters Parameters for page drawing.
+     * @throws IOException If there is an error loading properties from the file.
+     */
+    public PageDrawer(PageDrawerParameters parameters) throws IOException
+    {
+<span class="fc" id="L195">        super(parameters.getPage());</span>
+<span class="fc" id="L196">        this.renderer = parameters.getRenderer();</span>
+<span class="fc" id="L197">        this.subsamplingAllowed = parameters.isSubsamplingAllowed();</span>
+<span class="fc" id="L198">        this.destination = parameters.getDestination();</span>
+<span class="fc" id="L199">        this.renderingHints = parameters.getRenderingHints();</span>
+<span class="fc" id="L200">        this.imageDownscalingOptimizationThreshold =</span>
+<span class="fc" id="L201">                parameters.getImageDownscalingOptimizationThreshold();</span>
+<span class="fc" id="L202">    }</span>
+
+    /**
+     * Return the AnnotationFilter.
+     * 
+     * @return the AnnotationFilter
+     */
+    public AnnotationFilter getAnnotationFilter()
+    {
+<span class="nc" id="L211">        return annotationFilter;</span>
+    }
+
+    /**
+     * Set the AnnotationFilter.
+     * 
+     * &lt;p&gt;Allows to only render annotation accepted by the filter.
+     * 
+     * @param annotationFilter the AnnotationFilter
+     */
+    public void setAnnotationFilter(AnnotationFilter annotationFilter)
+    {
+<span class="fc" id="L223">        this.annotationFilter = annotationFilter;</span>
+<span class="fc" id="L224">    }</span>
+    
+    /**
+     * Returns the parent renderer.
+     * 
+     * @return the parent renderer
+     */
+    public final PDFRenderer getRenderer()
+    {
+<span class="fc" id="L233">        return renderer;</span>
+    }
+
+    /**
+     * Returns the underlying Graphics2D. May be null if drawPage has not yet been called.
+     * 
+     * @return the underlying Graphics2D
+     */
+    protected final Graphics2D getGraphics()
+    {
+<span class="nc" id="L243">        return graphics;</span>
+    }
+
+    /**
+     * Returns the current line path. This is reset to empty after each fill/stroke.
+     * 
+     * @return the current line path
+     */
+    protected final GeneralPath getLinePath()
+    {
+<span class="nc" id="L253">        return linePath;</span>
+    }
+
+    /**
+     * Sets high-quality rendering hints on the current Graphics2D.
+     */
+    private void setRenderingHints()
+    {
+<span class="fc" id="L261">        graphics.addRenderingHints(renderingHints);</span>
+<span class="fc" id="L262">    }</span>
+
+    /**
+     * Draws the page to the requested context.
+     * 
+     * @param g The graphics context to draw onto.
+     * @param pageSize The size of the page to draw.
+     * @throws IOException If there is an IO error while drawing the page.
+     */
+    public void drawPage(Graphics2D g, PDRectangle pageSize) throws IOException
+    {
+<span class="fc" id="L273">        graphics = g;</span>
+<span class="fc" id="L274">        xform = graphics.getTransform();</span>
+<span class="fc" id="L275">        Matrix m = new Matrix(xform);</span>
+<span class="fc" id="L276">        xformScalingFactorX = Math.abs(m.getScalingFactorX());</span>
+<span class="fc" id="L277">        xformScalingFactorY = Math.abs(m.getScalingFactorY());</span>
+<span class="fc" id="L278">        initialClip = graphics.getClip();</span>
+<span class="fc" id="L279">        this.pageSize = pageSize;</span>
+
+<span class="fc" id="L281">        setRenderingHints();</span>
+
+<span class="fc" id="L283">        graphics.translate(0, pageSize.getHeight());</span>
+<span class="fc" id="L284">        graphics.scale(1, -1);</span>
+
+        // adjust for non-(0,0) crop box
+<span class="fc" id="L287">        graphics.translate(-pageSize.getLowerLeftX(), -pageSize.getLowerLeftY());</span>
+
+<span class="fc" id="L289">        processPage(getPage());</span>
+
+<span class="fc bfc" id="L291" title="All 2 branches covered.">        for (PDAnnotation annotation : getPage().getAnnotations(annotationFilter))</span>
+        {
+<span class="fc" id="L293">            showAnnotation(annotation);</span>
+<span class="fc" id="L294">        }</span>
+
+<span class="fc" id="L296">        graphics = null;</span>
+<span class="fc" id="L297">    }</span>
+
+    /**
+     * Draws the pattern stream to the requested context.
+     *
+     * @param g The graphics context to draw onto.
+     * @param pattern The tiling pattern to be used.
+     * @param colorSpace color space for this tiling.
+     * @param color color for this tiling.
+     * @param patternMatrix the pattern matrix
+     * @throws IOException If there is an IO error while drawing the page.
+     */
+    void drawTilingPattern(Graphics2D g, PDTilingPattern pattern, PDColorSpace colorSpace,
+                                  PDColor color, Matrix patternMatrix) throws IOException
+    {
+<span class="fc" id="L312">        Graphics2D savedGraphics = graphics;</span>
+<span class="fc" id="L313">        graphics = g;</span>
+
+<span class="fc" id="L315">        GeneralPath savedLinePath = linePath;</span>
+<span class="fc" id="L316">        linePath = new GeneralPath();</span>
+<span class="fc" id="L317">        int savedClipWindingRule = clipWindingRule;</span>
+<span class="fc" id="L318">        clipWindingRule = -1;</span>
+
+<span class="fc" id="L320">        List&lt;Path2D&gt; savedLastClips = lastClips;</span>
+<span class="fc" id="L321">        lastClips = null;</span>
+<span class="fc" id="L322">        Shape savedInitialClip = initialClip;</span>
+<span class="fc" id="L323">        initialClip = null;</span>
+        
+<span class="fc" id="L325">        boolean savedFlipTG = flipTG;</span>
+<span class="fc" id="L326">        flipTG = true;</span>
+
+<span class="fc" id="L328">        setRenderingHints();</span>
+<span class="fc" id="L329">        processTilingPattern(pattern, color, colorSpace, patternMatrix);</span>
+        
+<span class="fc" id="L331">        flipTG = savedFlipTG;</span>
+<span class="fc" id="L332">        graphics = savedGraphics;</span>
+<span class="fc" id="L333">        linePath = savedLinePath;</span>
+<span class="fc" id="L334">        lastClips = savedLastClips;</span>
+<span class="fc" id="L335">        initialClip = savedInitialClip;</span>
+<span class="fc" id="L336">        clipWindingRule = savedClipWindingRule;</span>
+<span class="fc" id="L337">    }</span>
+
+    private float clampColor(float color)
+    {
+<span class="pc bpc" id="L341" title="2 of 4 branches missed.">        return color &lt; 0 ? 0 : (color &gt; 1 ? 1 : color);        </span>
+    }
+
+    /**
+     * Returns an AWT paint for the given PDColor.
+     * 
+     * @param color The color to get a paint for. This can be an actual color or a pattern.
+     * @return an AWT paint for the given PDColor
+     * 
+     * @throws IOException if the AWT paint could not be created
+     */
+    protected Paint getPaint(PDColor color) throws IOException
+    {
+<span class="fc" id="L354">        PDColorSpace colorSpace = color.getColorSpace();</span>
+<span class="pc bpc" id="L355" title="1 of 2 branches missed.">        if (colorSpace == null) // PDFBOX-5782</span>
+        {
+<span class="nc" id="L357">            LOG.error(&quot;colorSpace is null, will be rendered as transparency&quot;);</span>
+<span class="nc" id="L358">            return new Color(0, 0, 0, 0);</span>
+        }
+<span class="fc bfc" id="L360" title="All 2 branches covered.">        else if (colorSpace instanceof PDSeparation &amp;&amp;</span>
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">                &quot;None&quot;.equals(((PDSeparation) colorSpace).getColorantName()))</span>
+        {
+            // PDFBOX-4900: &quot;The special colorant name None shall not produce any visible output&quot;
+            //TODO better solution needs to be found for all occurences where toRGB is called
+<span class="nc" id="L365">            return new Color(0, 0, 0, 0);</span>
+        }
+<span class="fc bfc" id="L367" title="All 2 branches covered.">        else if (!(colorSpace instanceof PDPattern))</span>
+        {
+<span class="fc" id="L369">            float[] rgb = colorSpace.toRGB(color.getComponents());</span>
+<span class="fc" id="L370">            return new Color(clampColor(rgb[0]), clampColor(rgb[1]), clampColor(rgb[2]));</span>
+        }
+        else
+        {
+<span class="fc" id="L374">            PDPattern patternSpace = (PDPattern)colorSpace;</span>
+<span class="fc" id="L375">            PDAbstractPattern pattern = patternSpace.getPattern(color);</span>
+<span class="pc bpc" id="L376" title="1 of 2 branches missed.">            if (pattern instanceof PDTilingPattern)</span>
+            {
+<span class="fc" id="L378">                PDTilingPattern tilingPattern = (PDTilingPattern) pattern;</span>
+
+<span class="pc bpc" id="L380" title="1 of 2 branches missed.">                if (tilingPattern.getPaintType() == PDTilingPattern.PAINT_COLORED)</span>
+                {
+                    // colored tiling pattern
+<span class="fc" id="L383">                    return tilingPaintFactory.create(tilingPattern, null, null, xform);</span>
+                }
+                else
+                {
+                    // uncolored tiling pattern
+<span class="nc" id="L388">                    return tilingPaintFactory.create(tilingPattern, </span>
+<span class="nc" id="L389">                            patternSpace.getUnderlyingColorSpace(), color, xform);</span>
+                }
+            }
+            else
+            {
+<span class="nc" id="L394">                PDShadingPattern shadingPattern = (PDShadingPattern)pattern;</span>
+<span class="nc" id="L395">                PDShading shading = shadingPattern.getShading();</span>
+<span class="nc bnc" id="L396" title="All 2 branches missed.">                if (shading == null)</span>
+                {
+<span class="nc" id="L398">                    LOG.error(&quot;shadingPattern is null, will be filled with transparency&quot;);</span>
+<span class="nc" id="L399">                    return new Color(0,0,0,0);</span>
+                }
+<span class="nc" id="L401">                return shading.toPaint(Matrix.concatenate(getInitialMatrix(),</span>
+<span class="nc" id="L402">                                                          shadingPattern.getMatrix()));</span>
+            }
+        }
+    }
+
+    /**
+     * Sets the clipping path using caching for performance. We track lastClip manually because
+     * {@link Graphics2D#getClip()} returns a new object instead of the same one passed to
+     * {@link Graphics2D#setClip(java.awt.Shape) setClip()}. You may need to call this if you override
+     * {@link #showGlyph(Matrix, PDFont, int, Vector) showGlyph()}. See
+     * &lt;a href=&quot;https://issues.apache.org/jira/browse/PDFBOX-5093&quot;&gt;PDFBOX-5093&lt;/a&gt; for more.
+     */
+    protected final void setClip()
+    {
+<span class="fc" id="L416">        List&lt;Path2D&gt; clippingPaths = getGraphicsState().getCurrentClippingPaths();</span>
+<span class="fc bfc" id="L417" title="All 2 branches covered.">        if (clippingPaths != lastClips)</span>
+        {
+<span class="fc" id="L419">            transferClip(graphics);</span>
+<span class="pc bpc" id="L420" title="1 of 2 branches missed.">            if (initialClip != null)</span>
+            {
+                // apply the remembered initial clip, but transform it first
+                //TODO see PDFBOX-4583
+            }
+<span class="fc" id="L425">            lastClips = clippingPaths;</span>
+        }
+<span class="fc" id="L427">    }</span>
+
+    /**
+     * Transfer clip to the destination device. Override this if you want to avoid to do slow
+     * intersecting operations but want the destination device to do this (e.g. SVG). You can get
+     * the individual clippings via {@link PDGraphicsState#getCurrentClippingPaths()}. See
+     * &lt;a href=&quot;https://issues.apache.org/jira/browse/PDFBOX-5258&quot;&gt;PDFBOX-5258&lt;/a&gt; for sample code.
+     *
+     * @param graphics graphics device
+     */
+    protected void transferClip(Graphics2D graphics)
+    {
+<span class="fc" id="L439">        Area clippingPath = getGraphicsState().getCurrentClippingPath();</span>
+<span class="pc bpc" id="L440" title="1 of 2 branches missed.">        if (clippingPath.getPathIterator(null).isDone())</span>
+        {
+            // PDFBOX-4821: avoid bug with java printing that empty clipping path is ignored by
+            // replacing with empty rectangle, works because this is not an empty path
+<span class="nc" id="L444">            graphics.setClip(new Rectangle());</span>
+        }
+        else
+        {
+<span class="fc" id="L448">            graphics.setClip(clippingPath);</span>
+        }
+<span class="fc" id="L450">    }</span>
+
+    @Override
+    public void beginText() throws IOException
+    {
+<span class="fc" id="L455">        setClip();</span>
+<span class="fc" id="L456">        beginTextClip();</span>
+<span class="fc" id="L457">    }</span>
+
+    @Override
+    public void endText() throws IOException
+    {
+<span class="fc" id="L462">        endTextClip();</span>
+<span class="fc" id="L463">    }</span>
+    
+    /**
+     * Begin buffering the text clipping path, if any.
+     */
+    private void beginTextClip()
+    {
+        // buffer the text clippings because they represents a single clipping area
+<span class="fc" id="L471">        textClippings = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L472">    }</span>
+
+    /**
+     * End buffering the text clipping path, if any.
+     */
+    private void endTextClip()
+    {
+<span class="fc" id="L479">        PDGraphicsState state = getGraphicsState();</span>
+<span class="fc" id="L480">        RenderingMode renderingMode = state.getTextState().getRenderingMode();</span>
+        
+        // apply the buffered clip as one area
+<span class="pc bpc" id="L483" title="3 of 4 branches missed.">        if (renderingMode.isClip() &amp;&amp; !textClippings.isEmpty())</span>
+        {
+            // PDFBOX-4150: this is much faster than using textClippingArea.add(new Area(glyph))
+            // https://stackoverflow.com/questions/21519007/fast-union-of-shapes-in-java
+<span class="nc" id="L487">            GeneralPath path = new GeneralPath(Path2D.WIND_NON_ZERO, textClippings.size());</span>
+<span class="nc" id="L488">            textClippings.forEach(shape -&gt; path.append(shape, false));</span>
+<span class="nc" id="L489">            state.intersectClippingPath(path);</span>
+<span class="nc" id="L490">            textClippings = new ArrayList&lt;&gt;();</span>
+
+            // PDFBOX-3681: lastClip needs to be reset, because after intersection it is still the same 
+            // object, thus setClip() would believe that it is cached.
+<span class="nc" id="L494">            lastClips = null;</span>
+        }
+<span class="fc" id="L496">    }</span>
+
+    @Override
+    protected void showFontGlyph(Matrix textRenderingMatrix, PDFont font, int code,
+            Vector displacement) throws IOException
+    {
+<span class="fc" id="L502">        AffineTransform at = textRenderingMatrix.createAffineTransform();</span>
+<span class="fc" id="L503">        at.concatenate(font.getFontMatrix().createAffineTransform());</span>
+
+        // create cache if it does not exist
+<span class="fc" id="L506">        PDVectorFont vectorFont = (PDVectorFont) font;</span>
+<span class="fc" id="L507">        GlyphCache cache = glyphCaches.get(font);</span>
+<span class="fc bfc" id="L508" title="All 2 branches covered.">        if (cache == null)</span>
+        {
+<span class="fc" id="L510">            cache = new GlyphCache(vectorFont);</span>
+<span class="fc" id="L511">            glyphCaches.put(font, cache);</span>
+        }
+
+<span class="fc" id="L514">        GeneralPath path = cache.getPathForCharacterCode(code);</span>
+<span class="fc" id="L515">        drawGlyph(path, font, code, displacement, at);</span>
+<span class="fc" id="L516">    }</span>
+
+    /**
+     * Renders a glyph.
+     * 
+     * @param path the GeneralPath for the glyph
+     * @param font the font
+     * @param code character code
+     * @param displacement the glyph's displacement (advance)
+     * @param at the transformation
+     * @throws IOException if something went wrong
+     */
+    private void drawGlyph(GeneralPath path, PDFont font, int code, Vector displacement, AffineTransform at) throws IOException
+    {
+<span class="fc" id="L530">        PDGraphicsState state = getGraphicsState();</span>
+<span class="fc" id="L531">        RenderingMode renderingMode = state.getTextState().getRenderingMode();</span>
+
+<span class="pc bpc" id="L533" title="1 of 2 branches missed.">        if (path != null)</span>
+        {
+            // Stretch non-embedded glyph if it does not match the height/width contained in the PDF.
+            // Vertical fonts have zero X displacement, so the following code scales to 0 if we don't skip it.
+            // TODO: How should vertical fonts be handled?
+<span class="pc bpc" id="L538" title="1 of 8 branches missed.">            if (!font.isEmbedded() &amp;&amp; !font.isVertical() &amp;&amp; !font.isStandard14() &amp;&amp; font.hasExplicitWidth(code))</span>
+            {
+<span class="fc" id="L540">                float fontWidth = font.getWidthFromFont(code);</span>
+<span class="pc bpc" id="L541" title="2 of 4 branches missed.">                if (displacement.getX() &gt; 0 &amp;&amp; // PDFBOX-5611: ignore zero widths</span>
+                        fontWidth &gt; 0 &amp;&amp; // ignore spaces
+<span class="fc bfc" id="L543" title="All 2 branches covered.">                        Math.abs(fontWidth - displacement.getX() * 1000) &gt; 0.0001)</span>
+                {
+<span class="fc" id="L545">                    float pdfWidth = displacement.getX() * 1000;</span>
+<span class="fc" id="L546">                    at.scale(pdfWidth / fontWidth, 1);</span>
+                }
+            }
+
+            // render glyph
+<span class="fc" id="L551">            Shape glyph = at.createTransformedShape(path);</span>
+
+<span class="fc bfc" id="L553" title="All 2 branches covered.">            if (isContentRendered())</span>
+            {
+<span class="pc bpc" id="L555" title="1 of 2 branches missed.">                if (renderingMode.isFill())</span>
+                {
+<span class="fc" id="L557">                    graphics.setComposite(state.getNonStrokingJavaComposite());</span>
+<span class="fc" id="L558">                    graphics.setPaint(getNonStrokingPaint());</span>
+<span class="fc" id="L559">                    setClip();</span>
+<span class="fc" id="L560">                    graphics.fill(glyph);</span>
+                }
+
+<span class="pc bpc" id="L563" title="1 of 2 branches missed.">                if (renderingMode.isStroke())</span>
+                {
+<span class="nc" id="L565">                    graphics.setComposite(state.getStrokingJavaComposite());</span>
+<span class="nc" id="L566">                    graphics.setPaint(getStrokingPaint());</span>
+<span class="nc" id="L567">                    graphics.setStroke(getStroke());</span>
+<span class="nc" id="L568">                    setClip();</span>
+<span class="nc" id="L569">                    graphics.draw(glyph);</span>
+                }
+            }
+
+<span class="pc bpc" id="L573" title="1 of 2 branches missed.">            if (renderingMode.isClip())</span>
+            {
+<span class="nc" id="L575">                textClippings.add(glyph);</span>
+            }
+        }
+<span class="fc" id="L578">    }</span>
+
+    @Override
+    protected void showType3Glyph(Matrix textRenderingMatrix, PDType3Font font, int code,
+            Vector displacement) throws IOException
+    {
+<span class="nc" id="L584">        PDGraphicsState state = getGraphicsState();</span>
+<span class="nc" id="L585">        RenderingMode renderingMode = state.getTextState().getRenderingMode();</span>
+<span class="nc bnc" id="L586" title="All 2 branches missed.">        if (RenderingMode.NEITHER != renderingMode)</span>
+        {
+<span class="nc" id="L588">            super.showType3Glyph(textRenderingMatrix, font, code, displacement);</span>
+        }
+<span class="nc" id="L590">    }</span>
+
+    @Override
+    public void appendRectangle(Point2D p0, Point2D p1, Point2D p2, Point2D p3)
+    {
+        // to ensure that the path is created in the right direction, we have to create
+        // it by combining single lines instead of creating a simple rectangle
+<span class="fc" id="L597">        linePath.moveTo((float) p0.getX(), (float) p0.getY());</span>
+<span class="fc" id="L598">        linePath.lineTo((float) p1.getX(), (float) p1.getY());</span>
+<span class="fc" id="L599">        linePath.lineTo((float) p2.getX(), (float) p2.getY());</span>
+<span class="fc" id="L600">        linePath.lineTo((float) p3.getX(), (float) p3.getY());</span>
+
+        // close the subpath instead of adding the last line so that a possible set line
+        // cap style isn't taken into account at the &quot;beginning&quot; of the rectangle
+<span class="fc" id="L604">        linePath.closePath();</span>
+<span class="fc" id="L605">    }</span>
+
+    private Paint applySoftMaskToPaint(Paint parentPaint, PDSoftMask softMask) throws IOException
+    {
+<span class="pc bpc" id="L609" title="3 of 4 branches missed.">        if (softMask == null || softMask.getGroup() == null)</span>
+        {
+<span class="fc" id="L611">            return parentPaint;</span>
+        }
+<span class="nc" id="L613">        PDColor backdropColor = null;</span>
+<span class="nc" id="L614">        COSName subType = softMask.getSubType();</span>
+<span class="nc" id="L615">        PDTransparencyGroup form = softMask.getGroup();</span>
+<span class="nc bnc" id="L616" title="All 2 branches missed.">        if (COSName.LUMINOSITY.equals(subType))</span>
+        {
+<span class="nc" id="L618">            COSArray backdropColorArray = softMask.getBackdropColor();</span>
+<span class="nc bnc" id="L619" title="All 2 branches missed.">            if (backdropColorArray != null)</span>
+            {
+<span class="nc" id="L621">                PDColorSpace colorSpace = form.getGroup().getColorSpace(form.getResources());</span>
+<span class="nc bnc" id="L622" title="All 2 branches missed.">                if (colorSpace != null &amp;&amp;</span>
+<span class="nc bnc" id="L623" title="All 2 branches missed.">                    colorSpace.getNumberOfComponents() == backdropColorArray.size()) // PDFBOX-5795</span>
+                {
+<span class="nc" id="L625">                    backdropColor = new PDColor(backdropColorArray, colorSpace);</span>
+                }
+            }
+        }
+<span class="nc" id="L629">        TransparencyGroup transparencyGroup = new TransparencyGroup(form, true, </span>
+<span class="nc" id="L630">                softMask.getInitialTransformationMatrix(), backdropColor);</span>
+<span class="nc" id="L631">        BufferedImage image = transparencyGroup.getImage();</span>
+<span class="nc bnc" id="L632" title="All 2 branches missed.">        if (image == null)</span>
+        {
+            // Adobe Reader ignores empty softmasks instead of using bc color
+            // sample file: PDFJS-6967_reduced_outside_softmask.pdf
+<span class="nc" id="L636">            return parentPaint;</span>
+        }
+<span class="nc" id="L638">        BufferedImage gray = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_GRAY);</span>
+<span class="nc bnc" id="L639" title="All 2 branches missed.">        if (COSName.ALPHA.equals(subType))</span>
+        {
+<span class="nc" id="L641">            gray.setData(image.getAlphaRaster());</span>
+        }
+<span class="nc bnc" id="L643" title="All 2 branches missed.">        else if (COSName.LUMINOSITY.equals(subType))</span>
+        {
+<span class="nc" id="L645">            Graphics g = gray.getGraphics();</span>
+<span class="nc" id="L646">            g.drawImage(image, 0, 0, null);</span>
+<span class="nc" id="L647">            g.dispose();</span>
+<span class="nc" id="L648">        }</span>
+        else
+        {
+<span class="nc" id="L651">            throw new IOException(&quot;Invalid soft mask subtype: &quot; + subType);</span>
+        }
+<span class="nc" id="L653">        gray = adjustImage(gray);</span>
+        
+<span class="nc" id="L655">        Rectangle2D tpgBounds = transparencyGroup.getBounds();</span>
+<span class="nc" id="L656">        return new SoftMask(parentPaint, gray, tpgBounds, backdropColor, softMask.getTransferFunction());</span>
+    }
+
+    // returns the image adjusted for applySoftMaskToPaint().
+    private BufferedImage adjustImage(BufferedImage gray)
+    {
+<span class="nc" id="L662">        AffineTransform at = new AffineTransform(xform);</span>
+<span class="nc" id="L663">        at.scale(1.0 / xformScalingFactorX, 1.0 / xformScalingFactorY);</span>
+
+<span class="nc" id="L665">        Rectangle originalBounds = new Rectangle(gray.getWidth(), gray.getHeight());</span>
+<span class="nc" id="L666">        Rectangle2D transformedBounds = at.createTransformedShape(originalBounds).getBounds2D();</span>
+<span class="nc" id="L667">        at.preConcatenate(AffineTransform.getTranslateInstance(-transformedBounds.getMinX(), </span>
+<span class="nc" id="L668">                -transformedBounds.getMinY()));</span>
+
+<span class="nc" id="L670">        int width = (int) Math.ceil(transformedBounds.getWidth());</span>
+<span class="nc" id="L671">        int height = (int) Math.ceil(transformedBounds.getHeight());</span>
+
+<span class="nc bnc" id="L673" title="All 6 branches missed.">        if (width == gray.getWidth() &amp;&amp; height == gray.getHeight() &amp;&amp; at.isIdentity())</span>
+        {
+<span class="nc" id="L675">            return gray;</span>
+        }
+
+<span class="nc" id="L678">        BufferedImage transformedGray = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);</span>
+<span class="nc" id="L679">        Graphics2D g2 = (Graphics2D) transformedGray.getGraphics();</span>
+<span class="nc" id="L680">        g2.drawImage(gray, at, null);</span>
+<span class="nc" id="L681">        g2.dispose();</span>
+<span class="nc" id="L682">        return transformedGray;</span>
+    }
+
+    // returns the stroking AWT Paint
+    private Paint getStrokingPaint() throws IOException
+    {
+<span class="fc" id="L688">        PDGraphicsState graphicsState = getGraphicsState();</span>
+<span class="fc" id="L689">        return applySoftMaskToPaint(</span>
+<span class="fc" id="L690">                getPaint(graphicsState.getStrokingColor()), graphicsState.getSoftMask());</span>
+    }
+
+    /**
+     * Returns the non-stroking AWT Paint. You may need to call this if you override
+     * {@link #showGlyph(Matrix, PDFont, int, Vector) showGlyph()}. See
+     * &lt;a href=&quot;https://issues.apache.org/jira/browse/PDFBOX-5093&quot;&gt;PDFBOX-5093&lt;/a&gt; for more.
+     *
+     * @return The non-stroking AWT Paint.
+     * @throws IOException if the non-stroking AWT Paint could not be created
+     */
+    protected final Paint getNonStrokingPaint() throws IOException
+    {
+<span class="fc" id="L703">        PDGraphicsState graphicsState = getGraphicsState();</span>
+<span class="fc" id="L704">        return applySoftMaskToPaint(</span>
+<span class="fc" id="L705">                getPaint(graphicsState.getNonStrokingColor()), graphicsState.getSoftMask());</span>
+    }
+
+    // create a new stroke based on the current CTM and the current stroke
+    private Stroke getStroke()
+    {
+<span class="fc" id="L711">        PDGraphicsState state = getGraphicsState();</span>
+
+        // apply the CTM
+<span class="fc" id="L714">        float lineWidth = transformWidth(state.getLineWidth());</span>
+
+        // minimum line width as used by Adobe Reader
+<span class="fc bfc" id="L717" title="All 2 branches covered.">        if (lineWidth &lt; 0.25)</span>
+        {
+<span class="fc" id="L719">            lineWidth = 0.25f;</span>
+        }
+
+<span class="fc" id="L722">        PDLineDashPattern dashPattern = state.getLineDashPattern();</span>
+        // PDFBOX-5168: show an all-zero dash array line invisible like Adobe does
+        // must do it here because getDashArray() sets minimum width because of JVM bugs
+<span class="fc" id="L725">        float[] dashArray = dashPattern.getDashArray();</span>
+<span class="pc bpc" id="L726" title="1 of 2 branches missed.">        if (isAllZeroDash(dashArray))</span>
+        {
+<span class="nc" id="L728">            return (Shape p) -&gt; new Area();</span>
+        }
+<span class="fc" id="L730">        float phaseStart = dashPattern.getPhase();</span>
+<span class="fc" id="L731">        dashArray = getDashArray(dashPattern);</span>
+<span class="fc" id="L732">        phaseStart = transformWidth(phaseStart);</span>
+
+<span class="fc" id="L734">        int lineCap = Math.min(2, Math.max(0, state.getLineCap())); // legal values 0..2</span>
+<span class="fc" id="L735">        int lineJoin = Math.min(2, Math.max(0, state.getLineJoin()));</span>
+<span class="fc" id="L736">        float miterLimit = state.getMiterLimit();</span>
+<span class="pc bpc" id="L737" title="1 of 2 branches missed.">        if (miterLimit &lt; 1)</span>
+        {
+<span class="nc" id="L739">            LOG.warn(&quot;Miter limit must be &gt;= 1, value {} is ignored&quot;, miterLimit);</span>
+<span class="nc" id="L740">            miterLimit = 10;</span>
+        }
+<span class="fc" id="L742">        return new BasicStroke(lineWidth, lineCap, lineJoin,</span>
+                               miterLimit, dashArray, phaseStart);
+    }
+
+    private boolean isAllZeroDash(float[] dashArray)
+    {
+<span class="fc bfc" id="L748" title="All 2 branches covered.">        if (dashArray.length &gt; 0)</span>
+        {
+<span class="pc bpc" id="L750" title="1 of 2 branches missed.">            for (int i = 0; i &lt; dashArray.length; ++i)</span>
+            {
+<span class="pc bpc" id="L752" title="1 of 2 branches missed.">                if (dashArray[i] != 0)</span>
+                {
+<span class="fc" id="L754">                    return false;</span>
+                }
+            }
+<span class="nc" id="L757">            return true;</span>
+        }
+<span class="fc" id="L759">        return false;</span>
+    }
+
+    private float[] getDashArray(PDLineDashPattern dashPattern)
+    {
+<span class="fc" id="L764">        float[] dashArray = dashPattern.getDashArray();</span>
+        // avoid empty, infinite and NaN values (PDFBOX-3360)
+<span class="fc bfc" id="L766" title="All 2 branches covered.">        if (dashArray.length == 0)</span>
+        {
+<span class="fc" id="L768">            return null;</span>
+        }
+<span class="fc bfc" id="L770" title="All 2 branches covered.">        for (int i = 0; i &lt; dashArray.length; ++i)</span>
+        {
+<span class="pc bpc" id="L772" title="2 of 4 branches missed.">            if (Float.isInfinite(dashArray[i]) || Float.isNaN(dashArray[i]))</span>
+            {
+<span class="nc" id="L774">                return null;</span>
+            }
+        }
+<span class="fc bfc" id="L777" title="All 2 branches covered.">        for (int i = 0; i &lt; dashArray.length; ++i)</span>
+        {
+            // apply the CTM
+<span class="fc" id="L780">            float w = transformWidth(dashArray[i]);</span>
+            // minimum line dash width avoids JVM crash,
+            // see PDFBOX-2373, PDFBOX-2929, PDFBOX-3204, PDFBOX-3813
+            // also avoid 0 in array like &quot;[ 0 1000 ] 0 d&quot;, see PDFBOX-3724
+<span class="pc bpc" id="L784" title="1 of 2 branches missed.">            if (xformScalingFactorX &lt; 0.5f)</span>
+            {
+                // PDFBOX-4492
+<span class="nc" id="L787">                dashArray[i] = Math.max(w, 0.2f);</span>
+            }
+            else
+            {
+<span class="fc" id="L791">                dashArray[i] = Math.max(w, 0.062f);</span>
+            }
+        }
+<span class="fc" id="L794">        return dashArray;</span>
+    }
+
+    @Override
+    public void strokePath() throws IOException
+    {
+<span class="pc bpc" id="L800" title="1 of 2 branches missed.">        if (isContentRendered())</span>
+        {
+<span class="fc" id="L802">            graphics.setComposite(getGraphicsState().getStrokingJavaComposite());</span>
+<span class="fc" id="L803">            graphics.setPaint(getStrokingPaint());</span>
+<span class="fc" id="L804">            graphics.setStroke(getStroke());</span>
+<span class="fc" id="L805">            setClip();</span>
+<span class="fc" id="L806">            graphics.draw(linePath);</span>
+        }
+<span class="fc" id="L808">        linePath.reset();</span>
+<span class="fc" id="L809">    }</span>
+
+    @Override
+    public void fillPath(int windingRule) throws IOException
+    {
+<span class="fc" id="L814">        PDGraphicsState graphicsState = getGraphicsState();</span>
+<span class="fc" id="L815">        graphics.setComposite(graphicsState.getNonStrokingJavaComposite());</span>
+<span class="fc" id="L816">        setClip();</span>
+<span class="fc" id="L817">        linePath.setWindingRule(windingRule);</span>
+
+        // disable anti-aliasing for rectangular paths, this is a workaround to avoid small stripes
+        // which occur when solid fills are used to simulate piecewise gradients, see PDFBOX-2302
+        // note that we ignore paths with a width/height under 1 as these are fills used as strokes,
+        // see PDFBOX-1658 for an example
+<span class="fc" id="L823">        Rectangle2D bounds = linePath.getBounds2D();</span>
+<span class="fc bfc" id="L824" title="All 4 branches covered.">        boolean noAntiAlias = isRectangular(linePath) &amp;&amp; bounds.getWidth() &gt; 1 &amp;&amp;</span>
+<span class="fc bfc" id="L825" title="All 2 branches covered.">                                                         bounds.getHeight() &gt; 1;</span>
+<span class="fc bfc" id="L826" title="All 2 branches covered.">        if (noAntiAlias)</span>
+        {
+<span class="fc" id="L828">            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING,</span>
+                                      RenderingHints.VALUE_ANTIALIAS_OFF);
+        }
+
+        Shape shape;
+<span class="fc bfc" id="L833" title="All 2 branches covered.">        if (graphicsState.getNonStrokingColorSpace() instanceof PDPattern)</span>
+        {
+            // apply clip to path to avoid oversized device bounds in shading contexts (PDFBOX-2901)
+<span class="fc" id="L836">            Area area = new Area(linePath);</span>
+<span class="fc" id="L837">            Shape clip = graphics.getClip();</span>
+<span class="pc bpc" id="L838" title="1 of 2 branches missed.">            if (clip != null)</span>
+            {
+<span class="fc" id="L840">                area.intersect(new Area(clip));</span>
+            }
+<span class="fc" id="L842">            intersectShadingBBox(graphicsState.getNonStrokingColor(), area);</span>
+<span class="fc" id="L843">            shape = area;</span>
+<span class="fc" id="L844">        }</span>
+        else
+        {
+<span class="fc" id="L847">            shape = linePath;</span>
+        }
+<span class="pc bpc" id="L849" title="1 of 4 branches missed.">        if (isContentRendered() &amp;&amp; !shape.getPathIterator(null).isDone())</span>
+        {
+            // creating Paint is sometimes a costly operation, so avoid if possible
+<span class="fc" id="L852">            graphics.setPaint(getNonStrokingPaint());</span>
+<span class="fc" id="L853">            graphics.fill(shape);</span>
+        }
+        
+<span class="fc" id="L856">        linePath.reset();</span>
+
+<span class="fc bfc" id="L858" title="All 2 branches covered.">        if (noAntiAlias)</span>
+        {
+            // JDK 1.7 has a bug where rendering hints are reset by the above call to
+            // the setRenderingHint method, so we re-set all hints, see PDFBOX-2302
+<span class="fc" id="L862">            setRenderingHints();</span>
+        }
+<span class="fc" id="L864">    }</span>
+
+    // checks whether this is a shading pattern and if yes,
+    // get the transformed BBox and intersect with current paint area
+    // need to do it here and not in shading getRaster() because it may have been rotated
+    private void intersectShadingBBox(PDColor color, Area area) throws IOException
+    {
+<span class="pc bpc" id="L871" title="1 of 2 branches missed.">        if (color.getColorSpace() instanceof PDPattern)</span>
+        {
+<span class="fc" id="L873">            PDColorSpace colorSpace = color.getColorSpace();</span>
+<span class="fc" id="L874">            PDAbstractPattern pat = ((PDPattern) colorSpace).getPattern(color);</span>
+<span class="pc bpc" id="L875" title="1 of 2 branches missed.">            if (pat instanceof PDShadingPattern)</span>
+            {
+<span class="nc" id="L877">                PDShading shading = ((PDShadingPattern) pat).getShading();</span>
+<span class="nc" id="L878">                PDRectangle bbox = shading.getBBox();</span>
+<span class="nc bnc" id="L879" title="All 2 branches missed.">                if (bbox != null)</span>
+                {
+<span class="nc" id="L881">                    Matrix m = Matrix.concatenate(getInitialMatrix(), pat.getMatrix());</span>
+<span class="nc" id="L882">                    Area bboxArea = new Area(bbox.transform(m));</span>
+<span class="nc" id="L883">                    area.intersect(bboxArea);</span>
+                }
+            }
+        }
+<span class="fc" id="L887">    }</span>
+
+    /**
+     * Returns true if the given path is rectangular.
+     */
+    private boolean isRectangular(GeneralPath path)
+    {
+<span class="fc" id="L894">        PathIterator iter = path.getPathIterator(null);</span>
+<span class="fc" id="L895">        double[] coords = new double[6];</span>
+<span class="fc" id="L896">        int count = 0;</span>
+<span class="fc" id="L897">        int[] xs = new int[4];</span>
+<span class="fc" id="L898">        int[] ys = new int[4];</span>
+<span class="fc bfc" id="L899" title="All 2 branches covered.">        while (!iter.isDone())</span>
+        {
+<span class="fc bfc" id="L901" title="All 4 branches covered.">            switch(iter.currentSegment(coords))</span>
+            {
+                case PathIterator.SEG_MOVETO:
+<span class="fc bfc" id="L904" title="All 2 branches covered.">                    if (count == 0)</span>
+                    {
+<span class="fc" id="L906">                        xs[count] = (int)Math.floor(coords[0]);</span>
+<span class="fc" id="L907">                        ys[count] = (int)Math.floor(coords[1]);</span>
+                    }
+                    else
+                    {
+<span class="fc" id="L911">                        return false;</span>
+                    }
+<span class="fc" id="L913">                    count++;</span>
+<span class="fc" id="L914">                    break;</span>
+
+                case PathIterator.SEG_LINETO:
+<span class="fc bfc" id="L917" title="All 2 branches covered.">                    if (count &lt; 4)</span>
+                    {
+<span class="fc" id="L919">                        xs[count] = (int)Math.floor(coords[0]);</span>
+<span class="fc" id="L920">                        ys[count] = (int)Math.floor(coords[1]);</span>
+                    }
+                    else
+                    {
+<span class="fc" id="L924">                        return false;</span>
+                    }
+<span class="fc" id="L926">                    count++;</span>
+<span class="fc" id="L927">                    break;</span>
+
+                case PathIterator.SEG_CUBICTO:
+<span class="fc" id="L930">                    return false;</span>
+
+                default:
+                    break;
+            }
+<span class="fc" id="L935">            iter.next();</span>
+        }
+
+<span class="fc bfc" id="L938" title="All 2 branches covered.">        if (count == 4)</span>
+        {
+<span class="pc bpc" id="L940" title="1 of 8 branches missed.">            return xs[0] == xs[1] || xs[0] == xs[2] ||</span>
+                   ys[0] == ys[1] || ys[0] == ys[3];
+        }
+<span class="fc" id="L943">        return false;</span>
+    }
+
+    /**
+     * Fills and then strokes the path.
+     *
+     * @param windingRule The winding rule this path will use.
+     * @throws IOException If there is an IO error while filling the path.
+     */
+    @Override
+    public void fillAndStrokePath(int windingRule) throws IOException
+    {
+        // Cloning needed because fillPath() resets linePath
+<span class="fc" id="L956">        GeneralPath path = (GeneralPath)linePath.clone();</span>
+<span class="fc" id="L957">        fillPath(windingRule);</span>
+<span class="fc" id="L958">        linePath = path;</span>
+<span class="fc" id="L959">        strokePath();</span>
+<span class="fc" id="L960">    }</span>
+
+    @Override
+    public void clip(int windingRule)
+    {
+        // the clipping path will not be updated until the succeeding painting operator is called
+<span class="fc" id="L966">        clipWindingRule = windingRule;</span>
+<span class="pc bpc" id="L967" title="1 of 2 branches missed.">        if (clipWindingRule != -1)</span>
+        {
+<span class="fc" id="L969">            linePath.setWindingRule(clipWindingRule);</span>
+
+<span class="pc bpc" id="L971" title="1 of 2 branches missed.">            if (!linePath.getPathIterator(null).isDone())</span>
+            {
+                // PDFBOX-4949 / PDF.js 12306: don't clip if &quot;W n&quot; only
+<span class="fc" id="L974">                getGraphicsState().intersectClippingPath(adjustClip(linePath));</span>
+            }
+
+            // PDFBOX-3836: lastClip needs to be reset, because after intersection it is still the same 
+            // object, thus setClip() would believe that it is cached.
+<span class="fc" id="L979">            lastClips = null;</span>
+
+<span class="fc" id="L981">            clipWindingRule = -1;</span>
+        }
+<span class="fc" id="L983">    }</span>
+
+    @Override
+    public void moveTo(float x, float y)
+    {
+<span class="fc" id="L988">        linePath.moveTo(x, y);</span>
+<span class="fc" id="L989">    }</span>
+
+    @Override
+    public void lineTo(float x, float y)
+    {
+<span class="fc" id="L994">        linePath.lineTo(x, y);</span>
+<span class="fc" id="L995">    }</span>
+
+    @Override
+    public void curveTo(float x1, float y1, float x2, float y2, float x3, float y3)
+    {
+<span class="fc" id="L1000">        linePath.curveTo(x1, y1, x2, y2, x3, y3);</span>
+<span class="fc" id="L1001">    }</span>
+
+    @Override
+    public Point2D getCurrentPoint()
+    {
+<span class="fc" id="L1006">        return linePath.getCurrentPoint();</span>
+    }
+
+    @Override
+    public void closePath()
+    {
+<span class="fc" id="L1012">        linePath.closePath();</span>
+<span class="fc" id="L1013">    }</span>
+
+    @Override
+    public void endPath()
+    {
+<span class="fc" id="L1018">        linePath.reset();</span>
+<span class="fc" id="L1019">    }</span>
+    
+    /**
+     * PDFBOX-5715 / PR#73: This was added to fix a problem with missing fine lines when printing
+     * on MacOS. Lines vanish because CPrinterJob sets graphics scale to 1 for Printable so after
+     * scaling lines often have a width smaller than 1 after scaling and clipping. This change
+     * enlarges the clip bounds to cover at least 1 point plus 0.5 on one and another side in the
+     * device space to allow to draw the linePath inside the clip. The linePath can consists from
+     * different lines but when its bounds width or height is less than 1.0 it seems safe to use a
+     * rectangle as a clip instead of the real path. A more detailed explanation can be read
+     * &lt;a href=&quot;https://github.com/apache/pdfbox/pull/173&quot;&gt;here&lt;/a&gt;.
+     *
+     * @param linePath
+     * @return 
+     */
+    private GeneralPath adjustClip(GeneralPath linePath)
+    {
+<span class="fc" id="L1036">        AffineTransform tx = graphics.getTransform();</span>
+<span class="fc" id="L1037">        int type = tx.getType();</span>
+
+<span class="fc bfc" id="L1039" title="All 2 branches covered.">        if ((type &amp; ~(TYPE_TRANSLATION | TYPE_FLIP)) == 0)</span>
+        {
+<span class="fc" id="L1041">            return linePath;</span>
+        }
+<span class="fc bfc" id="L1043" title="All 2 branches covered.">        else if ((type &amp; ~(TYPE_TRANSLATION | TYPE_FLIP | TYPE_MASK_SCALE)) == 0)</span>
+        {
+<span class="fc" id="L1045">            double sx = Math.abs(tx.getScaleX());</span>
+<span class="fc" id="L1046">            double sy = Math.abs(tx.getScaleY());</span>
+<span class="pc bpc" id="L1047" title="2 of 4 branches missed.">            if (sx &gt; 1.0 &amp;&amp; sy &gt; 1.0)</span>
+            {
+<span class="fc" id="L1049">                return linePath;</span>
+            }
+
+<span class="nc" id="L1052">            Rectangle2D bounds = linePath.getBounds();</span>
+<span class="nc" id="L1053">            double w = bounds.getWidth();</span>
+<span class="nc" id="L1054">            double h = bounds.getHeight();</span>
+<span class="nc" id="L1055">            double sw = sx * w;</span>
+<span class="nc" id="L1056">            double sh = sy * h;</span>
+<span class="nc" id="L1057">            final double minSize = 2.0;</span>
+<span class="nc bnc" id="L1058" title="All 4 branches missed.">            if (sw &lt; minSize || sh &lt; minSize)</span>
+            {
+<span class="nc" id="L1060">                double x = bounds.getX();</span>
+<span class="nc" id="L1061">                double y = bounds.getY();</span>
+<span class="nc bnc" id="L1062" title="All 2 branches missed.">                if (sw &lt; minSize)</span>
+                {
+<span class="nc" id="L1064">                    w = minSize / sx;</span>
+<span class="nc" id="L1065">                    x = bounds.getCenterX() - w / 2;</span>
+                }
+<span class="nc bnc" id="L1067" title="All 2 branches missed.">                if (sh &lt; minSize)</span>
+                {
+<span class="nc" id="L1069">                    h = minSize / sy;</span>
+<span class="nc" id="L1070">                    y = bounds.getCenterY() - h / 2;</span>
+                }
+<span class="nc" id="L1072">                return new GeneralPath(new Rectangle2D.Double(x, y, w, h));</span>
+            }
+        }
+<span class="fc" id="L1075">        return linePath;</span>
+    }
+
+    @Override
+    public void drawImage(PDImage pdImage) throws IOException
+    {
+<span class="fc bfc" id="L1081" title="All 2 branches covered.">        if (pdImage instanceof PDImageXObject &amp;&amp;</span>
+<span class="pc bpc" id="L1082" title="1 of 2 branches missed.">            isHiddenOCG(((PDImageXObject) pdImage).getOptionalContent()))</span>
+        {
+<span class="nc" id="L1084">            return;</span>
+        }
+<span class="pc bpc" id="L1086" title="1 of 2 branches missed.">        if (!isContentRendered())</span>
+        {
+<span class="nc" id="L1088">            return;</span>
+        }
+<span class="fc" id="L1090">        PDGraphicsState graphicsState = getGraphicsState();</span>
+<span class="fc" id="L1091">        Matrix ctm = graphicsState.getCurrentTransformationMatrix();</span>
+<span class="fc" id="L1092">        AffineTransform at = ctm.createAffineTransform();</span>
+
+<span class="fc bfc" id="L1094" title="All 2 branches covered.">        if (!pdImage.getInterpolate())</span>
+        {
+            // if the image is scaled down, we use smooth interpolation, eg PDFBOX-2364
+            // only when scaled up do we use nearest neighbour, eg PDFBOX-2302 / mori-cvpr01.pdf
+            // PDFBOX-4930: we use the sizes of the ARGB image. These can be different
+            // than the original sizes of the base image, when the mask is bigger.
+            // PDFBOX-5091: also consider subsampling, the sizes are different too.
+            BufferedImage bim;
+<span class="pc bpc" id="L1102" title="1 of 2 branches missed.">            if (subsamplingAllowed)</span>
+            {
+<span class="nc" id="L1104">                bim = pdImage.getImage(null, getSubsampling(pdImage, at));</span>
+            }
+            else
+            {
+<span class="fc" id="L1108">                bim = pdImage.getImage();</span>
+            }
+<span class="fc" id="L1110">            boolean isScaledUp =</span>
+<span class="fc bfc" id="L1111" title="All 2 branches covered.">                    bim.getWidth() &lt;= Math.abs(Math.round(ctm.getScalingFactorX() * xformScalingFactorX)) ||</span>
+<span class="pc bpc" id="L1112" title="1 of 2 branches missed.">                    bim.getHeight() &lt;= Math.abs(Math.round(ctm.getScalingFactorY() * xformScalingFactorY));</span>
+<span class="fc bfc" id="L1113" title="All 2 branches covered.">            if (isScaledUp)</span>
+            {
+<span class="fc" id="L1115">                graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION,</span>
+                        RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+            }
+        }
+
+<span class="fc" id="L1120">        graphics.setComposite(graphicsState.getNonStrokingJavaComposite());</span>
+<span class="fc" id="L1121">        setClip();</span>
+
+<span class="fc bfc" id="L1123" title="All 2 branches covered.">        if (pdImage.isStencil())</span>
+        {
+<span class="pc bpc" id="L1125" title="1 of 2 branches missed.">            if (graphicsState.getNonStrokingColor().getColorSpace() instanceof PDPattern)</span>
+            {
+                // The earlier code for stencils (see &quot;else&quot;) doesn't work with patterns because the
+                // CTM is not taken into consideration.
+                // this code is based on the fact that it is easily possible to draw the mask and 
+                // the paint at the correct place with the existing code, but not in one step.
+                // Thus what we do is to draw both in separate images, then combine the two and draw
+                // the result. 
+                // Note that the device scale is not used. In theory, some patterns can get better
+                // at higher resolutions but the stencil would become more and more &quot;blocky&quot;.
+                // If anybody wants to do this, have a look at the code in showTransparencyGroup().
+
+                // draw the paint
+<span class="nc" id="L1138">                Paint paint = getNonStrokingPaint();</span>
+<span class="nc" id="L1139">                Rectangle2D unitRect = new Rectangle2D.Float(0, 0, 1, 1);</span>
+<span class="nc" id="L1140">                Rectangle2D bounds = at.createTransformedShape(unitRect).getBounds2D();</span>
+<span class="nc" id="L1141">                int w = (int) Math.ceil(bounds.getWidth());</span>
+<span class="nc" id="L1142">                int h = (int) Math.ceil(bounds.getHeight());</span>
+<span class="nc" id="L1143">                BufferedImage renderedPaint = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);</span>
+<span class="nc" id="L1144">                Graphics2D g = (Graphics2D) renderedPaint.getGraphics();</span>
+<span class="nc" id="L1145">                g.translate(-bounds.getMinX(), -bounds.getMinY());</span>
+<span class="nc" id="L1146">                g.setPaint(paint);</span>
+<span class="nc" id="L1147">                g.setRenderingHints(graphics.getRenderingHints());</span>
+<span class="nc" id="L1148">                g.fill(bounds);</span>
+<span class="nc" id="L1149">                g.dispose();</span>
+
+                // draw the mask
+<span class="nc" id="L1152">                BufferedImage mask = pdImage.getImage();</span>
+<span class="nc" id="L1153">                AffineTransform imageTransform = new AffineTransform(at);</span>
+<span class="nc" id="L1154">                imageTransform.scale(1.0 / mask.getWidth(), -1.0 / mask.getHeight());</span>
+<span class="nc" id="L1155">                imageTransform.translate(0, -mask.getHeight());</span>
+<span class="nc" id="L1156">                AffineTransform full = new AffineTransform(g.getTransform());</span>
+<span class="nc" id="L1157">                full.concatenate(imageTransform);</span>
+<span class="nc" id="L1158">                Matrix m = new Matrix(full);</span>
+<span class="nc" id="L1159">                double scaleX = Math.abs(m.getScalingFactorX());</span>
+<span class="nc" id="L1160">                double scaleY = Math.abs(m.getScalingFactorY());</span>
+
+<span class="nc bnc" id="L1162" title="All 4 branches missed.">                boolean smallMask = mask.getWidth() &lt;= 8 &amp;&amp; mask.getHeight() &lt;= 8;</span>
+<span class="nc bnc" id="L1163" title="All 4 branches missed.">                if (mask.getWidth() == 1 &amp;&amp; mask.getHeight() == 1)</span>
+                {
+                    // PDFBOX-5802: force usage of the lookup table if it is only 1 pixel
+                    // (See the comment for PDFBOX-5403 that it isn't done for some
+                    // cases based purely on the rendering result of one file!)
+<span class="nc" id="L1168">                    smallMask = false;</span>
+                }
+<span class="nc bnc" id="L1170" title="All 2 branches missed.">                if (!smallMask)</span>
+                {
+                    // PDFBOX-5403:
+                    // The mask is copied to RGB because this supports a smooth scaling, so we
+                    // get a mask with 255 values instead of just 0 and 255.
+                    // Inverting is done because when we don't do it, the getScaledInstance() call
+                    // produces a black line in many masks. With the inversion we have a white line
+                    // which is neutral. Because of the inversion we don't have to substract from 255
+                    // in the &quot;apply the mask&quot; segment when rasterPixel[3] is assigned.
+
+                    // The inversion is not done for very small ones, because of
+                    // PDFBOX-2171-002-002710-p14.pdf where the &quot;New Harmony Consolidated&quot; and
+                    // &quot;Sailor Springs&quot; patterns became almost invisible.
+                    // (We may have to decide this differently in the future, e.g. on b/w relationship)
+<span class="nc" id="L1184">                    BufferedImage tmp = new BufferedImage(mask.getWidth(), mask.getHeight(), BufferedImage.TYPE_INT_RGB);</span>
+<span class="nc" id="L1185">                    mask = new LookupOp(getInvLookupTable(), graphics.getRenderingHints()).filter(mask, tmp);</span>
+                }
+
+<span class="nc" id="L1188">                BufferedImage renderedMask = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);</span>
+<span class="nc" id="L1189">                g = (Graphics2D) renderedMask.getGraphics();</span>
+<span class="nc" id="L1190">                g.translate(-bounds.getMinX(), -bounds.getMinY());</span>
+<span class="nc" id="L1191">                g.setRenderingHints(graphics.getRenderingHints());</span>
+
+<span class="nc bnc" id="L1193" title="All 2 branches missed.">                if (smallMask)</span>
+                {
+<span class="nc" id="L1195">                    g.drawImage(mask, imageTransform, null);</span>
+                }
+<span class="nc bnc" id="L1197" title="All 4 branches missed.">                else if (scaleX != 0 &amp;&amp; scaleY != 0)</span>
+                {
+<span class="nc bnc" id="L1199" title="All 4 branches missed.">                    while (scaleX &lt; 0.25 || Math.round(mask.getWidth() * scaleX) &lt; 1)</span>
+                    {
+<span class="nc" id="L1201">                        scaleX *= 2.0;</span>
+                    }
+<span class="nc bnc" id="L1203" title="All 4 branches missed.">                    while (scaleY &lt; 0.25 || Math.round(mask.getHeight() * scaleY) &lt; 1)</span>
+                    {
+<span class="nc" id="L1205">                        scaleY *= 2.0;</span>
+                    }
+<span class="nc" id="L1207">                    int w2 = (int) Math.round(mask.getWidth() * scaleX);</span>
+<span class="nc" id="L1208">                    int h2 = (int) Math.round(mask.getHeight() * scaleY);</span>
+
+<span class="nc" id="L1210">                    Image scaledMask = mask.getScaledInstance(w2, h2, Image.SCALE_SMOOTH);</span>
+<span class="nc" id="L1211">                    imageTransform.scale(1f / Math.abs(scaleX), 1f / Math.abs(scaleY));</span>
+<span class="nc" id="L1212">                    g.drawImage(scaledMask, imageTransform, null);</span>
+                }
+<span class="nc" id="L1214">                g.dispose();</span>
+
+                // apply the mask
+<span class="nc" id="L1217">                int[] alphaPixel = null;</span>
+<span class="nc" id="L1218">                int[] rasterPixel = null;</span>
+<span class="nc" id="L1219">                WritableRaster raster = renderedPaint.getRaster();</span>
+<span class="nc" id="L1220">                WritableRaster alpha = renderedMask.getRaster();</span>
+<span class="nc bnc" id="L1221" title="All 2 branches missed.">                for (int y = 0; y &lt; h; y++)</span>
+                {
+<span class="nc bnc" id="L1223" title="All 2 branches missed.">                    for (int x = 0; x &lt; w; x++)</span>
+                    {
+<span class="nc" id="L1225">                        alphaPixel = alpha.getPixel(x, y, alphaPixel);</span>
+<span class="nc" id="L1226">                        rasterPixel = raster.getPixel(x, y, rasterPixel);</span>
+<span class="nc" id="L1227">                        rasterPixel[3] = alphaPixel[0];</span>
+<span class="nc" id="L1228">                        raster.setPixel(x, y, rasterPixel);</span>
+                    }
+                }
+
+                // draw the image
+<span class="nc" id="L1233">                graphics.drawImage(renderedPaint,</span>
+<span class="nc" id="L1234">                        AffineTransform.getTranslateInstance(bounds.getMinX(), bounds.getMinY()),</span>
+                        null);
+<span class="nc" id="L1236">            }</span>
+            else
+            {
+                // fill the image with stenciled paint
+<span class="fc" id="L1240">                BufferedImage image = pdImage.getStencilImage(getNonStrokingPaint());</span>
+
+                // draw the image
+<span class="fc" id="L1243">                drawBufferedImage(pdImage, image, at);</span>
+<span class="fc" id="L1244">            }</span>
+        }
+        else
+        {
+<span class="pc bpc" id="L1248" title="1 of 2 branches missed.">            if (subsamplingAllowed)</span>
+            {
+<span class="nc" id="L1250">                int subsampling = getSubsampling(pdImage, at);</span>
+                // draw the subsampled image
+<span class="nc" id="L1252">                drawBufferedImage(pdImage, pdImage.getImage(null, subsampling), at);</span>
+<span class="nc" id="L1253">            }</span>
+            else
+            {
+                // subsampling not allowed, draw the image
+<span class="fc" id="L1257">                drawBufferedImage(pdImage, pdImage.getImage(), at);</span>
+            }
+        }
+
+<span class="fc bfc" id="L1261" title="All 2 branches covered.">        if (!pdImage.getInterpolate())</span>
+        {
+            // JDK 1.7 has a bug where rendering hints are reset by the above call to
+            // the setRenderingHint method, so we re-set all hints, see PDFBOX-2302
+<span class="fc" id="L1265">            setRenderingHints();</span>
+        }
+<span class="fc" id="L1267">    }</span>
+
+    /**
+     * Calculates the subsampling frequency for a given PDImage based on the current transformation
+     * and its calculated transform. Extend this method if you want to use your own strategy.
+     *
+     * @param pdImage PDImage to be drawn
+     * @param at Transform that will be applied to the image when drawing
+     * @return The rounded-down ratio of image pixels to drawn pixels. Returned value will always be
+     * &amp;gt;=1.
+     */
+    protected int getSubsampling(PDImage pdImage, AffineTransform at)
+    {
+        // calculate subsampling according to the resulting image size
+<span class="nc" id="L1281">        double scale = Math.abs(at.getDeterminant() * xform.getDeterminant());</span>
+
+<span class="nc" id="L1283">        int subsampling = (int) Math.floor(Math.sqrt(pdImage.getWidth() * pdImage.getHeight() / scale));</span>
+<span class="nc bnc" id="L1284" title="All 2 branches missed.">        if (subsampling &gt; 8)</span>
+        {
+<span class="nc" id="L1286">            subsampling = 8;</span>
+        }
+<span class="nc bnc" id="L1288" title="All 2 branches missed.">        if (subsampling &lt; 1)</span>
+        {
+<span class="nc" id="L1290">            subsampling = 1;</span>
+        }
+<span class="nc bnc" id="L1292" title="All 4 branches missed.">        if (subsampling &gt; pdImage.getWidth() || subsampling &gt; pdImage.getHeight())</span>
+        {
+            // For very small images it is possible that the subsampling would imply 0 size.
+            // To avoid problems, the subsampling is set to no less than the smallest dimension.
+<span class="nc" id="L1296">            subsampling = Math.min(pdImage.getWidth(), pdImage.getHeight());</span>
+        }
+<span class="nc" id="L1298">        return subsampling;</span>
+    }
+
+    private void drawBufferedImage(PDImage pdImage, BufferedImage image, AffineTransform at) throws IOException
+    {
+<span class="fc" id="L1303">        AffineTransform originalTransform = graphics.getTransform();</span>
+<span class="fc" id="L1304">        AffineTransform imageTransform = new AffineTransform(at);</span>
+<span class="fc" id="L1305">        int width = image.getWidth();</span>
+<span class="fc" id="L1306">        int height = image.getHeight();</span>
+<span class="fc" id="L1307">        imageTransform.scale(1.0 / width, -1.0 / height);</span>
+<span class="fc" id="L1308">        imageTransform.translate(0, -height);</span>
+
+<span class="fc" id="L1310">        PDSoftMask softMask = getGraphicsState().getSoftMask();</span>
+
+        // PDFBOX-5307 / PDF.js PR#19269
+        // From section 11.6.4.3 Mask Shape and Opacity in the PDF specification:
+        // &quot;Either form of mask in the image dictionary shall override the current soft mask
+        //  in the graphics state&quot;
+<span class="pc bpc" id="L1316" title="1 of 2 branches missed.">        boolean hasImageMask = pdImage.getCOSObject().containsKey(COSName.MASK) ||</span>
+<span class="fc bfc" id="L1317" title="All 2 branches covered.">                               pdImage.getCOSObject().containsKey(COSName.SMASK);</span>
+
+<span class="pc bpc" id="L1319" title="3 of 4 branches missed.">        if (softMask != null &amp;&amp; !hasImageMask)</span>
+        {
+<span class="nc" id="L1321">            Rectangle2D rectangle = new Rectangle2D.Float(0, 0, width, height);</span>
+<span class="nc" id="L1322">            Paint awtPaint = new TexturePaint(image, rectangle);</span>
+<span class="nc" id="L1323">            awtPaint = applySoftMaskToPaint(awtPaint, softMask);</span>
+<span class="nc" id="L1324">            graphics.setPaint(awtPaint);</span>
+<span class="nc" id="L1325">            graphics.transform(imageTransform);</span>
+<span class="nc" id="L1326">            graphics.fill(rectangle);</span>
+<span class="nc" id="L1327">            graphics.setTransform(originalTransform);</span>
+<span class="nc" id="L1328">        }</span>
+        else
+        {
+<span class="fc" id="L1331">            COSBase transfer = getGraphicsState().getTransfer();</span>
+<span class="pc bpc" id="L1332" title="2 of 4 branches missed.">            if (transfer instanceof COSArray || transfer instanceof COSDictionary)</span>
+            {
+<span class="nc" id="L1334">                image = applyTransferFunction(image, transfer);</span>
+            }
+
+            // PDFBOX-4516, PDFBOX-4527, PDFBOX-4815, PDFBOX-4886, PDFBOX-4863:
+            // graphics.drawImage() has terrible quality when scaling down, even when
+            // RenderingHints.VALUE_INTERPOLATION_BICUBIC, VALUE_ALPHA_INTERPOLATION_QUALITY,
+            // VALUE_COLOR_RENDER_QUALITY and VALUE_RENDER_QUALITY are all set.
+            // A workaround is to get a pre-scaled image with Image.getScaledInstance()
+            // and then draw that one. To reduce differences in testing
+            // (partly because the method needs integer parameters), only smaller scalings
+            // will trigger the workaround. Because of the slowness we only do it if the user
+            // expects quality rendering and interpolation.
+<span class="fc" id="L1346">            Matrix imageTransformMatrix = new Matrix(imageTransform);</span>
+<span class="fc" id="L1347">            Matrix graphicsTransformMatrix = new Matrix(originalTransform);    </span>
+<span class="fc" id="L1348">            float scaleX = Math.abs(imageTransformMatrix.getScalingFactorX() * graphicsTransformMatrix.getScalingFactorX());</span>
+<span class="fc" id="L1349">            float scaleY = Math.abs(imageTransformMatrix.getScalingFactorY() * graphicsTransformMatrix.getScalingFactorY());</span>
+
+<span class="pc bpc" id="L1351" title="1 of 4 branches missed.">            if ((scaleX &lt; imageDownscalingOptimizationThreshold || scaleY &lt; imageDownscalingOptimizationThreshold) &amp;&amp;</span>
+<span class="pc bpc" id="L1352" title="1 of 2 branches missed.">                RenderingHints.VALUE_RENDER_QUALITY.equals(graphics.getRenderingHint(RenderingHints.KEY_RENDERING)) &amp;&amp;</span>
+<span class="pc bpc" id="L1353" title="1 of 2 branches missed.">                RenderingHints.VALUE_INTERPOLATION_BICUBIC.equals(graphics.getRenderingHint(RenderingHints.KEY_INTERPOLATION)))</span>
+            {
+<span class="fc" id="L1355">                int w = Math.round(image.getWidth() * scaleX);</span>
+<span class="fc" id="L1356">                int h = Math.round(image.getHeight() * scaleY);</span>
+<span class="pc bpc" id="L1357" title="2 of 4 branches missed.">                if (w &lt; 1 || h &lt; 1)</span>
+                {
+<span class="nc" id="L1359">                    graphics.drawImage(image, imageTransform, null);</span>
+<span class="nc" id="L1360">                    return;</span>
+                }
+<span class="fc" id="L1362">                Image imageToDraw = image.getScaledInstance(w, h, Image.SCALE_SMOOTH);</span>
+                // remove the scale (extracted from w and h, to have it from the rounded values
+                // hoping to reverse the rounding: without this, we get an horizontal line
+                // when rendering PDFJS-8860-Pattern-Size1.pdf at 100% )
+<span class="fc" id="L1366">                imageTransform.scale(1f / w * image.getWidth(), 1f / h * image.getHeight());</span>
+<span class="fc" id="L1367">                imageTransform.preConcatenate(originalTransform);</span>
+<span class="fc" id="L1368">                graphics.setTransform(new AffineTransform());</span>
+<span class="fc" id="L1369">                graphics.drawImage(imageToDraw, imageTransform, null);</span>
+<span class="fc" id="L1370">                graphics.setTransform(originalTransform);</span>
+<span class="fc" id="L1371">            }</span>
+            else
+            {
+<span class="fc" id="L1374">                GraphicsConfiguration graphicsConfiguration = graphics.getDeviceConfiguration();</span>
+<span class="fc" id="L1375">                int deviceType = GraphicsDevice.TYPE_RASTER_SCREEN;</span>
+<span class="pc bpc" id="L1376" title="1 of 2 branches missed.">                if (graphicsConfiguration != null)</span>
+                {
+<span class="fc" id="L1378">                    GraphicsDevice graphicsDevice = graphicsConfiguration.getDevice();</span>
+<span class="pc bpc" id="L1379" title="1 of 2 branches missed.">                    if (graphicsDevice != null)</span>
+                    {
+<span class="fc" id="L1381">                        deviceType = graphicsDevice.getType();</span>
+                    }
+                }
+<span class="pc bpc" id="L1384" title="1 of 2 branches missed.">                if (deviceType == GraphicsDevice.TYPE_PRINTER &amp;&amp;</span>
+<span class="nc bnc" id="L1385" title="All 6 branches missed.">                    image.getType() != BufferedImage.TYPE_4BYTE_ABGR &amp;&amp;</span>
+                    (IS_WINDOWS || IS_LINUX))
+                {
+                    // PDFBOX-5601, PDFBOX-4010, JDK-8308099, JDK-8191800:
+                    // workaround to avoid terrible / missing output on printer unless TYPE_4BYTE_ABGR
+<span class="nc" id="L1390">                    BufferedImage bim = new BufferedImage(</span>
+<span class="nc" id="L1391">                            image.getWidth(), image.getHeight(), BufferedImage.TYPE_4BYTE_ABGR);</span>
+<span class="nc" id="L1392">                    Graphics g = bim.getGraphics();</span>
+<span class="nc" id="L1393">                    g.drawImage(image, 0, 0, null);</span>
+<span class="nc" id="L1394">                    g.dispose();</span>
+<span class="nc" id="L1395">                    image = bim;</span>
+                }
+<span class="fc" id="L1397">                graphics.drawImage(image, imageTransform, null);</span>
+            }
+        }
+<span class="fc" id="L1400">    }</span>
+
+    private BufferedImage applyTransferFunction(BufferedImage image, COSBase transfer) throws IOException
+    {
+        BufferedImage bim;
+<span class="nc bnc" id="L1405" title="All 2 branches missed.">        if (image.getColorModel().hasAlpha())</span>
+        {
+<span class="nc" id="L1407">            bim = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);</span>
+        }
+        else
+        {
+<span class="nc" id="L1411">            bim = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);</span>
+        }
+
+        // prepare transfer functions (either one per color or one for all) 
+        // and maps (actually arrays[256] to be faster) to avoid calculating values several times
+        Integer[] rMap;
+        Integer[] gMap;
+        Integer[] bMap;
+        PDFunction rf;
+        PDFunction gf;
+        PDFunction bf;
+<span class="nc bnc" id="L1422" title="All 2 branches missed.">        if (transfer instanceof COSArray)</span>
+        {
+<span class="nc" id="L1424">            COSArray ar = (COSArray) transfer;</span>
+<span class="nc" id="L1425">            rf = PDFunction.create(ar.getObject(0));</span>
+<span class="nc" id="L1426">            gf = PDFunction.create(ar.getObject(1));</span>
+<span class="nc" id="L1427">            bf = PDFunction.create(ar.getObject(2));</span>
+<span class="nc" id="L1428">            rMap = new Integer[256];</span>
+<span class="nc" id="L1429">            gMap = new Integer[256];</span>
+<span class="nc" id="L1430">            bMap = new Integer[256];</span>
+<span class="nc" id="L1431">        }</span>
+        else
+        {
+<span class="nc" id="L1434">            rf = PDFunction.create(transfer);</span>
+<span class="nc" id="L1435">            gf = rf;</span>
+<span class="nc" id="L1436">            bf = rf;</span>
+<span class="nc" id="L1437">            rMap = new Integer[256];</span>
+<span class="nc" id="L1438">            gMap = rMap;</span>
+<span class="nc" id="L1439">            bMap = rMap;</span>
+        }
+
+        // apply the transfer function to each color, but keep alpha
+<span class="nc" id="L1443">        float[] input = new float[1];</span>
+<span class="nc bnc" id="L1444" title="All 2 branches missed.">        for (int x = 0; x &lt; image.getWidth(); ++x)</span>
+        {
+<span class="nc bnc" id="L1446" title="All 2 branches missed.">            for (int y = 0; y &lt; image.getHeight(); ++y)</span>
+            {
+<span class="nc" id="L1448">                int rgb = image.getRGB(x, y);</span>
+<span class="nc" id="L1449">                int ri = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
+<span class="nc" id="L1450">                int gi = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="nc" id="L1451">                int bi = rgb &amp; 0xFF;</span>
+                int ro;
+                int go;
+                int bo;
+<span class="nc bnc" id="L1455" title="All 2 branches missed.">                if (rMap[ri] != null)</span>
+                {
+<span class="nc" id="L1457">                    ro = rMap[ri];</span>
+                }
+                else
+                {
+<span class="nc" id="L1461">                    input[0] = (ri &amp; 0xFF) / 255f;</span>
+<span class="nc" id="L1462">                    ro = (int) (rf.eval(input)[0] * 255);</span>
+<span class="nc" id="L1463">                    rMap[ri] = ro;</span>
+                }
+<span class="nc bnc" id="L1465" title="All 2 branches missed.">                if (gMap[gi] != null)</span>
+                {
+<span class="nc" id="L1467">                    go = gMap[gi];</span>
+                }
+                else
+                {
+<span class="nc" id="L1471">                    input[0] = (gi &amp; 0xFF) / 255f;</span>
+<span class="nc" id="L1472">                    go = (int) (gf.eval(input)[0] * 255);</span>
+<span class="nc" id="L1473">                    gMap[gi] = go;</span>
+                }
+<span class="nc bnc" id="L1475" title="All 2 branches missed.">                if (bMap[bi] != null)</span>
+                {
+<span class="nc" id="L1477">                    bo = bMap[bi];</span>
+                }
+                else
+                {
+<span class="nc" id="L1481">                    input[0] = (bi &amp; 0xFF) / 255f;</span>
+<span class="nc" id="L1482">                    bo = (int) (bf.eval(input)[0] * 255);</span>
+<span class="nc" id="L1483">                    bMap[bi] = bo;</span>
+                }
+<span class="nc" id="L1485">                bim.setRGB(x, y, (rgb &amp; 0xFF000000) | (ro &lt;&lt; 16) | (go &lt;&lt; 8) | bo);</span>
+            }
+        }
+<span class="nc" id="L1488">        return bim;</span>
+    }
+
+    @Override
+    public void shadingFill(COSName shadingName) throws IOException
+    {
+<span class="nc bnc" id="L1494" title="All 2 branches missed.">        if (!isContentRendered())</span>
+        {
+<span class="nc" id="L1496">            return;</span>
+        }
+<span class="nc" id="L1498">        PDShading shading = getResources().getShading(shadingName);</span>
+<span class="nc bnc" id="L1499" title="All 2 branches missed.">        if (shading == null)</span>
+        {
+<span class="nc" id="L1501">            LOG.error(&quot;shading {} does not exist in resources dictionary&quot;, shadingName);</span>
+<span class="nc" id="L1502">            return;</span>
+        }
+<span class="nc" id="L1504">        PDGraphicsState graphicsState = getGraphicsState();</span>
+<span class="nc" id="L1505">        Matrix ctm = graphicsState.getCurrentTransformationMatrix();</span>
+
+<span class="nc" id="L1507">        graphics.setComposite(graphicsState.getNonStrokingJavaComposite());</span>
+<span class="nc" id="L1508">        Shape savedClip = graphics.getClip();</span>
+<span class="nc" id="L1509">        graphics.setClip(null);</span>
+<span class="nc" id="L1510">        lastClips = null;</span>
+
+        // get the transformed BBox and intersect with current clipping path
+        // need to do it here and not in shading getRaster() because it may have been rotated
+<span class="nc" id="L1514">        PDRectangle bbox = shading.getBBox();</span>
+<span class="nc" id="L1515">        Area currentClippingPath = graphicsState.getCurrentClippingPath();</span>
+        Area area;
+<span class="nc bnc" id="L1517" title="All 2 branches missed.">        if (bbox != null)</span>
+        {
+<span class="nc" id="L1519">            area = new Area(bbox.transform(ctm));</span>
+<span class="nc" id="L1520">            area.intersect(currentClippingPath);</span>
+        }
+        else
+        {
+<span class="nc" id="L1524">            Rectangle2D bounds = shading.getBounds(new AffineTransform(), ctm);</span>
+<span class="nc bnc" id="L1525" title="All 2 branches missed.">            if (bounds != null)</span>
+            {
+<span class="nc" id="L1527">                bounds.add(new Point2D.Double(Math.floor(bounds.getMinX() - 1),</span>
+<span class="nc" id="L1528">                        Math.floor(bounds.getMinY() - 1)));</span>
+<span class="nc" id="L1529">                bounds.add(new Point2D.Double(Math.ceil(bounds.getMaxX() + 1),</span>
+<span class="nc" id="L1530">                        Math.ceil(bounds.getMaxY() + 1)));</span>
+<span class="nc" id="L1531">                area = new Area(bounds);</span>
+<span class="nc" id="L1532">                area.intersect(currentClippingPath);</span>
+            }
+            else
+            {
+<span class="nc" id="L1536">                area = currentClippingPath;</span>
+            }
+        }
+<span class="nc bnc" id="L1539" title="All 2 branches missed.">        if (!area.isEmpty())</span>
+        {
+            // creating Paint is sometimes a costly operation, so avoid if possible
+<span class="nc" id="L1542">            Paint paint = shading.toPaint(ctm);</span>
+<span class="nc" id="L1543">            paint = applySoftMaskToPaint(paint, graphicsState.getSoftMask());</span>
+<span class="nc" id="L1544">            graphics.setPaint(paint);</span>
+<span class="nc" id="L1545">            graphics.fill(area);</span>
+        }
+<span class="nc" id="L1547">        graphics.setClip(savedClip);</span>
+<span class="nc" id="L1548">    }</span>
+
+    @Override
+    public void showAnnotation(PDAnnotation annotation) throws IOException
+    {
+<span class="fc" id="L1553">        lastClips = null;</span>
+
+<span class="fc bfc" id="L1555" title="All 2 branches covered.">        if (shouldSkipAnnotation(annotation))</span>
+        {
+<span class="fc" id="L1557">            return;</span>
+        }
+
+        //TODO support NoZoom, example can be found in p5 of PDFBOX-2348
+<span class="fc" id="L1561">        PDAppearanceDictionary appearance = annotation.getAppearance();</span>
+<span class="pc bpc" id="L1562" title="1 of 4 branches missed.">        if (appearance == null || appearance.getNormalAppearance() == null)</span>
+        {
+<span class="fc" id="L1564">            annotation.constructAppearances(renderer.document);</span>
+        }
+<span class="pc bpc" id="L1566" title="1 of 4 branches missed.">        if (annotation.isNoRotate() &amp;&amp; getCurrentPage().getRotation() != 0)</span>
+        {
+<span class="nc" id="L1568">            appearance = annotation.getAppearance();</span>
+<span class="nc bnc" id="L1569" title="All 2 branches missed.">            if (appearance != null)</span>
+            {
+<span class="nc" id="L1571">                PDAppearanceEntry appearanceEntry = appearance.getNormalAppearance();</span>
+<span class="nc bnc" id="L1572" title="All 4 branches missed.">                if (appearanceEntry != null &amp;&amp; appearanceEntry.isStream() &amp;&amp;</span>
+<span class="nc bnc" id="L1573" title="All 2 branches missed.">                    hasTransparency(appearanceEntry.getAppearanceStream()))</span>
+                {
+                    // PDFBOX-4744: avoid appearances with transparency groups until we have fixed
+                    // the rendering. A real solution should probably be
+                    // in PDFStreamEngine.processAnnotation().
+<span class="nc" id="L1578">                    annotation.constructAppearances();</span>
+                }
+            }
+<span class="nc" id="L1581">            PDRectangle rect = annotation.getRectangle();</span>
+<span class="nc" id="L1582">            AffineTransform savedTransform = graphics.getTransform();</span>
+            // &quot;The upper-left corner of the annotation remains at the same point in
+            //  default user space; the annotation pivots around that point.&quot;
+<span class="nc" id="L1585">            graphics.rotate(Math.toRadians(getCurrentPage().getRotation()),</span>
+<span class="nc" id="L1586">                    rect.getLowerLeftX(), rect.getUpperRightY());</span>
+<span class="nc" id="L1587">            super.showAnnotation(annotation);</span>
+<span class="nc" id="L1588">            graphics.setTransform(savedTransform);</span>
+<span class="nc" id="L1589">            annotation.setAppearance(appearance); // restore</span>
+<span class="nc" id="L1590">        }</span>
+        else
+        {
+<span class="fc" id="L1593">            super.showAnnotation(annotation);</span>
+        }
+<span class="fc" id="L1595">    }</span>
+
+    private boolean shouldSkipAnnotation(PDAnnotation annotation)
+    {
+<span class="pc bpc" id="L1599" title="3 of 4 branches missed.">        if (destination == RenderDestination.PRINT &amp;&amp; !annotation.isPrinted())</span>
+        {
+<span class="nc" id="L1601">            return true;</span>
+        }
+<span class="pc bpc" id="L1603" title="2 of 4 branches missed.">        if ((destination == RenderDestination.VIEW || destination == RenderDestination.EXPORT) &amp;&amp;</span>
+<span class="pc bpc" id="L1604" title="1 of 2 branches missed.">                annotation.isNoView())</span>
+        {
+<span class="nc" id="L1606">            return true;</span>
+        }
+<span class="fc bfc" id="L1608" title="All 2 branches covered.">        if (annotation.isHidden())</span>
+        {
+<span class="fc" id="L1610">            return true;</span>
+        }
+<span class="pc bpc" id="L1612" title="3 of 4 branches missed.">        if (annotation.isInvisible() &amp;&amp; annotation instanceof PDAnnotationUnknown)</span>
+        {
+            // &quot;If set, do not display the annotation if it does not belong to one
+            // of the standard annotation types and no annotation handler is available.&quot;
+<span class="nc" id="L1616">            return true;</span>
+        }
+<span class="fc" id="L1618">        return isHiddenOCG(annotation.getOptionalContent());</span>
+    }
+
+    private boolean hasTransparency(PDFormXObject form) throws IOException
+    {
+<span class="nc bnc" id="L1623" title="All 2 branches missed.">        if (form == null)</span>
+        {
+<span class="nc" id="L1625">            return false;</span>
+        }
+<span class="nc" id="L1627">        PDResources resources = form.getResources();</span>
+<span class="nc bnc" id="L1628" title="All 2 branches missed.">        if (resources == null)</span>
+        {
+<span class="nc" id="L1630">            return false;</span>
+        }
+<span class="nc bnc" id="L1632" title="All 2 branches missed.">        for (COSName name : resources.getXObjectNames())</span>
+        {
+<span class="nc" id="L1634">            PDXObject xObject = resources.getXObject(name);</span>
+<span class="nc bnc" id="L1635" title="All 2 branches missed.">            if (xObject instanceof PDTransparencyGroup)</span>
+            {
+<span class="nc" id="L1637">                return true;</span>
+            }
+<span class="nc bnc" id="L1639" title="All 4 branches missed.">            if (xObject instanceof PDFormXObject &amp;&amp; hasTransparency((PDFormXObject) xObject))</span>
+            {
+<span class="nc" id="L1641">                return true;</span>
+            }
+<span class="nc" id="L1643">        }</span>
+<span class="nc" id="L1644">        return false;</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void showForm(PDFormXObject form) throws IOException
+    {
+<span class="pc bpc" id="L1653" title="1 of 2 branches missed.">        if (isHiddenOCG(form.getOptionalContent()))</span>
+        {
+<span class="nc" id="L1655">            return;</span>
+        }
+<span class="pc bpc" id="L1657" title="1 of 2 branches missed.">        if (isContentRendered())</span>
+        {
+<span class="fc" id="L1659">            GeneralPath savedLinePath = linePath;</span>
+<span class="fc" id="L1660">            linePath = new GeneralPath();</span>
+<span class="fc" id="L1661">            super.showForm(form);</span>
+<span class="fc" id="L1662">            linePath = savedLinePath;</span>
+        }
+<span class="fc" id="L1664">    }</span>
+
+    @Override
+    public void showTransparencyGroup(PDTransparencyGroup form) throws IOException
+    {
+<span class="fc" id="L1669">        showTransparencyGroupOnGraphics(form, graphics);</span>
+<span class="fc" id="L1670">    }</span>
+
+    /**
+     * For advanced users, to extract the transparency group into a separate graphics device.
+     * 
+     * @param form the transparency group to be extracted
+     * @param graphics the target graphics device
+     * @throws IOException if the transparency group could not be extracted
+     */
+    protected void showTransparencyGroupOnGraphics(PDTransparencyGroup form, Graphics2D graphics)
+        throws IOException
+    {
+<span class="pc bpc" id="L1682" title="1 of 2 branches missed.">        if (isHiddenOCG(form.getOptionalContent()))</span>
+        {
+<span class="nc" id="L1684">            return;</span>
+        }
+<span class="pc bpc" id="L1686" title="1 of 2 branches missed.">        if (!isContentRendered())</span>
+        {
+<span class="nc" id="L1688">            return;</span>
+        }
+<span class="fc" id="L1690">        PDGraphicsState graphicsState = getGraphicsState();</span>
+<span class="fc" id="L1691">        TransparencyGroup group</span>
+<span class="fc" id="L1692">                = new TransparencyGroup(form, false, graphicsState.getCurrentTransformationMatrix(), null);</span>
+<span class="fc" id="L1693">        BufferedImage image = group.getImage();</span>
+<span class="pc bpc" id="L1694" title="1 of 2 branches missed.">        if (image == null)</span>
+        {
+            // image is empty, don't bother
+<span class="nc" id="L1697">            return;</span>
+        }
+
+<span class="fc" id="L1700">        graphics.setComposite(graphicsState.getNonStrokingJavaComposite());</span>
+<span class="fc" id="L1701">        setClip();</span>
+
+        // both the DPI xform and the CTM were already applied to the group, so all we do
+        // here is draw it directly onto the Graphics2D device at the appropriate position
+<span class="fc" id="L1705">        AffineTransform savedTransform = graphics.getTransform();</span>
+<span class="fc" id="L1706">        AffineTransform transform = new AffineTransform(xform);</span>
+<span class="fc" id="L1707">        transform.scale(1.0 / xformScalingFactorX, 1.0 / xformScalingFactorY);</span>
+<span class="fc" id="L1708">        graphics.setTransform(transform);</span>
+
+        // adjust bbox (x,y) position at the initial scale + cropbox
+<span class="fc" id="L1711">        PDRectangle bbox = group.getBBox();</span>
+<span class="fc" id="L1712">        float x = bbox.getLowerLeftX() - pageSize.getLowerLeftX();</span>
+<span class="fc" id="L1713">        float y = pageSize.getUpperRightY() - bbox.getUpperRightY();</span>
+
+<span class="pc bpc" id="L1715" title="1 of 2 branches missed.">        if (flipTG)</span>
+        {
+<span class="nc" id="L1717">            graphics.translate(0, image.getHeight());</span>
+<span class="nc" id="L1718">            graphics.scale(1, -1);</span>
+        }
+        else
+        {
+<span class="fc" id="L1722">            graphics.translate(x * xformScalingFactorX, y * xformScalingFactorY);</span>
+        }
+
+<span class="fc" id="L1725">        PDSoftMask softMask = graphicsState.getSoftMask();</span>
+<span class="pc bpc" id="L1726" title="1 of 2 branches missed.">        if (softMask != null)</span>
+        {
+<span class="nc" id="L1728">            Paint awtPaint = new TexturePaint(image,</span>
+<span class="nc" id="L1729">                    new Rectangle2D.Float(0, 0, image.getWidth(), image.getHeight()));</span>
+<span class="nc" id="L1730">            awtPaint = applySoftMaskToPaint(awtPaint, softMask);</span>
+<span class="nc" id="L1731">            graphics.setPaint(awtPaint);</span>
+<span class="nc" id="L1732">            graphics.fill(</span>
+<span class="nc" id="L1733">                    new Rectangle2D.Float(0, 0, bbox.getWidth() * xformScalingFactorX, bbox.getHeight() * xformScalingFactorY));</span>
+<span class="nc" id="L1734">        }</span>
+        else
+        {
+            try
+            {
+<span class="fc" id="L1739">                graphics.drawImage(image, null, null);</span>
+            }
+<span class="nc" id="L1741">            catch (InternalError ie)</span>
+            {
+<span class="nc" id="L1743">                LOG.error(&quot;Exception drawing image, see JDK-6689349, &quot; +</span>
+                          &quot;try rendering into a BufferedImage instead&quot;, ie);
+<span class="fc" id="L1745">            }</span>
+        }
+
+<span class="fc" id="L1748">        graphics.setTransform(savedTransform);</span>
+<span class="fc" id="L1749">    }</span>
+
+    /**
+     * Transparency group.
+     **/
+    private final class TransparencyGroup
+    {
+        private final BufferedImage image;
+        private final PDRectangle bbox;
+
+        private final int minX;
+        private final int minY;
+        private final int maxX;
+        private final int maxY;
+        private final int width;
+        private final int height;
+
+        /**
+         * Creates a buffered image for a transparency group result.
+         *
+         * @param form the transparency group of the form or soft mask.
+         * @param isSoftMask true if this is a soft mask.
+         * @param ctm the relevant current transformation matrix. For soft masks, this is the CTM at
+         * the time the soft mask is set (not at the time the soft mask is used for fill/stroke!),
+         * for forms, this is the CTM at the time the form is invoked.
+         * @param backdropColor the color according to the /bc entry to be used for luminosity soft
+         * masks.
+         * @throws IOException
+         */
+        private TransparencyGroup(PDTransparencyGroup form, boolean isSoftMask, Matrix ctm, 
+                PDColor backdropColor) throws IOException
+<span class="fc" id="L1780">        {</span>
+<span class="fc" id="L1781">            Graphics2D savedGraphics = graphics;</span>
+<span class="fc" id="L1782">            List&lt;Path2D&gt; savedLastClips = lastClips;</span>
+<span class="fc" id="L1783">            Shape savedInitialClip = initialClip;</span>
+
+            // get the CTM x Form Matrix transform
+<span class="fc" id="L1786">            Matrix transform = Matrix.concatenate(ctm, form.getMatrix());</span>
+
+            // transform the bbox
+<span class="fc" id="L1789">            PDRectangle formBBox = form.getBBox();</span>
+<span class="pc bpc" id="L1790" title="1 of 2 branches missed.">            if (formBBox == null)</span>
+            {
+                // PDFBOX-5471
+                // check done here and not in caller to avoid getBBox() creating rectangle twice
+<span class="nc" id="L1794">                LOG.warn(&quot;transparency group ignored because BBox is null&quot;);</span>
+<span class="nc" id="L1795">                formBBox = new PDRectangle();</span>
+            }
+<span class="fc" id="L1797">            GeneralPath transformedBox = formBBox.transform(transform);</span>
+
+            // clip the bbox to prevent giant bboxes from consuming all memory
+<span class="fc" id="L1800">            Area transformed = new Area(transformedBox);</span>
+<span class="fc" id="L1801">            transformed.intersect(getGraphicsState().getCurrentClippingPath());</span>
+<span class="fc" id="L1802">            Rectangle2D clipRect = transformed.getBounds2D();</span>
+<span class="pc bpc" id="L1803" title="1 of 2 branches missed.">            if (clipRect.isEmpty())</span>
+            {
+<span class="nc" id="L1805">                image = null;</span>
+<span class="nc" id="L1806">                bbox = null;</span>
+<span class="nc" id="L1807">                minX = 0;</span>
+<span class="nc" id="L1808">                minY = 0;</span>
+<span class="nc" id="L1809">                maxX = 0;</span>
+<span class="nc" id="L1810">                maxY = 0;</span>
+<span class="nc" id="L1811">                width = 0;</span>
+<span class="nc" id="L1812">                height = 0;</span>
+<span class="nc" id="L1813">                return;</span>
+            }
+<span class="fc" id="L1815">            this.bbox = new PDRectangle((float)clipRect.getX(), (float)clipRect.getY(),</span>
+<span class="fc" id="L1816">                                        (float)clipRect.getWidth(), (float)clipRect.getHeight());</span>
+
+            // apply the underlying Graphics2D device's DPI transform
+<span class="fc" id="L1819">            AffineTransform xformOriginal = xform;</span>
+<span class="fc" id="L1820">            xform = AffineTransform.getScaleInstance(xformScalingFactorX, xformScalingFactorY);</span>
+<span class="fc" id="L1821">            Rectangle2D bounds = xform.createTransformedShape(clipRect).getBounds2D();</span>
+
+<span class="fc" id="L1823">            minX = (int) Math.floor(bounds.getMinX());</span>
+<span class="fc" id="L1824">            minY = (int) Math.floor(bounds.getMinY());</span>
+<span class="fc" id="L1825">            maxX = (int) Math.floor(bounds.getMaxX()) + 1;</span>
+<span class="fc" id="L1826">            maxY = (int) Math.floor(bounds.getMaxY()) + 1;</span>
+
+<span class="fc" id="L1828">            width = maxX - minX;</span>
+<span class="fc" id="L1829">            height = maxY - minY;</span>
+
+            // FIXME - color space
+<span class="fc" id="L1832">            PDTransparencyGroupAttributes group = form.getGroup();</span>
+<span class="pc bpc" id="L1833" title="1 of 2 branches missed.">            if (isGray(group.getColorSpace(form.getResources())))</span>
+            {
+<span class="nc" id="L1835">                image = create2ByteGrayAlphaImage(width, height);</span>
+            }
+            else
+            {
+<span class="fc" id="L1839">                image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);</span>
+            }
+
+<span class="pc bpc" id="L1842" title="2 of 4 branches missed.">            boolean needsBackdrop = !isSoftMask &amp;&amp; !group.isIsolated() &amp;&amp;</span>
+<span class="pc bpc" id="L1843" title="1 of 2 branches missed.">                hasBlendMode(form, new HashSet&lt;&gt;());</span>
+<span class="fc" id="L1844">            BufferedImage backdropImage = null;</span>
+            // Position of this group in parent group's coordinates
+<span class="fc" id="L1846">            int backdropX = 0;</span>
+<span class="fc" id="L1847">            int backdropY = 0;</span>
+<span class="pc bpc" id="L1848" title="1 of 2 branches missed.">            if (needsBackdrop)</span>
+            {
+<span class="nc bnc" id="L1850" title="All 2 branches missed.">                if (transparencyGroupStack.isEmpty())</span>
+                {
+                    // Use the current page as the parent group.
+<span class="nc" id="L1853">                    backdropImage = renderer.getPageImage();</span>
+<span class="nc bnc" id="L1854" title="All 2 branches missed.">                    if (backdropImage == null)</span>
+                    {
+<span class="nc" id="L1856">                        needsBackdrop = false;</span>
+                    }
+                    else
+                    {
+<span class="nc" id="L1860">                        backdropX = minX;</span>
+<span class="nc" id="L1861">                        backdropY = backdropImage.getHeight() - maxY;</span>
+                    }
+                }
+                else
+                {
+<span class="nc" id="L1866">                    TransparencyGroup parentGroup = transparencyGroupStack.peek();</span>
+<span class="nc" id="L1867">                    backdropImage = parentGroup.image;</span>
+<span class="nc" id="L1868">                    backdropX = minX - parentGroup.minX;</span>
+<span class="nc" id="L1869">                    backdropY = parentGroup.maxY - maxY;</span>
+                }
+            }
+
+<span class="fc" id="L1873">            Graphics2D g = image.createGraphics();</span>
+<span class="pc bpc" id="L1874" title="1 of 2 branches missed.">            if (needsBackdrop)</span>
+            {
+                // backdropImage must be included in group image but not in group alpha.
+<span class="nc" id="L1877">                g.drawImage(backdropImage, 0, 0, width, height,</span>
+                    backdropX, backdropY, backdropX + width, backdropY + height, null);
+<span class="nc" id="L1879">                g = new GroupGraphics(image, g);</span>
+            }
+<span class="pc bpc" id="L1881" title="3 of 4 branches missed.">            if (isSoftMask &amp;&amp; backdropColor != null)</span>
+            {
+                // &quot;If the subtype is Luminosity, the transparency group XObject G shall be 
+                // composited with a fully opaque backdrop whose colour is everywhere defined 
+                // by the soft-mask dictionary's BC entry.&quot;
+<span class="nc" id="L1886">                g.setBackground(new Color(backdropColor.toRGB()));</span>
+<span class="nc" id="L1887">                g.clearRect(0, 0, width, height);</span>
+            }
+
+            // flip y-axis
+<span class="fc" id="L1891">            g.translate(0, image.getHeight());</span>
+<span class="fc" id="L1892">            g.scale(1, -1);</span>
+
+<span class="fc" id="L1894">            boolean savedFlipTG = flipTG;</span>
+<span class="fc" id="L1895">            flipTG = false;</span>
+
+            // apply device transform (DPI)
+            // the initial translation is ignored, because we're not writing into the initial graphics device
+<span class="fc" id="L1899">            g.transform(xform);</span>
+
+<span class="fc" id="L1901">            PDRectangle pageSizeOriginal = pageSize;</span>
+<span class="fc" id="L1902">            pageSize = new PDRectangle(minX / xformScalingFactorX,</span>
+                                       minY / xformScalingFactorY,
+<span class="fc" id="L1904">                                       (float) (bounds.getWidth() / xformScalingFactorX),</span>
+<span class="fc" id="L1905">                                        (float) (bounds.getHeight() / xformScalingFactorY));</span>
+<span class="fc" id="L1906">            int clipWindingRuleOriginal = clipWindingRule;</span>
+<span class="fc" id="L1907">            clipWindingRule = -1;</span>
+<span class="fc" id="L1908">            GeneralPath linePathOriginal = linePath;</span>
+<span class="fc" id="L1909">            linePath = new GeneralPath();</span>
+
+            // adjust the origin
+<span class="fc" id="L1912">            g.translate(-clipRect.getX(), -clipRect.getY());</span>
+
+<span class="fc" id="L1914">            graphics = g;</span>
+<span class="fc" id="L1915">            setRenderingHints();</span>
+            try
+            {
+<span class="pc bpc" id="L1918" title="1 of 2 branches missed.">                if (isSoftMask)</span>
+                {
+<span class="nc" id="L1920">                    processSoftMask(form);</span>
+                }
+                else
+                {
+<span class="fc" id="L1924">                    transparencyGroupStack.push(this);</span>
+<span class="fc" id="L1925">                    processTransparencyGroup(form);</span>
+<span class="pc bpc" id="L1926" title="1 of 2 branches missed.">                    if (!transparencyGroupStack.isEmpty())</span>
+                    {
+<span class="fc" id="L1928">                        transparencyGroupStack.pop();</span>
+                    }
+                }
+
+<span class="pc bpc" id="L1932" title="1 of 2 branches missed.">                if (needsBackdrop)</span>
+                {
+<span class="nc" id="L1934">                    ((GroupGraphics) graphics).removeBackdrop(backdropImage, backdropX, backdropY);</span>
+                }
+            }
+            finally 
+            {
+<span class="fc" id="L1939">                flipTG = savedFlipTG;</span>
+<span class="fc" id="L1940">                lastClips = savedLastClips;</span>
+<span class="fc" id="L1941">                graphics.dispose();</span>
+<span class="fc" id="L1942">                graphics = savedGraphics;</span>
+<span class="fc" id="L1943">                initialClip = savedInitialClip;</span>
+<span class="fc" id="L1944">                clipWindingRule = clipWindingRuleOriginal;</span>
+<span class="fc" id="L1945">                linePath = linePathOriginal;</span>
+<span class="fc" id="L1946">                pageSize = pageSizeOriginal;</span>
+<span class="fc" id="L1947">                xform = xformOriginal;</span>
+            }
+<span class="fc" id="L1949">        }</span>
+
+        // http://stackoverflow.com/a/21181943/535646
+        private BufferedImage create2ByteGrayAlphaImage(int width, int height) 
+        {
+            // gray + alpha
+<span class="nc" id="L1955">            int[] bandOffsets = {1, 0};</span>
+<span class="nc" id="L1956">            int bands = bandOffsets.length;</span>
+
+            // Color Model used for raw GRAY + ALPHA
+<span class="nc" id="L1959">            final ColorModel CM_GRAY_ALPHA</span>
+                = new ComponentColorModel(
+<span class="nc" id="L1961">                        ColorSpace.getInstance(ColorSpace.CS_GRAY),</span>
+                        true, false, Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
+
+            // Init data buffer of type byte
+<span class="nc" id="L1965">            DataBuffer buffer = new DataBufferByte(width * height * bands);</span>
+
+            // Wrap the data buffer in a raster
+<span class="nc" id="L1968">            WritableRaster raster =</span>
+<span class="nc" id="L1969">                    Raster.createInterleavedRaster(buffer, width, height,</span>
+                            width * bands, bands, bandOffsets, new Point(0, 0));
+
+            // Create a custom BufferedImage with the raster and a suitable color model
+<span class="nc" id="L1973">            return new BufferedImage(CM_GRAY_ALPHA, raster, false, null);</span>
+        }
+
+        private boolean isGray(PDColorSpace colorSpace)
+        {
+<span class="pc bpc" id="L1978" title="1 of 2 branches missed.">            if (colorSpace instanceof PDDeviceGray)</span>
+            {
+<span class="nc" id="L1980">                return true;</span>
+            }
+<span class="pc bpc" id="L1982" title="1 of 2 branches missed.">            if (colorSpace instanceof PDICCBased)</span>
+            {
+                try
+                {
+<span class="nc" id="L1986">                    return ((PDICCBased) colorSpace).getAlternateColorSpace() instanceof PDDeviceGray;</span>
+                }
+<span class="nc" id="L1988">                catch (IOException ex)</span>
+                {
+<span class="nc" id="L1990">                    LOG.debug(&quot;Couldn't get an alternate ColorSpace&quot;, ex);</span>
+<span class="nc" id="L1991">                    return false;</span>
+                }
+            }
+<span class="fc" id="L1994">            return false;</span>
+        }
+
+        BufferedImage getImage()
+        {
+<span class="fc" id="L1999">            return image;</span>
+        }
+
+        PDRectangle getBBox()
+        {
+<span class="fc" id="L2004">            return bbox;</span>
+        }
+
+        Rectangle2D getBounds()
+        {
+            Rectangle2D r;
+<span class="nc bnc" id="L2010" title="All 2 branches missed.">            if (flipTG)</span>
+            {
+                // Fixes PDFBOX-5966 and PDFBOX-5251, but not pdfium 1317, which has similar PDF code.
+                // https://bugs.chromium.org/p/pdfium/issues/detail?id=1317
+<span class="nc" id="L2014">                r = new Rectangle2D.Double(minX, minY, width, height);</span>
+            }
+            else
+            {
+                // y-axis flip
+<span class="nc" id="L2019">                r = new Rectangle2D.Double(</span>
+<span class="nc" id="L2020">                        minX - pageSize.getLowerLeftX() * xformScalingFactorX,</span>
+<span class="nc" id="L2021">                        (pageSize.getLowerLeftY() + pageSize.getHeight()) * xformScalingFactorY - minY - height,</span>
+                        width,
+                        height);
+            }
+            // apply the underlying Graphics2D device's DPI transform
+            // this adjusts the rectangle to the rotated image to put the soft mask at the correct position
+            //TODO
+            // 1. change transparencyGroup.getBounds() to getOrigin(), because size isn't used in SoftMask,
+            // 2. Is it possible to create the softmask and transparency group in the correct rotation?
+            //    (needs rendering identity testing before committing!)
+<span class="nc" id="L2031">            AffineTransform adjustedTransform = new AffineTransform(xform);</span>
+<span class="nc" id="L2032">            adjustedTransform.scale(1.0 / xformScalingFactorX, 1.0 / xformScalingFactorY);</span>
+<span class="nc" id="L2033">            return adjustedTransform.createTransformedShape(r).getBounds2D();</span>
+        }
+    }
+
+    private boolean hasBlendMode(PDTransparencyGroup group, Set&lt;COSBase&gt; groupsDone)
+    {
+<span class="fc" id="L2039">        COSStream groupCOSStream = group.getCOSObject();</span>
+<span class="fc bfc" id="L2040" title="All 2 branches covered.">        if (groupsDone.contains(groupCOSStream))</span>
+        {
+            // The group is being processed. Avoid endless recursion.
+<span class="fc" id="L2043">            return false;</span>
+        }
+<span class="fc" id="L2045">        groupsDone.add(groupCOSStream);</span>
+
+<span class="fc" id="L2047">        Boolean val = blendModeMap.get(groupCOSStream);</span>
+<span class="fc bfc" id="L2048" title="All 2 branches covered.">        if (val != null)</span>
+        {
+<span class="fc" id="L2050">            return val;</span>
+        }
+
+<span class="fc" id="L2053">        PDResources resources = group.getResources();</span>
+<span class="pc bpc" id="L2054" title="1 of 2 branches missed.">        if (resources == null)</span>
+        {
+<span class="nc" id="L2056">            blendModeMap.put(groupCOSStream, false);</span>
+<span class="nc" id="L2057">            return false;</span>
+        }
+<span class="fc bfc" id="L2059" title="All 2 branches covered.">        for (COSName name : resources.getExtGStateNames())</span>
+        {
+<span class="fc" id="L2061">            PDExtendedGraphicsState extGState = resources.getExtGState(name);</span>
+<span class="pc bpc" id="L2062" title="1 of 2 branches missed.">            if (extGState == null)</span>
+            {
+<span class="nc" id="L2064">                continue;</span>
+            }
+<span class="fc" id="L2066">            BlendMode blendMode = extGState.getBlendMode();</span>
+<span class="pc bpc" id="L2067" title="1 of 2 branches missed.">            if (blendMode != BlendMode.NORMAL)</span>
+            {
+<span class="nc" id="L2069">                blendModeMap.put(groupCOSStream, true);</span>
+<span class="nc" id="L2070">                return true;</span>
+            }
+<span class="fc" id="L2072">        }</span>
+
+        // Recursively process nested transparency groups
+<span class="fc bfc" id="L2075" title="All 2 branches covered.">        for (COSName name : resources.getXObjectNames())</span>
+        {
+            PDXObject xObject;
+            try
+            {
+<span class="fc" id="L2080">                xObject = resources.getXObject(name);</span>
+            }
+<span class="nc" id="L2082">            catch (IOException ex)</span>
+            {
+<span class="nc" id="L2084">                continue;</span>
+<span class="fc" id="L2085">            }</span>
+<span class="fc bfc" id="L2086" title="All 2 branches covered.">            if (xObject instanceof PDTransparencyGroup &amp;&amp;</span>
+<span class="pc bpc" id="L2087" title="1 of 2 branches missed.">                hasBlendMode((PDTransparencyGroup)xObject, groupsDone))</span>
+            {
+<span class="nc" id="L2089">                blendModeMap.put(groupCOSStream, true);</span>
+<span class="nc" id="L2090">                return true;</span>
+            }
+<span class="fc" id="L2092">        }</span>
+
+<span class="fc" id="L2094">        blendModeMap.put(groupCOSStream, false);</span>
+<span class="fc" id="L2095">        return false;</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void beginMarkedContentSequence(COSName tag, COSDictionary properties)
+    {
+<span class="pc bpc" id="L2104" title="1 of 2 branches missed.">        if (nestedHiddenOCGCount &gt; 0)</span>
+        {
+<span class="nc" id="L2106">            nestedHiddenOCGCount++;</span>
+<span class="nc" id="L2107">            return;</span>
+        }
+<span class="fc bfc" id="L2109" title="All 2 branches covered.">        if (properties == null)</span>
+        {
+<span class="fc" id="L2111">            return;</span>
+        }
+<span class="fc bfc" id="L2113" title="All 2 branches covered.">        if (isHiddenOCG(PDPropertyList.create(properties)))</span>
+        {
+<span class="fc" id="L2115">            nestedHiddenOCGCount = 1;</span>
+        }
+<span class="fc" id="L2117">    }</span>
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void endMarkedContentSequence()
+    {
+<span class="fc bfc" id="L2125" title="All 2 branches covered.">        if (nestedHiddenOCGCount &gt; 0)</span>
+        {
+<span class="fc" id="L2127">            nestedHiddenOCGCount--;</span>
+        }
+<span class="fc" id="L2129">    }</span>
+
+    private boolean isContentRendered()
+    {
+<span class="fc bfc" id="L2133" title="All 2 branches covered.">        return nestedHiddenOCGCount &lt;= 0;</span>
+    }
+
+    private boolean isHiddenOCG(PDPropertyList propertyList)
+    {
+<span class="fc bfc" id="L2138" title="All 2 branches covered.">        if (propertyList instanceof PDOptionalContentGroup)</span>
+        {
+<span class="fc" id="L2140">            PDOptionalContentGroup group = (PDOptionalContentGroup) propertyList;</span>
+<span class="fc" id="L2141">            RenderState printState = group.getRenderState(destination);</span>
+<span class="pc bpc" id="L2142" title="1 of 2 branches missed.">            if (printState == null)</span>
+            {
+<span class="fc bfc" id="L2144" title="All 2 branches covered.">                if (!getRenderer().isGroupEnabled(group))</span>
+                {
+<span class="fc" id="L2146">                    return true;</span>
+                }
+            }
+<span class="nc bnc" id="L2149" title="All 2 branches missed.">            else if (RenderState.OFF == printState)</span>
+            {
+<span class="nc" id="L2151">                return true;</span>
+            }
+<span class="fc" id="L2153">        }</span>
+<span class="fc bfc" id="L2154" title="All 2 branches covered.">        else if (propertyList instanceof PDOptionalContentMembershipDictionary)</span>
+        {
+<span class="fc" id="L2156">            return isHiddenOCMD((PDOptionalContentMembershipDictionary) propertyList);</span>
+        }
+<span class="fc" id="L2158">        return false;</span>
+    }
+
+    private boolean isHiddenOCMD(PDOptionalContentMembershipDictionary ocmd)
+    {
+<span class="fc" id="L2163">        COSArray veArray = ocmd.getCOSObject().getCOSArray(COSName.VE);</span>
+<span class="pc bpc" id="L2164" title="3 of 4 branches missed.">        if (veArray != null &amp;&amp; !veArray.isEmpty())</span>
+        {
+<span class="nc" id="L2166">            return isHiddenVisibilityExpression(veArray);</span>
+        }
+<span class="fc" id="L2168">        List&lt;PDPropertyList&gt; oCGs = ocmd.getOCGs();</span>
+<span class="pc bpc" id="L2169" title="1 of 2 branches missed.">        if (oCGs.isEmpty())</span>
+        {
+<span class="nc" id="L2171">            return false;</span>
+        }
+<span class="fc" id="L2173">        List&lt;Boolean&gt; visibles = new ArrayList&lt;&gt;(oCGs.size());</span>
+<span class="pc bpc" id="L2174" title="1 of 2 branches missed.">        oCGs.forEach(prop -&gt; visibles.add(!isHiddenOCG(prop)));</span>
+<span class="fc" id="L2175">        COSName visibilityPolicy = ocmd.getVisibilityPolicy();</span>
+        
+        // visible if any of the entries in OCGs are OFF
+<span class="pc bpc" id="L2178" title="1 of 2 branches missed.">        if (COSName.ANY_OFF.equals(visibilityPolicy))</span>
+        {
+<span class="nc" id="L2180">            return visibles.stream().allMatch(v -&gt; v);</span>
+        }
+
+        // visible only if all of the entries in OCGs are ON
+<span class="pc bpc" id="L2184" title="1 of 2 branches missed.">        if (COSName.ALL_ON.equals(visibilityPolicy))</span>
+        {
+<span class="nc bnc" id="L2186" title="All 2 branches missed.">            return visibles.stream().anyMatch(v -&gt; !v);</span>
+        }
+
+        // visible only if all of the entries in OCGs are OFF
+<span class="pc bpc" id="L2190" title="1 of 2 branches missed.">        if (COSName.ALL_OFF.equals(visibilityPolicy))</span>
+        {
+<span class="nc" id="L2192">            return visibles.stream().anyMatch(v -&gt; v);</span>
+        }
+
+        // visible if any of the entries in OCGs are ON
+        // AnyOn is default
+<span class="fc" id="L2197">        return visibles.stream().noneMatch(v -&gt; v);</span>
+    }
+
+    private boolean isHiddenVisibilityExpression(COSArray veArray)
+    {
+<span class="nc bnc" id="L2202" title="All 2 branches missed.">        if (veArray.isEmpty())</span>
+        {
+<span class="nc" id="L2204">            return false;</span>
+        }
+<span class="nc" id="L2206">        String op = veArray.getName(0);</span>
+<span class="nc bnc" id="L2207" title="All 2 branches missed.">        if (op == null)</span>
+        {
+<span class="nc" id="L2209">            return false;</span>
+        }
+<span class="nc bnc" id="L2211" title="All 4 branches missed.">        switch (op)</span>
+        {
+            case &quot;And&quot;:
+<span class="nc" id="L2214">                return isHiddenAndVisibilityExpression(veArray);</span>
+            case &quot;Or&quot;:
+<span class="nc" id="L2216">                return isHiddenOrVisibilityExpression(veArray);</span>
+            case &quot;Not&quot;:
+<span class="nc" id="L2218">                return isHiddenNotVisibilityExpression(veArray);</span>
+            default:
+<span class="nc" id="L2220">                return false;</span>
+        }
+    }
+
+    private boolean isHiddenAndVisibilityExpression(COSArray veArray)
+    {
+        // hidden if at least one isn't visible
+<span class="nc bnc" id="L2227" title="All 2 branches missed.">        for (int i = 1; i &lt; veArray.size(); ++i)</span>
+        {
+<span class="nc" id="L2229">            COSBase base = veArray.getObject(i);</span>
+<span class="nc bnc" id="L2230" title="All 2 branches missed.">            if (base instanceof COSArray)</span>
+            {
+                // Another VE
+<span class="nc" id="L2233">                boolean isHidden = isHiddenVisibilityExpression((COSArray) base);</span>
+<span class="nc bnc" id="L2234" title="All 2 branches missed.">                if (isHidden)</span>
+                {
+<span class="nc" id="L2236">                    return true;</span>
+                }
+<span class="nc" id="L2238">            }</span>
+<span class="nc bnc" id="L2239" title="All 2 branches missed.">            else if (base instanceof COSDictionary)</span>
+            {
+                // Another OCG
+<span class="nc" id="L2242">                PDPropertyList prop = PDPropertyList.create((COSDictionary) base);</span>
+<span class="nc" id="L2243">                boolean isHidden = isHiddenOCG(prop);</span>
+<span class="nc bnc" id="L2244" title="All 2 branches missed.">                if (isHidden)</span>
+                {
+<span class="nc" id="L2246">                    return true;</span>
+                }
+            }
+        }
+<span class="nc" id="L2250">        return false;</span>
+    }
+
+    private boolean isHiddenOrVisibilityExpression(COSArray veArray)
+    {
+        // hidden only if all are hidden
+<span class="nc bnc" id="L2256" title="All 2 branches missed.">        for (int i = 1; i &lt; veArray.size(); ++i)</span>
+        {
+<span class="nc" id="L2258">            COSBase base = veArray.getObject(i);</span>
+<span class="nc bnc" id="L2259" title="All 2 branches missed.">            if (base instanceof COSArray)</span>
+            {
+                // Another VE
+<span class="nc" id="L2262">                boolean isHidden = isHiddenVisibilityExpression((COSArray) base);</span>
+<span class="nc bnc" id="L2263" title="All 2 branches missed.">                if (!isHidden)</span>
+                {
+<span class="nc" id="L2265">                    return false;</span>
+                }
+<span class="nc" id="L2267">            }</span>
+<span class="nc bnc" id="L2268" title="All 2 branches missed.">            else if (base instanceof COSDictionary)</span>
+            {
+                // Another OCG
+<span class="nc" id="L2271">                PDPropertyList prop = PDPropertyList.create((COSDictionary) base);</span>
+<span class="nc" id="L2272">                boolean isHidden = isHiddenOCG(prop);</span>
+<span class="nc bnc" id="L2273" title="All 2 branches missed.">                if (!isHidden)</span>
+                {
+<span class="nc" id="L2275">                    return false;</span>
+                }
+            }
+        }
+<span class="nc" id="L2279">        return true;</span>
+    }
+
+    private boolean isHiddenNotVisibilityExpression(COSArray veArray)
+    {
+<span class="nc bnc" id="L2284" title="All 2 branches missed.">        if (veArray.size() != 2)</span>
+        {
+<span class="nc" id="L2286">            return false;</span>
+        }
+<span class="nc" id="L2288">        COSBase base = veArray.getObject(1);</span>
+<span class="nc bnc" id="L2289" title="All 2 branches missed.">        if (base instanceof COSArray)</span>
+        {
+            // Another VE
+<span class="nc bnc" id="L2292" title="All 2 branches missed.">            return !isHiddenVisibilityExpression((COSArray) base);</span>
+        }
+<span class="nc bnc" id="L2294" title="All 2 branches missed.">        else if (base instanceof COSDictionary)</span>
+        {
+            // Another OCG
+<span class="nc" id="L2297">            PDPropertyList prop = PDPropertyList.create((COSDictionary) base);</span>
+<span class="nc bnc" id="L2298" title="All 2 branches missed.">            return !isHiddenOCG(prop);</span>
+        }
+<span class="nc" id="L2300">        return false;</span>
+    }
+
+    private LookupTable getInvLookupTable()
+    {
+<span class="nc bnc" id="L2305" title="All 2 branches missed.">        if (invTable == null)</span>
+        {
+<span class="nc" id="L2307">            byte[] inv = new byte[256];</span>
+<span class="nc bnc" id="L2308" title="All 2 branches missed.">            for (int i = 0; i &lt; inv.length; i++)</span>
+            {
+<span class="nc" id="L2310">                inv[i] = (byte) (255 - i);</span>
+            }
+<span class="nc" id="L2312">            invTable = new ByteLookupTable(0, inv);</span>
+        }
+<span class="nc" id="L2314">        return invTable;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

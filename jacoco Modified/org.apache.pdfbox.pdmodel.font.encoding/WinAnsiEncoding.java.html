@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WinAnsiEncoding.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.font.encoding</a> &gt; <span class="el_source">WinAnsiEncoding.java</span></div><h1>WinAnsiEncoding.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.font.encoding;
+
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSName;
+
+/**
+ * This the win ansi encoding.
+ * 
+ * @author Ben Litchfield
+ */
+public class WinAnsiEncoding extends Encoding
+{
+    /**
+     * Table of octal character codes and their corresponding names.
+     */
+<span class="fc" id="L32">    private static final Object[][] WIN_ANSI_ENCODING_TABLE = {</span>
+<span class="fc" id="L33">            {0101, &quot;A&quot;},</span>
+<span class="fc" id="L34">            {0306, &quot;AE&quot;},</span>
+<span class="fc" id="L35">            {0301, &quot;Aacute&quot;},</span>
+<span class="fc" id="L36">            {0302, &quot;Acircumflex&quot;},</span>
+<span class="fc" id="L37">            {0304, &quot;Adieresis&quot;},</span>
+<span class="fc" id="L38">            {0300, &quot;Agrave&quot;},</span>
+<span class="fc" id="L39">            {0305, &quot;Aring&quot;},</span>
+<span class="fc" id="L40">            {0303, &quot;Atilde&quot;},</span>
+<span class="fc" id="L41">            {0102, &quot;B&quot;},</span>
+<span class="fc" id="L42">            {0103, &quot;C&quot;},</span>
+<span class="fc" id="L43">            {0307, &quot;Ccedilla&quot;},</span>
+<span class="fc" id="L44">            {0104, &quot;D&quot;},</span>
+<span class="fc" id="L45">            {0105, &quot;E&quot;},</span>
+<span class="fc" id="L46">            {0311, &quot;Eacute&quot;},</span>
+<span class="fc" id="L47">            {0312, &quot;Ecircumflex&quot;},</span>
+<span class="fc" id="L48">            {0313, &quot;Edieresis&quot;},</span>
+<span class="fc" id="L49">            {0310, &quot;Egrave&quot;},</span>
+<span class="fc" id="L50">            {0320, &quot;Eth&quot;},</span>
+<span class="fc" id="L51">            {0200, &quot;Euro&quot;},</span>
+<span class="fc" id="L52">            {0106, &quot;F&quot;},</span>
+<span class="fc" id="L53">            {0107, &quot;G&quot;},</span>
+<span class="fc" id="L54">            {0110, &quot;H&quot;},</span>
+<span class="fc" id="L55">            {0111, &quot;I&quot;},</span>
+<span class="fc" id="L56">            {0315, &quot;Iacute&quot;},</span>
+<span class="fc" id="L57">            {0316, &quot;Icircumflex&quot;},</span>
+<span class="fc" id="L58">            {0317, &quot;Idieresis&quot;},</span>
+<span class="fc" id="L59">            {0314, &quot;Igrave&quot;},</span>
+<span class="fc" id="L60">            {0112, &quot;J&quot;},</span>
+<span class="fc" id="L61">            {0113, &quot;K&quot;},</span>
+<span class="fc" id="L62">            {0114, &quot;L&quot;},</span>
+<span class="fc" id="L63">            {0115, &quot;M&quot;},</span>
+<span class="fc" id="L64">            {0116, &quot;N&quot;},</span>
+<span class="fc" id="L65">            {0321, &quot;Ntilde&quot;},</span>
+<span class="fc" id="L66">            {0117, &quot;O&quot;},</span>
+<span class="fc" id="L67">            {0214, &quot;OE&quot;},</span>
+<span class="fc" id="L68">            {0323, &quot;Oacute&quot;},</span>
+<span class="fc" id="L69">            {0324, &quot;Ocircumflex&quot;},</span>
+<span class="fc" id="L70">            {0326, &quot;Odieresis&quot;},</span>
+<span class="fc" id="L71">            {0322, &quot;Ograve&quot;},</span>
+<span class="fc" id="L72">            {0330, &quot;Oslash&quot;},</span>
+<span class="fc" id="L73">            {0325, &quot;Otilde&quot;},</span>
+<span class="fc" id="L74">            {0120, &quot;P&quot;},</span>
+<span class="fc" id="L75">            {0121, &quot;Q&quot;},</span>
+<span class="fc" id="L76">            {0122, &quot;R&quot;},</span>
+<span class="fc" id="L77">            {0123, &quot;S&quot;},</span>
+<span class="fc" id="L78">            {0212, &quot;Scaron&quot;},</span>
+<span class="fc" id="L79">            {0124, &quot;T&quot;},</span>
+<span class="fc" id="L80">            {0336, &quot;Thorn&quot;},</span>
+<span class="fc" id="L81">            {0125, &quot;U&quot;},</span>
+<span class="fc" id="L82">            {0332, &quot;Uacute&quot;},</span>
+<span class="fc" id="L83">            {0333, &quot;Ucircumflex&quot;},</span>
+<span class="fc" id="L84">            {0334, &quot;Udieresis&quot;},</span>
+<span class="fc" id="L85">            {0331, &quot;Ugrave&quot;},</span>
+<span class="fc" id="L86">            {0126, &quot;V&quot;},</span>
+<span class="fc" id="L87">            {0127, &quot;W&quot;},</span>
+<span class="fc" id="L88">            {0130, &quot;X&quot;},</span>
+<span class="fc" id="L89">            {0131, &quot;Y&quot;},</span>
+<span class="fc" id="L90">            {0335, &quot;Yacute&quot;},</span>
+<span class="fc" id="L91">            {0237, &quot;Ydieresis&quot;},</span>
+<span class="fc" id="L92">            {0132, &quot;Z&quot;},</span>
+<span class="fc" id="L93">            {0216, &quot;Zcaron&quot;},</span>
+<span class="fc" id="L94">            {0141, &quot;a&quot;},</span>
+<span class="fc" id="L95">            {0341, &quot;aacute&quot;},</span>
+<span class="fc" id="L96">            {0342, &quot;acircumflex&quot;},</span>
+<span class="fc" id="L97">            {0264, &quot;acute&quot;},</span>
+<span class="fc" id="L98">            {0344, &quot;adieresis&quot;},</span>
+<span class="fc" id="L99">            {0346, &quot;ae&quot;},</span>
+<span class="fc" id="L100">            {0340, &quot;agrave&quot;},</span>
+<span class="fc" id="L101">            {046, &quot;ampersand&quot;},</span>
+<span class="fc" id="L102">            {0345, &quot;aring&quot;},</span>
+<span class="fc" id="L103">            {0136, &quot;asciicircum&quot;},</span>
+<span class="fc" id="L104">            {0176, &quot;asciitilde&quot;},</span>
+<span class="fc" id="L105">            {052, &quot;asterisk&quot;},</span>
+<span class="fc" id="L106">            {0100, &quot;at&quot;},</span>
+<span class="fc" id="L107">            {0343, &quot;atilde&quot;},</span>
+<span class="fc" id="L108">            {0142, &quot;b&quot;},</span>
+<span class="fc" id="L109">            {0134, &quot;backslash&quot;},</span>
+<span class="fc" id="L110">            {0174, &quot;bar&quot;},</span>
+<span class="fc" id="L111">            {0173, &quot;braceleft&quot;},</span>
+<span class="fc" id="L112">            {0175, &quot;braceright&quot;},</span>
+<span class="fc" id="L113">            {0133, &quot;bracketleft&quot;},</span>
+<span class="fc" id="L114">            {0135, &quot;bracketright&quot;},</span>
+<span class="fc" id="L115">            {0246, &quot;brokenbar&quot;},</span>
+<span class="fc" id="L116">            {0225, &quot;bullet&quot;},</span>
+<span class="fc" id="L117">            {0143, &quot;c&quot;},</span>
+<span class="fc" id="L118">            {0347, &quot;ccedilla&quot;},</span>
+<span class="fc" id="L119">            {0270, &quot;cedilla&quot;},</span>
+<span class="fc" id="L120">            {0242, &quot;cent&quot;},</span>
+<span class="fc" id="L121">            {0210, &quot;circumflex&quot;},</span>
+<span class="fc" id="L122">            {072, &quot;colon&quot;},</span>
+<span class="fc" id="L123">            {054, &quot;comma&quot;},</span>
+<span class="fc" id="L124">            {0251, &quot;copyright&quot;},</span>
+<span class="fc" id="L125">            {0244, &quot;currency&quot;},</span>
+<span class="fc" id="L126">            {0144, &quot;d&quot;},</span>
+<span class="fc" id="L127">            {0206, &quot;dagger&quot;},</span>
+<span class="fc" id="L128">            {0207, &quot;daggerdbl&quot;},</span>
+<span class="fc" id="L129">            {0260, &quot;degree&quot;},</span>
+<span class="fc" id="L130">            {0250, &quot;dieresis&quot;},</span>
+<span class="fc" id="L131">            {0367, &quot;divide&quot;},</span>
+<span class="fc" id="L132">            {044, &quot;dollar&quot;},</span>
+<span class="fc" id="L133">            {0145, &quot;e&quot;},</span>
+<span class="fc" id="L134">            {0351, &quot;eacute&quot;},</span>
+<span class="fc" id="L135">            {0352, &quot;ecircumflex&quot;},</span>
+<span class="fc" id="L136">            {0353, &quot;edieresis&quot;},</span>
+<span class="fc" id="L137">            {0350, &quot;egrave&quot;},</span>
+<span class="fc" id="L138">            {070, &quot;eight&quot;},</span>
+<span class="fc" id="L139">            {0205, &quot;ellipsis&quot;},</span>
+<span class="fc" id="L140">            {0227, &quot;emdash&quot;},</span>
+<span class="fc" id="L141">            {0226, &quot;endash&quot;},</span>
+<span class="fc" id="L142">            {075, &quot;equal&quot;},</span>
+<span class="fc" id="L143">            {0360, &quot;eth&quot;},</span>
+<span class="fc" id="L144">            {041, &quot;exclam&quot;},</span>
+<span class="fc" id="L145">            {0241, &quot;exclamdown&quot;},</span>
+<span class="fc" id="L146">            {0146, &quot;f&quot;},</span>
+<span class="fc" id="L147">            {065, &quot;five&quot;},</span>
+<span class="fc" id="L148">            {0203, &quot;florin&quot;},</span>
+<span class="fc" id="L149">            {064, &quot;four&quot;},</span>
+<span class="fc" id="L150">            {0147, &quot;g&quot;},</span>
+<span class="fc" id="L151">            {0337, &quot;germandbls&quot;},</span>
+<span class="fc" id="L152">            {0140, &quot;grave&quot;},</span>
+<span class="fc" id="L153">            {076, &quot;greater&quot;},</span>
+<span class="fc" id="L154">            {0253, &quot;guillemotleft&quot;},</span>
+<span class="fc" id="L155">            {0273, &quot;guillemotright&quot;},</span>
+<span class="fc" id="L156">            {0213, &quot;guilsinglleft&quot;},</span>
+<span class="fc" id="L157">            {0233, &quot;guilsinglright&quot;},</span>
+<span class="fc" id="L158">            {0150, &quot;h&quot;},</span>
+<span class="fc" id="L159">            {055, &quot;hyphen&quot;},</span>
+<span class="fc" id="L160">            {0151, &quot;i&quot;},</span>
+<span class="fc" id="L161">            {0355, &quot;iacute&quot;},</span>
+<span class="fc" id="L162">            {0356, &quot;icircumflex&quot;},</span>
+<span class="fc" id="L163">            {0357, &quot;idieresis&quot;},</span>
+<span class="fc" id="L164">            {0354, &quot;igrave&quot;},</span>
+<span class="fc" id="L165">            {0152, &quot;j&quot;},</span>
+<span class="fc" id="L166">            {0153, &quot;k&quot;},</span>
+<span class="fc" id="L167">            {0154, &quot;l&quot;},</span>
+<span class="fc" id="L168">            {074, &quot;less&quot;},</span>
+<span class="fc" id="L169">            {0254, &quot;logicalnot&quot;},</span>
+<span class="fc" id="L170">            {0155, &quot;m&quot;},</span>
+<span class="fc" id="L171">            {0257, &quot;macron&quot;},</span>
+<span class="fc" id="L172">            {0265, &quot;mu&quot;},</span>
+<span class="fc" id="L173">            {0327, &quot;multiply&quot;},</span>
+<span class="fc" id="L174">            {0156, &quot;n&quot;},</span>
+<span class="fc" id="L175">            {071, &quot;nine&quot;},</span>
+<span class="fc" id="L176">            {0361, &quot;ntilde&quot;},</span>
+<span class="fc" id="L177">            {043, &quot;numbersign&quot;},</span>
+<span class="fc" id="L178">            {0157, &quot;o&quot;},</span>
+<span class="fc" id="L179">            {0363, &quot;oacute&quot;},</span>
+<span class="fc" id="L180">            {0364, &quot;ocircumflex&quot;},</span>
+<span class="fc" id="L181">            {0366, &quot;odieresis&quot;},</span>
+<span class="fc" id="L182">            {0234, &quot;oe&quot;},</span>
+<span class="fc" id="L183">            {0362, &quot;ograve&quot;},</span>
+<span class="fc" id="L184">            {061, &quot;one&quot;},</span>
+<span class="fc" id="L185">            {0275, &quot;onehalf&quot;},</span>
+<span class="fc" id="L186">            {0274, &quot;onequarter&quot;},</span>
+<span class="fc" id="L187">            {0271, &quot;onesuperior&quot;},</span>
+<span class="fc" id="L188">            {0252, &quot;ordfeminine&quot;},</span>
+<span class="fc" id="L189">            {0272, &quot;ordmasculine&quot;},</span>
+<span class="fc" id="L190">            {0370, &quot;oslash&quot;},</span>
+<span class="fc" id="L191">            {0365, &quot;otilde&quot;},</span>
+<span class="fc" id="L192">            {0160, &quot;p&quot;},</span>
+<span class="fc" id="L193">            {0266, &quot;paragraph&quot;},</span>
+<span class="fc" id="L194">            {050, &quot;parenleft&quot;},</span>
+<span class="fc" id="L195">            {051, &quot;parenright&quot;},</span>
+<span class="fc" id="L196">            {045, &quot;percent&quot;},</span>
+<span class="fc" id="L197">            {056, &quot;period&quot;},</span>
+<span class="fc" id="L198">            {0267, &quot;periodcentered&quot;},</span>
+<span class="fc" id="L199">            {0211, &quot;perthousand&quot;},</span>
+<span class="fc" id="L200">            {053, &quot;plus&quot;},</span>
+<span class="fc" id="L201">            {0261, &quot;plusminus&quot;},</span>
+<span class="fc" id="L202">            {0161, &quot;q&quot;},</span>
+<span class="fc" id="L203">            {077, &quot;question&quot;},</span>
+<span class="fc" id="L204">            {0277, &quot;questiondown&quot;},</span>
+<span class="fc" id="L205">            {042, &quot;quotedbl&quot;},</span>
+<span class="fc" id="L206">            {0204, &quot;quotedblbase&quot;},</span>
+<span class="fc" id="L207">            {0223, &quot;quotedblleft&quot;},</span>
+<span class="fc" id="L208">            {0224, &quot;quotedblright&quot;},</span>
+<span class="fc" id="L209">            {0221, &quot;quoteleft&quot;},</span>
+<span class="fc" id="L210">            {0222, &quot;quoteright&quot;},</span>
+<span class="fc" id="L211">            {0202, &quot;quotesinglbase&quot;},</span>
+<span class="fc" id="L212">            {047, &quot;quotesingle&quot;},</span>
+<span class="fc" id="L213">            {0162, &quot;r&quot;},</span>
+<span class="fc" id="L214">            {0256, &quot;registered&quot;},</span>
+<span class="fc" id="L215">            {0163, &quot;s&quot;},</span>
+<span class="fc" id="L216">            {0232, &quot;scaron&quot;},</span>
+<span class="fc" id="L217">            {0247, &quot;section&quot;},</span>
+<span class="fc" id="L218">            {073, &quot;semicolon&quot;},</span>
+<span class="fc" id="L219">            {067, &quot;seven&quot;},</span>
+<span class="fc" id="L220">            {066, &quot;six&quot;},</span>
+<span class="fc" id="L221">            {057, &quot;slash&quot;},</span>
+<span class="fc" id="L222">            {040, &quot;space&quot;},</span>
+<span class="fc" id="L223">            {0243, &quot;sterling&quot;},</span>
+<span class="fc" id="L224">            {0164, &quot;t&quot;},</span>
+<span class="fc" id="L225">            {0376, &quot;thorn&quot;},</span>
+<span class="fc" id="L226">            {063, &quot;three&quot;},</span>
+<span class="fc" id="L227">            {0276, &quot;threequarters&quot;},</span>
+<span class="fc" id="L228">            {0263, &quot;threesuperior&quot;},</span>
+<span class="fc" id="L229">            {0230, &quot;tilde&quot;},</span>
+<span class="fc" id="L230">            {0231, &quot;trademark&quot;},</span>
+<span class="fc" id="L231">            {062, &quot;two&quot;},</span>
+<span class="fc" id="L232">            {0262, &quot;twosuperior&quot;},</span>
+<span class="fc" id="L233">            {0165, &quot;u&quot;},</span>
+<span class="fc" id="L234">            {0372, &quot;uacute&quot;},</span>
+<span class="fc" id="L235">            {0373, &quot;ucircumflex&quot;},</span>
+<span class="fc" id="L236">            {0374, &quot;udieresis&quot;},</span>
+<span class="fc" id="L237">            {0371, &quot;ugrave&quot;},</span>
+<span class="fc" id="L238">            {0137, &quot;underscore&quot;},</span>
+<span class="fc" id="L239">            {0166, &quot;v&quot;},</span>
+<span class="fc" id="L240">            {0167, &quot;w&quot;},</span>
+<span class="fc" id="L241">            {0170, &quot;x&quot;},</span>
+<span class="fc" id="L242">            {0171, &quot;y&quot;},</span>
+<span class="fc" id="L243">            {0375, &quot;yacute&quot;},</span>
+<span class="fc" id="L244">            {0377, &quot;ydieresis&quot;},</span>
+<span class="fc" id="L245">            {0245, &quot;yen&quot;},</span>
+<span class="fc" id="L246">            {0172, &quot;z&quot;},</span>
+<span class="fc" id="L247">            {0236, &quot;zcaron&quot;},</span>
+<span class="fc" id="L248">            {060, &quot;zero&quot;},</span>
+            // adding some additional mappings as defined in Appendix D of the pdf spec
+<span class="fc" id="L250">            {0240, &quot;nbspace&quot;},</span>
+<span class="fc" id="L251">            {0255, &quot;sfthyphen&quot;}</span>
+    };
+
+    /**
+     * Singleton instance of this class.
+     * 
+     * @since Apache PDFBox 1.3.0
+     */
+<span class="fc" id="L259">    public static final WinAnsiEncoding INSTANCE = new WinAnsiEncoding();</span>
+
+    /**
+     * Constructor.
+     */
+    private WinAnsiEncoding()
+<span class="fc" id="L265">    {</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">        for (Object[] encodingEntry : WIN_ANSI_ENCODING_TABLE)</span>
+        {
+<span class="fc" id="L268">            add((Integer) encodingEntry[CHAR_CODE], encodingEntry[CHAR_NAME].toString());</span>
+        }
+
+        // From the PDF specification:
+        // In WinAnsiEncoding, all unused codes greater than 40 map to the bullet character.
+<span class="fc bfc" id="L273" title="All 2 branches covered.">        for (int i = 041; i &lt;= 255; i++)</span>
+        {
+<span class="fc bfc" id="L275" title="All 2 branches covered.">            if (!codeToName.containsKey(i))</span>
+            {
+<span class="fc" id="L277">                add(i, &quot;bullet&quot;);</span>
+            }
+        }
+<span class="fc" id="L280">    }</span>
+
+    @Override
+    public COSBase getCOSObject()
+    {
+<span class="fc" id="L285">        return COSName.WIN_ANSI_ENCODING;</span>
+    }
+
+    @Override
+    public String getEncodingName()
+    {
+<span class="fc" id="L291">        return &quot;WinAnsiEncoding&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

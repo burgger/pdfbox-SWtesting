@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JPXFilter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.filter</a> &gt; <span class="el_source">JPXFilter.java</span></div><h1>JPXFilter.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.filter;
+
+import java.awt.Graphics2D;
+import java.awt.Transparency;
+import java.awt.color.ColorSpace;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
+import java.awt.image.DataBufferByte;
+import java.awt.image.DataBufferUShort;
+import java.awt.image.IndexColorModel;
+import java.awt.image.MultiPixelPackedSampleModel;
+import java.awt.image.Raster;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.graphics.color.PDJPXColorSpace;
+
+/**
+ * Decompress data encoded using the wavelet-based JPEG 2000 standard,
+ * reproducing the original data.
+ *
+ * Requires the Java Advanced Imaging (JAI) Image I/O Tools to be installed from java.net, see
+ * &lt;a href=&quot;http://download.java.net/media/jai-imageio/builds/release/1.1/&quot;&gt;jai-imageio&lt;/a&gt;.
+ * Alternatively you can build from the source available in the
+ * &lt;a href=&quot;https://java.net/projects/jai-imageio-core/&quot;&gt;jai-imageio-core svn repo&lt;/a&gt;.
+ *
+ * Mac OS X users should download the tar.gz file for linux and unpack it to obtain the
+ * required jar files. The .so file can be safely ignored.
+ *
+ * @author John Hewson
+ * @author Timo Boehme
+ */
+<span class="fc" id="L56">public final class JPXFilter extends Filter</span>
+{
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public DecodeResult decode(InputStream encoded, OutputStream decoded, COSDictionary
+            parameters, int index, DecodeOptions options) throws IOException
+    {
+<span class="nc" id="L65">        DecodeResult result = new DecodeResult(new COSDictionary());</span>
+<span class="nc" id="L66">        result.getParameters().addAll(parameters);</span>
+<span class="nc" id="L67">        BufferedImage image = readJPX(encoded, options, result);</span>
+
+<span class="nc" id="L69">        Raster raster = image.getRaster();</span>
+<span class="nc bnc" id="L70" title="All 4 branches missed.">        switch (raster.getDataBuffer().getDataType())</span>
+        {
+            case DataBuffer.TYPE_BYTE:
+<span class="nc" id="L73">                DataBufferByte byteBuffer = (DataBufferByte) raster.getDataBuffer();</span>
+<span class="nc" id="L74">                decoded.write(byteBuffer.getData());</span>
+<span class="nc" id="L75">                return result;</span>
+
+            case DataBuffer.TYPE_USHORT:
+<span class="nc" id="L78">                DataBufferUShort wordBuffer = (DataBufferUShort) raster.getDataBuffer();</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">                for (short w : wordBuffer.getData())</span>
+                {
+<span class="nc" id="L81">                    decoded.write(w &gt;&gt; 8);</span>
+<span class="nc" id="L82">                    decoded.write(w);</span>
+                }
+<span class="nc" id="L84">                return result;</span>
+
+            case DataBuffer.TYPE_INT:
+                // not yet used (as of October 2018) but works as fallback
+                // if we decide to convert to BufferedImage.TYPE_INT_RGB
+<span class="nc" id="L89">                int[] ar = new int[raster.getNumBands()];</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">                for (int y = 0; y &lt; image.getHeight(); ++y)</span>
+                {
+<span class="nc bnc" id="L92" title="All 2 branches missed.">                    for (int x = 0; x &lt; image.getWidth(); ++x)</span>
+                    {
+<span class="nc" id="L94">                        raster.getPixel(x, y, ar);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">                        for (int i = 0; i &lt; ar.length; ++i)</span>
+                        {
+<span class="nc" id="L97">                            decoded.write(ar[i]);</span>
+                        }
+                    }
+                }
+<span class="nc" id="L101">                return result;</span>
+
+            default:
+<span class="nc" id="L104">                throw new IOException(&quot;Data type &quot; + raster.getDataBuffer().getDataType() + &quot; not implemented&quot;);</span>
+        }
+    }
+
+    @Override
+    public DecodeResult decode(InputStream encoded, OutputStream decoded,
+                               COSDictionary parameters, int index) throws IOException
+    {
+<span class="nc" id="L112">        return decode(encoded, decoded, parameters, index, DecodeOptions.DEFAULT);</span>
+    }
+
+    // try to read using JAI Image I/O
+    private BufferedImage readJPX(InputStream input, DecodeOptions options, DecodeResult result) throws IOException
+    {
+<span class="nc" id="L118">        ImageReader reader = findImageReader(&quot;JPEG2000&quot;, &quot;Java Advanced Imaging (JAI) Image I/O Tools are not installed&quot;);</span>
+        // PDFBOX-4121: ImageIO.createImageInputStream() is much slower
+<span class="nc" id="L120">        try (ImageInputStream iis = new MemoryCacheImageInputStream(input))</span>
+        {
+<span class="nc" id="L122">            reader.setInput(iis, true, true);</span>
+<span class="nc" id="L123">            ImageReadParam irp = reader.getDefaultReadParam();</span>
+<span class="nc" id="L124">            irp.setSourceRegion(options.getSourceRegion());</span>
+<span class="nc" id="L125">            irp.setSourceSubsampling(options.getSubsamplingX(), options.getSubsamplingY(),</span>
+<span class="nc" id="L126">                    options.getSubsamplingOffsetX(), options.getSubsamplingOffsetY());</span>
+<span class="nc" id="L127">            options.setFilterSubsampled(true);</span>
+
+            BufferedImage image;
+            try
+            {
+<span class="nc" id="L132">                image = reader.read(0, irp);</span>
+            }
+<span class="nc" id="L134">            catch (Exception e)</span>
+            {
+                // wrap and rethrow any exceptions
+<span class="nc" id="L137">                throw new IOException(&quot;Could not read JPEG 2000 (JPX) image&quot;, e);</span>
+<span class="nc" id="L138">            }</span>
+
+<span class="nc" id="L140">            COSDictionary parameters = result.getParameters();</span>
+
+            // &quot;If the image stream uses the JPXDecode filter, this entry is optional
+            // and shall be ignored if present&quot;
+            //
+            // note that indexed color spaces make the BPC logic tricky, see PDFBOX-2204
+<span class="nc" id="L146">            int bpc = image.getColorModel().getPixelSize() / image.getRaster().getNumBands();</span>
+<span class="nc" id="L147">            parameters.setInt(COSName.BITS_PER_COMPONENT, bpc);</span>
+
+            // &quot;Decode shall be ignored, except in the case where the image is treated as a mask&quot;
+<span class="nc bnc" id="L150" title="All 2 branches missed.">            if (!parameters.getBoolean(COSName.IMAGE_MASK, false))</span>
+            {
+<span class="nc" id="L152">                parameters.setItem(COSName.DECODE, null);</span>
+            }
+
+            // override dimensions, see PDFBOX-1735
+<span class="nc" id="L156">            parameters.setInt(COSName.WIDTH, reader.getWidth(0));</span>
+<span class="nc" id="L157">            parameters.setInt(COSName.HEIGHT, reader.getHeight(0));</span>
+
+            // extract embedded color space
+<span class="nc bnc" id="L160" title="All 2 branches missed.">            if (!parameters.containsKey(COSName.COLORSPACE))</span>
+            {
+<span class="nc bnc" id="L162" title="All 2 branches missed.">                if (image.getSampleModel() instanceof MultiPixelPackedSampleModel &amp;&amp;</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">                    image.getColorModel().getPixelSize() == 1 &amp;&amp;</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">                    image.getRaster().getNumBands() == 1 &amp;&amp; </span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">                    image.getColorModel() instanceof IndexColorModel)</span>
+                {
+                    // PDFBOX-4326:
+                    // force CS_GRAY colorspace because colorspace in IndexColorModel
+                    // has 3 colors despite that there is only 1 color per pixel
+                    // in raster
+<span class="nc" id="L171">                    result.setColorSpace(new PDJPXColorSpace(ColorSpace.getInstance(ColorSpace.CS_GRAY)));</span>
+                }
+<span class="nc bnc" id="L173" title="All 2 branches missed.">                else if (image.getTransparency() == Transparency.TRANSLUCENT &amp;&amp;</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">                         parameters.getInt(COSName.SMASK_IN_DATA) &gt; 0)</span>
+                {
+                    // PDFBOX-5657: save the soft mask in DecodeResult and use it later
+                    // we never had SMaskInData = 2, maybe more work is needed
+<span class="nc" id="L178">                    BufferedImage smask = new BufferedImage(</span>
+<span class="nc" id="L179">                            image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_GRAY);</span>
+<span class="nc" id="L180">                    smask.setData(image.getAlphaRaster());</span>
+<span class="nc" id="L181">                    result.setJPXSMask(smask);</span>
+                    // create opaque image
+<span class="nc" id="L183">                    BufferedImage bim = new BufferedImage(</span>
+<span class="nc" id="L184">                            image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);</span>
+<span class="nc" id="L185">                    Graphics2D g2d = (Graphics2D) bim.getGraphics();</span>
+<span class="nc" id="L186">                    g2d.drawImage(image, 0, 0, null);</span>
+<span class="nc" id="L187">                    g2d.dispose();</span>
+<span class="nc" id="L188">                    image = bim;</span>
+<span class="nc" id="L189">                    result.setColorSpace(new PDJPXColorSpace(image.getColorModel().getColorSpace()));</span>
+<span class="nc" id="L190">                }</span>
+                else
+                {
+<span class="nc" id="L193">                    result.setColorSpace(new PDJPXColorSpace(image.getColorModel().getColorSpace()));</span>
+                }
+            }
+
+<span class="nc" id="L197">            return image;</span>
+        }
+        finally
+        {
+<span class="nc" id="L201">            reader.dispose();</span>
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void encode(InputStream input, OutputStream encoded, COSDictionary parameters)
+            throws IOException
+    {
+<span class="nc" id="L212">        throw new UnsupportedOperationException(&quot;JPX encoding not implemented&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

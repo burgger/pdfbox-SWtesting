@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDBoxStyle.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.documentinterchange.prepress</a> &gt; <span class="el_source">PDBoxStyle.java</span></div><h1>PDBoxStyle.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.documentinterchange.prepress;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.graphics.PDLineDashPattern;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
+
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * The Box Style specifies visual characteristics for displaying box areas.
+ *
+ * @author Ben Litchfield
+ */
+public class PDBoxStyle implements COSObjectable
+{
+    /**
+     * Style for guideline.
+     */
+    public static final String GUIDELINE_STYLE_SOLID = &quot;S&quot;;
+    /**
+     * Style for guideline.
+     */
+    public static final String GUIDELINE_STYLE_DASHED = &quot;D&quot;;
+
+    private final COSDictionary dictionary;
+
+    /**
+     * Default Constructor.
+     *
+     */
+    public PDBoxStyle()
+<span class="nc" id="L54">    {</span>
+<span class="nc" id="L55">        dictionary = new COSDictionary();</span>
+<span class="nc" id="L56">    }</span>
+
+    /**
+     * Constructor for an existing BoxStyle element.
+     *
+     * @param dic The existing dictionary.
+     */
+    public PDBoxStyle( COSDictionary dic )
+<span class="nc" id="L64">    {</span>
+<span class="nc" id="L65">        dictionary = dic;</span>
+<span class="nc" id="L66">    }</span>
+
+    /**
+     * Convert this standard java object to a COS object.
+     *
+     * @return The cos object that matches this Java object.
+     */
+    @Override
+    public COSDictionary getCOSObject()
+    {
+<span class="nc" id="L76">        return dictionary;</span>
+    }
+
+    /**
+     * Get the RGB color to be used for the guidelines.  This is guaranteed to
+     * not return null. The default color is [0,0,0].
+     *
+     *@return The guideline color.
+     */
+    public PDColor getGuidelineColor()
+    {
+<span class="nc" id="L87">        COSArray colorValues = dictionary.getCOSArray(COSName.C);</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        if( colorValues == null )</span>
+        {
+<span class="nc" id="L90">            colorValues = new COSArray(List.of(</span>
+                COSInteger.ZERO,
+                COSInteger.ZERO,
+                COSInteger.ZERO
+            ));
+<span class="nc" id="L95">            dictionary.setItem(COSName.C, colorValues);</span>
+        }
+<span class="nc" id="L97">        return new PDColor(colorValues.toFloatArray(), PDDeviceRGB.INSTANCE);</span>
+    }
+
+    /**
+     * Set the color space instance for this box style.  This must be a
+     * PDDeviceRGB!
+     *
+     * @param color The new colorspace value.
+     */
+    public void setGuideLineColor( PDColor color )
+    {
+<span class="nc" id="L108">        COSArray values = null;</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        if( color != null )</span>
+        {
+<span class="nc" id="L111">            values = color.toCOSArray();</span>
+        }
+<span class="nc" id="L113">        dictionary.setItem(COSName.C, values);</span>
+<span class="nc" id="L114">    }</span>
+
+    /**
+     * Get the width of the of the guideline in default user space units.
+     * The default is 1.
+     *
+     * @return The width of the guideline.
+     */
+    public float getGuidelineWidth()
+    {
+<span class="nc" id="L124">        return dictionary.getFloat(COSName.W, 1);</span>
+    }
+
+    /**
+     * Set the guideline width.
+     *
+     * @param width The width in default user space units.
+     */
+    public void setGuidelineWidth( float width )
+    {
+<span class="nc" id="L134">        dictionary.setFloat(COSName.W, width);</span>
+<span class="nc" id="L135">    }</span>
+
+    /**
+     * Get the style for the guideline.  The default is &quot;S&quot; for solid.
+     *
+     * @return The guideline style.
+     * @see PDBoxStyle#GUIDELINE_STYLE_DASHED
+     * @see PDBoxStyle#GUIDELINE_STYLE_SOLID
+     */
+    public String getGuidelineStyle()
+    {
+<span class="nc" id="L146">        return dictionary.getNameAsString(COSName.S, GUIDELINE_STYLE_SOLID);</span>
+    }
+
+    /**
+     * Set the style for the box.
+     *
+     * @param style The style for the box line.
+     * @see PDBoxStyle#GUIDELINE_STYLE_DASHED
+     * @see PDBoxStyle#GUIDELINE_STYLE_SOLID
+     */
+    public void setGuidelineStyle( String style )
+    {
+<span class="nc" id="L158">        dictionary.setName(COSName.S, style);</span>
+<span class="nc" id="L159">    }</span>
+
+    /**
+     * Get the line dash pattern for this box style.  This is guaranteed to not
+     * return null.  The default is [3],0.
+     *
+     * @return The line dash pattern.
+     */
+    public PDLineDashPattern getLineDashPattern()
+    {
+<span class="nc" id="L169">        COSArray d = dictionary.getCOSArray(COSName.D);</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        if( d == null )</span>
+        {
+<span class="nc" id="L172">            d = new COSArray(List.of(COSInteger.THREE));</span>
+<span class="nc" id="L173">            dictionary.setItem(COSName.D, d);</span>
+        }
+<span class="nc" id="L175">        COSArray lineArray = new COSArray(Arrays.asList(d));</span>
+        //dash phase is not specified and assumed to be zero.
+<span class="nc" id="L177">        return new PDLineDashPattern(lineArray, 0);</span>
+    }
+
+    /**
+     * Set the line dash pattern associated with this box style.
+     *
+     * @param dashArray The patter for this box style.
+     */
+    public void setLineDashPattern( COSArray dashArray )
+    {
+<span class="nc" id="L187">        COSArray array = null;</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">        if( dashArray != null )</span>
+        {
+<span class="nc" id="L190">            array = dashArray;</span>
+        }
+<span class="nc" id="L192">        dictionary.setItem(COSName.D, array);</span>
+<span class="nc" id="L193">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

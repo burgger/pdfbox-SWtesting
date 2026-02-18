@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>XrefTrailerResolver.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdfparser</a> &gt; <span class="el_source">XrefTrailerResolver.java</span></div><h1>XrefTrailerResolver.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdfparser;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSObjectKey;
+
+/**
+ * This class will collect all XRef/trailer objects and creates correct
+ * xref/trailer information after all objects are read using startxref
+ * and 'Prev' information (unused XRef/trailer objects are discarded).
+ *
+ * In case of missing startxref or wrong startxref pointer all
+ * XRef/trailer objects are used to create xref table / trailer dictionary
+ * in order they occur.
+ *
+ * For each new xref object/XRef stream method {@link #nextXrefObj(long, XRefType)}
+ * must be called with start byte position. All following calls to
+ * {@link #setXRef(COSObjectKey, long)} or {@link #setTrailer(COSDictionary)}
+ * will add the data for this byte position.
+ *
+ * After all objects are parsed the startxref position must be provided
+ * using {@link #setStartxref(long)}. This is used to build the chain of
+ * active xref/trailer objects used for creating document trailer and xref table.
+ *
+ * @author Timo Böhme
+ */
+<span class="fc" id="L55">public class XrefTrailerResolver</span>
+{
+
+    /**
+     * A class which represents a xref/trailer object.
+     */
+    private static class XrefTrailerObj
+    {
+<span class="fc" id="L63">        protected COSDictionary trailer = null;</span>
+
+        private XRefType xrefType;
+
+<span class="fc" id="L67">        private final Map&lt;COSObjectKey, Long&gt; xrefTable = new HashMap&lt;&gt;();</span>
+        
+        /**
+         *  Default constructor.
+         */
+        private XrefTrailerObj()
+<span class="fc" id="L73">        {</span>
+<span class="fc" id="L74">            xrefType = XRefType.TABLE;</span>
+<span class="fc" id="L75">        }</span>
+
+        public void reset()
+        {
+<span class="nc" id="L79">            xrefTable.clear();</span>
+<span class="nc" id="L80">        }</span>
+    }
+
+    /** 
+     * The XRefType of a trailer.
+     */
+<span class="fc" id="L86">    public enum XRefType</span>
+    {
+        /**
+         * XRef table type.
+         */
+<span class="fc" id="L91">        TABLE, </span>
+        /**
+         * XRef stream type.
+         */
+<span class="fc" id="L95">        STREAM</span>
+    }
+    
+<span class="fc" id="L98">    private final Map&lt;Long, XrefTrailerObj&gt; bytePosToXrefMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L99">    private XrefTrailerObj curXrefTrailerObj   = null;</span>
+<span class="fc" id="L100">    private XrefTrailerObj resolvedXrefTrailer = null;</span>
+
+    /** Log instance. */
+<span class="fc" id="L103">    private static final Logger LOG = LogManager.getLogger(XrefTrailerResolver.class );</span>
+
+    /**
+     * Returns the first trailer if at least one exists.
+     * 
+     * @return the first trailer or null
+     */
+    public final COSDictionary getFirstTrailer() 
+    {
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        if (bytePosToXrefMap.isEmpty())</span>
+        {
+<span class="nc" id="L114">            return null;</span>
+        }
+<span class="nc" id="L116">        Set&lt;Long&gt; offsets = bytePosToXrefMap.keySet();</span>
+<span class="nc" id="L117">        SortedSet&lt;Long&gt; sortedOffset = new TreeSet&lt;&gt;(offsets);</span>
+<span class="nc" id="L118">        return bytePosToXrefMap.get(sortedOffset.first()).trailer;</span>
+    }
+    
+    /**
+     * Returns the last trailer if at least one exists.
+     * 
+     * @return the last trailer ir null
+     */
+    public final COSDictionary getLastTrailer() 
+    {
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (bytePosToXrefMap.isEmpty()) </span>
+        {
+<span class="nc" id="L130">            return null;</span>
+        }
+<span class="nc" id="L132">        Set&lt;Long&gt; offsets = bytePosToXrefMap.keySet();</span>
+<span class="nc" id="L133">        SortedSet&lt;Long&gt; sortedOffset = new TreeSet&lt;&gt;(offsets);</span>
+<span class="nc" id="L134">        return bytePosToXrefMap.get(sortedOffset.last()).trailer;</span>
+    }
+
+    /**
+     * Returns the count of trailers.
+     *
+     * @return the count of trailers.
+     */
+    public final int getTrailerCount()
+    {
+<span class="nc" id="L144">        return bytePosToXrefMap.size();</span>
+    }
+
+    /**
+     * Signals that a new XRef object (table or stream) starts.
+     * @param startBytePos the offset to start at
+     * @param type the type of the Xref object
+     */
+    public void nextXrefObj( final long startBytePos, XRefType type )
+    {
+<span class="fc" id="L154">        curXrefTrailerObj = new XrefTrailerObj();</span>
+<span class="fc" id="L155">        bytePosToXrefMap.put(startBytePos, curXrefTrailerObj);</span>
+<span class="fc" id="L156">        curXrefTrailerObj.xrefType = type;</span>
+<span class="fc" id="L157">    }</span>
+
+    /**
+     * Returns the XRefTxpe of the resolved trailer.
+     * 
+     * @return the XRefType or null.
+     */
+    public XRefType getXrefType()
+    { 
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">        return ( resolvedXrefTrailer == null ) ? null : resolvedXrefTrailer.xrefType; </span>
+    } 
+    
+    /**
+     * Populate XRef HashMap of current XRef object.
+     * Will add an Xreftable entry that maps ObjectKeys to byte offsets in the file.
+     * @param objKey The objkey, with id and gen numbers
+     * @param offset The byte offset in this file
+     */
+    public void setXRef( COSObjectKey objKey, long offset )
+    {
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">        if ( curXrefTrailerObj == null )</span>
+        {
+            // should not happen...
+<span class="nc" id="L180">            LOG.warn(&quot;Cannot add XRef entry for '{}' because XRef start was not signalled.&quot;,</span>
+<span class="nc" id="L181">                    objKey.getNumber());</span>
+<span class="nc" id="L182">            return;</span>
+        }
+        // PDFBOX-3506 check before adding to the map, to avoid entries from the table being 
+        // overwritten by obsolete entries in hybrid files (/XRefStm entry)
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">        if (!curXrefTrailerObj.xrefTable.containsKey(objKey) )</span>
+        {
+<span class="fc" id="L188">            curXrefTrailerObj.xrefTable.put(objKey, offset);</span>
+        }
+<span class="fc" id="L190">    }</span>
+
+    /**
+     * Adds trailer information for current XRef object.
+     *
+     * @param trailer the current document trailer dictionary
+     */
+    public void setTrailer( COSDictionary trailer )
+    {
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">        if ( curXrefTrailerObj == null )</span>
+        {
+            // should not happen...
+<span class="nc" id="L202">            LOG.warn( &quot;Cannot add trailer because XRef start was not signalled.&quot; );</span>
+<span class="nc" id="L203">            return;</span>
+        }
+<span class="fc" id="L205">        curXrefTrailerObj.trailer = trailer;</span>
+<span class="fc" id="L206">    }</span>
+
+    /**
+     * Returns the trailer last set by {@link #setTrailer(COSDictionary)}.
+     * 
+     * @return the current trailer.
+     * 
+     */
+    public COSDictionary getCurrentTrailer() 
+    {
+<span class="fc" id="L216">        return curXrefTrailerObj.trailer;</span>
+    }
+
+    /**
+     * Sets the byte position of the first XRef
+     * (has to be called after very last startxref was read).
+     * This is used to resolve chain of active XRef/trailer.
+     *
+     * In case startxref position is not found we output a
+     * warning and use all XRef/trailer objects combined
+     * in byte position order.
+     * Thus for incomplete PDF documents with missing
+     * startxref one could call this method with parameter value -1.
+     * 
+     * @param startxrefBytePosValue starting position of the first XRef
+     * 
+     */
+    public void setStartxref( long startxrefBytePosValue )
+    {
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">        if ( resolvedXrefTrailer != null )</span>
+        {
+<span class="nc" id="L237">            LOG.warn( &quot;Method must be called only ones with last startxref value.&quot; );</span>
+<span class="nc" id="L238">            return;</span>
+        }
+
+<span class="fc" id="L241">        resolvedXrefTrailer = new XrefTrailerObj();</span>
+<span class="fc" id="L242">        resolvedXrefTrailer.trailer = new COSDictionary();</span>
+
+<span class="fc" id="L244">        XrefTrailerObj curObj = bytePosToXrefMap.get( startxrefBytePosValue );</span>
+<span class="fc" id="L245">        List&lt;Long&gt;  xrefSeqBytePos = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L247" title="All 2 branches covered.">        if ( curObj == null )</span>
+        {
+            // no XRef at given position
+<span class="fc" id="L250">            LOG.warn(&quot;Did not found XRef object at specified startxref position {}&quot;,</span>
+<span class="fc" id="L251">                    startxrefBytePosValue);</span>
+
+            // use all objects in byte position order (last entries overwrite previous ones)
+<span class="fc" id="L254">            xrefSeqBytePos.addAll( bytePosToXrefMap.keySet() );</span>
+<span class="fc" id="L255">            Collections.sort( xrefSeqBytePos );</span>
+        }
+        else
+        {
+            // copy xref type
+<span class="fc" id="L260">            resolvedXrefTrailer.xrefType = curObj.xrefType;</span>
+            // found starting Xref object
+            // add this and follow chain defined by 'Prev' keys
+<span class="fc" id="L263">            xrefSeqBytePos.add( startxrefBytePosValue );</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">            while ( curObj.trailer != null )</span>
+            {
+<span class="fc" id="L266">                long prevBytePos = curObj.trailer.getLong( COSName.PREV, -1L );</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">                if ( prevBytePos == -1 )</span>
+                {
+<span class="fc" id="L269">                    break;</span>
+                }
+
+<span class="fc" id="L272">                curObj = bytePosToXrefMap.get( prevBytePos );</span>
+<span class="pc bpc" id="L273" title="1 of 2 branches missed.">                if ( curObj == null )</span>
+                {
+<span class="nc" id="L275">                    LOG.warn(&quot;Did not found XRef object pointed to by 'Prev' key at position {}&quot;,</span>
+<span class="nc" id="L276">                            prevBytePos);</span>
+<span class="nc" id="L277">                    break;</span>
+                }
+<span class="fc" id="L279">                xrefSeqBytePos.add( prevBytePos );</span>
+
+                // prevent infinite loops
+<span class="fc bfc" id="L282" title="All 2 branches covered.">                if ( xrefSeqBytePos.size() &gt;= bytePosToXrefMap.size() )</span>
+                {
+<span class="fc" id="L284">                    break;</span>
+                }
+<span class="fc" id="L286">            }</span>
+            // have to reverse order so that later XRefs will overwrite previous ones
+<span class="fc" id="L288">            Collections.reverse( xrefSeqBytePos );</span>
+        }
+
+        // merge used and sorted XRef/trailer
+<span class="fc bfc" id="L292" title="All 2 branches covered.">        for ( Long bPos : xrefSeqBytePos )</span>
+        {
+<span class="fc" id="L294">            curObj = bytePosToXrefMap.get( bPos );</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">            if ( curObj.trailer != null )</span>
+            {
+<span class="fc" id="L297">                resolvedXrefTrailer.trailer.addAll( curObj.trailer );</span>
+            }
+<span class="fc" id="L299">            resolvedXrefTrailer.xrefTable.putAll( curObj.xrefTable );</span>
+<span class="fc" id="L300">        }</span>
+
+<span class="fc" id="L302">    }</span>
+
+    /**
+     * Gets the resolved trailer. Might return &lt;code&gt;null&lt;/code&gt; in case
+     * {@link #setStartxref(long)} was not called before.
+     *
+     * @return the trailer if available
+     */
+    public COSDictionary getTrailer()
+    {
+<span class="pc bpc" id="L312" title="1 of 2 branches missed.">        return ( resolvedXrefTrailer == null ) ? null : resolvedXrefTrailer.trailer;</span>
+    }
+
+    /**
+     * Gets the resolved xref table. Might return &lt;code&gt;null&lt;/code&gt; in case
+     *  {@link #setStartxref(long)} was not called before.
+     *
+     * @return the xrefTable if available
+     */
+    public Map&lt;COSObjectKey, Long&gt; getXrefTable()
+    {
+<span class="pc bpc" id="L323" title="1 of 2 branches missed.">        return ( resolvedXrefTrailer == null ) ? null : resolvedXrefTrailer.xrefTable;</span>
+    }
+    
+    /** Returns object numbers which are referenced as contained
+     *  in object stream with specified object number.
+     *  
+     *  This will scan resolved xref table for all entries having negated
+     *  stream object number as value.
+     *
+     *  @param objstmObjNr  object number of object stream for which contained object numbers
+     *                      should be returned
+     *                       
+     *  @return set of object numbers referenced for given object stream
+     *          or &lt;code&gt;null&lt;/code&gt; if {@link #setStartxref(long)} was not
+     *          called before so that no resolved xref table exists
+     */
+    public Set&lt;Long&gt; getContainedObjectNumbers( final int objstmObjNr ) 
+    {
+<span class="nc bnc" id="L341" title="All 2 branches missed.">        if ( resolvedXrefTrailer == null )</span>
+        {
+<span class="nc" id="L343">            return null;</span>
+        }
+<span class="nc" id="L345">        final Set&lt;Long&gt; refObjNrs = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L346">        final long cmpVal = - objstmObjNr;</span>
+        
+<span class="nc" id="L348">        resolvedXrefTrailer.xrefTable.forEach((key, value) -&gt;</span>
+        {
+<span class="nc bnc" id="L350" title="All 2 branches missed.">            if (value == cmpVal)</span>
+            {
+<span class="nc" id="L352">                refObjNrs.add(key.getNumber());</span>
+            }
+<span class="nc" id="L354">        });</span>
+<span class="nc" id="L355">        return refObjNrs;</span>
+    }
+
+    /**
+     * Reset all data so that it can be used to rebuild the trailer.
+     * 
+     */
+    protected void reset()
+    {
+<span class="nc bnc" id="L364" title="All 2 branches missed.">        for (XrefTrailerObj trailerObj : bytePosToXrefMap.values())</span>
+        {
+<span class="nc" id="L366">            trailerObj.reset();</span>
+<span class="nc" id="L367">        }</span>
+<span class="nc" id="L368">        curXrefTrailerObj = null;</span>
+<span class="nc" id="L369">        resolvedXrefTrailer = null;</span>
+<span class="nc" id="L370">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDOutlineNode.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline</a> &gt; <span class="el_source">PDOutlineNode.java</span></div><h1>PDOutlineNode.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.PDDictionaryWrapper;
+
+/**
+ * Base class for a node in the outline of a PDF document.
+ *
+ * @author Ben Litchfield
+ */
+public abstract class PDOutlineNode extends PDDictionaryWrapper
+{
+<span class="fc" id="L33">    private static final Logger LOG = LogManager.getLogger(PDOutlineNode.class);</span>
+
+    /**
+     * Default Constructor.
+     */
+    protected PDOutlineNode()
+<span class="fc" id="L39">    {</span>
+<span class="fc" id="L40">    }</span>
+
+    /**
+     * @param dict The dictionary storage.
+     */
+    protected PDOutlineNode(COSDictionary dict)
+    {
+<span class="fc" id="L47">        super(dict);</span>
+<span class="fc" id="L48">    }</span>
+
+    /**
+     * @return The parent of this node or null if there is no parent.
+     */
+    PDOutlineNode getParent()
+    {
+<span class="fc" id="L55">        COSDictionary parent = getCOSObject().getCOSDictionary(COSName.PARENT);</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (parent != null)</span>
+        {
+<span class="fc bfc" id="L58" title="All 2 branches covered.">            if (COSName.OUTLINES.equals(parent.getCOSName(COSName.TYPE)))</span>
+            {
+<span class="fc" id="L60">                return new PDDocumentOutline(parent);</span>
+            }
+<span class="fc" id="L62">            return new PDOutlineItem(parent);</span>
+        }
+<span class="fc" id="L64">        return null;</span>
+    }
+
+    void setParent(PDOutlineNode parent)
+    {
+<span class="fc" id="L69">        getCOSObject().setItem(COSName.PARENT, parent);</span>
+<span class="fc" id="L70">    }</span>
+
+    /**
+     * Adds the given node to the bottom of the children list.
+     *
+     * @param newChild The node to add.
+     * @throws IllegalArgumentException if the given node is part of a list (i.e. if it has a previous or a next
+     * sibling)
+     */
+    public void addLast(PDOutlineItem newChild)
+    {
+<span class="fc" id="L81">        requireSingleNode(newChild);</span>
+<span class="fc" id="L82">        append(newChild);</span>
+<span class="fc" id="L83">        updateParentOpenCountForAddedChild(newChild);</span>
+<span class="fc" id="L84">    }</span>
+
+    /**
+     * Adds the given node to the top of the children list.
+     * 
+     * @param newChild The node to add.
+     * @throws IllegalArgumentException if the given node is part of a list (i.e. if it has a previous or a next
+     * sibling)
+     */
+    public void addFirst(PDOutlineItem newChild)
+    {
+<span class="fc" id="L95">        requireSingleNode(newChild);</span>
+<span class="fc" id="L96">        prepend(newChild);</span>
+<span class="fc" id="L97">        updateParentOpenCountForAddedChild(newChild);</span>
+<span class="fc" id="L98">    }</span>
+
+    /**
+     * @param node
+     * @throws IllegalArgumentException if the given node is part of a list (i.e. if it has a previous or a next
+     * sibling)
+     */
+    void requireSingleNode(PDOutlineItem node)
+    {
+<span class="pc bpc" id="L107" title="1 of 4 branches missed.">        if (node.getNextSibling() != null || node.getPreviousSibling() != null)</span>
+        {
+<span class="fc" id="L109">            throw new IllegalArgumentException(&quot;A single node with no siblings is required&quot;);</span>
+        }
+<span class="fc" id="L111">    }</span>
+
+    /**
+     * Appends the child to the linked list of children. This method only adjust pointers but doesn't take care of the
+     * Count key in the parent hierarchy.
+     * 
+     * @param newChild
+     */
+    private void append(PDOutlineItem newChild)
+    {
+<span class="fc" id="L121">        newChild.setParent(this);</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        if (!hasChildren())</span>
+        {
+<span class="fc" id="L124">            setFirstChild(newChild);</span>
+        }
+        else
+        {
+<span class="fc" id="L128">            PDOutlineItem previousLastChild = getLastChild();</span>
+<span class="fc" id="L129">            previousLastChild.setNextSibling(newChild);</span>
+<span class="fc" id="L130">            newChild.setPreviousSibling(previousLastChild);</span>
+        }
+<span class="fc" id="L132">        setLastChild(newChild);</span>
+<span class="fc" id="L133">    }</span>
+
+    /**
+     * Prepends the child to the linked list of children. This method only adjust pointers but doesn't take care of the
+     * Count key in the parent hierarchy.
+     * 
+     * @param newChild
+     */
+    private void prepend(PDOutlineItem newChild)
+    {
+<span class="fc" id="L143">        newChild.setParent(this);</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        if (!hasChildren())</span>
+        {
+<span class="fc" id="L146">            setLastChild(newChild);</span>
+        }
+        else
+        {
+<span class="fc" id="L150">            PDOutlineItem previousFirstChild = getFirstChild();</span>
+<span class="fc" id="L151">            newChild.setNextSibling(previousFirstChild);</span>
+<span class="fc" id="L152">            previousFirstChild.setPreviousSibling(newChild);</span>
+        }
+<span class="fc" id="L154">        setFirstChild(newChild);</span>
+<span class="fc" id="L155">    }</span>
+
+    void updateParentOpenCountForAddedChild(PDOutlineItem newChild)
+    {
+<span class="fc" id="L159">        int delta = 1;</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        if (newChild.isNodeOpen())</span>
+        {
+<span class="fc" id="L162">            delta += newChild.getOpenCount();</span>
+        }
+<span class="fc" id="L164">        newChild.updateParentOpenCount(delta);</span>
+<span class="fc" id="L165">    }</span>
+
+    /**
+     * @return true if the node has at least one child
+     */
+    public boolean hasChildren()
+    {
+<span class="fc bfc" id="L172" title="All 2 branches covered.">        return getCOSObject().getCOSDictionary(COSName.FIRST) != null;</span>
+    }
+
+    PDOutlineItem getOutlineItem(COSName name)
+    {
+<span class="fc" id="L177">        COSDictionary outline = getCOSObject().getCOSDictionary(name);</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        return outline != null ? new PDOutlineItem(outline) : null;</span>
+    }
+
+    /**
+     * @return The first child or null if there is no child.
+     */
+    public PDOutlineItem getFirstChild()
+    {
+<span class="fc" id="L186">        return getOutlineItem(COSName.FIRST);</span>
+    }
+
+    /**
+     * Set the first child, this will be maintained by this class.
+     *
+     * @param outlineNode The new first child.
+     */
+    void setFirstChild(PDOutlineNode outlineNode)
+    {
+<span class="fc" id="L196">        getCOSObject().setItem(COSName.FIRST, outlineNode);</span>
+<span class="fc" id="L197">    }</span>
+
+    /**
+     * @return The last child or null if there is no child.
+     */
+    public PDOutlineItem getLastChild()
+    {
+<span class="fc" id="L204">        return getOutlineItem(COSName.LAST);</span>
+    }
+
+    /**
+     * Set the last child, this will be maintained by this class.
+     *
+     * @param outlineNode The new last child.
+     */
+    void setLastChild(PDOutlineNode outlineNode)
+    {
+<span class="fc" id="L214">        getCOSObject().setItem(COSName.LAST, outlineNode);</span>
+<span class="fc" id="L215">    }</span>
+
+    /**
+     * Get the number of open nodes or a negative number if this node is closed.
+     * See PDF Reference 32000-1:2008 table 152 and 153 for more details. This
+     * value is updated as you append children and siblings.
+     *
+     * @return The Count attribute of the outline dictionary.
+     */
+    public int getOpenCount()
+    {
+<span class="fc" id="L226">        return getCOSObject().getInt(COSName.COUNT, 0);</span>
+    }
+
+    /**
+     * Set the open count. This number is automatically managed for you when you add items to the outline.
+     *
+     * @param openCount The new open count.
+     */
+    void setOpenCount(int openCount)
+    {
+<span class="fc" id="L236">        getCOSObject().setInt(COSName.COUNT, openCount);</span>
+<span class="fc" id="L237">    }</span>
+
+    /**
+     * This will set this node to be open when it is shown in the viewer. By default, when a new node is created it will
+     * be closed. This will do nothing if the node is already open.
+     */
+    public void openNode()
+    {
+        //if the node is already open then do nothing.
+<span class="fc bfc" id="L246" title="All 2 branches covered.">        if( !isNodeOpen() )</span>
+        {
+<span class="fc" id="L248">            switchNodeCount();</span>
+        }
+<span class="fc" id="L250">    }</span>
+
+    /**
+     * Close this node.
+     *
+     */
+    public void closeNode()
+    {
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        if (isNodeOpen())</span>
+        {
+<span class="fc" id="L260">            switchNodeCount();</span>
+        }
+<span class="fc" id="L262">    }</span>
+
+    private void switchNodeCount()
+    {
+<span class="fc" id="L266">        int openCount = getOpenCount();</span>
+<span class="fc" id="L267">        setOpenCount(-openCount);</span>
+<span class="fc" id="L268">        updateParentOpenCount(-openCount);</span>
+<span class="fc" id="L269">    }</span>
+
+    /**
+     * @return true if this node count is greater than zero, false otherwise.
+     */
+    public boolean isNodeOpen()
+    {
+<span class="fc bfc" id="L276" title="All 2 branches covered.">        return getOpenCount() &gt; 0;</span>
+    }
+
+    /**
+     * The count parameter needs to be updated when you add, remove, open or close outline items.
+     *
+     * @param delta The amount to update by.
+     */
+    void updateParentOpenCount(int delta)
+    {
+<span class="fc" id="L286">        PDOutlineNode parent = getParent();</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        if (parent != null)</span>
+        {
+<span class="fc bfc" id="L289" title="All 2 branches covered.">            if (getCOSObject() == parent.getCOSObject())</span>
+            {
+                // PDFBOX-5939
+<span class="fc" id="L292">                LOG.warn(&quot;Outline parent points to itself&quot;);</span>
+<span class="fc" id="L293">                return;</span>
+            }
+<span class="fc bfc" id="L295" title="All 2 branches covered.">            if (parent.isNodeOpen())</span>
+            {
+<span class="fc" id="L297">                parent.setOpenCount(parent.getOpenCount() + delta);</span>
+<span class="fc" id="L298">                parent.updateParentOpenCount(delta);</span>
+            }
+            else
+            {
+<span class="fc" id="L302">                parent.setOpenCount(parent.getOpenCount() - delta);</span>
+            }
+        }
+<span class="fc" id="L305">    }</span>
+
+    /**
+     * @return An {@link Iterable} view of the items children
+     */
+    public Iterable&lt;PDOutlineItem&gt; children()
+    {
+<span class="fc" id="L312">        return () -&gt; new PDOutlineItemIterator(getFirstChild());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

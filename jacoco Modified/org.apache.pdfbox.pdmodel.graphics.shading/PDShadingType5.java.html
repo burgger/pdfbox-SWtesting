@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDShadingType5.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.shading</a> &gt; <span class="el_source">PDShadingType5.java</span></div><h1>PDShadingType5.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.shading;
+
+import java.awt.Paint;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Point2D;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.pdmodel.common.PDRange;
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * Resources for a shading type 5 (Lattice-Form Gouraud-Shade Triangle Mesh).
+ */
+public class PDShadingType5 extends PDTriangleBasedShadingType
+{
+    /**
+     * Constructor using the given shading dictionary.
+     *
+     * @param shadingDictionary the dictionary for this shading
+     */
+    public PDShadingType5(COSDictionary shadingDictionary)
+    {
+<span class="nc" id="L50">        super(shadingDictionary);</span>
+<span class="nc" id="L51">    }</span>
+
+    @Override
+    public int getShadingType()
+    {
+<span class="nc" id="L56">        return PDShading.SHADING_TYPE5;</span>
+    }
+
+    /**
+     * The vertices per row of this shading. This will return -1 if one has not
+     * been set.
+     *
+     * @return the number of vertices per row
+     */
+    public int getVerticesPerRow()
+    {
+<span class="nc" id="L67">        return getCOSObject().getInt(COSName.VERTICES_PER_ROW, -1);</span>
+    }
+
+    /**
+     * Set the number of vertices per row.
+     *
+     * @param verticesPerRow the number of vertices per row
+     */
+    public void setVerticesPerRow(int verticesPerRow)
+    {
+<span class="nc" id="L77">        getCOSObject().setInt(COSName.VERTICES_PER_ROW, verticesPerRow);</span>
+<span class="nc" id="L78">    }</span>
+
+    @Override
+    public Paint toPaint(Matrix matrix)
+    {
+<span class="nc" id="L83">        return new Type5ShadingPaint(this, matrix);</span>
+    }
+    
+    @SuppressWarnings(&quot;squid:S1166&quot;)
+    @Override
+    List&lt;ShadedTriangle&gt; collectTriangles(AffineTransform xform, Matrix matrix) throws IOException
+    {
+<span class="nc" id="L90">        COSDictionary dict = getCOSObject();</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        if (!(dict instanceof COSStream))</span>
+        {
+<span class="nc" id="L93">            return Collections.emptyList();</span>
+        }
+<span class="nc" id="L95">        PDRange rangeX = getDecodeForParameter(0);</span>
+<span class="nc" id="L96">        PDRange rangeY = getDecodeForParameter(1);</span>
+<span class="nc bnc" id="L97" title="All 4 branches missed.">        if (rangeX == null || rangeY == null ||</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">            Float.compare(rangeX.getMin(), rangeX.getMax()) == 0 ||</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">            Float.compare(rangeY.getMin(), rangeY.getMax()) == 0)</span>
+        {
+<span class="nc" id="L101">            return Collections.emptyList();</span>
+        }
+<span class="nc" id="L103">        int numPerRow = getVerticesPerRow();</span>
+<span class="nc" id="L104">        PDRange[] colRange = new PDRange[getNumberOfColorComponents()];</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        for (int i = 0; i &lt; colRange.length; ++i)</span>
+        {
+<span class="nc" id="L107">            colRange[i] = getDecodeForParameter(2 + i);</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">            if (colRange[i] == null)</span>
+            {
+<span class="nc" id="L110">                throw new IOException(&quot;Range missing in shading /Decode entry&quot;);</span>
+            }
+        }
+<span class="nc" id="L113">        List&lt;Vertex&gt; vlist = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L114">        long maxSrcCoord = (long) Math.pow(2, getBitsPerCoordinate()) - 1;</span>
+<span class="nc" id="L115">        long maxSrcColor = (long) Math.pow(2, getBitsPerComponent()) - 1;</span>
+
+        // MemoryCacheImageInputStream doesn't close the wrapped stream
+<span class="nc" id="L118">        try (InputStream imageStream = ((COSStream) dict).createInputStream())</span>
+        {
+<span class="nc" id="L120">            try (ImageInputStream mciis = new MemoryCacheImageInputStream(imageStream))</span>
+            {
+<span class="nc" id="L122">                boolean eof = false;</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">                while (!eof)</span>
+                {
+                    Vertex p;
+                    try
+                    {
+<span class="nc" id="L128">                        p = readVertex(mciis, maxSrcCoord, maxSrcColor, rangeX, rangeY, colRange,</span>
+                                matrix, xform);
+<span class="nc" id="L130">                        vlist.add(p);</span>
+                    }
+<span class="nc" id="L132">                    catch (EOFException ex)</span>
+                    {
+<span class="nc" id="L134">                        eof = true;</span>
+<span class="nc" id="L135">                    }</span>
+                }
+            }
+        }
+<span class="nc" id="L139">        int rowNum = vlist.size() / numPerRow;</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        if (rowNum &lt; 2)</span>
+        {
+            // must have at least two rows; if not, return empty list
+<span class="nc" id="L143">            return Collections.emptyList();</span>
+        }
+<span class="nc" id="L145">        Vertex[][] latticeArray = new Vertex[rowNum][numPerRow];</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        for (int i = 0; i &lt; rowNum; i++)</span>
+        {
+<span class="nc bnc" id="L148" title="All 2 branches missed.">            for (int j = 0; j &lt; numPerRow; j++)</span>
+            {
+<span class="nc" id="L150">                latticeArray[i][j] = vlist.get(i * numPerRow + j);</span>
+            }
+        }
+
+<span class="nc" id="L154">        return createShadedTriangleList(rowNum, numPerRow, latticeArray);</span>
+    }
+
+    private List&lt;ShadedTriangle&gt; createShadedTriangleList(int rowNum, int numPerRow, Vertex[][] latticeArray)
+    {
+<span class="nc" id="L159">        Point2D[] ps = new Point2D[3]; // array will be shallow-cloned in ShadedTriangle constructor</span>
+<span class="nc" id="L160">        float[][] cs = new float[3][];</span>
+<span class="nc" id="L161">        List&lt;ShadedTriangle&gt; list = new ArrayList&lt;&gt;((rowNum - 1) * (numPerRow - 1));</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        for (int i = 0; i &lt; rowNum - 1; i++)</span>
+        {
+<span class="nc bnc" id="L164" title="All 2 branches missed.">            for (int j = 0; j &lt; numPerRow - 1; j++)</span>
+            {
+<span class="nc" id="L166">                Vertex vertex1 = latticeArray[i][j];</span>
+<span class="nc" id="L167">                Vertex vertex2 = latticeArray[i][j + 1];</span>
+<span class="nc" id="L168">                Vertex vertex3 = latticeArray[i + 1][j];</span>
+<span class="nc" id="L169">                Vertex vertex4 = latticeArray[i + 1][j + 1];</span>
+<span class="nc" id="L170">                ps[0] = vertex1.point;</span>
+<span class="nc" id="L171">                ps[1] = vertex2.point;</span>
+<span class="nc" id="L172">                ps[2] = vertex3.point;</span>
+
+<span class="nc" id="L174">                cs[0] = vertex1.color;</span>
+<span class="nc" id="L175">                cs[1] = vertex2.color;</span>
+<span class="nc" id="L176">                cs[2] = vertex3.color;</span>
+
+<span class="nc" id="L178">                list.add(new ShadedTriangle(ps, cs));</span>
+
+<span class="nc" id="L180">                ps[0] = vertex2.point;</span>
+<span class="nc" id="L181">                ps[1] = vertex3.point;</span>
+<span class="nc" id="L182">                ps[2] = vertex4.point;</span>
+
+<span class="nc" id="L184">                cs[0] = vertex2.color;</span>
+<span class="nc" id="L185">                cs[1] = vertex3.color;</span>
+<span class="nc" id="L186">                cs[2] = vertex4.color;</span>
+
+<span class="nc" id="L188">                list.add(new ShadedTriangle(ps, cs));</span>
+            }
+        }
+<span class="nc" id="L191">        return list;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

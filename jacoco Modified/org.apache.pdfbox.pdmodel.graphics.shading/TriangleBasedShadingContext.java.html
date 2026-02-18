@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TriangleBasedShadingContext.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.graphics.shading</a> &gt; <span class="el_source">TriangleBasedShadingContext.java</span></div><h1>TriangleBasedShadingContext.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2014 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.graphics.shading;
+
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.geom.AffineTransform;
+import java.awt.image.ColorModel;
+import java.awt.image.Raster;
+import java.awt.image.WritableRaster;
+import java.io.IOException;
+import java.util.List;
+
+import org.apache.pdfbox.util.Matrix;
+
+/**
+ * Intermediate class extended by the shading types 4,5,6 and 7 that contains the common methods
+ * used by these classes.
+ *
+ * @author Shaola Ren
+ * @author Tilman Hausherr
+ */
+abstract class TriangleBasedShadingContext extends ShadingContext
+{
+    // array of pixels within triangles to their RGB color
+    private int[][] pixelTableArray;
+
+    // offset to be used for the array index
+<span class="nc" id="L42">    private int xOffset = 0;</span>
+<span class="nc" id="L43">    private int yOffset = 0;</span>
+
+    /**
+     * Constructor.
+     *
+     * @param shading the shading type to be used
+     * @param cm the color model to be used
+     * @param xform transformation for user to device space
+     * @param matrix the pattern matrix concatenated with that of the parent content stream
+     * @throws IOException if there is an error getting the color space or doing background color conversion.
+     */
+    TriangleBasedShadingContext(PDShading shading, ColorModel cm, AffineTransform xform,
+                                       Matrix matrix) throws IOException
+    {
+<span class="nc" id="L57">        super(shading, cm, xform, matrix);</span>
+<span class="nc" id="L58">    }</span>
+
+    /**
+     * Creates the pixel table.
+     */
+    protected final void createPixelTable(Rectangle deviceBounds) throws IOException
+    {
+<span class="nc" id="L65">        xOffset = -deviceBounds.x;</span>
+<span class="nc" id="L66">        yOffset = -deviceBounds.y;</span>
+<span class="nc" id="L67">        pixelTableArray = calcPixelTableArray(deviceBounds);</span>
+<span class="nc" id="L68">    }</span>
+
+    /**
+     * Calculate every point and its color and store them in a two-dimensional array.
+     *
+     * @return an array which contains all the points' positions and colors of one image
+     */
+    abstract int[][] calcPixelTableArray(Rectangle deviceBounds) throws IOException;
+
+    /**
+     * Get the points from the triangles, calculate their color and add point-color mappings.
+     */
+    protected void calcPixelTable(List&lt;ShadedTriangle&gt; triangleList, int[][] array,
+            Rectangle deviceBounds) throws IOException
+    {
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        for (ShadedTriangle tri : triangleList)</span>
+        {
+<span class="nc" id="L85">            int degree = tri.getDeg();</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            if (degree == 2)</span>
+            {
+<span class="nc" id="L88">                addLinePoints(tri.getLine(), array);</span>
+            }
+            else
+            {
+<span class="nc" id="L92">                int[] boundary = tri.getBoundary();</span>
+<span class="nc" id="L93">                boundary[0] = Math.max(boundary[0], deviceBounds.x);</span>
+<span class="nc" id="L94">                boundary[1] = Math.min(boundary[1], deviceBounds.x + deviceBounds.width);</span>
+<span class="nc" id="L95">                boundary[2] = Math.max(boundary[2], deviceBounds.y);</span>
+<span class="nc" id="L96">                boundary[3] = Math.min(boundary[3], deviceBounds.y + deviceBounds.height);</span>
+
+<span class="nc bnc" id="L98" title="All 2 branches missed.">                for (int x = boundary[0]; x &lt;= boundary[1]; x++)</span>
+                {
+<span class="nc bnc" id="L100" title="All 2 branches missed.">                    for (int y = boundary[2]; y &lt;= boundary[3]; y++)</span>
+                    {
+<span class="nc" id="L102">                        Point p = new Point(x, y);</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">                        if (tri.contains(p))</span>
+                        {
+<span class="nc" id="L105">                            addValueToArray(p, evalFunctionAndConvertToRGB(tri.calcColor(p)),</span>
+                                    array);
+                        }
+                    }
+                }
+                // &quot;fatten&quot; triangle by drawing the borders with Bresenham's line algorithm
+                // Inspiration: Raph Levien in http://bugs.ghostscript.com/show_bug.cgi?id=219588
+<span class="nc" id="L112">                Point p0 = new Point((int) Math.round(tri.corner[0].getX()),</span>
+<span class="nc" id="L113">                                     (int) Math.round(tri.corner[0].getY()));</span>
+<span class="nc" id="L114">                Point p1 = new Point((int) Math.round(tri.corner[1].getX()),</span>
+<span class="nc" id="L115">                                     (int) Math.round(tri.corner[1].getY()));</span>
+<span class="nc" id="L116">                Point p2 = new Point((int) Math.round(tri.corner[2].getX()),</span>
+<span class="nc" id="L117">                                     (int) Math.round(tri.corner[2].getY()));</span>
+<span class="nc" id="L118">                addLinePoints(new Line(p0, p1, tri.color[0], tri.color[1]), array);</span>
+<span class="nc" id="L119">                addLinePoints(new Line(p1, p2, tri.color[1], tri.color[2]), array);</span>
+<span class="nc" id="L120">                addLinePoints(new Line(p2, p0, tri.color[2], tri.color[0]), array);</span>
+            }
+<span class="nc" id="L122">        }</span>
+<span class="nc" id="L123">    }</span>
+
+    private void addLinePoints(Line line, int[][] array) throws IOException
+    {
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        for (Point p : line.linePoints)</span>
+        {
+<span class="nc" id="L129">            addValueToArray(p, evalFunctionAndConvertToRGB(line.calcColor(p)), array);</span>
+<span class="nc" id="L130">        }</span>
+<span class="nc" id="L131">    }</span>
+
+    private void addValueToArray(Point p, int value, int[][] array)
+    {
+<span class="nc" id="L135">        int xIndex = p.x + xOffset;</span>
+<span class="nc" id="L136">        int yIndex = p.y + yOffset;</span>
+<span class="nc bnc" id="L137" title="All 8 branches missed.">        if (xIndex &lt; 0 || yIndex &lt; 0 || xIndex &gt;= array.length || yIndex &gt;= array[0].length)</span>
+        {
+<span class="nc" id="L139">            return;</span>
+        }
+<span class="nc" id="L141">        array[xIndex][yIndex] = value;</span>
+<span class="nc" id="L142">    }</span>
+
+    private int getValueFromArray(int x, int y)
+    {
+<span class="nc" id="L146">        int xIndex = x + xOffset;</span>
+<span class="nc" id="L147">        int yIndex = y + yOffset;</span>
+<span class="nc bnc" id="L148" title="All 8 branches missed.">        if (xIndex &lt; 0 || yIndex &lt; 0 || xIndex &gt;= pixelTableArray.length</span>
+                || yIndex &gt;= pixelTableArray[0].length)
+        {
+<span class="nc" id="L151">            return -1;</span>
+        }
+<span class="nc" id="L153">        return pixelTableArray[xIndex][yIndex];</span>
+    }
+
+    /**
+     * Convert color to RGB color value, using function if required, then convert from the shading
+     * color space to an RGB value, which is encoded into an integer.
+     */
+    private int evalFunctionAndConvertToRGB(float[] values) throws IOException
+    {
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        if (getShading().getFunction() != null)</span>
+        {
+<span class="nc" id="L164">            values = getShading().evalFunction(values);</span>
+        }
+<span class="nc" id="L166">        return convertToRGB(values);</span>
+    }
+
+    /**
+     * Returns true if the shading has an empty data stream.
+     */
+    abstract boolean isDataEmpty();
+
+    @Override
+    public final Raster getRaster(int x, int y, int w, int h)
+    {
+<span class="nc" id="L177">        WritableRaster raster = getColorModel().createCompatibleWritableRaster(w, h);</span>
+<span class="nc" id="L178">        int[] data = new int[w * h * 4];</span>
+<span class="nc bnc" id="L179" title="All 4 branches missed.">        if (!isDataEmpty() || getBackground() != null)</span>
+        {
+<span class="nc bnc" id="L181" title="All 2 branches missed.">            for (int row = 0; row &lt; h; row++)</span>
+            {
+<span class="nc bnc" id="L183" title="All 2 branches missed.">                for (int col = 0; col &lt; w; col++)</span>
+                {
+<span class="nc" id="L185">                    int value = getValueFromArray(x + col, y + row);</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">                    if (value &gt;= 0)</span>
+                    {
+<span class="nc" id="L188">                        int index = (row * w + col) * 4;</span>
+<span class="nc" id="L189">                        data[index] = value &amp; 255;</span>
+<span class="nc" id="L190">                        value &gt;&gt;= 8;</span>
+<span class="nc" id="L191">                        data[index + 1] = value &amp; 255;</span>
+<span class="nc" id="L192">                        value &gt;&gt;= 8;</span>
+<span class="nc" id="L193">                        data[index + 2] = value &amp; 255;</span>
+<span class="nc" id="L194">                        data[index + 3] = 255;</span>
+                    }
+                }
+            }
+        }
+<span class="nc" id="L199">        raster.setPixels(0, 0, w, h, data);</span>
+<span class="nc" id="L200">        return raster;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

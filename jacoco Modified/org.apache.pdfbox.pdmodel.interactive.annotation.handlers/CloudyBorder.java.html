@@ -1,0 +1,1106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CloudyBorder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel.interactive.annotation.handlers</a> &gt; <span class="el_source">CloudyBorder.java</span></div><h1>CloudyBorder.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel.interactive.annotation.handlers;
+
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.PathIterator;
+import java.awt.geom.Point2D;
+import java.io.IOException;
+import java.util.ArrayList;
+
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.PDAppearanceContentStream;
+
+/**
+ * Generates annotation appearances with a cloudy border.
+ * &lt;p&gt;
+ * Dashed stroke styles are not recommended with cloudy borders. The result would
+ * not look good because some parts of the arcs are traced twice by the stroked
+ * path. Actually Acrobat Reader's line style dialog does not allow to choose a
+ * dashed and a cloudy style at the same time.
+ */
+
+class CloudyBorder
+{
+    private static final double ANGLE_180_DEG = Math.PI;
+    private static final double ANGLE_90_DEG = Math.PI / 2;
+<span class="nc" id="L42">    private static final double ANGLE_34_DEG = Math.toRadians(34);</span>
+<span class="nc" id="L43">    private static final double ANGLE_30_DEG = Math.toRadians(30);</span>
+<span class="nc" id="L44">    private static final double ANGLE_12_DEG = Math.toRadians(12);</span>
+
+    private final PDAppearanceContentStream output;
+    private final PDRectangle annotRect;
+    private final double intensity;
+    private final double lineWidth;
+    private PDRectangle rectWithDiff;
+<span class="nc" id="L51">    private boolean outputStarted = false;</span>
+    private double bboxMinX;
+    private double bboxMinY;
+    private double bboxMaxX;
+    private double bboxMaxY;
+
+    /**
+     * Creates a new &lt;code&gt;CloudyBorder&lt;/code&gt; that writes to the specified
+     * content stream.
+     *
+     * @param stream content stream
+     * @param intensity intensity of cloudy effect (entry &lt;code&gt;I&lt;/code&gt;); typically 1.0 or 2.0
+     * @param lineWidth line width for annotation border (entry &lt;code&gt;W&lt;/code&gt;)
+     * @param rect annotation rectangle (entry &lt;code&gt;Rect&lt;/code&gt;)
+     */
+    CloudyBorder(PDAppearanceContentStream stream, double intensity,
+    double lineWidth, PDRectangle rect)
+<span class="nc" id="L68">    {</span>
+<span class="nc" id="L69">        this.output = stream;</span>
+<span class="nc" id="L70">        this.intensity = intensity;</span>
+<span class="nc" id="L71">        this.lineWidth = lineWidth;</span>
+<span class="nc" id="L72">        this.annotRect = rect;</span>
+<span class="nc" id="L73">    }</span>
+
+    /**
+     * Creates a cloudy border for a rectangular annotation.
+     * The rectangle is specified by the &lt;code&gt;RD&lt;/code&gt; entry and the
+     * &lt;code&gt;Rect&lt;/code&gt; entry that was passed in to the constructor.
+     * &lt;p&gt;
+     * This can be used for Square and FreeText annotations. However, this does
+     * not produce the text and the callout line for FreeTexts.
+     *
+     * @param rd entry &lt;code&gt;RD&lt;/code&gt;, or null if the entry does not exist
+     * @throws IOException If there is an error writing to the stream.
+     */
+    void createCloudyRectangle(PDRectangle rd) throws IOException
+    {
+<span class="nc" id="L88">        rectWithDiff = applyRectDiff(rd, (float) (lineWidth / 2));</span>
+<span class="nc" id="L89">        double left = rectWithDiff.getLowerLeftX();</span>
+<span class="nc" id="L90">        double bottom = rectWithDiff.getLowerLeftY();</span>
+<span class="nc" id="L91">        double right = rectWithDiff.getUpperRightX();</span>
+<span class="nc" id="L92">        double top = rectWithDiff.getUpperRightY();</span>
+
+<span class="nc" id="L94">        cloudyRectangleImpl(left, bottom, right, top, false);</span>
+<span class="nc" id="L95">        finish();</span>
+<span class="nc" id="L96">    }</span>
+
+    /**
+     * Creates a cloudy border for a Polygon annotation.
+     *
+     * @param path polygon path
+     * @throws IOException If there is an error writing to the stream.
+     */
+    void createCloudyPolygon(float[][] path) throws IOException
+    {
+<span class="nc" id="L106">        int n = path.length;</span>
+<span class="nc" id="L107">        Point2D.Double[] polygon = new Point2D.Double[n];</span>
+
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++)</span>
+        {
+<span class="nc" id="L111">            float[] array = path[i];</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">            if (array.length == 2)</span>
+            {
+<span class="nc" id="L114">                polygon[i] = new Point2D.Double(array[0], array[1]);</span>
+            }
+<span class="nc bnc" id="L116" title="All 2 branches missed.">            else if (array.length == 6)</span>
+            {
+                // TODO Curve segments are not yet supported in cloudy border.
+<span class="nc" id="L119">                polygon[i] = new Point2D.Double(array[4], array[5]);</span>
+            }
+        }
+
+<span class="nc" id="L123">        cloudyPolygonImpl(polygon, false);</span>
+<span class="nc" id="L124">        finish();</span>
+<span class="nc" id="L125">    }</span>
+
+    /**
+     * Creates a cloudy border for a Circle annotation.
+     * The ellipse is specified by the &lt;code&gt;RD&lt;/code&gt; entry and the
+     * &lt;code&gt;Rect&lt;/code&gt; entry that was passed in to the constructor.
+     *
+     * @param rd entry &lt;code&gt;RD&lt;/code&gt;, or null if the entry does not exist
+     * @throws IOException If there is an error writing to the stream.
+     */
+    void createCloudyEllipse(PDRectangle rd) throws IOException
+    {
+<span class="nc" id="L137">        rectWithDiff = applyRectDiff(rd, 0);</span>
+<span class="nc" id="L138">        double left = rectWithDiff.getLowerLeftX();</span>
+<span class="nc" id="L139">        double bottom = rectWithDiff.getLowerLeftY();</span>
+<span class="nc" id="L140">        double right = rectWithDiff.getUpperRightX();</span>
+<span class="nc" id="L141">        double top = rectWithDiff.getUpperRightY();</span>
+
+<span class="nc" id="L143">        cloudyEllipseImpl(left, bottom, right, top);</span>
+<span class="nc" id="L144">        finish();</span>
+<span class="nc" id="L145">    }</span>
+
+    /**
+     * Returns the &lt;code&gt;BBox&lt;/code&gt; entry (bounding box) for the
+     * appearance stream form XObject.
+     *
+     * @return Bounding box for appearance stream form XObject.
+     */
+    PDRectangle getBBox()
+    {
+<span class="nc" id="L155">        return getRectangle();</span>
+    }
+
+    /**
+     * Returns the updated &lt;code&gt;Rect&lt;/code&gt; entry for the annotation.
+     * The rectangle completely contains the cloudy border.
+     *
+     * @return Annotation &lt;code&gt;Rect&lt;/code&gt;.
+     */
+    PDRectangle getRectangle()
+    {
+<span class="nc" id="L166">        return new PDRectangle((float)bboxMinX, (float)bboxMinY,</span>
+            (float)(bboxMaxX - bboxMinX), (float)(bboxMaxY - bboxMinY));
+    }
+
+    /**
+     * Returns the &lt;code&gt;Matrix&lt;/code&gt; entry for the appearance stream form XObject.
+     *
+     * @return Matrix for appearance stream form XObject.
+     */
+    AffineTransform getMatrix()
+    {
+<span class="nc" id="L177">        return AffineTransform.getTranslateInstance(-bboxMinX, -bboxMinY);</span>
+    }
+
+    /**
+     * Returns the updated &lt;code&gt;RD&lt;/code&gt; entry for Square and Circle annotations.
+     *
+     * @return Annotation &lt;code&gt;RD&lt;/code&gt; value.
+     */
+    PDRectangle getRectDifference()
+    {
+<span class="nc bnc" id="L187" title="All 2 branches missed.">        if (annotRect == null)</span>
+        {
+<span class="nc" id="L189">            float d = (float)lineWidth / 2;</span>
+<span class="nc" id="L190">            return new PDRectangle(d, d, (float)lineWidth, (float)lineWidth);</span>
+        }
+
+<span class="nc bnc" id="L193" title="All 2 branches missed.">        PDRectangle re = (rectWithDiff != null) ? rectWithDiff : annotRect;</span>
+
+<span class="nc" id="L195">        float left = re.getLowerLeftX() - (float)bboxMinX;</span>
+<span class="nc" id="L196">        float bottom = re.getLowerLeftY() - (float)bboxMinY;</span>
+<span class="nc" id="L197">        float right = (float)bboxMaxX - re.getUpperRightX();</span>
+<span class="nc" id="L198">        float top = (float)bboxMaxY - re.getUpperRightY();</span>
+
+<span class="nc" id="L200">        return new PDRectangle(left, bottom, right - left, top - bottom);</span>
+    }
+
+    private static double cosine(double dx, double hypot)
+    {
+<span class="nc bnc" id="L205" title="All 2 branches missed.">        if (Double.compare(hypot, 0.0) == 0)</span>
+        {
+<span class="nc" id="L207">            return 0;</span>
+        }
+<span class="nc" id="L209">        return dx / hypot;</span>
+    }
+
+    private static double sine(double dy, double hypot)
+    {
+<span class="nc bnc" id="L214" title="All 2 branches missed.">        if (Double.compare(hypot, 0.0) == 0)</span>
+        {
+<span class="nc" id="L216">            return 0;</span>
+        }
+<span class="nc" id="L218">        return dy / hypot;</span>
+    }
+
+    /**
+     * Cloudy rectangle implementation is based on converting the rectangle
+     * to a polygon.
+     */
+    private void cloudyRectangleImpl(double left, double bottom,
+    double right, double top, boolean isEllipse) throws IOException
+    {
+<span class="nc" id="L228">        double w = right - left;</span>
+<span class="nc" id="L229">        double h = top - bottom;</span>
+
+<span class="nc bnc" id="L231" title="All 2 branches missed.">        if (intensity &lt;= 0.0)</span>
+        {
+<span class="nc" id="L233">            output.addRect((float)left, (float)bottom, (float)w, (float)h);</span>
+<span class="nc" id="L234">            bboxMinX = left;</span>
+<span class="nc" id="L235">            bboxMinY = bottom;</span>
+<span class="nc" id="L236">            bboxMaxX = right;</span>
+<span class="nc" id="L237">            bboxMaxY = top;</span>
+<span class="nc" id="L238">            return;</span>
+        }
+
+        // Make a polygon with direction equal to the positive angle direction.
+        Point2D.Double[] polygon;
+
+<span class="nc bnc" id="L244" title="All 2 branches missed.">        if (w &lt; 1.0)</span>
+        {
+<span class="nc" id="L246">            polygon = new Point2D.Double[]</span>
+            {
+                new Point2D.Double(left, bottom), new Point2D.Double(left, top),
+                new Point2D.Double(left, bottom)
+            };
+        }
+<span class="nc bnc" id="L252" title="All 2 branches missed.">        else if (h &lt; 1.0)</span>
+        {
+<span class="nc" id="L254">            polygon = new Point2D.Double[]</span>
+            {
+                new Point2D.Double(left, bottom), new Point2D.Double(right, bottom),
+                new Point2D.Double(left, bottom)
+            };
+        }
+        else
+        {
+<span class="nc" id="L262">            polygon = new Point2D.Double[]</span>
+            {
+                new Point2D.Double(left, bottom), new Point2D.Double(right, bottom),
+                new Point2D.Double(right, top), new Point2D.Double(left, top),
+                new Point2D.Double(left, bottom)
+            };
+        }
+
+<span class="nc" id="L270">        cloudyPolygonImpl(polygon, isEllipse);</span>
+<span class="nc" id="L271">    }</span>
+
+    /**
+     * Cloudy polygon implementation.
+     *
+     * @param vertices polygon vertices; first and last point must be equal
+     * @param isEllipse specifies if the polygon represents an ellipse
+     */
+    private void cloudyPolygonImpl(Point2D.Double[] vertices, boolean isEllipse)
+    throws IOException
+    {
+<span class="nc" id="L282">        Point2D.Double[] polygon = removeZeroLengthSegments(vertices);</span>
+<span class="nc" id="L283">        getPositivePolygon(polygon);</span>
+<span class="nc" id="L284">        int numPoints = polygon.length;</span>
+
+<span class="nc bnc" id="L286" title="All 2 branches missed.">        if (numPoints &lt; 2)</span>
+        {
+<span class="nc" id="L288">            return;</span>
+        }
+<span class="nc bnc" id="L290" title="All 2 branches missed.">        if (intensity &lt;= 0.0)</span>
+        {
+<span class="nc" id="L292">            moveTo(polygon[0]);</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">            for (int i = 1; i &lt; numPoints; i++)</span>
+            {
+<span class="nc" id="L295">                lineTo(polygon[i]);</span>
+            }
+<span class="nc" id="L297">            return;</span>
+        }
+
+<span class="nc bnc" id="L300" title="All 2 branches missed.">        double cloudRadius = isEllipse ? getEllipseCloudRadius() : getPolygonCloudRadius();</span>
+
+<span class="nc bnc" id="L302" title="All 2 branches missed.">        if (cloudRadius &lt; 0.5)</span>
+        {
+<span class="nc" id="L304">            cloudRadius = 0.5;</span>
+        }
+
+<span class="nc" id="L307">        final double k = Math.cos(ANGLE_34_DEG);</span>
+<span class="nc" id="L308">        final double advIntermDefault = 2 * k * cloudRadius;</span>
+<span class="nc" id="L309">        final double advCornerDefault = k * cloudRadius;</span>
+<span class="nc" id="L310">        double[] array = new double[2];</span>
+<span class="nc" id="L311">        double anglePrev = 0;</span>
+
+        // The number of curls per polygon segment is hardly ever an integer,
+        // so the length of some curls must be adjustable. We adjust the angle
+        // of the trailing arc of corner curls and the leading arc of the first
+        // intermediate curl.
+        // In each polygon segment, we have n intermediate curls plus one half of a
+        // corner curl at each end. One of the n intermediate curls is adjustable.
+        // Thus the number of fixed (or unadjusted) intermediate curls is n - 1.
+
+        // Find the adjusted angle `alpha` for the first corner curl.
+<span class="nc" id="L322">        int n0 = computeParamsPolygon(advIntermDefault, advCornerDefault, k, cloudRadius,</span>
+<span class="nc" id="L323">            polygon[numPoints - 2].distance(polygon[0]), array);</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">        double alphaPrev = (n0 == 0) ? array[0] : ANGLE_34_DEG;</span>
+
+<span class="nc bnc" id="L326" title="All 2 branches missed.">        for (int j = 0; j + 1 &lt; numPoints; j++)</span>
+        {
+<span class="nc" id="L328">            Point2D.Double pt = polygon[j];</span>
+<span class="nc" id="L329">            Point2D.Double ptNext = polygon[j + 1];</span>
+<span class="nc" id="L330">            double length = pt.distance(ptNext);</span>
+<span class="nc bnc" id="L331" title="All 2 branches missed.">            if (Double.compare(length, 0.0) == 0)</span>
+            {
+<span class="nc" id="L333">                alphaPrev = ANGLE_34_DEG;</span>
+<span class="nc" id="L334">                continue;</span>
+            }
+
+            // n is the number of intermediate curls in the current polygon segment.
+<span class="nc" id="L338">            int n = computeParamsPolygon(advIntermDefault, advCornerDefault, k,</span>
+                cloudRadius, length, array);
+<span class="nc bnc" id="L340" title="All 2 branches missed.">            if (n &lt; 0)</span>
+            {
+<span class="nc bnc" id="L342" title="All 2 branches missed.">                if (!outputStarted)</span>
+                {
+<span class="nc" id="L344">                    moveTo(pt);</span>
+                }
+                continue;
+            }
+
+<span class="nc" id="L349">            double alpha = array[0];</span>
+<span class="nc" id="L350">            double dx = array[1];</span>
+
+<span class="nc" id="L352">            double angleCur = Math.atan2(ptNext.y - pt.y, ptNext.x - pt.x);</span>
+<span class="nc bnc" id="L353" title="All 2 branches missed.">            if (j == 0)</span>
+            {
+<span class="nc" id="L355">                Point2D.Double ptPrev = polygon[numPoints - 2];</span>
+<span class="nc" id="L356">                anglePrev = Math.atan2(pt.y - ptPrev.y, pt.x - ptPrev.x);</span>
+            }
+
+<span class="nc" id="L359">            double cos = cosine(ptNext.x - pt.x, length);</span>
+<span class="nc" id="L360">            double sin = sine(ptNext.y - pt.y, length);</span>
+<span class="nc" id="L361">            double x = pt.x;</span>
+<span class="nc" id="L362">            double y = pt.y;</span>
+
+<span class="nc bnc" id="L364" title="All 2 branches missed.">            addCornerCurl(anglePrev, angleCur, cloudRadius, pt.x, pt.y, alpha,</span>
+                alphaPrev, !outputStarted);
+            // Proceed to the center point of the first intermediate curl.
+<span class="nc" id="L367">            double adv = 2 * k * cloudRadius + 2 * dx;</span>
+<span class="nc" id="L368">            x += adv * cos;</span>
+<span class="nc" id="L369">            y += adv * sin;</span>
+
+            // Create the first intermediate curl.
+<span class="nc" id="L372">            int numInterm = n;</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">            if (n &gt;= 1)</span>
+            {
+<span class="nc" id="L375">                addFirstIntermediateCurl(angleCur, cloudRadius, alpha, x, y);</span>
+<span class="nc" id="L376">                x += advIntermDefault * cos;</span>
+<span class="nc" id="L377">                y += advIntermDefault * sin;</span>
+<span class="nc" id="L378">                numInterm = n - 1;</span>
+            }
+
+            // Create one intermediate curl and replicate it along the polygon segment.
+<span class="nc" id="L382">            Point2D.Double[] template = getIntermediateCurlTemplate(angleCur, cloudRadius);</span>
+<span class="nc bnc" id="L383" title="All 2 branches missed.">            for (int i = 0; i &lt; numInterm; i++)</span>
+            {
+<span class="nc" id="L385">                outputCurlTemplate(template, x, y);</span>
+<span class="nc" id="L386">                x += advIntermDefault * cos;</span>
+<span class="nc" id="L387">                y += advIntermDefault * sin;</span>
+            }
+
+<span class="nc" id="L390">            anglePrev = angleCur;</span>
+<span class="nc bnc" id="L391" title="All 2 branches missed.">            alphaPrev = (n == 0) ? alpha : ANGLE_34_DEG;</span>
+        }
+<span class="nc" id="L393">    }</span>
+
+    /**
+     * Computes parameters for a cloudy polygon: n, alpha, and dx.
+     */
+    private int computeParamsPolygon(double advInterm, double advCorner, double k,
+    double r, double length, double[] array)
+    {
+<span class="nc bnc" id="L401" title="All 2 branches missed.">        if (Double.compare(length, 0.0) == 0)</span>
+        {
+<span class="nc" id="L403">            array[0] = ANGLE_34_DEG;</span>
+<span class="nc" id="L404">            array[1] = 0;</span>
+<span class="nc" id="L405">            return -1;</span>
+        }
+
+        // n is the number of intermediate curls in the current polygon segment
+<span class="nc" id="L409">        int n = (int) Math.ceil((length - 2 * advCorner) / advInterm);</span>
+
+        // Fitting error along polygon segment
+<span class="nc" id="L412">        double e = length - (2 * advCorner + n * advInterm);</span>
+        // Fitting error per each adjustable half curl
+<span class="nc" id="L414">        double dx = e / 2;</span>
+
+        // Convert fitting error to an angle that can be used to control arcs.
+<span class="nc" id="L417">        double arg = (k * r + dx) / r;</span>
+<span class="nc bnc" id="L418" title="All 4 branches missed.">        double alpha = (arg &lt; -1.0 || arg &gt; 1.0) ? 0.0 : Math.acos(arg);</span>
+
+<span class="nc" id="L420">        array[0] = alpha;</span>
+<span class="nc" id="L421">        array[1] = dx;</span>
+<span class="nc" id="L422">        return n;</span>
+    }
+
+    /**
+     * Creates a corner curl for polygons and ellipses.
+     */
+    private void addCornerCurl(double anglePrev, double angleCur, double radius,
+    double cx, double cy, double alpha, double alphaPrev, boolean addMoveTo)
+    throws IOException
+    {
+<span class="nc" id="L432">        double a = anglePrev + ANGLE_180_DEG + alphaPrev;</span>
+<span class="nc" id="L433">        double b = anglePrev + ANGLE_180_DEG + alphaPrev - Math.toRadians(22);</span>
+<span class="nc" id="L434">        getArcSegment(a, b, cx, cy, radius, radius, null, addMoveTo);</span>
+
+<span class="nc" id="L436">        a = b;</span>
+<span class="nc" id="L437">        b = angleCur - alpha;</span>
+<span class="nc" id="L438">        getArc(a, b, radius, radius, cx, cy, null, false);</span>
+<span class="nc" id="L439">    }</span>
+
+    /**
+     * Generates the first intermediate curl for a cloudy polygon.
+     */
+    private void addFirstIntermediateCurl(double angleCur, double r, double alpha,
+    double cx, double cy) throws IOException
+    {
+<span class="nc" id="L447">        double a = angleCur + ANGLE_180_DEG;</span>
+
+<span class="nc" id="L449">        getArcSegment(a + alpha, a + alpha - ANGLE_30_DEG, cx, cy, r, r, null, false);</span>
+<span class="nc" id="L450">        getArcSegment(a + alpha - ANGLE_30_DEG, a + ANGLE_90_DEG, cx, cy, r, r, null, false);</span>
+<span class="nc" id="L451">        getArcSegment(a + ANGLE_90_DEG, a + ANGLE_180_DEG - ANGLE_34_DEG,</span>
+            cx, cy, r, r, null, false);
+<span class="nc" id="L453">    }</span>
+
+    /**
+     * Returns a template for intermediate curls in a cloudy polygon.
+     */
+    private Point2D.Double[] getIntermediateCurlTemplate(double angleCur, double r)
+    throws IOException
+    {
+<span class="nc" id="L461">        ArrayList&lt;Point2D.Double&gt; points = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L462">        double a = angleCur + ANGLE_180_DEG;</span>
+
+<span class="nc" id="L464">        getArcSegment(a + ANGLE_34_DEG, a + ANGLE_12_DEG, 0, 0, r, r, points, false);</span>
+<span class="nc" id="L465">        getArcSegment(a + ANGLE_12_DEG, a + ANGLE_90_DEG,  0, 0, r, r, points, false);</span>
+<span class="nc" id="L466">        getArcSegment(a + ANGLE_90_DEG, a + ANGLE_180_DEG - ANGLE_34_DEG,</span>
+            0, 0, r, r, points, false);
+
+<span class="nc" id="L469">        return points.toArray(Point2D.Double[]::new);</span>
+    }
+
+    /**
+     * Writes the curl template points to the output and applies translation (x, y).
+     */
+    private void outputCurlTemplate(Point2D.Double[] template, double x, double y)
+    throws IOException
+    {
+<span class="nc" id="L478">        int n = template.length;</span>
+<span class="nc" id="L479">        int i = 0;</span>
+
+<span class="nc bnc" id="L481" title="All 2 branches missed.">        if ((n % 3) == 1)</span>
+        {
+<span class="nc" id="L483">            Point2D.Double a = template[0];</span>
+<span class="nc" id="L484">            moveTo(a.x + x, a.y + y);</span>
+<span class="nc" id="L485">            i++;</span>
+        }
+<span class="nc bnc" id="L487" title="All 2 branches missed.">        for (; i + 2 &lt; n; i += 3)</span>
+        {
+<span class="nc" id="L489">            Point2D.Double a = template[i];</span>
+<span class="nc" id="L490">            Point2D.Double b = template[i + 1];</span>
+<span class="nc" id="L491">            Point2D.Double c = template[i + 2];</span>
+<span class="nc" id="L492">            curveTo(a.x + x, a.y + y, b.x + x, b.y + y, c.x + x, c.y + y);</span>
+        }
+<span class="nc" id="L494">    }</span>
+
+    private PDRectangle applyRectDiff(PDRectangle rd, float min)
+    {
+<span class="nc" id="L498">        float rectLeft = annotRect.getLowerLeftX();</span>
+<span class="nc" id="L499">        float rectBottom = annotRect.getLowerLeftY();</span>
+<span class="nc" id="L500">        float rectRight = annotRect.getUpperRightX();</span>
+<span class="nc" id="L501">        float rectTop = annotRect.getUpperRightY();</span>
+
+        // Normalize
+<span class="nc" id="L504">        rectLeft = Math.min(rectLeft, rectRight);</span>
+<span class="nc" id="L505">        rectBottom = Math.min(rectBottom, rectTop);</span>
+<span class="nc" id="L506">        rectRight = Math.max(rectLeft, rectRight);</span>
+<span class="nc" id="L507">        rectTop = Math.max(rectBottom, rectTop);</span>
+
+        float rdLeft;
+        float rdBottom;
+        float rdRight;
+        float rdTop;
+
+<span class="nc bnc" id="L514" title="All 2 branches missed.">        if (rd != null)</span>
+        {
+<span class="nc" id="L516">            rdLeft = Math.max(rd.getLowerLeftX(), min);</span>
+<span class="nc" id="L517">            rdBottom = Math.max(rd.getLowerLeftY(), min);</span>
+<span class="nc" id="L518">            rdRight = Math.max(rd.getUpperRightX(), min);</span>
+<span class="nc" id="L519">            rdTop = Math.max(rd.getUpperRightY(), min);</span>
+        }
+        else
+        {
+<span class="nc" id="L523">            rdLeft = min;</span>
+<span class="nc" id="L524">            rdBottom = min;</span>
+<span class="nc" id="L525">            rdRight = min;</span>
+<span class="nc" id="L526">            rdTop = min;</span>
+        }
+
+<span class="nc" id="L529">        rectLeft += rdLeft;</span>
+<span class="nc" id="L530">        rectBottom += rdBottom;</span>
+<span class="nc" id="L531">        rectRight -= rdRight;</span>
+<span class="nc" id="L532">        rectTop -= rdTop;</span>
+
+<span class="nc" id="L534">        return new PDRectangle(rectLeft, rectBottom, rectRight - rectLeft, rectTop - rectBottom);</span>
+    }
+
+    private void reversePolygon(Point2D.Double[] points)
+    {
+<span class="nc" id="L539">        int len = points.length;</span>
+<span class="nc" id="L540">        int n = len / 2;</span>
+<span class="nc bnc" id="L541" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++)</span>
+        {
+<span class="nc" id="L543">            int j = len - i - 1;</span>
+<span class="nc" id="L544">            Point2D.Double pi = points[i];</span>
+<span class="nc" id="L545">            Point2D.Double pj = points[j];</span>
+<span class="nc" id="L546">            points[i] = pj;</span>
+<span class="nc" id="L547">            points[j] = pi;</span>
+        }
+<span class="nc" id="L549">    }</span>
+
+    /**
+     * Makes a polygon whose direction is the same as the positive angle
+     * direction in the coordinate system.
+     * The polygon must not intersect itself.
+     */
+    private void getPositivePolygon(Point2D.Double[] points)
+    {
+<span class="nc bnc" id="L558" title="All 2 branches missed.">        if (getPolygonDirection(points) &lt; 0)</span>
+        {
+<span class="nc" id="L560">            reversePolygon(points);</span>
+        }
+<span class="nc" id="L562">    }</span>
+
+    /**
+     * Returns the direction of the specified polygon.
+     * A positive value indicates that the polygon's direction is the same as the
+     * direction of positive angles in the coordinate system.
+     * A negative value indicates the opposite direction.
+     *
+     * The polygon must not intersect itself. A 2-point polygon is not acceptable.
+     * This is based on the &quot;shoelace formula&quot;.
+     */
+    private double getPolygonDirection(Point2D.Double[] points)
+    {
+<span class="nc" id="L575">        double a = 0;</span>
+<span class="nc" id="L576">        int len = points.length;</span>
+<span class="nc bnc" id="L577" title="All 2 branches missed.">        for (int i = 0; i &lt; len; i++)</span>
+        {
+<span class="nc" id="L579">            int j = (i + 1) % len;</span>
+<span class="nc" id="L580">            a += points[i].x * points[j].y - points[i].y * points[j].x;</span>
+        }
+<span class="nc" id="L582">        return a;</span>
+    }
+
+    /**
+     * Creates one or more Bézier curves that represent an elliptical arc.
+     * Angles are in radians.
+     * The arc will always proceed in the positive angle direction.
+     * If the argument `out` is null, this writes the results to the instance
+     * variable `output`.
+     */
+    private void getArc(double startAng, double endAng, double rx, double ry,
+    double cx, double cy, ArrayList&lt;Point2D.Double&gt; out, boolean addMoveTo) throws IOException
+    {
+<span class="nc" id="L595">        final double angleIncr = Math.PI / 2;</span>
+<span class="nc" id="L596">        double startx = rx * Math.cos(startAng) + cx;</span>
+<span class="nc" id="L597">        double starty = ry * Math.sin(startAng) + cy;</span>
+
+<span class="nc" id="L599">        double angleTodo = endAng - startAng;</span>
+<span class="nc bnc" id="L600" title="All 2 branches missed.">        while (angleTodo &lt; 0)</span>
+        {
+<span class="nc" id="L602">            angleTodo += 2 * Math.PI;</span>
+        }
+<span class="nc" id="L604">        double sweep = angleTodo;</span>
+<span class="nc" id="L605">        double angleDone = 0;</span>
+
+<span class="nc bnc" id="L607" title="All 2 branches missed.">        if (addMoveTo)</span>
+        {
+<span class="nc bnc" id="L609" title="All 2 branches missed.">            if (out != null)</span>
+            {
+<span class="nc" id="L611">                out.add(new Point2D.Double(startx, starty));</span>
+            }
+            else
+            {
+<span class="nc" id="L615">                moveTo(startx, starty);</span>
+            }
+        }
+
+<span class="nc bnc" id="L619" title="All 2 branches missed.">        while (angleTodo &gt; angleIncr)</span>
+        {
+<span class="nc" id="L621">            getArcSegment(startAng + angleDone,</span>
+                startAng + angleDone + angleIncr, cx, cy, rx, ry, out, false);
+<span class="nc" id="L623">            angleDone += angleIncr;</span>
+<span class="nc" id="L624">            angleTodo -= angleIncr;</span>
+        }
+
+<span class="nc bnc" id="L627" title="All 2 branches missed.">        if (angleTodo &gt; 0)</span>
+        {
+<span class="nc" id="L629">            getArcSegment(startAng + angleDone, startAng + sweep, cx, cy, rx, ry, out, false);</span>
+        }
+<span class="nc" id="L631">    }</span>
+
+    /**
+     * Creates a single Bézier curve that represents a section of an elliptical
+     * arc. The sweep angle of the section must not be larger than 90 degrees.
+     * If argument `out` is null, this writes the results to the instance
+     * variable `output`.
+     */
+    private void getArcSegment(double startAng, double endAng, double cx, double cy,
+    double rx, double ry, ArrayList&lt;Point2D.Double&gt; out, boolean addMoveTo) throws IOException
+    {
+        // Algorithm is from the FAQ of the news group comp.text.pdf
+
+<span class="nc" id="L644">        double cosA = Math.cos(startAng);</span>
+<span class="nc" id="L645">        double sinA = Math.sin(startAng);</span>
+<span class="nc" id="L646">        double cosB = Math.cos(endAng);</span>
+<span class="nc" id="L647">        double sinB = Math.sin(endAng);</span>
+<span class="nc" id="L648">        double denom = Math.sin((endAng - startAng) / 2.0);</span>
+<span class="nc bnc" id="L649" title="All 2 branches missed.">        if (Double.compare(denom, 0.0) == 0)</span>
+        {
+            // This can happen only if endAng == startAng.
+            // The arc sweep angle is zero, so we create no arc at all.
+<span class="nc bnc" id="L653" title="All 2 branches missed.">            if (addMoveTo)</span>
+            {
+<span class="nc" id="L655">                double xs = cx + rx * cosA;</span>
+<span class="nc" id="L656">                double ys = cy + ry * sinA;</span>
+<span class="nc bnc" id="L657" title="All 2 branches missed.">                if (out != null)</span>
+                {
+<span class="nc" id="L659">                    out.add(new Point2D.Double(xs, ys));</span>
+                }
+                else
+                {
+<span class="nc" id="L663">                    moveTo(xs, ys);</span>
+                }
+            }
+<span class="nc" id="L666">            return;</span>
+        }
+<span class="nc" id="L668">        double bcp = 1.333333333 * (1 - Math.cos((endAng - startAng) / 2.0)) / denom;</span>
+<span class="nc" id="L669">        double p1x = cx + rx * (cosA - bcp * sinA);</span>
+<span class="nc" id="L670">        double p1y = cy + ry * (sinA + bcp * cosA);</span>
+<span class="nc" id="L671">        double p2x = cx + rx * (cosB + bcp * sinB);</span>
+<span class="nc" id="L672">        double p2y = cy + ry * (sinB - bcp * cosB);</span>
+<span class="nc" id="L673">        double p3x = cx + rx * cosB;</span>
+<span class="nc" id="L674">        double p3y = cy + ry * sinB;</span>
+
+<span class="nc bnc" id="L676" title="All 2 branches missed.">        if (addMoveTo)</span>
+        {
+<span class="nc" id="L678">            double xs = cx + rx * cosA;</span>
+<span class="nc" id="L679">            double ys = cy + ry * sinA;</span>
+<span class="nc bnc" id="L680" title="All 2 branches missed.">            if (out != null)</span>
+            {
+<span class="nc" id="L682">                out.add(new Point2D.Double(xs, ys));</span>
+            }
+            else
+            {
+<span class="nc" id="L686">                moveTo(xs, ys);</span>
+            }
+        }
+
+<span class="nc bnc" id="L690" title="All 2 branches missed.">        if (out != null)</span>
+        {
+<span class="nc" id="L692">            out.add(new Point2D.Double(p1x, p1y));</span>
+<span class="nc" id="L693">            out.add(new Point2D.Double(p2x, p2y));</span>
+<span class="nc" id="L694">            out.add(new Point2D.Double(p3x, p3y));</span>
+        }
+        else
+        {
+<span class="nc" id="L698">            curveTo(p1x, p1y, p2x, p2y, p3x, p3y);</span>
+        }
+<span class="nc" id="L700">    }</span>
+
+    /**
+     * Flattens an ellipse into a polygon.
+     */
+    private static Point2D.Double[] flattenEllipse(double left, double bottom,
+    double right, double top)
+    {
+<span class="nc" id="L708">        Ellipse2D.Double ellipse = new Ellipse2D.Double(left, bottom, right - left, top - bottom);</span>
+<span class="nc" id="L709">        final double flatness = 0.50;</span>
+<span class="nc" id="L710">        PathIterator iterator = ellipse.getPathIterator(null, flatness);</span>
+<span class="nc" id="L711">        double[] coords = new double[6];</span>
+<span class="nc" id="L712">        ArrayList&lt;Point2D.Double&gt; points = new ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L714" title="All 2 branches missed.">        while (!iterator.isDone())</span>
+        {
+<span class="nc bnc" id="L716" title="All 2 branches missed.">            switch (iterator.currentSegment(coords))</span>
+            {
+                case PathIterator.SEG_MOVETO:
+                case PathIterator.SEG_LINETO:
+<span class="nc" id="L720">                    points.add(new Point2D.Double(coords[0], coords[1]));</span>
+<span class="nc" id="L721">                    break;</span>
+                // Curve segments are not expected because the path iterator is
+                // flattened. SEG_CLOSE can be ignored.
+                default:
+                    break;
+            }
+<span class="nc" id="L727">            iterator.next();</span>
+        }
+
+<span class="nc" id="L730">        int size = points.size();</span>
+<span class="nc" id="L731">        final double closeTestLimit = 0.05;</span>
+
+<span class="nc bnc" id="L733" title="All 4 branches missed.">        if (size &gt;= 2 &amp;&amp; points.get(size - 1).distance(points.get(0)) &gt; closeTestLimit)</span>
+        {
+<span class="nc" id="L735">            points.add(points.get(points.size() - 1));</span>
+        }
+<span class="nc" id="L737">        return points.toArray(Point2D.Double[]::new);</span>
+    }
+
+    /**
+     * Cloudy ellipse implementation.
+     */
+    private void cloudyEllipseImpl(final double leftOrig, final double bottomOrig,
+    final double rightOrig, final double topOrig) throws IOException
+    {
+<span class="nc bnc" id="L746" title="All 2 branches missed.">        if (intensity &lt;= 0.0)</span>
+        {
+<span class="nc" id="L748">            drawBasicEllipse(leftOrig, bottomOrig, rightOrig, topOrig);</span>
+<span class="nc" id="L749">            return;</span>
+        }
+
+<span class="nc" id="L752">        double left = leftOrig;</span>
+<span class="nc" id="L753">        double bottom = bottomOrig;</span>
+<span class="nc" id="L754">        double right = rightOrig;</span>
+<span class="nc" id="L755">        double top = topOrig;</span>
+<span class="nc" id="L756">        double width = right - left;</span>
+<span class="nc" id="L757">        double height = top - bottom;</span>
+<span class="nc" id="L758">        double cloudRadius = getEllipseCloudRadius();</span>
+
+        // Omit cloudy border if the ellipse is very small.
+<span class="nc" id="L761">        final double threshold1 = 0.50 * cloudRadius;</span>
+<span class="nc bnc" id="L762" title="All 4 branches missed.">        if (width &lt; threshold1 &amp;&amp; height &lt; threshold1)</span>
+        {
+<span class="nc" id="L764">            drawBasicEllipse(left, bottom, right, top);</span>
+<span class="nc" id="L765">            return;</span>
+        }
+
+        // Draw a cloudy rectangle instead of an ellipse when the
+        // width or height is very small.
+<span class="nc" id="L770">        final double threshold2 = 5;</span>
+<span class="nc bnc" id="L771" title="All 8 branches missed.">        if ((width &lt; threshold2 &amp;&amp; height &gt; 20) || (width &gt; 20 &amp;&amp; height &lt; threshold2))</span>
+        {
+<span class="nc" id="L773">            cloudyRectangleImpl(left, bottom, right, top, true);</span>
+<span class="nc" id="L774">            return;</span>
+        }
+
+        // Decrease radii (while center point does not move). This makes the
+        // &quot;tails&quot; of the curls almost touch the ellipse outline.
+<span class="nc" id="L779">        double radiusAdj = Math.sin(ANGLE_12_DEG) * cloudRadius - 1.50;</span>
+<span class="nc bnc" id="L780" title="All 2 branches missed.">        if (width &gt; 2 * radiusAdj)</span>
+        {
+<span class="nc" id="L782">            left += radiusAdj;</span>
+<span class="nc" id="L783">            right -= radiusAdj;</span>
+        }
+        else
+        {
+<span class="nc" id="L787">            double mid = (left + right) / 2;</span>
+<span class="nc" id="L788">            left = mid - 0.10;</span>
+<span class="nc" id="L789">            right = mid + 0.10;</span>
+        }
+<span class="nc bnc" id="L791" title="All 2 branches missed.">        if (height &gt; 2 * radiusAdj)</span>
+        {
+<span class="nc" id="L793">            top -= radiusAdj;</span>
+<span class="nc" id="L794">            bottom += radiusAdj;</span>
+        }
+        else
+        {
+<span class="nc" id="L798">            double mid = (top + bottom) / 2;</span>
+<span class="nc" id="L799">            top = mid + 0.10;</span>
+<span class="nc" id="L800">            bottom = mid - 0.10;</span>
+        }
+
+        // Flatten the ellipse into a polygon. The segment lengths of the flattened
+        // result don't need to be extremely short because the loop below is able to
+        // interpolate between polygon points when it computes the center points
+        // at which each curl is placed.
+
+<span class="nc" id="L808">        Point2D.Double[] flatPolygon = flattenEllipse(left, bottom, right, top);</span>
+<span class="nc" id="L809">        int numPoints = flatPolygon.length;</span>
+<span class="nc bnc" id="L810" title="All 2 branches missed.">        if (numPoints &lt; 2)</span>
+        {
+<span class="nc" id="L812">            return;</span>
+        }
+
+<span class="nc" id="L815">        double totLen = 0;</span>
+<span class="nc bnc" id="L816" title="All 2 branches missed.">        for(int i = 1; i &lt; numPoints; i++){</span>
+<span class="nc" id="L817">            totLen += flatPolygon[i - 1].distance(flatPolygon[i]);</span>
+        }
+
+<span class="nc" id="L820">        final double k = Math.cos(ANGLE_34_DEG);</span>
+<span class="nc" id="L821">        double curlAdvance = 2 * k * cloudRadius;</span>
+<span class="nc" id="L822">        int n = (int) Math.ceil(totLen / curlAdvance);</span>
+<span class="nc bnc" id="L823" title="All 2 branches missed.">        if (n &lt; 2)</span>
+        {
+<span class="nc" id="L825">            drawBasicEllipse(leftOrig, bottomOrig, rightOrig, topOrig);</span>
+<span class="nc" id="L826">            return;</span>
+        }
+
+<span class="nc" id="L829">        curlAdvance = totLen / n;</span>
+<span class="nc" id="L830">        cloudRadius = curlAdvance / (2 * k);</span>
+
+<span class="nc bnc" id="L832" title="All 2 branches missed.">        if (cloudRadius &lt; 0.5)</span>
+        {
+<span class="nc" id="L834">            cloudRadius = 0.5;</span>
+<span class="nc" id="L835">            curlAdvance = 2 * k * cloudRadius;</span>
+        }
+<span class="nc bnc" id="L837" title="All 2 branches missed.">        else if (cloudRadius &lt; 3.0)</span>
+        {
+            // Draw a small circle when the scaled radius becomes very small.
+            // This happens also if intensity is much smaller than 1.
+<span class="nc" id="L841">            drawBasicEllipse(leftOrig, bottomOrig, rightOrig, topOrig);</span>
+<span class="nc" id="L842">            return;</span>
+        }
+
+        // Construct centerPoints array, in which each point is the center point of a curl.
+        // The length of each centerPoints segment ideally equals curlAdv but that
+        // is not true in regions where the ellipse curvature is high.
+
+<span class="nc" id="L849">        int centerPointsLength = n;</span>
+<span class="nc" id="L850">        Point2D.Double[] centerPoints = new Point2D.Double[centerPointsLength];</span>
+<span class="nc" id="L851">        int centerPointsIndex = 0;</span>
+<span class="nc" id="L852">        double lengthRemain = 0;</span>
+<span class="nc" id="L853">        final double comparisonToler = lineWidth * 0.10;</span>
+
+<span class="nc bnc" id="L855" title="All 2 branches missed.">        for (int i = 0; i + 1 &lt; numPoints; i++)</span>
+        {
+<span class="nc" id="L857">            Point2D.Double p1 = flatPolygon[i];</span>
+<span class="nc" id="L858">            Point2D.Double p2 = flatPolygon[i + 1];</span>
+<span class="nc" id="L859">            double dx = p2.x - p1.x;</span>
+<span class="nc" id="L860">            double dy = p2.y - p1.y;</span>
+<span class="nc" id="L861">            double length = p1.distance(p2);</span>
+<span class="nc bnc" id="L862" title="All 2 branches missed.">            if (Double.compare(length, 0.0) == 0)</span>
+            {
+<span class="nc" id="L864">                continue;</span>
+            }
+<span class="nc" id="L866">            double lengthTodo = length + lengthRemain;</span>
+<span class="nc bnc" id="L867" title="All 4 branches missed.">            if (lengthTodo &gt;= curlAdvance - comparisonToler || i == numPoints - 2)</span>
+            {
+<span class="nc" id="L869">                double cos = cosine(dx, length);</span>
+<span class="nc" id="L870">                double sin = sine(dy, length);</span>
+<span class="nc" id="L871">                double d = curlAdvance - lengthRemain;</span>
+                do
+                {
+<span class="nc" id="L874">                    double x = p1.x + d * cos;</span>
+<span class="nc" id="L875">                    double y = p1.y + d * sin;</span>
+<span class="nc bnc" id="L876" title="All 2 branches missed.">                    if (centerPointsIndex &lt; centerPointsLength)</span>
+                    {
+<span class="nc" id="L878">                        centerPoints[centerPointsIndex++] = new Point2D.Double(x, y);</span>
+                    }
+<span class="nc" id="L880">                    lengthTodo -= curlAdvance;</span>
+<span class="nc" id="L881">                    d += curlAdvance;</span>
+                }
+<span class="nc bnc" id="L883" title="All 2 branches missed.">                while (lengthTodo &gt;= curlAdvance - comparisonToler);</span>
+
+<span class="nc" id="L885">                lengthRemain = lengthTodo;</span>
+<span class="nc bnc" id="L886" title="All 2 branches missed.">                if (lengthRemain &lt; 0)</span>
+                {
+<span class="nc" id="L888">                    lengthRemain = 0;</span>
+                }
+<span class="nc" id="L890">            }</span>
+            else
+            {
+<span class="nc" id="L893">                lengthRemain += length;</span>
+            }
+        }
+
+        // Note: centerPoints does not repeat the first point as the last point
+        // to create a &quot;closing&quot; segment.
+
+        // Place a curl at each point of the centerPoints array.
+        // In regions where the ellipse curvature is high, the centerPoints segments
+        // are shorter than the actual distance along the ellipse. Thus we must
+        // again compute arc adjustments like in cloudy polygons.
+
+<span class="nc" id="L905">        numPoints = centerPointsIndex;</span>
+<span class="nc" id="L906">        double anglePrev = 0;</span>
+<span class="nc" id="L907">        double alphaPrev = 0;</span>
+
+<span class="nc bnc" id="L909" title="All 2 branches missed.">        for (int i = 0; i &lt; numPoints; i++)</span>
+        {
+<span class="nc" id="L911">            int idxNext = i + 1;</span>
+<span class="nc bnc" id="L912" title="All 2 branches missed.">            if (i + 1 &gt;= numPoints)</span>
+            {
+<span class="nc" id="L914">                idxNext = 0;</span>
+            }
+<span class="nc" id="L916">            Point2D.Double pt = centerPoints[i];</span>
+<span class="nc" id="L917">            Point2D.Double ptNext = centerPoints[idxNext];</span>
+
+<span class="nc bnc" id="L919" title="All 2 branches missed.">            if (i == 0)</span>
+            {
+<span class="nc" id="L921">                Point2D.Double ptPrev = centerPoints[numPoints - 1];</span>
+<span class="nc" id="L922">                anglePrev = Math.atan2(pt.y - ptPrev.y, pt.x - ptPrev.x);</span>
+<span class="nc" id="L923">                alphaPrev = computeParamsEllipse(ptPrev, pt, cloudRadius, curlAdvance);</span>
+            }
+
+<span class="nc" id="L926">            double angleCur = Math.atan2(ptNext.y - pt.y, ptNext.x - pt.x);</span>
+<span class="nc" id="L927">            double alpha = computeParamsEllipse(pt, ptNext, cloudRadius, curlAdvance);</span>
+
+<span class="nc bnc" id="L929" title="All 2 branches missed.">            addCornerCurl(anglePrev, angleCur, cloudRadius, pt.x, pt.y, alpha,</span>
+                alphaPrev, !outputStarted);
+
+<span class="nc" id="L932">            anglePrev = angleCur;</span>
+<span class="nc" id="L933">            alphaPrev = alpha;</span>
+        }
+<span class="nc" id="L935">    }</span>
+
+    /**
+     * Computes the alpha parameter for an ellipse curl.
+     */
+    private double computeParamsEllipse(Point2D.Double pt, Point2D.Double ptNext,
+    double r, double curlAdv)
+    {
+<span class="nc" id="L943">        double length = pt.distance(ptNext);</span>
+<span class="nc bnc" id="L944" title="All 2 branches missed.">        if (Double.compare(length, 0.0) == 0)</span>
+        {
+<span class="nc" id="L946">            return ANGLE_34_DEG;</span>
+        }
+
+<span class="nc" id="L949">        double e = length - curlAdv;</span>
+<span class="nc" id="L950">        double arg = (curlAdv / 2 + e / 2) / r;</span>
+<span class="nc bnc" id="L951" title="All 4 branches missed.">        return (arg &lt; -1.0 || arg &gt; 1.0) ? 0.0 : Math.acos(arg);</span>
+    }
+
+    private Point2D.Double[] removeZeroLengthSegments(Point2D.Double[] polygon)
+    {
+<span class="nc" id="L956">        int np = polygon.length;</span>
+<span class="nc bnc" id="L957" title="All 2 branches missed.">        if (np &lt;= 2)</span>
+        {
+<span class="nc" id="L959">            return polygon;</span>
+        }
+
+<span class="nc" id="L962">        final double toler = 0.50;</span>
+<span class="nc" id="L963">        int npNew = np;</span>
+<span class="nc" id="L964">        Point2D.Double ptPrev = polygon[0];</span>
+
+        // Don't remove the last point if it equals the first point.
+<span class="nc bnc" id="L967" title="All 2 branches missed.">        for (int i = 1; i &lt; np; i++)</span>
+        {
+<span class="nc" id="L969">            Point2D.Double pt = polygon[i];</span>
+<span class="nc bnc" id="L970" title="All 4 branches missed.">            if (Math.abs(pt.x - ptPrev.x) &lt; toler &amp;&amp; Math.abs(pt.y - ptPrev.y) &lt; toler)</span>
+            {
+<span class="nc" id="L972">                polygon[i] = null;</span>
+<span class="nc" id="L973">                npNew--;</span>
+            }
+<span class="nc" id="L975">            ptPrev = pt;</span>
+        }
+
+<span class="nc bnc" id="L978" title="All 2 branches missed.">        if (npNew == np)</span>
+        {
+<span class="nc" id="L980">            return polygon;</span>
+        }
+
+<span class="nc" id="L983">        Point2D.Double[] polygonNew = new Point2D.Double[npNew];</span>
+<span class="nc" id="L984">        int j = 0;</span>
+<span class="nc bnc" id="L985" title="All 2 branches missed.">        for (int i = 0; i &lt; np; i++)</span>
+        {
+<span class="nc" id="L987">            Point2D.Double pt = polygon[i];</span>
+<span class="nc bnc" id="L988" title="All 2 branches missed.">            if (pt != null)</span>
+            {
+<span class="nc" id="L990">                polygonNew[j++] = pt;</span>
+            }
+        }
+
+<span class="nc" id="L994">        return polygonNew;</span>
+    }
+
+    /**
+     * Draws an ellipse without a cloudy border effect.
+     */
+    private void drawBasicEllipse(double left, double bottom, double right, double top)
+    throws IOException
+    {
+<span class="nc" id="L1003">        double rx = Math.abs(right - left) / 2;</span>
+<span class="nc" id="L1004">        double ry = Math.abs(top - bottom) / 2;</span>
+<span class="nc" id="L1005">        double cx = (left + right) / 2;</span>
+<span class="nc" id="L1006">        double cy = (bottom + top) / 2;</span>
+<span class="nc" id="L1007">        getArc(0, 2 * Math.PI, rx, ry, cx, cy, null, true);</span>
+<span class="nc" id="L1008">    }</span>
+
+    private void beginOutput(double x, double y) throws IOException
+    {
+<span class="nc" id="L1012">        bboxMinX = x;</span>
+<span class="nc" id="L1013">        bboxMinY = y;</span>
+<span class="nc" id="L1014">        bboxMaxX = x;</span>
+<span class="nc" id="L1015">        bboxMaxY = y;</span>
+<span class="nc" id="L1016">        outputStarted = true;</span>
+        // Set line join to bevel to avoid spikes
+<span class="nc" id="L1018">        output.setLineJoinStyle(2);</span>
+<span class="nc" id="L1019">    }</span>
+
+    private void updateBBox(double x, double y)
+    {
+<span class="nc" id="L1023">        bboxMinX = Math.min(bboxMinX, x);</span>
+<span class="nc" id="L1024">        bboxMinY = Math.min(bboxMinY, y);</span>
+<span class="nc" id="L1025">        bboxMaxX = Math.max(bboxMaxX, x);</span>
+<span class="nc" id="L1026">        bboxMaxY = Math.max(bboxMaxY, y);</span>
+<span class="nc" id="L1027">    }</span>
+
+    private void moveTo(Point2D.Double p) throws IOException
+    {
+<span class="nc" id="L1031">        moveTo(p.x, p.y);</span>
+<span class="nc" id="L1032">    }</span>
+
+    private void moveTo(double x, double y) throws IOException
+    {
+<span class="nc bnc" id="L1036" title="All 2 branches missed.">        if (outputStarted)</span>
+        {
+<span class="nc" id="L1038">            updateBBox(x, y);</span>
+        }
+        else
+        {
+<span class="nc" id="L1042">            beginOutput(x, y);</span>
+        }
+
+<span class="nc" id="L1045">        output.moveTo((float)x, (float)y);</span>
+<span class="nc" id="L1046">    }</span>
+
+    private void lineTo(Point2D.Double p) throws IOException
+    {
+<span class="nc" id="L1050">        lineTo(p.x, p.y);</span>
+<span class="nc" id="L1051">    }</span>
+
+    private void lineTo(double x, double y) throws IOException
+    {
+<span class="nc bnc" id="L1055" title="All 2 branches missed.">        if (outputStarted)</span>
+        {
+<span class="nc" id="L1057">            updateBBox(x, y);</span>
+        }
+        else
+        {
+<span class="nc" id="L1061">            beginOutput(x, y);</span>
+        }
+
+<span class="nc" id="L1064">        output.lineTo((float)x, (float)y);</span>
+<span class="nc" id="L1065">    }</span>
+
+    private void curveTo(double ax, double ay, double bx, double by, double cx, double cy)
+    throws IOException
+    {
+<span class="nc" id="L1070">        updateBBox(ax, ay);</span>
+<span class="nc" id="L1071">        updateBBox(bx, by);</span>
+<span class="nc" id="L1072">        updateBBox(cx, cy);</span>
+<span class="nc" id="L1073">        output.curveTo((float)ax, (float)ay, (float)bx, (float)by, (float)cx, (float)cy);</span>
+<span class="nc" id="L1074">    }</span>
+
+    private void finish() throws IOException
+    {
+<span class="nc bnc" id="L1078" title="All 2 branches missed.">        if (outputStarted)</span>
+        {
+<span class="nc" id="L1080">            output.closePath();</span>
+        }
+
+<span class="nc bnc" id="L1083" title="All 2 branches missed.">        if (lineWidth &gt; 0)</span>
+        {
+<span class="nc" id="L1085">            double d = lineWidth / 2;</span>
+<span class="nc" id="L1086">            bboxMinX -= d;</span>
+<span class="nc" id="L1087">            bboxMinY -= d;</span>
+<span class="nc" id="L1088">            bboxMaxX += d;</span>
+<span class="nc" id="L1089">            bboxMaxY += d;</span>
+        }
+<span class="nc" id="L1091">    }</span>
+
+    private double getEllipseCloudRadius()
+    {
+        // Equation deduced from Acrobat Reader's appearance streams. Circle
+        // annotations have a slightly larger radius than Polygons and Squares.
+<span class="nc" id="L1097">        return 4.75 * intensity + 0.5 * lineWidth;</span>
+    }
+
+    private double getPolygonCloudRadius()
+    {
+        // Equation deduced from Acrobat Reader's appearance streams.
+<span class="nc" id="L1103">        return 4 * intensity + 0.5 * lineWidth;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

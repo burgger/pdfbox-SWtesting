@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDDestinationNameTreeNode.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache PDFBox</a> &gt; <a href="index.source.html" class="el_package">org.apache.pdfbox.pdmodel</a> &gt; <span class="el_source">PDDestinationNameTreeNode.java</span></div><h1>PDDestinationNameTreeNode.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.pdfbox.pdmodel;
+
+import java.io.IOException;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.common.PDNameTreeNode;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDDestination;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination;
+
+/**
+ * This class holds all of the name trees that are available at the document level.
+ *
+ * @author Ben Litchfield
+ */
+public class PDDestinationNameTreeNode extends PDNameTreeNode&lt;PDPageDestination&gt;
+{
+    /**
+     * Constructor.
+     */
+    public PDDestinationNameTreeNode()
+<span class="nc" id="L38">    {</span>
+<span class="nc" id="L39">    }</span>
+
+    /**
+     * Constructor.
+     *
+     * @param dic The COS dictionary.
+     */
+    public PDDestinationNameTreeNode( COSDictionary dic )
+    {
+<span class="fc" id="L48">        super(dic);</span>
+<span class="fc" id="L49">    }</span>
+
+    @Override
+    protected PDPageDestination convertCOSToPD( COSBase base ) throws IOException
+    {
+<span class="fc" id="L54">        COSBase destination = base;</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">        if( base instanceof COSDictionary )</span>
+        {
+            //the destination is sometimes stored in the D dictionary
+            //entry instead of being directly an array, so just dereference
+            //it for now
+<span class="nc" id="L60">            destination = ((COSDictionary)base).getDictionaryObject( COSName.D );</span>
+        }
+<span class="fc" id="L62">        PDDestination dest = PDDestination.create(destination);</span>
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">        if (dest instanceof PDPageDestination)</span>
+        {
+<span class="fc" id="L65">            return (PDPageDestination) dest;</span>
+        }
+        // PDFBOX-5975: invalid tree entry
+<span class="nc" id="L68">        return null;</span>
+    }
+
+    @Override
+    protected PDNameTreeNode&lt;PDPageDestination&gt; createChildNode( COSDictionary dic )
+    {
+<span class="nc" id="L74">        return new PDDestinationNameTreeNode(dic);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
