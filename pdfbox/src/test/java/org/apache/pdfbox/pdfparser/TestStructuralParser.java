@@ -14,53 +14,29 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class TestStructuralParser
-{
-    /**
-     * Covers previously-uncovered recovery path where a malformed PDF triggers trailer rebuilding
-     * (COSParser -> BruteForceParser usage via Loader.loadPDF on a broken trailer / missing Root).
-     *
-     * Note: The exact uncovered line numbers for COSParser depend on the JaCoCo report you generated
-     * for this run; this test is intended to drive the "rebuild trailer / brute force" path.
-     */
+public class TestStructuralParser {
+    //672-731
     @Test
-    void testTwoColumnTrailerWithoutRootTriggersRecovery() throws URISyntaxException
-    {
+    void testBruteForce() throws URISyntaxException {
         try (PDDocument doc = Loader.loadPDF(
-                new File(TestPDFParser.class.getResource("BruteForce.pdf").toURI())))
-        {
+                new File(TestPDFParser.class.getResource("BruteForce.pdf").toURI()))) {
             assertNotNull(doc);
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             fail("Unexpected Exception");
         }
     }
 
-    /**
-     * Covers previously-uncovered branch in BruteForceParser#bfSearchForXRef where BOTH:
-     *   - a candidate xref table offset exists, AND
-     *   - a candidate xref stream offset exists,
-     * and the method chooses between them by comparing absolute differences.
-     *
-     * Specifically targets BruteForceParser.java lines 244–258 (both-found path + inner choice),
-     * and also drives bfSearchForXRefStreams() scanning logic by including "/XRef" plus an " obj"
-     * marker nearby in the constructed bytes. :contentReference[oaicite:0]{index=0}
-     */
+    //233-258
     @Test
-    void test12_bfSearchForXRef_chooseStreamWhenCloser_and_chooseTableWhenCloser() throws Exception
-    {
+    void test_bfSearchForXRef_chooseStreamWhenCloser_and_chooseTableWhenCloser() throws Exception {
         byte[] pdfBytes = buildPdfWithBothXrefTableAndXrefStream();
 
         PDFParser parser = new PDFParser(new RandomAccessReadBuffer(pdfBytes), "", null, null,
                 IOUtils.createMemoryOnlyStreamCache());
 
-        try
-        {
+        try {
             parser.parse(true); // lenient
-        }
-        catch (IOException ignore)
-        {
+        } catch (IOException ignore) {
             // This test is about executing brute-force xref search paths;
             // parse failures are acceptable for malformed synthetic inputs.
         }
@@ -87,26 +63,15 @@ public class TestStructuralParser
         assertTrue(picked2 == xrefStreamObjOffset || picked2 == xrefTableOffset);
     }
 
-    /**
-     * Covers previously-uncovered ternary branch in BruteForceParser#compareCOSObjects:
-     * when current and new objects share the SAME object number, the one with the higher
-     * generation should be selected.
-     *
-     * Specifically targets BruteForceParser.java lines 503–506 (same-number generation compare).
-     * :contentReference[oaicite:1]{index=1}
-     */
+    //498-507
     @Test
-    void test12_compareCOSObjects_sameNumberDifferentGeneration_hitsTernaryBranch() throws Exception
-    {
+    void test_compareCOSObjects_sameNumberDifferentGeneration_hitsTernaryBranch() throws Exception {
         PDFParser parser = new PDFParser(
                 new RandomAccessReadBuffer(buildPdfWithBothXrefTableAndXrefStream()),
                 "", null, null, IOUtils.createMemoryOnlyStreamCache());
-        try
-        {
+        try {
             parser.parse(true);
-        }
-        catch (IOException ignore)
-        {
+        } catch (IOException ignore) {
             // Acceptable; we only need a BruteForceParser instance.
         }
 
@@ -136,16 +101,8 @@ public class TestStructuralParser
         assertTrue(picked == newer);
     }
 
-    /**
-     * Key properties of this synthetic input:
-     *  - Contains an xref TABLE marker: "\nxref\n" (so bfSearchForXRefTables can find it)
-     *  - Contains an xref STREAM marker: "/XRef" and a nearby " obj" marker (so bfSearchForXRefStreams can backtrack)
-     *
-     * It does NOT need to be a fully valid PDF; lenient parsing + brute force scanning is enough
-     * to exercise the intended branches.
-     */
-    private static byte[] buildPdfWithBothXrefTableAndXrefStream()
-    {
+
+    private static byte[] buildPdfWithBothXrefTableAndXrefStream() {
         String pdf =
                 "%PDF-1.4\n" +
                         "1 0 obj\n<< /Type /Pages /Count 0 >>\nendobj\n" +
