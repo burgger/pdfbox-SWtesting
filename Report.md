@@ -528,3 +528,73 @@ parsing recovery logic.
 | **pdfparser package** | Branch Coverage                   | 69%      | 74%      | +5%         |
 | **Total**             | Missed Lines                      | 15399    | 15343    | -56 lines   |
 
+
+## 6 Continuous Integration
+
+### 6.1 Definition
+Integration refers to the process of combining two or more software components into
+a working system. Even if individual components function correctly in isolation,
+new defects may appear when they interact. Poor integration can lead to cascading
+failures, making debugging difficult and time-consuming.
+
+Continuous Integration (CI) is a development practice in which developers frequently
+integrate their code changes into a shared repository, often multiple times per day.
+Each integration is automatically verified by building the system and running automated tests.
+The goal is to detect problems as early as possible.
+
+The primary purposes of Continuous Integration are:
+
+- **Early bug detection** – Smaller changes make it easier to identify and fix defects.
+
+- **Preventing defect accumulation** – Bugs are discovered independently rather than 
+interacting with one another.
+
+- **Maintaining a stable main branch** – The main development line should always build successfully.
+
+- **Rapid feedback** – Developers receive immediate information about whether their
+changes break the system.
+
+- **Supporting frequent deployment** – CI enables faster release cycles and continuous improvement.
+
+In practice, CI works by automatically triggering a build and test process whenever
+new code is committed to the repository. If the build or tests fail, the developer
+responsible must fix the issue immediately. This ensures that the codebase remains
+stable and continuously deployable.
+
+In this project, we implement CI using GitHub Actions to automatically
+build the PDFBox system and execute our test suite on every commit.
+
+### 6.2 Existing GitHub Actions
+
+The original PDFBox fork repository already contains a GitHub Actions workflow
+named CodeQL under `.github/workflows/codeql-analysis.yml`.
+
+This workflow is triggered on pushes and pull requests to the trunk branch.
+Its primary purpose is to perform static code analysis using GitHub’s CodeQL tool.
+The workflow:
+
+- Checks out the repository
+
+- Caches the local Maven dependencies
+
+- Compiles the project using Maven (with tests skipped)
+
+- Executes CodeQL security and quality analysis
+
+CodeQL is a static analysis tool provided by GitHub that automatically scans source
+code for potential security vulnerabilities and code quality issues. Unlike traditional
+CI pipelines that build and run test cases, CodeQL analyzes the code structure
+without executing the program.
+
+The workflow builds the source code to enable static analysis, but it does not execute
+the project's test suite, as tests are explicitly skipped during compilation (`-DskipTests)`.
+
+### 6.3 CI Using GitHub Actions
+
+Our task is to create a configuration file to **build** and **test** your project.
+
+So we created a new workflow file under `.github/workflows/CI-build-test.yml`. It is triggered on:
+
+- ```push``` to the `trunk` branch
+
+- ```pull_request``` targeting the `trunk` branch
