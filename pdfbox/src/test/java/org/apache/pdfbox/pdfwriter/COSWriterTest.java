@@ -46,27 +46,30 @@ import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDTextField;
 import org.junit.jupiter.api.Test;
+// import new packages
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSString;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-class COSWriterTest
-{
+class COSWriterTest {
     /**
      * PDFBOX-4321: check whether the output stream is closed after saving.
-     * 
+     *
      * @throws IOException
      */
     @Test
-    void testPDFBox4321() throws IOException
-    {
-        try (PDDocument doc = new PDDocument())
-        {
-            
+    void testPDFBox4321() throws IOException {
+        try (PDDocument doc = new PDDocument()) {
+
             PDPage page = new PDPage();
             doc.addPage(page);
-            doc.save(new BufferedOutputStream(new ByteArrayOutputStream(1024)
-            {
+            doc.save(new BufferedOutputStream(new ByteArrayOutputStream(1024) {
                 @Override
-                public void close() throws IOException
-                {
+                public void close() throws IOException {
                     throw new IOException("Stream was closed");
                 }
             }));
@@ -74,23 +77,19 @@ class COSWriterTest
     }
 
     @Test
-    void testPDFBox5485() throws IOException
-    {
+    void testPDFBox5485() throws IOException {
         File pdfFile = Paths.get("src", "test", "resources", "input", "PDFBOX-3110-poems-beads.pdf")
                 .toFile();
-        try (PDDocument pdfDocument = Loader.loadPDF(pdfFile))
-        {
+        try (PDDocument pdfDocument = Loader.loadPDF(pdfFile)) {
             PageExtractor pageExtractor = new PageExtractor(pdfDocument, 2, 2);
-            try (PDDocument pdfPages = pageExtractor.extract())
-            {
+            try (PDDocument pdfPages = pageExtractor.extract()) {
                 pdfPages.save(new ByteArrayOutputStream());
             }
         }
     }
 
     @Test
-    void testPDFBox5945() throws IOException
-    {
+    void testPDFBox5945() throws IOException {
         byte[] input = create();
         checkTrailerSize(input);
 
@@ -98,10 +97,8 @@ class COSWriterTest
         checkTrailerSize(output);
     }
 
-    private static void checkTrailerSize(byte[] docData) throws IOException
-    {
-        try (PDDocument pdDocument = Loader.loadPDF(docData))
-        {
+    private static void checkTrailerSize(byte[] docData) throws IOException {
+        try (PDDocument pdDocument = Loader.loadPDF(docData)) {
             COSDocument cosDocument = pdDocument.getDocument();
             long maxObjNumber = cosDocument.getXrefTable().keySet().stream() //
                     .mapToLong(COSObjectKey::getNumber).max().getAsLong();
@@ -110,10 +107,8 @@ class COSWriterTest
         }
     }
 
-    private static byte[] create() throws IOException
-    {
-        try (PDDocument pdDocument = new PDDocument())
-        {
+    private static byte[] create() throws IOException {
+        try (PDDocument pdDocument = new PDDocument()) {
             PDAcroForm acroForm = new PDAcroForm(pdDocument);
             pdDocument.getDocumentCatalog().setAcroForm(acroForm);
             PDFont font1 = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
@@ -138,10 +133,8 @@ class COSWriterTest
         }
     }
 
-    private static byte[] edit(byte[] input) throws IOException
-    {
-        try (PDDocument pdDocument = Loader.loadPDF(input))
-        {
+    private static byte[] edit(byte[] input) throws IOException {
+        try (PDDocument pdDocument = Loader.loadPDF(input)) {
             PDTextField textField = (PDTextField) pdDocument.getDocumentCatalog().getAcroForm()
                     .getField("textFieldName");
             assertNotNull(textField);
@@ -154,35 +147,31 @@ class COSWriterTest
 
     /**
      * Test if overlapping object numbers are eliminated when merging pdfs.
-     * 
+     *
      * @throws IOException
      * @throws URISyntaxException
      */
     @Test
-    void testPDFBox6036() throws IOException, URISyntaxException
-    {
+    void testPDFBox6036() throws IOException, URISyntaxException {
         URL emptyURL = new URI(
                 "https://issues.apache.org/jira/secure/attachment/13066015/empty.pdf").toURL();
         URL roboURL = new URI(
                 "https://issues.apache.org/jira/secure/attachment/13066016/roboto-14.pdf").toURL();
         byte[] emptyPDF = null;
         byte[] roboPDF = null;
-        try (InputStream isEmpty = emptyURL.openStream(); InputStream isRobo = roboURL.openStream())
-        {
+        try (InputStream isEmpty = emptyURL.openStream(); InputStream isRobo = roboURL.openStream()) {
             emptyPDF = isEmpty.readAllBytes();
             roboPDF = isRobo.readAllBytes();
         }
         // write merge result using compressed streams
         ByteArrayOutputStream baosCompressed = new ByteArrayOutputStream();
         try (PDDocument targetDoc = Loader.loadPDF(emptyPDF);
-                PDDocument doc2 = Loader.loadPDF(roboPDF))
-        {
+             PDDocument doc2 = Loader.loadPDF(roboPDF)) {
             PDPage sourcePage = doc2.getPage(0);
             targetDoc.importPage(sourcePage);
             targetDoc.save(baosCompressed);
         }
-        try (PDDocument targetDoc = Loader.loadPDF(baosCompressed.toByteArray()))
-        {
+        try (PDDocument targetDoc = Loader.loadPDF(baosCompressed.toByteArray())) {
             assertNotNull(targetDoc.getDocumentCatalog().getStructureTreeRoot());
             PDResources res = targetDoc.getPage(1).getResources();
             assertEquals("BCDEEE+Roboto-Regular", res.getFont(COSName.getPDFName("F1")).getName());
@@ -191,14 +180,12 @@ class COSWriterTest
         // write merge result without compressed streams
         ByteArrayOutputStream baosUncompressed = new ByteArrayOutputStream();
         try (PDDocument targetDoc = Loader.loadPDF(emptyPDF);
-                PDDocument doc2 = Loader.loadPDF(roboPDF))
-        {
+             PDDocument doc2 = Loader.loadPDF(roboPDF)) {
             PDPage sourcePage = doc2.getPage(0);
             targetDoc.importPage(sourcePage);
             targetDoc.save(baosUncompressed, CompressParameters.NO_COMPRESSION);
         }
-        try (PDDocument targetDoc = Loader.loadPDF(baosUncompressed.toByteArray()))
-        {
+        try (PDDocument targetDoc = Loader.loadPDF(baosUncompressed.toByteArray())) {
             assertNotNull(targetDoc.getDocumentCatalog().getStructureTreeRoot());
             PDResources res = targetDoc.getPage(1).getResources();
             assertEquals("BCDEEE+Roboto-Regular", res.getFont(COSName.getPDFName("F1")).getName());
@@ -206,5 +193,56 @@ class COSWriterTest
         }
 
     }
+
+    // Test when pdDocument.getDocumentId() == null and /ID is missing. /ID will be generated based on system time
+    private static final class TestCOSWriter extends COSWriter {
+        private final long fixedNow;
+
+        TestCOSWriter(ByteArrayOutputStream out, long fixedNow) throws IOException {
+            super(out);
+            this.fixedNow = fixedNow;
+        }
+
+        @Override
+        protected long nowMillis() {
+            return fixedNow;
+        }
+    }
+
+    @Test
+    void trailerIdIsGeneratedDeterministicallyFromFixedTime() throws Exception {
+        try (PDDocument doc = new PDDocument()) {
+            // Make digest input deterministic: COSWriter may include /Info values.
+            doc.getDocument().getTrailer().removeItem(COSName.INFO);
+
+            // Ensure /ID is missing so COSWriter will generate it.
+            doc.getDocument().getTrailer().removeItem(COSName.ID);
+
+            long fixedTime = 42L;
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            COSWriter writer = new TestCOSWriter(out, fixedTime);
+
+            writer.write(doc, null);
+
+            COSBase idBase = doc.getDocument().getTrailer().getDictionaryObject(COSName.ID);
+            assertInstanceOf(COSArray.class, idBase);
+
+            COSArray idArray = (COSArray) idBase;
+            assertEquals(2, idArray.size());
+            assertInstanceOf(COSString.class, idArray.get(0));
+            assertInstanceOf(COSString.class, idArray.get(1));
+
+            COSString first = (COSString) idArray.get(0);
+            COSString second = (COSString) idArray.get(1);
+
+            MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+            sha256.update(Long.toString(fixedTime).getBytes(StandardCharsets.ISO_8859_1));
+            byte[] expected = sha256.digest();
+
+            assertArrayEquals(expected, first.getBytes());
+            assertArrayEquals(expected, second.getBytes());
+        }
+    }
+
 
 }

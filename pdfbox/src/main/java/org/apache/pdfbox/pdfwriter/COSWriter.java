@@ -87,6 +87,12 @@ import org.apache.pdfbox.util.Hex;
  */
 public class COSWriter implements ICOSVisitor
 {
+
+    /**
+     * time seam
+     */
+    protected long nowMillis() { return System.currentTimeMillis(); }
+
     private static final Logger LOG = LogManager.getLogger(COSWriter.class);
 
     /**
@@ -1523,8 +1529,9 @@ public class COSWriter implements ICOSVisitor
         {
             prepareIncrement();
         }
-        long idTime = pdDocument.getDocumentId() == null ? System.currentTimeMillis()
-                : pdDocument.getDocumentId();
+        // Fix: extract a protected method as a time seam
+        // long idTime = pdDocument.getDocumentId() == null ? System.currentTimeMillis() : pdDocument.getDocumentId();
+        long idTime = (pdDocument.getDocumentId() == null) ? nowMillis() : pdDocument.getDocumentId();
 
         // if the document says we should remove encryption, then we shouldn't encrypt
         if (doc.isAllSecurityToBeRemoved())
