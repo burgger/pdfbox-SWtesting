@@ -610,6 +610,7 @@ failed on `example` module.
 
 **Problem Encountered:** The test `TestCreateSignature.testAddValidationInformation`
 failed causing the test to error.
+<https://github.com/burgger/pdfbox-SWtesting/actions/runs/22396140154/job/64830154305#step:4:5875>
 ![First CI.png](First%20CI.png)
 
 **Problem Analysis:** During the initial CI execution, the workflow failed in the `pdfbox-examples` module,
@@ -632,4 +633,133 @@ mvn -B -ntp test -pl '!examples' -am
 ```
 
 We push the modified yml to GitHub.
+
+#### 6.3.2 Latest CI Execution
+
+After applying this modification and pushing the changes to the trunk branch, the GitHub
+Actions workflow executed successfully. The project built correctly, and the automated test
+suite for the core modules passed without errors.
+<https://github.com/burgger/pdfbox-SWtesting/actions/runs/22397638754/job/64835313041>
+![Last CI.png](Last%20CI.png)
+
+This adjustment ensures that the CI pipeline remains stable, fast, and deterministic,
+while still providing automated verification of the main project components.
+
+
+## 7 Testable Design
+
+A testable design is one that makes behavior easy to verify in a stable, repeatable way by letting
+tests control dependencies and inputs and observe outputs clearly. The slides emphasize that
+when code depends on external components (e.g., DB/network/memory) that may be unimplemented,
+unreliable, or hard to control in tests, we should replace those dependencies with test doubles
+to isolate the unit under test. In that framing, a stub returns hard-coded or simplified results,
+a mock focuses on verifying how a dependency was used (calls/arguments), and a spy records interactions
+with a real object for later inspection.
+
+To improve testable:
+- Avoid hard-coding object:creation with new inside methods (it prevents stubbing/mocking; prefer creating the object
+outside and injecting it). 
+- Avoid complex private methods because private code cannot be directly
+tested.
+- Be cautious with static methods—especially those with side effects or randomness—because
+they are difficult or impossible to stub. Also keep logic out of constructors
+(constructors are hard to bypass; move logic into overridable methods), and avoid rigid patterns
+like Singletons that are hard to replace in tests.
+
+### 7.1 Bad Testable Design in PDFBox
+
+We chose the `idTime` logic inside `COSWriter.write()` as our bad testable design
+example because it hard-codes an uncontrollable dependency—`System.currentTimeMillis()`—directly
+into a core output-producing path. When `pdDocument.getDocumentId() == null`, the writer
+uses the current system time as an input to the SHA-256 computation that generates the trailer `/ID` values.
+This makes the output inherently non-deterministic: the same document content can produce different
+IDs across runs, which makes unit tests difficult to write with stable assertions and increases the
+risk of flaky tests. This aligns with the slide guidance that static calls
+(especially those involving side effects or uncontrollable behavior) are difficult to stub
+and therefore reduce testability.
+
+### 7.2 Fix it Testable and Test
+
+We will extract a protected method as a time seam(<https://github.com/burgger/pdfbox-SWtesting/blob/deed0f983a29df785ef89205c107e03e38b7de11/pdfbox/src/main/java/org/apache/pdfbox/pdfwriter/COSWriter.java#L1532>).
+
+Specifically, we will add a method in `COSWriter`:
+
+- ```protected long nowMillis() { return System.currentTimeMillis(); }```
+
+and replace the direct static call with:
+
+- `long idTime = (pdDocument.getDocumentId() == null) ? nowMillis() : pdDocument.getDocumentId();`
+
+This keeps production behavior unchanged (default still uses the system clock), but in
+tests(<https://github.com/burgger/pdfbox-SWtesting/blob/deed0f983a29df785ef89205c107e03e38b7de11/pdfbox/src/test/java/org/apache/pdfbox/pdfwriter/COSWriterTest.java#L197>) we can create a small `TestCOSWriter extends COSWriter` that overrides `nowMillis()`
+to return a fixed value, making `/ID` generation deterministic and easy to assert.
+
+## 8 Mocking
+
+Mocking is a testing technique that replaces a real dependency with a fake object designed
+for interaction verification. Instead of focusing on the dependency’s real behavior or outputs,
+a mock allows a test to assert how the dependency is used—for example, whether a method was called,
+how many times it was called, and with which arguments. This is especially valuable when the dependency
+is expensive to set up, non-deterministic, or external to the unit under test.
+
+In our project, mocking helps us write focused unit tests that validate a component’s
+collaboration with its dependencies without relying on real implementations.
+We will use Mockito to create and control mock objects and to verify the expected interactions, 
+keeping tests fast, deterministic, and isolated.
+
+### 8.1 Mocking in PDFBox
+
+We selected a mocking target from code adjacent to our previous "bad testable design"
+location in `COSWriter.write()`
+(<https://github.com/burgger/pdfbox-SWtesting/blob/deed0f983a29df785ef89205c107e03e38b7de11/pdfbox/src/main/java/org/apache/pdfbox/pdfwriter/COSWriter.java#L1557>). 
+In the same method, the writer collaborates with the encryption subsystem by obtaining a `SecurityHandler`
+from the document's encryption configuration and invoking `prepareDocumentForEncryption(PDDocument)`.
+This is an interaction-oriented behavior: what matters for a focused unit test is not the internal
+encryption implementation, but whether the writer triggers the encryption preparation step under
+the correct conditions. Therefore, it is a natural fit for mocking, where we verify how a dependency is used.
+
+Our plan uses a simple form of dependency injection to enable mocking: instead of relying
+on a concrete `SecurityHandler` implementation, we supply (or intercept) the handler as a replaceable
+dependency in the test, and use Mockito to create a mock handler. With this setup, the test
+can deterministically assert that `prepareDocumentForEncryption(doc)` is invoked (or not invoked)
+without executing real encryption logic, keeping the test isolated and fast. Mockito provides
+the mechanism to create and manage the mock and to verify the expected interactions.
+
+### 8.2 Test
+We implemented a Mockito-based unit test to validate the encryption interaction in `COSWriter.write()`
+(<https://github.com/burgger/pdfbox-SWtesting/blob/trunk/pdfbox/src/test/java/org/apache/pdfbox/pdfwriter/COSWriterMockingTest.java>).
+Instead of executing real encryption setup, the test injects a mocked encryption dependency and a mocked
+`SecurityHandler`, then runs `COSWriter.write(doc, null)`. The core assertion is interaction-based: we verify 
+that `prepareDocumentForEncryption(PDDocument)` is invoked exactly once when encryption is present and the
+writer is performing a non-incremental write. This matches the purpose of mocking in the slides—using a
+fake object to check how a dependency is used (calls and arguments), rather than validating the dependency's
+real behavior.
+
+To enable this, we apply a simple form of dependency injection at the test level by replacing the document's
+encryption configuration with a Mockito mock, which returns our mocked `SecurityHandler`. This keeps the test
+fast, deterministic, and isolated from the complexity of actual encryption logic. Mockito is used to create 
+and manage the mock objects and to perform the interaction verification.
+
+## 9 Static Analysis
+
+Static analysis refers to examining source code without executing the program. 
+The goal of static analysis is to detect potential defects and code quality issues 
+early in the development process. Because the analysis is performed directly on 
+the code, it can identify suspicious patterns such as possible null pointer usage, 
+resource leaks, or violations of coding practices before the software is run.
+
+Code review is also considered a form of static analysis since it involves 
+manually inspecting code without executing it. Automated static analyzers extend 
+this idea by automatically scanning the codebase and reporting potential problems. 
+However, these tools are considered pessimistic analyses because they may report 
+warnings that are not actual bugs, so developers must interpret the results and 
+determine whether the reported issues represent real problems.
+
+### 9.1 CodeQL in PDFBox
+
+The repository already contained a CodeQL workflow, but it used an outdated
+version of the GitHub CodeQL Action
+<https://github.com/burgger/pdfbox-SWtesting/blob/341f5e7aa524ee57f2c0995b5f8b48d140ec665b/.github/workflows/codeql-analysis.yml>.
+We updated the workflow to the current
+supported action version and reran the analysis successfully.
 
