@@ -757,9 +757,108 @@ determine whether the reported issues represent real problems.
 
 ### 9.1 CodeQL in PDFBox
 
+#### 9.1.1 Enable CodeQL
+
 The repository already contained a CodeQL workflow, but it used an outdated
 version of the GitHub CodeQL Action
 <https://github.com/burgger/pdfbox-SWtesting/blob/341f5e7aa524ee57f2c0995b5f8b48d140ec665b/.github/workflows/codeql-analysis.yml>.
-We updated the workflow to the current
-supported action version and reran the analysis successfully.
+To avoid maintaining a deprecated configuration, we switched the repository to GitHub’s default CodeQL
+setup and disable the original one, the default CodeQL setup automatically generates
+and manages a supported CodeQL configuration.
+
+After enabling GitHub's CodeQL analysis using the default setup, the repository
+produced **11 open alerts**. Most of the findings were categorized as
+**high severity**, primarily related to cryptographic practices and
+potential numeric conversion issues. A smaller number of alerts were
+related to workflow configuration.
+
+#### 9.1.2 Warning in CodeQL
+One example warning reported by CodeQL is **"Implicit narrowing conversion in compound assignment"**,
+detected in `PDLineDashPattern.java`<https://github.com/burgger/pdfbox-SWtesting/security/code-scanning/9>. This warning indicates that a compound
+assignment may implicitly perform a narrowing type conversion, which could
+potentially lead to loss of precision or overflow.
+
+In Java, compound assignments such as `+=` may automatically cast the
+result back to the original variable type. For example, if a smaller
+numeric type is used, the intermediate computation may exceed the
+representable range of the variable. CodeQL flags this situation
+because it may introduce subtle bugs in numerical computations.
+
+However, in the context of the PDFBox implementation, this conversion appears 
+to be intentional and controlled by the developers. Therefore, although the
+warning highlights a potentially risky pattern, it does not represent a real 
+defect in this particular case.
+
+### 9.2 SpotBugs in PDFBox
+
+#### 9.2.1 Run SpotBugs
+
+As an additional static analysis tool, we applied SpotBugs to the project. 
+
+```bash
+mvn -pl pdfbox com.github.spotbugs:spotbugs-maven-plugin:spotbugs com.github.spotbugs:spotbugs-maven-plugin:gui
+```
+SpotBugs analyzes compiled Java bytecode and detects common bug patterns such as 
+null pointer dereferences, bad programming practices, concurrency issues, and 
+potential security vulnerabilities.
+
+Running SpotBugs on the pdfbox module produced 692 reported issues. 
+These issues were categorized into several groups, including malicious code 
+vulnerability patterns, bad practices, multithreaded correctness problems, 
+and dodgy code patterns.
+
+A large portion of the findings (553 issues) were classified as malicious code 
+vulnerabilities. However, many of these warnings are likely false positives, 
+since the tool often flags generic patterns that may not represent real security 
+problems in the context of a mature library such as Apache PDFBox.
+
+#### 9.2.2 Warning in SpotBugs
+
+One example warning reported by SpotBugs is **“Possible bad parsing of shift operation”** 
+(Bug pattern: `BSHIFT_WRONG_ADD_PRIORITY`). This warning appears in 
+`SampledImageReader.java` at line 428.
+
+The warning indicates that a shift operation combined with an arithmetic expression 
+may be parsed differently than intended due to Java operator precedence rules. 
+In Java, the shift operator (`<<`) has lower precedence than addition, which means 
+an expression such as `x << 8 + y` is interpreted as `x << (8 + y)` rather than 
+`(x << 8) + y`.
+![SpotBugs.png](SpotBugs.png)
+
+SpotBugs flags this pattern because developers sometimes intend to perform the 
+shift before the addition, but the expression may be interpreted differently 
+by the compiler if parentheses are not used clearly.
+
+In the PDFBox code, the expression
+
+`(buff[r] ^ invert) << (24 + (x & 7))`
+
+already explicitly uses parentheses to control evaluation order. Because the 
+addition is intentionally grouped inside parentheses, the shift operation is 
+performed after the arithmetic calculation as intended. Therefore, this warning 
+likely represents a conservative warning from the analyzer rather than an actual 
+bug in the implementation.
+
+### 9.3 Comparison of Static Analysis Tools
+
+In this project I used two static analysis tools: CodeQL and SpotBugs. 
+Both tools analyze the code without running the program, but they focus on 
+different kinds of issues.
+
+CodeQL mainly reported security and correctness related warnings. 
+With the default configuration it only produced a small number of alerts 
+in the repository. These warnings usually point to patterns that may cause 
+security risks or unsafe behavior in the code.
+
+SpotBugs reported many more issues. This tool analyzes Java bytecode and 
+checks for common bug patterns such as bad practices, potential logic errors, 
+or concurrency problems. Because it contains a much larger set of rules, 
+it often produces a large number of warnings.
+
+From this experiment it is clear that different static analysis tools provide 
+different perspectives on the code. CodeQL focuses on higher-confidence 
+security problems, while SpotBugs reports a wider range of potential coding 
+issues. Using both tools together gives a better overall view of possible 
+problems in the project.
+
 
